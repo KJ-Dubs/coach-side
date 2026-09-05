@@ -170,11 +170,13 @@ function LiveGamePage() {
   const bench = roster.filter((p) => p.active && !lineup.includes(p.id));
 
   const teamScore = events
-    .filter((e) => e.event_type === "MADE")
+    .filter((e) => e.event_type !== "OPP_SCORE")
     .reduce((s, e) => s + (e.points || 0), 0);
   const oppScore = events
     .filter((e) => e.event_type === "OPP_SCORE")
     .reduce((s, e) => s + (e.points || 0), 0);
+  const teamFouls = events.filter((e) => e.event_type === "FOUL" && e.quarter === quarter).length;
+  const oppFouls = events.filter((e) => e.event_type === "OPP_FOUL" && e.quarter === quarter).length;
 
   /* ---------------- event helpers ---------------- */
   const addEvent = useCallback(
