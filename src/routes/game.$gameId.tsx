@@ -89,6 +89,7 @@ function LiveGamePage() {
 
   /* ---------------- load (server first, local cache fallback) ---------------- */
   useEffect(() => {
+    if (!game.data) return;
     let cancelled = false;
     (async () => {
       const cachedEvents = (await cacheGet<GameEvent[]>(eventsKey)) ?? [];
@@ -115,7 +116,7 @@ function LiveGamePage() {
       if (cancelled) return;
       setEvents(merged);
       const g = game.data;
-      setLineup(cachedState?.lineup ?? g?.starting_five ?? []);
+      setLineup(cachedState?.lineup?.length ? cachedState.lineup : (g?.starting_five ?? []));
       setQuarter(cachedState?.quarter ?? g?.quarter ?? 1);
       setClock(cachedState?.clock ?? (g?.period_minutes ?? 8) * 60);
       setLoaded(true);
@@ -456,11 +457,12 @@ function LiveGamePage() {
 
   return (
     <div className="min-h-screen p-2 sm:p-3">
-      <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-2 xl:flex-row">
+      <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-2 lg:flex-row">
         {/* COURT — always visible, never replaced */}
         <div className="flex flex-1 items-start justify-center">
           <Court
-            className="mx-auto w-auto max-w-full xl:h-[94vh]"
+            className="mx-auto w-full"
+            style={{ maxWidth: "min(100%, calc((100dvh - 1.5rem) * 0.94))" }}
             onCourtPoint={onCourtPoint}
             overlay={
               <>
@@ -521,7 +523,7 @@ function LiveGamePage() {
         </div>
 
         {/* CONTROL RAIL */}
-        <div className="flex w-full flex-col gap-2 xl:w-[360px]">
+        <div className="flex w-full flex-col gap-2 lg:w-[340px] xl:w-[380px]">
           <Panel className="flex flex-col gap-2 p-2">
             <div className="grid grid-cols-3 gap-2">
               <StatTile label={game.data ? "Us" : "Team"} value={teamScore} tone="grape" />
