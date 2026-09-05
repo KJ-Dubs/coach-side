@@ -94,7 +94,6 @@ export function Court({
       <svg
         viewBox={`0 0 ${view.w} ${view.h}`}
         className="absolute inset-0 h-full w-full"
-        preserveAspectRatio="none"
       >
         <rect x={0} y={0} width={view.w} height={view.h} fill="var(--court)" />
         <g fill="none" stroke="var(--court-line)" strokeWidth={3}>

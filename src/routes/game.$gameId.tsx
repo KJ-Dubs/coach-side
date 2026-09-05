@@ -312,6 +312,9 @@ function LiveGamePage() {
   if (step.kind === "player") {
     overlayTitle = "Who?";
     choices = onFloor.map((p) => ({ key: p.id, label: `#${p.jersey}`, tone: "grape" as const }));
+    choices.push(
+      ...bench.map((p) => ({ key: p.id, label: `#${p.jersey}`, tone: "neutral" as const })),
+    );
     choices.push({ key: "__cancel", label: "✕", tone: "ghost" });
     onPick = (k) => (k === "__cancel" ? reset() : pickPlayer(k));
   } else if (step.kind === "stat") {
@@ -341,6 +344,9 @@ function LiveGamePage() {
   } else if (step.kind === "miss") {
     overlayTitle = "What happened next?";
     choices = onFloor.map((p) => ({ key: p.id, label: `#${p.jersey}`, tone: "grape" as const }));
+    choices.push(
+      ...bench.map((p) => ({ key: p.id, label: `#${p.jersey}`, tone: "neutral" as const })),
+    );
     choices.push({ key: "__opp", label: "OPP REB", tone: "flame" });
     choices.push({ key: "__oob", label: "OUT OF BOUNDS", tone: "neutral" });
     choices.push({ key: "__skip", label: "SKIP", tone: "ghost" });
@@ -452,9 +458,9 @@ function LiveGamePage() {
     <div className="min-h-screen p-2 sm:p-3">
       <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-2 xl:flex-row">
         {/* COURT — always visible, never replaced */}
-        <div className="flex-1">
+        <div className="flex flex-1 items-start justify-center">
           <Court
-            className="mx-auto max-h-[86vh]"
+            className="mx-auto w-auto max-w-full xl:h-[94vh]"
             onCourtPoint={onCourtPoint}
             overlay={
               <>
