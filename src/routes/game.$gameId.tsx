@@ -89,6 +89,7 @@ function LiveGamePage() {
 
   /* ---------------- load (server first, local cache fallback) ---------------- */
   useEffect(() => {
+    if (!game.data) return;
     let cancelled = false;
     (async () => {
       const cachedEvents = (await cacheGet<GameEvent[]>(eventsKey)) ?? [];
