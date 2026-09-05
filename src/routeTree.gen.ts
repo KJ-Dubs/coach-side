@@ -13,7 +13,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as RosterRouteImport } from './routes/roster'
 import { Route as GameGameIdRouteImport } from './routes/game.$gameId'
 import { Route as GamesNewRouteImport } from './routes/games.new'
+import { Route as PlaysIndexRouteImport } from './routes/plays.index'
 import { Route as ReviewGameIdRouteImport } from './routes/review.$gameId'
+import { Route as PlaysPlayIdViewRouteImport } from './routes/plays.$playId.view'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -35,9 +37,19 @@ const GamesNewRoute = GamesNewRouteImport.update({
   path: '/games/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlaysIndexRoute = PlaysIndexRouteImport.update({
+  id: '/plays/',
+  path: '/plays/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReviewGameIdRoute = ReviewGameIdRouteImport.update({
   id: '/review/$gameId',
   path: '/review/$gameId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlaysPlayIdViewRoute = PlaysPlayIdViewRouteImport.update({
+  id: '/plays/$playId/view',
+  path: '/plays/$playId/view',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -47,6 +59,8 @@ export interface FileRoutesByFullPath {
   '/game/$gameId': typeof GameGameIdRoute
   '/games/new': typeof GamesNewRoute
   '/review/$gameId': typeof ReviewGameIdRoute
+  '/plays/': typeof PlaysIndexRoute
+  '/plays/$playId/view': typeof PlaysPlayIdViewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +68,8 @@ export interface FileRoutesByTo {
   '/game/$gameId': typeof GameGameIdRoute
   '/games/new': typeof GamesNewRoute
   '/review/$gameId': typeof ReviewGameIdRoute
+  '/plays': typeof PlaysIndexRoute
+  '/plays/$playId/view': typeof PlaysPlayIdViewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +78,28 @@ export interface FileRoutesById {
   '/game/$gameId': typeof GameGameIdRoute
   '/games/new': typeof GamesNewRoute
   '/review/$gameId': typeof ReviewGameIdRoute
+  '/plays/': typeof PlaysIndexRoute
+  '/plays/$playId/view': typeof PlaysPlayIdViewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/roster' | '/game/$gameId' | '/games/new' | '/review/$gameId'
+    | '/'
+    | '/roster'
+    | '/game/$gameId'
+    | '/games/new'
+    | '/review/$gameId'
+    | '/plays/'
+    | '/plays/$playId/view'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/roster' | '/game/$gameId' | '/games/new' | '/review/$gameId'
+  to:
+    | '/'
+    | '/roster'
+    | '/game/$gameId'
+    | '/games/new'
+    | '/review/$gameId'
+    | '/plays'
+    | '/plays/$playId/view'
   id:
     | '__root__'
     | '/'
@@ -76,6 +107,8 @@ export interface FileRouteTypes {
     | '/game/$gameId'
     | '/games/new'
     | '/review/$gameId'
+    | '/plays/'
+    | '/plays/$playId/view'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -84,6 +117,8 @@ export interface RootRouteChildren {
   GameGameIdRoute: typeof GameGameIdRoute
   GamesNewRoute: typeof GamesNewRoute
   ReviewGameIdRoute: typeof ReviewGameIdRoute
+  PlaysIndexRoute: typeof PlaysIndexRoute
+  PlaysPlayIdViewRoute: typeof PlaysPlayIdViewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,11 +151,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/plays/': {
+      id: '/plays/'
+      path: '/plays'
+      fullPath: '/plays/'
+      preLoaderRoute: typeof PlaysIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/review/$gameId': {
       id: '/review/$gameId'
       path: '/review/$gameId'
       fullPath: '/review/$gameId'
       preLoaderRoute: typeof ReviewGameIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plays/$playId/view': {
+      id: '/plays/$playId/view'
+      path: '/plays/$playId/view'
+      fullPath: '/plays/$playId/view'
+      preLoaderRoute: typeof PlaysPlayIdViewRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -132,6 +181,8 @@ const rootRouteChildren: RootRouteChildren = {
   GameGameIdRoute: GameGameIdRoute,
   GamesNewRoute: GamesNewRoute,
   ReviewGameIdRoute: ReviewGameIdRoute,
+  PlaysIndexRoute: PlaysIndexRoute,
+  PlaysPlayIdViewRoute: PlaysPlayIdViewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
