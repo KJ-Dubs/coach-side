@@ -81,9 +81,14 @@ function RosterPage() {
 
   const addTeam = useMutation({
     mutationFn: async () => {
+      const profile = await fetchProfile();
       const { data, error } = await supabase
         .from("teams")
-        .insert({ name: newTeam } as never)
+        .insert({
+          name: newTeam,
+          season: newSeason || new Date().getFullYear().toString(),
+          org_id: profile?.org_id ?? null,
+        } as never)
         .select("*")
         .single();
       if (error) throw error;
