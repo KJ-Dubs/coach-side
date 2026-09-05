@@ -10,33 +10,141 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RosterRouteImport } from './routes/roster'
+import { Route as GameGameIdRouteImport } from './routes/game.$gameId'
+import { Route as GamesNewRouteImport } from './routes/games.new'
+import { Route as PlaysIndexRouteImport } from './routes/plays.index'
+import { Route as ReviewGameIdRouteImport } from './routes/review.$gameId'
+import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as PlaysPlayIdIndexRouteImport } from './routes/plays.$playId.index'
+import { Route as PlaysPlayIdViewRouteImport } from './routes/plays.$playId.view'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RosterRoute = RosterRouteImport.update({
+  id: '/roster',
+  path: '/roster',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GameGameIdRoute = GameGameIdRouteImport.update({
+  id: '/game/$gameId',
+  path: '/game/$gameId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesNewRoute = GamesNewRouteImport.update({
+  id: '/games/new',
+  path: '/games/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlaysIndexRoute = PlaysIndexRouteImport.update({
+  id: '/plays/',
+  path: '/plays/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewGameIdRoute = ReviewGameIdRouteImport.update({
+  id: '/review/$gameId',
+  path: '/review/$gameId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShareTokenRoute = ShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlaysPlayIdIndexRoute = PlaysPlayIdIndexRouteImport.update({
+  id: '/plays/$playId/',
+  path: '/plays/$playId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlaysPlayIdViewRoute = PlaysPlayIdViewRouteImport.update({
+  id: '/plays/$playId/view',
+  path: '/plays/$playId/view',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/roster': typeof RosterRoute
+  '/game/$gameId': typeof GameGameIdRoute
+  '/games/new': typeof GamesNewRoute
+  '/review/$gameId': typeof ReviewGameIdRoute
+  '/share/$token': typeof ShareTokenRoute
+  '/plays/': typeof PlaysIndexRoute
+  '/plays/$playId/view': typeof PlaysPlayIdViewRoute
+  '/plays/$playId/': typeof PlaysPlayIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/roster': typeof RosterRoute
+  '/game/$gameId': typeof GameGameIdRoute
+  '/games/new': typeof GamesNewRoute
+  '/review/$gameId': typeof ReviewGameIdRoute
+  '/share/$token': typeof ShareTokenRoute
+  '/plays': typeof PlaysIndexRoute
+  '/plays/$playId/view': typeof PlaysPlayIdViewRoute
+  '/plays/$playId': typeof PlaysPlayIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/roster': typeof RosterRoute
+  '/game/$gameId': typeof GameGameIdRoute
+  '/games/new': typeof GamesNewRoute
+  '/review/$gameId': typeof ReviewGameIdRoute
+  '/share/$token': typeof ShareTokenRoute
+  '/plays/': typeof PlaysIndexRoute
+  '/plays/$playId/view': typeof PlaysPlayIdViewRoute
+  '/plays/$playId/': typeof PlaysPlayIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/roster'
+    | '/game/$gameId'
+    | '/games/new'
+    | '/review/$gameId'
+    | '/share/$token'
+    | '/plays/'
+    | '/plays/$playId/view'
+    | '/plays/$playId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/roster'
+    | '/game/$gameId'
+    | '/games/new'
+    | '/review/$gameId'
+    | '/share/$token'
+    | '/plays'
+    | '/plays/$playId/view'
+    | '/plays/$playId'
+  id:
+    | '__root__'
+    | '/'
+    | '/roster'
+    | '/game/$gameId'
+    | '/games/new'
+    | '/review/$gameId'
+    | '/share/$token'
+    | '/plays/'
+    | '/plays/$playId/view'
+    | '/plays/$playId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  RosterRoute: typeof RosterRoute
+  GameGameIdRoute: typeof GameGameIdRoute
+  GamesNewRoute: typeof GamesNewRoute
+  ReviewGameIdRoute: typeof ReviewGameIdRoute
+  ShareTokenRoute: typeof ShareTokenRoute
+  PlaysIndexRoute: typeof PlaysIndexRoute
+  PlaysPlayIdViewRoute: typeof PlaysPlayIdViewRoute
+  PlaysPlayIdIndexRoute: typeof PlaysPlayIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +156,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/roster': {
+      id: '/roster'
+      path: '/roster'
+      fullPath: '/roster'
+      preLoaderRoute: typeof RosterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/game/$gameId': {
+      id: '/game/$gameId'
+      path: '/game/$gameId'
+      fullPath: '/game/$gameId'
+      preLoaderRoute: typeof GameGameIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/new': {
+      id: '/games/new'
+      path: '/games/new'
+      fullPath: '/games/new'
+      preLoaderRoute: typeof GamesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plays/': {
+      id: '/plays/'
+      path: '/plays'
+      fullPath: '/plays/'
+      preLoaderRoute: typeof PlaysIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/review/$gameId': {
+      id: '/review/$gameId'
+      path: '/review/$gameId'
+      fullPath: '/review/$gameId'
+      preLoaderRoute: typeof ReviewGameIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/share/$token': {
+      id: '/share/$token'
+      path: '/share/$token'
+      fullPath: '/share/$token'
+      preLoaderRoute: typeof ShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plays/$playId/': {
+      id: '/plays/$playId/'
+      path: '/plays/$playId'
+      fullPath: '/plays/$playId/'
+      preLoaderRoute: typeof PlaysPlayIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plays/$playId/view': {
+      id: '/plays/$playId/view'
+      path: '/plays/$playId/view'
+      fullPath: '/plays/$playId/view'
+      preLoaderRoute: typeof PlaysPlayIdViewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  RosterRoute: RosterRoute,
+  GameGameIdRoute: GameGameIdRoute,
+  GamesNewRoute: GamesNewRoute,
+  ReviewGameIdRoute: ReviewGameIdRoute,
+  ShareTokenRoute: ShareTokenRoute,
+  PlaysIndexRoute: PlaysIndexRoute,
+  PlaysPlayIdViewRoute: PlaysPlayIdViewRoute,
+  PlaysPlayIdIndexRoute: PlaysPlayIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
