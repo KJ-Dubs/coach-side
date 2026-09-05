@@ -3,7 +3,8 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { to: "/", label: "Games" },
+  { to: "/", label: "Home" },
+  { to: "/games", label: "Games" },
   { to: "/roster", label: "Roster" },
   { to: "/plays", label: "Playbook" },
 ] as const;

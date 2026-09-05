@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RosterRouteImport } from './routes/roster'
 import { Route as GameGameIdRouteImport } from './routes/game.$gameId'
+import { Route as GamesIndexRouteImport } from './routes/games.index'
 import { Route as GamesNewRouteImport } from './routes/games.new'
 import { Route as PlaysIndexRouteImport } from './routes/plays.index'
 import { Route as ReviewGameIdRouteImport } from './routes/review.$gameId'
@@ -32,6 +33,11 @@ const RosterRoute = RosterRouteImport.update({
 const GameGameIdRoute = GameGameIdRouteImport.update({
   id: '/game/$gameId',
   path: '/game/$gameId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesIndexRoute = GamesIndexRouteImport.update({
+  id: '/games/',
+  path: '/games/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamesNewRoute = GamesNewRouteImport.update({
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/games/new': typeof GamesNewRoute
   '/review/$gameId': typeof ReviewGameIdRoute
   '/share/$token': typeof ShareTokenRoute
+  '/games/': typeof GamesIndexRoute
   '/plays/': typeof PlaysIndexRoute
   '/plays/$playId/view': typeof PlaysPlayIdViewRoute
   '/plays/$playId/': typeof PlaysPlayIdIndexRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/games/new': typeof GamesNewRoute
   '/review/$gameId': typeof ReviewGameIdRoute
   '/share/$token': typeof ShareTokenRoute
+  '/games': typeof GamesIndexRoute
   '/plays': typeof PlaysIndexRoute
   '/plays/$playId/view': typeof PlaysPlayIdViewRoute
   '/plays/$playId': typeof PlaysPlayIdIndexRoute
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/games/new': typeof GamesNewRoute
   '/review/$gameId': typeof ReviewGameIdRoute
   '/share/$token': typeof ShareTokenRoute
+  '/games/': typeof GamesIndexRoute
   '/plays/': typeof PlaysIndexRoute
   '/plays/$playId/view': typeof PlaysPlayIdViewRoute
   '/plays/$playId/': typeof PlaysPlayIdIndexRoute
@@ -108,6 +117,7 @@ export interface FileRouteTypes {
     | '/games/new'
     | '/review/$gameId'
     | '/share/$token'
+    | '/games/'
     | '/plays/'
     | '/plays/$playId/view'
     | '/plays/$playId/'
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/games/new'
     | '/review/$gameId'
     | '/share/$token'
+    | '/games'
     | '/plays'
     | '/plays/$playId/view'
     | '/plays/$playId'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/games/new'
     | '/review/$gameId'
     | '/share/$token'
+    | '/games/'
     | '/plays/'
     | '/plays/$playId/view'
     | '/plays/$playId/'
@@ -142,6 +154,7 @@ export interface RootRouteChildren {
   GamesNewRoute: typeof GamesNewRoute
   ReviewGameIdRoute: typeof ReviewGameIdRoute
   ShareTokenRoute: typeof ShareTokenRoute
+  GamesIndexRoute: typeof GamesIndexRoute
   PlaysIndexRoute: typeof PlaysIndexRoute
   PlaysPlayIdViewRoute: typeof PlaysPlayIdViewRoute
   PlaysPlayIdIndexRoute: typeof PlaysPlayIdIndexRoute
@@ -168,6 +181,13 @@ declare module '@tanstack/react-router' {
       path: '/game/$gameId'
       fullPath: '/game/$gameId'
       preLoaderRoute: typeof GameGameIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/': {
+      id: '/games/'
+      path: '/games'
+      fullPath: '/games/'
+      preLoaderRoute: typeof GamesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/games/new': {
@@ -222,6 +242,7 @@ const rootRouteChildren: RootRouteChildren = {
   GamesNewRoute: GamesNewRoute,
   ReviewGameIdRoute: ReviewGameIdRoute,
   ShareTokenRoute: ShareTokenRoute,
+  GamesIndexRoute: GamesIndexRoute,
   PlaysIndexRoute: PlaysIndexRoute,
   PlaysPlayIdViewRoute: PlaysPlayIdViewRoute,
   PlaysPlayIdIndexRoute: PlaysPlayIdIndexRoute,
