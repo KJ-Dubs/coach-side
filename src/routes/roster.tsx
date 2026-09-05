@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
 import { supabase } from "@/integrations/supabase/client";
-import { DEMO_TEAM_ID, fetchPlayers, fetchTeams } from "@/lib/data";
+import { DEMO_TEAM_ID, fetchPlayers, fetchProfile, fetchTeams } from "@/lib/data";
 import type { Player } from "@/lib/types";
 
 export const Route = createFileRoute("/roster")({
@@ -42,6 +42,7 @@ function RosterPage() {
   const [name, setName] = useState("");
   const [position, setPosition] = useState("");
   const [newTeam, setNewTeam] = useState("");
+  const [newSeason, setNewSeason] = useState("");
 
   const addPlayer = useMutation({
     mutationFn: async () => {
