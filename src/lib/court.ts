@@ -36,7 +36,7 @@ export function zoneOf(x: number, y: number): Zone {
   const { fx, fy } = toFeet(x, y);
   const dist = distanceFt(x, y);
   if (isThree(x, y)) {
-    if (fy <= 14 || fy >= HALF_H_FT - 14) return "corner3";
+    if (fx <= 14 && (fy <= 14 || fy >= HALF_H_FT - 14)) return "corner3";
     if (dist > 25) return "deep3";
     return Math.abs(fy - BASKET_FT.y) > 9 ? "wing3" : "top3";
   }
