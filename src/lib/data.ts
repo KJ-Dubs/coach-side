@@ -155,3 +155,55 @@ export async function createGame(input: {
   if (error) throw error;
   return data as unknown as Game;
 }
+
+/* ---------------- accounts & organizations ---------------- */
+
+export type Profile = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  org_id: string | null;
+};
+
+export async function fetchProfile(): Promise<Profile | null> {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return null;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id,email,full_name,org_id")
+    .eq("id", auth.user.id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as unknown as Profile) ?? null;
+}
+
+export async function fetchOrg(orgId: string) {
+  const { data, error } = await supabase
+    .from("organizations")
+    .select("id,name")
+    .eq("id", orgId)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as unknown as { id: string; name: string }) ?? null;
+}
+
+export async function createTeam(input: { name: string; season: string; orgId: string | null }) {
+  const { data, error } = await supabase
+    .from("teams")
+    .insert({ name: input.name, season: input.season, org_id: input.orgId } as never)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as unknown as Team;
+}
+
+export async function endGame(
+  gameId: string,
+  patch: { team_score: number; opp_score: number; quarter: number; clock_seconds: number },
+) {
+  const { error } = await supabase
+    .from("games")
+    .update({ ...patch, status: "final", ended_at: new Date().toISOString() } as never)
+    .eq("id", gameId);
+  if (error) throw error;
+}
