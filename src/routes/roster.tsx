@@ -126,9 +126,15 @@ function RosterPage() {
             </div>
             <input
               className={inputCls}
-              placeholder="New team name"
+              placeholder="New team name (e.g. Varsity, JV)"
               value={newTeam}
               onChange={(e) => setNewTeam(e.target.value)}
+            />
+            <input
+              className={inputCls}
+              placeholder="Season (e.g. 2025-26)"
+              value={newSeason}
+              onChange={(e) => setNewSeason(e.target.value)}
             />
             <BubbleButton tone="flame" disabled={!newTeam} onClick={() => addTeam.mutate()}>
               Create Team
