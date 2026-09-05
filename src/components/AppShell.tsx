@@ -17,9 +17,9 @@ export function AppShell({
 }: {
   children: ReactNode;
   title: string;
-  subtitle?: string;
-  actions?: ReactNode;
-  wide?: boolean;
+  subtitle?: string | undefined;
+  actions?: ReactNode | undefined;
+  wide?: boolean | undefined;
 }) {
   return (
     <div className="min-h-screen px-3 py-3 sm:px-5 sm:py-5">

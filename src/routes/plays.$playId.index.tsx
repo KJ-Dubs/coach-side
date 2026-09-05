@@ -148,15 +148,15 @@ function PlayDesignerPage() {
   const addFrame = (duplicate: boolean) => {
     setFrames((prev) => {
       const base = prev[current];
-      const next: PlayFrame = duplicate
-        ? {
-            ...base,
-            id: uuid(),
-            actions: [],
-            tokens: base.tokens.map((t) => ({ ...t })),
-            note: base.note,
-          }
-        : blankFrame(playId, prev.length);
+      const next: PlayFrame =
+        duplicate && base
+          ? {
+              ...base,
+              id: uuid(),
+              actions: [],
+              tokens: base.tokens.map((t) => ({ ...t })),
+            }
+          : blankFrame(playId, prev.length);
       const out = [...prev];
       out.splice(current + 1, 0, next);
       return out.map((f, i) => ({ ...f, idx: i }));

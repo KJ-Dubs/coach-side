@@ -20,6 +20,7 @@ function ActionShape({ a, flip }: { a: PlayAction; flip: boolean }) {
   if (pts.length < 2) return null;
   const start = pts[0];
   const end = pts[pts.length - 1];
+  if (!start || !end) return null;
   const color = ACTION_COLOR[a.type] ?? "var(--grape)";
   const angle = Math.atan2(end.y - start.y, end.x - start.x);
   const mid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
@@ -103,12 +104,12 @@ export function PlayCanvas({
   ghost,
 }: {
   frame: PlayFrame | undefined;
-  flip?: boolean;
-  className?: string;
-  onCourtPoint?: (p: { x: number; y: number }) => void;
-  onCourtPointerMove?: (p: { x: number; y: number }) => void;
-  onCourtPointerUp?: (p: { x: number; y: number }) => void;
-  ghost?: { from: { x: number; y: number }; to: { x: number; y: number } } | null;
+  flip?: boolean | undefined;
+  className?: string | undefined;
+  onCourtPoint?: ((p: { x: number; y: number }) => void) | undefined;
+  onCourtPointerMove?: ((p: { x: number; y: number }) => void) | undefined;
+  onCourtPointerUp?: ((p: { x: number; y: number }) => void) | undefined;
+  ghost?: { from: { x: number; y: number }; to: { x: number; y: number } } | null | undefined;
 }) {
   return (
     <Court

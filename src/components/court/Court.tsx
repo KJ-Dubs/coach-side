@@ -9,16 +9,16 @@ import { useRef } from "react";
  */
 
 type CourtProps = {
-  variant?: "half" | "full";
-  className?: string;
+  variant?: "half" | "full" | undefined;
+  className?: string | undefined;
   /** SVG-space extras (markers, arrows) drawn on top of the court lines. */
-  children?: ReactNode;
+  children?: ReactNode | undefined;
   /** HTML overlay layer rendered above the svg. */
-  overlay?: ReactNode;
-  onCourtPoint?: (p: { x: number; y: number }) => void;
-  onCourtPointerMove?: (p: { x: number; y: number }) => void;
-  onCourtPointerUp?: (p: { x: number; y: number }) => void;
-  cursor?: string;
+  overlay?: ReactNode | undefined;
+  onCourtPoint?: ((p: { x: number; y: number }) => void) | undefined;
+  onCourtPointerMove?: ((p: { x: number; y: number }) => void) | undefined;
+  onCourtPointerUp?: ((p: { x: number; y: number }) => void) | undefined;
+  cursor?: string | undefined;
 };
 
 export const COURT_VIEW = {
