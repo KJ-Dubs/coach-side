@@ -545,23 +545,27 @@ function LiveGamePage() {
                   </div>
                 ) : null}
 
-                {/* shot markers for the current game */}
+                {/* location markers for the current game */}
                 <svg className="pointer-events-none absolute inset-0 h-full w-full">
                   {events
-                    .filter((e) => e.x != null && (e.event_type === "MADE" || e.event_type === "MISS"))
-                    .slice(-40)
-                    .map((e) => (
-                      <circle
-                        key={e.id}
-                        cx={`${(e.x as number) * 100}%`}
-                        cy={`${(e.y as number) * 100}%`}
-                        r={5}
-                        fill={e.event_type === "MADE" ? "var(--flame)" : "transparent"}
-                        stroke={e.event_type === "MADE" ? "var(--flame)" : "var(--grape)"}
-                        strokeWidth={2}
-                        opacity={0.75}
-                      />
-                    ))}
+                    .filter((e) => e.x != null)
+                    .slice(-60)
+                    .map((e) => {
+                      const hollow = e.event_type === "MISS" || e.event_type === "FT_MISS";
+                      const c = statColor(String(e.event_type));
+                      return (
+                        <circle
+                          key={e.id}
+                          cx={`${(e.x as number) * 100}%`}
+                          cy={`${(e.y as number) * 100}%`}
+                          r={5}
+                          fill={hollow ? "transparent" : c}
+                          stroke={c}
+                          strokeWidth={2}
+                          opacity={0.8}
+                        />
+                      );
+                    })}
                 </svg>
               </>
             }
