@@ -578,7 +578,10 @@ function LiveGamePage() {
             <div className="grid grid-cols-3 gap-2">
               <StatTile label={game.data ? "Us" : "Team"} value={teamScore} tone="grape" />
               <StatTile label="Opp" value={oppScore} tone="flame" />
-              <StatTile label="Period" value={`Q${quarter}`} />
+              <StatTile
+                label="Period"
+                value={isOvertime ? `OT${quarter - periods}` : `Q${quarter}`}
+              />
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Pill tone="neutral" className="text-sm">
