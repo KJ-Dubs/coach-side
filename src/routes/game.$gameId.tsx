@@ -180,6 +180,8 @@ function LiveGamePage() {
     .reduce((s, e) => s + (e.points || 0), 0);
   const teamFouls = events.filter((e) => e.event_type === "FOUL" && e.quarter === quarter).length;
   const oppFouls = events.filter((e) => e.event_type === "OPP_FOUL" && e.quarter === quarter).length;
+  const periods = game.data?.periods ?? 4;
+  const isOvertime = quarter > periods;
 
   /* ---------------- event helpers ---------------- */
   const addEvent = useCallback(
