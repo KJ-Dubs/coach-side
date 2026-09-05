@@ -8,7 +8,7 @@ export const HALF_H_FT = 50;
 export const BASKET_FT = { x: 5.25, y: 25 };
 export const THREE_RADIUS_FT = 19.75; // high school arc
 export const CORNER_INSET_FT = 5.25;
-export const CORNER_BREAK_X_FT = 9.86; // where the arc meets the straight corner line
+export const CORNER_BREAK_X_FT = 5.25; // where the arc meets the straight corner line
 
 export type Zone =
   | "rim"
@@ -29,12 +29,6 @@ export function distanceFt(x: number, y: number) {
 }
 
 export function isThree(x: number, y: number) {
-  const { fx, fy } = toFeet(x, y);
-  const inCornerBand = Math.abs(fy - BASKET_FT.y) > THREE_RADIUS_FT - 0.01;
-  if (fx <= CORNER_BREAK_X_FT) {
-    return fy <= CORNER_INSET_FT || fy >= HALF_H_FT - CORNER_INSET_FT;
-  }
-  if (inCornerBand) return true;
   return distanceFt(x, y) > THREE_RADIUS_FT;
 }
 
@@ -42,7 +36,7 @@ export function zoneOf(x: number, y: number): Zone {
   const { fx, fy } = toFeet(x, y);
   const dist = distanceFt(x, y);
   if (isThree(x, y)) {
-    if (fx <= CORNER_BREAK_X_FT) return "corner3";
+    if (fy <= 14 || fy >= HALF_H_FT - 14) return "corner3";
     if (dist > 25) return "deep3";
     return Math.abs(fy - BASKET_FT.y) > 9 ? "wing3" : "top3";
   }
