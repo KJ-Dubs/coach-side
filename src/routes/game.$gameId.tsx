@@ -116,7 +116,7 @@ function LiveGamePage() {
       if (cancelled) return;
       setEvents(merged);
       const g = game.data;
-      setLineup(cachedState?.lineup ?? g?.starting_five ?? []);
+      setLineup(cachedState?.lineup?.length ? cachedState.lineup : (g?.starting_five ?? []));
       setQuarter(cachedState?.quarter ?? g?.quarter ?? 1);
       setClock(cachedState?.clock ?? (g?.period_minutes ?? 8) * 60);
       setLoaded(true);
