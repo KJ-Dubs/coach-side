@@ -9,7 +9,7 @@ import { fetchFrames, fetchPlay, saveFrames, updatePlay } from "@/lib/data";
 import { PLAY_CATEGORIES, type PlayAction, type PlayActionType, type PlayFrame } from "@/lib/types";
 import { uuid } from "@/lib/offline";
 
-export const Route = createFileRoute("/plays/$playId")({
+export const Route = createFileRoute("/plays/$playId/")({
   head: () => ({
     meta: [
       { title: "Play Designer — CourtFlow Coach" },

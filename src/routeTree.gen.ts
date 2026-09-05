@@ -14,7 +14,9 @@ import { Route as RosterRouteImport } from './routes/roster'
 import { Route as GameGameIdRouteImport } from './routes/game.$gameId'
 import { Route as GamesNewRouteImport } from './routes/games.new'
 import { Route as PlaysIndexRouteImport } from './routes/plays.index'
+import { Route as PlaysPlayIdRouteImport } from './routes/plays.$playId'
 import { Route as ReviewGameIdRouteImport } from './routes/review.$gameId'
+import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as PlaysPlayIdViewRouteImport } from './routes/plays.$playId.view'
 
 const IndexRoute = IndexRouteImport.update({
@@ -42,15 +44,25 @@ const PlaysIndexRoute = PlaysIndexRouteImport.update({
   path: '/plays/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlaysPlayIdRoute = PlaysPlayIdRouteImport.update({
+  id: '/plays/$playId',
+  path: '/plays/$playId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReviewGameIdRoute = ReviewGameIdRouteImport.update({
   id: '/review/$gameId',
   path: '/review/$gameId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PlaysPlayIdViewRoute = PlaysPlayIdViewRouteImport.update({
-  id: '/plays/$playId/view',
-  path: '/plays/$playId/view',
+const ShareTokenRoute = ShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PlaysPlayIdViewRoute = PlaysPlayIdViewRouteImport.update({
+  id: '/view',
+  path: '/view',
+  getParentRoute: () => PlaysPlayIdRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -58,7 +70,9 @@ export interface FileRoutesByFullPath {
   '/roster': typeof RosterRoute
   '/game/$gameId': typeof GameGameIdRoute
   '/games/new': typeof GamesNewRoute
+  '/plays/$playId': typeof PlaysPlayIdRouteWithChildren
   '/review/$gameId': typeof ReviewGameIdRoute
+  '/share/$token': typeof ShareTokenRoute
   '/plays/': typeof PlaysIndexRoute
   '/plays/$playId/view': typeof PlaysPlayIdViewRoute
 }
@@ -67,7 +81,9 @@ export interface FileRoutesByTo {
   '/roster': typeof RosterRoute
   '/game/$gameId': typeof GameGameIdRoute
   '/games/new': typeof GamesNewRoute
+  '/plays/$playId': typeof PlaysPlayIdRouteWithChildren
   '/review/$gameId': typeof ReviewGameIdRoute
+  '/share/$token': typeof ShareTokenRoute
   '/plays': typeof PlaysIndexRoute
   '/plays/$playId/view': typeof PlaysPlayIdViewRoute
 }
@@ -77,7 +93,9 @@ export interface FileRoutesById {
   '/roster': typeof RosterRoute
   '/game/$gameId': typeof GameGameIdRoute
   '/games/new': typeof GamesNewRoute
+  '/plays/$playId': typeof PlaysPlayIdRouteWithChildren
   '/review/$gameId': typeof ReviewGameIdRoute
+  '/share/$token': typeof ShareTokenRoute
   '/plays/': typeof PlaysIndexRoute
   '/plays/$playId/view': typeof PlaysPlayIdViewRoute
 }
@@ -88,7 +106,9 @@ export interface FileRouteTypes {
     | '/roster'
     | '/game/$gameId'
     | '/games/new'
+    | '/plays/$playId'
     | '/review/$gameId'
+    | '/share/$token'
     | '/plays/'
     | '/plays/$playId/view'
   fileRoutesByTo: FileRoutesByTo
@@ -97,7 +117,9 @@ export interface FileRouteTypes {
     | '/roster'
     | '/game/$gameId'
     | '/games/new'
+    | '/plays/$playId'
     | '/review/$gameId'
+    | '/share/$token'
     | '/plays'
     | '/plays/$playId/view'
   id:
@@ -106,7 +128,9 @@ export interface FileRouteTypes {
     | '/roster'
     | '/game/$gameId'
     | '/games/new'
+    | '/plays/$playId'
     | '/review/$gameId'
+    | '/share/$token'
     | '/plays/'
     | '/plays/$playId/view'
   fileRoutesById: FileRoutesById
@@ -116,9 +140,10 @@ export interface RootRouteChildren {
   RosterRoute: typeof RosterRoute
   GameGameIdRoute: typeof GameGameIdRoute
   GamesNewRoute: typeof GamesNewRoute
+  PlaysPlayIdRoute: typeof PlaysPlayIdRouteWithChildren
   ReviewGameIdRoute: typeof ReviewGameIdRoute
+  ShareTokenRoute: typeof ShareTokenRoute
   PlaysIndexRoute: typeof PlaysIndexRoute
-  PlaysPlayIdViewRoute: typeof PlaysPlayIdViewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -158,6 +183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlaysIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/plays/$playId': {
+      id: '/plays/$playId'
+      path: '/plays/$playId'
+      fullPath: '/plays/$playId'
+      preLoaderRoute: typeof PlaysPlayIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/review/$gameId': {
       id: '/review/$gameId'
       path: '/review/$gameId'
@@ -165,24 +197,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReviewGameIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/share/$token': {
+      id: '/share/$token'
+      path: '/share/$token'
+      fullPath: '/share/$token'
+      preLoaderRoute: typeof ShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/plays/$playId/view': {
       id: '/plays/$playId/view'
-      path: '/plays/$playId/view'
+      path: '/view'
       fullPath: '/plays/$playId/view'
       preLoaderRoute: typeof PlaysPlayIdViewRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof PlaysPlayIdRoute
     }
   }
 }
+
+interface PlaysPlayIdRouteChildren {
+  PlaysPlayIdViewRoute: typeof PlaysPlayIdViewRoute
+}
+
+const PlaysPlayIdRouteChildren: PlaysPlayIdRouteChildren = {
+  PlaysPlayIdViewRoute: PlaysPlayIdViewRoute,
+}
+
+const PlaysPlayIdRouteWithChildren = PlaysPlayIdRoute._addFileChildren(
+  PlaysPlayIdRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RosterRoute: RosterRoute,
   GameGameIdRoute: GameGameIdRoute,
   GamesNewRoute: GamesNewRoute,
+  PlaysPlayIdRoute: PlaysPlayIdRouteWithChildren,
   ReviewGameIdRoute: ReviewGameIdRoute,
+  ShareTokenRoute: ShareTokenRoute,
   PlaysIndexRoute: PlaysIndexRoute,
-  PlaysPlayIdViewRoute: PlaysPlayIdViewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
