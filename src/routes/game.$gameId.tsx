@@ -457,12 +457,12 @@ function LiveGamePage() {
 
   return (
     <div className="min-h-screen p-2 sm:p-3">
-      <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-2 xl:flex-row">
+      <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-2 lg:flex-row">
         {/* COURT — always visible, never replaced */}
         <div className="flex flex-1 items-start justify-center">
           <Court
             className="mx-auto w-full"
-            style={{ maxWidth: "min(100%, calc(92vh * 0.94))" }}
+            style={{ maxWidth: "min(100%, calc(96vh * 0.94))" }}
             onCourtPoint={onCourtPoint}
             overlay={
               <>
@@ -523,7 +523,7 @@ function LiveGamePage() {
         </div>
 
         {/* CONTROL RAIL */}
-        <div className="flex w-full flex-col gap-2 xl:w-[360px]">
+        <div className="flex w-full flex-col gap-2 lg:w-[340px] xl:w-[380px]">
           <Panel className="flex flex-col gap-2 p-2">
             <div className="grid grid-cols-3 gap-2">
               <StatTile label={game.data ? "Us" : "Team"} value={teamScore} tone="grape" />

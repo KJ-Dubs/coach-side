@@ -32,12 +32,14 @@ function HalfLines({ mirrored = false }: { mirrored?: boolean }) {
   const g = (
     <g fill="none" stroke="var(--court-line)" strokeWidth={3}>
       <line x1={0} y1={0} x2={0} y2={500} />
-      {/* paint */}
-      <rect x={0} y={170} width={190} height={160} />
+      {/* paint (12ft wide, 19ft deep) */}
+      <rect x={0} y={190} width={190} height={120} />
       <circle cx={190} cy={250} r={60} />
       {/* restricted + rim */}
       <path d={`M 52.5 210 A 40 40 0 0 1 52.5 290`} strokeWidth={2} />
-      <line x1={40} y1={228} x2={40} y2={272} strokeWidth={6} stroke="var(--flame)" />
+      {/* backboard */}
+      <line x1={40} y1={220} x2={40} y2={280} strokeWidth={6} stroke="var(--flame)" />
+      <line x1={40} y1={250} x2={49} y2={250} strokeWidth={3} stroke="var(--flame)" />
       <circle cx={52.5} cy={250} r={9} stroke="var(--flame)" strokeWidth={3} />
       {/* three point line */}
       <path
