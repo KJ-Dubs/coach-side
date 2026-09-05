@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { statColor } from "@/lib/statColors";
 import { Court } from "@/components/court/Court";
 import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
 import { fetchEvents, fetchGame, fetchPlayers } from "@/lib/data";
@@ -83,6 +85,9 @@ function LiveGamePage() {
   const [activePlayer, setActivePlayer] = useState<string | null>(null);
   const [subOut, setSubOut] = useState<string | null>(null);
   const [showBench, setShowBench] = useState(false);
+  const [ftPlayer, setFtPlayer] = useState<string | null>(null);
+  const [finalized, setFinalized] = useState(false);
+  const [endPrompt, setEndPrompt] = useState(false);
 
   const stateKey = `game-state-${gameId}`;
   const eventsKey = `game-events-${gameId}`;
@@ -170,11 +175,15 @@ function LiveGamePage() {
   const bench = roster.filter((p) => p.active && !lineup.includes(p.id));
 
   const teamScore = events
-    .filter((e) => e.event_type === "MADE")
+    .filter((e) => e.event_type !== "OPP_SCORE")
     .reduce((s, e) => s + (e.points || 0), 0);
   const oppScore = events
     .filter((e) => e.event_type === "OPP_SCORE")
     .reduce((s, e) => s + (e.points || 0), 0);
+  const teamFouls = events.filter((e) => e.event_type === "FOUL" && e.quarter === quarter).length;
+  const oppFouls = events.filter((e) => e.event_type === "OPP_FOUL" && e.quarter === quarter).length;
+  const periods = game.data?.periods ?? 4;
+  const isOvertime = quarter > periods;
 
   /* ---------------- event helpers ---------------- */
   const addEvent = useCallback(
@@ -217,6 +226,43 @@ function LiveGamePage() {
     setStep({ kind: "idle" });
     setActivePlayer(null);
   };
+
+  /* ---------------- end of game ---------------- */
+  const saveGameState = useCallback(
+    (status: "live" | "final") => {
+      void enqueue({
+        id: opId(),
+        kind: "update_game",
+        payload: {
+          id: gameId,
+          status,
+          quarter,
+          clock_seconds: clockRef.current,
+          team_score: teamScore,
+          opp_score: oppScore,
+          ...(status === "final" ? { ended_at: new Date().toISOString() } : {}),
+        },
+      }).then(() => flushQueue().then(setPending));
+    },
+    [gameId, quarter, teamScore, oppScore],
+  );
+
+  const finishGame = useCallback(() => {
+    setRunning(false);
+    setFinalized(true);
+    setEndPrompt(true);
+    saveGameState("final");
+    toast.success("Game saved as final");
+  }, [saveGameState]);
+
+  // Time expired in the final period → auto-end and save.
+  useEffect(() => {
+    if (!loaded || finalized) return;
+    if (clock > 0) return;
+    setRunning(false);
+    if (quarter >= (game.data?.periods ?? 4)) finishGame();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clock, loaded, finalized, quarter]);
 
   /* ---------------- court tap ---------------- */
   const onCourtPoint = (p: { x: number; y: number }) => {
@@ -499,23 +545,27 @@ function LiveGamePage() {
                   </div>
                 ) : null}
 
-                {/* shot markers for the current game */}
+                {/* location markers for the current game */}
                 <svg className="pointer-events-none absolute inset-0 h-full w-full">
                   {events
-                    .filter((e) => e.x != null && (e.event_type === "MADE" || e.event_type === "MISS"))
-                    .slice(-40)
-                    .map((e) => (
-                      <circle
-                        key={e.id}
-                        cx={`${(e.x as number) * 100}%`}
-                        cy={`${(e.y as number) * 100}%`}
-                        r={5}
-                        fill={e.event_type === "MADE" ? "var(--flame)" : "transparent"}
-                        stroke={e.event_type === "MADE" ? "var(--flame)" : "var(--grape)"}
-                        strokeWidth={2}
-                        opacity={0.75}
-                      />
-                    ))}
+                    .filter((e) => e.x != null)
+                    .slice(-60)
+                    .map((e) => {
+                      const hollow = e.event_type === "MISS" || e.event_type === "FT_MISS";
+                      const c = statColor(String(e.event_type));
+                      return (
+                        <circle
+                          key={e.id}
+                          cx={`${(e.x as number) * 100}%`}
+                          cy={`${(e.y as number) * 100}%`}
+                          r={5}
+                          fill={hollow ? "transparent" : c}
+                          stroke={c}
+                          strokeWidth={2}
+                          opacity={0.8}
+                        />
+                      );
+                    })}
                 </svg>
               </>
             }
@@ -528,7 +578,10 @@ function LiveGamePage() {
             <div className="grid grid-cols-3 gap-2">
               <StatTile label={game.data ? "Us" : "Team"} value={teamScore} tone="grape" />
               <StatTile label="Opp" value={oppScore} tone="flame" />
-              <StatTile label="Period" value={`Q${quarter}`} />
+              <StatTile
+                label="Period"
+                value={isOvertime ? `OT${quarter - periods}` : `Q${quarter}`}
+              />
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Pill tone="neutral" className="text-sm">
@@ -546,8 +599,9 @@ function LiveGamePage() {
               <BubbleButton
                 size="sm"
                 tone="neutral"
+                disabled={quarter >= periods}
                 onClick={() => {
-                  setQuarter((q) => Math.min((game.data?.periods ?? 4) + 2, q + 1));
+                  setQuarter((q) => q + 1);
                   setClock((game.data?.period_minutes ?? 8) * 60);
                   setRunning(false);
                 }}
@@ -571,6 +625,132 @@ function LiveGamePage() {
                 {online ? (pending ? `Syncing ${pending}` : "Synced") : `Offline · ${pending} queued`}
               </Pill>
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Pill tone="muted">Team fouls {teamFouls}</Pill>
+              <Pill tone="muted">Opponent fouls {oppFouls}</Pill>
+              <BubbleButton
+                size="sm"
+                tone="flame"
+                onClick={() => addEvent({ event_type: "OPP_FOUL" })}
+              >
+                + Opp foul
+              </BubbleButton>
+            </div>
+          </Panel>
+
+          {/* FREE THROWS */}
+          <Panel className="flex flex-col gap-2 p-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Label>Free throws</Label>
+              {ftPlayer ? (
+                <Pill tone="grape">Shooter #{byId.get(ftPlayer)?.jersey ?? "?"}</Pill>
+              ) : (
+                <Pill tone="muted">Tap a shooter</Pill>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {onFloor.map((p) => (
+                <BubbleButton
+                  key={p.id}
+                  size="sm"
+                  tone={ftPlayer === p.id ? "grape" : "neutral"}
+                  onClick={() => setFtPlayer(p.id)}
+                >
+                  #{p.jersey}
+                </BubbleButton>
+              ))}
+              {bench.map((p) => (
+                <BubbleButton
+                  key={p.id}
+                  size="sm"
+                  tone={ftPlayer === p.id ? "grape" : "ghost"}
+                  onClick={() => setFtPlayer(p.id)}
+                >
+                  #{p.jersey}
+                </BubbleButton>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <BubbleButton
+                size="sm"
+                tone="grape"
+                disabled={!ftPlayer}
+                onClick={() =>
+                  ftPlayer &&
+                  addEvent({
+                    event_type: "FT_MADE",
+                    player_id: ftPlayer,
+                    points: 1,
+                    x: 0.404,
+                    y: 0.5,
+                    zone: "freethrow",
+                    result: "FT",
+                  })
+                }
+              >
+                FT MAKE
+              </BubbleButton>
+              <BubbleButton
+                size="sm"
+                tone="flame"
+                disabled={!ftPlayer}
+                onClick={() =>
+                  ftPlayer &&
+                  addEvent({
+                    event_type: "FT_MISS",
+                    player_id: ftPlayer,
+                    x: 0.404,
+                    y: 0.5,
+                    zone: "freethrow",
+                    result: "FT",
+                  })
+                }
+              >
+                FT MISS
+              </BubbleButton>
+              <BubbleButton size="sm" tone="ghost" disabled={!ftPlayer} onClick={() => setFtPlayer(null)}>
+                Done
+              </BubbleButton>
+            </div>
+          </Panel>
+
+          {/* END OF GAME */}
+          <Panel className="flex flex-col gap-2 p-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Label>Game status</Label>
+              <Pill tone={finalized ? "muted" : "grape"}>{finalized ? "Final — saved" : "In progress"}</Pill>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <BubbleButton size="sm" tone="danger" onClick={finishGame}>
+                End Game & Save
+              </BubbleButton>
+              <BubbleButton
+                size="sm"
+                tone="grape"
+                disabled={quarter < periods}
+                onClick={() => {
+                  setQuarter((q) => Math.max(periods, q) + 1);
+                  setClock(4 * 60);
+                  setRunning(false);
+                  setFinalized(false);
+                  setEndPrompt(false);
+                  saveGameState("live");
+                  toast.success("Overtime started");
+                }}
+              >
+                + Overtime
+              </BubbleButton>
+              <Link to="/review/$gameId" params={{ gameId }}>
+                <BubbleButton size="sm" tone="neutral">
+                  Stats & PDF
+                </BubbleButton>
+              </Link>
+            </div>
+            {endPrompt ? (
+              <Pill tone="flame">
+                Time expired — game saved. Start overtime or open the report.
+              </Pill>
+            ) : null}
           </Panel>
 
           <Panel className="flex flex-col gap-2 p-2">

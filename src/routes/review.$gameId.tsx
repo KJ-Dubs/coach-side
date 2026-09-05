@@ -1,34 +1,47 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
 import { Court } from "@/components/court/Court";
 import { fetchEvents, fetchGame, fetchPlayers, fetchSubs } from "@/lib/data";
 import { formatClock, ZONE_LABEL, type Zone } from "@/lib/court";
+import { statColor, STAT_LABELS } from "@/lib/statColors";
+import { buildGamePdf, boxRow } from "@/lib/pdf";
 import { supabase } from "@/integrations/supabase/client";
 import type { GameEvent } from "@/lib/types";
 
 export const Route = createFileRoute("/review/$gameId")({
   head: () => ({
     meta: [
-      { title: "Game Review — CourtFlow Coach" },
+      { title: "Game Report — CourtFlow Coach" },
       {
         name: "description",
         content:
-          "Box score, shot charts by zone, rebound and turnover maps, and the substitution timeline.",
+          "Box score, colour-coded shot and rebound maps by team or player, plus a shareable PDF game report.",
       },
-      { property: "og:title", content: "Game Review — CourtFlow Coach" },
+      { property: "og:title", content: "Game Report — CourtFlow Coach" },
       {
         property: "og:description",
-        content: "Box score, shot charts, location maps and substitution timeline.",
+        content: "Colour-coded location maps, box score and shareable PDF reports.",
       },
     ],
   }),
   component: ReviewPage,
 });
 
-const CHART_TYPES = ["SHOTS", "REBOUND", "STEAL", "TURNOVER", "FOUL"] as const;
+const MAP_TYPES = [
+  "ALL",
+  "MADE",
+  "MISS",
+  "REBOUND",
+  "ASSIST",
+  "STEAL",
+  "TURNOVER",
+  "BLOCK",
+  "FOUL",
+] as const;
 
 function ReviewPage() {
   const { gameId } = Route.useParams();
@@ -43,12 +56,16 @@ function ReviewPage() {
 
   const [playerFilter, setPlayerFilter] = useState<string | "ALL">("ALL");
   const [quarterFilter, setQuarterFilter] = useState<number | "ALL">("ALL");
-  const [chart, setChart] = useState<(typeof CHART_TYPES)[number]>("SHOTS");
+  const [mapType, setMapType] = useState<(typeof MAP_TYPES)[number]>("ALL");
 
   const events = eventsQ.data ?? [];
   const roster = players.data ?? [];
   const byId = useMemo(() => new Map(roster.map((p) => [p.id, p])), [roster]);
   const jersey = (id: string | null) => (id ? `#${byId.get(id)?.jersey ?? "?"}` : "OPP");
+
+  const periods = game.data?.periods ?? 4;
+  const maxPeriod = events.reduce((m, e) => Math.max(m, e.quarter), periods);
+  const periodList = Array.from({ length: maxPeriod }, (_, i) => i + 1);
 
   const filtered = events.filter(
     (e) =>
@@ -56,31 +73,18 @@ function ReviewPage() {
       (quarterFilter === "ALL" || e.quarter === quarterFilter),
   );
 
-  const chartEvents = filtered.filter((e) => {
+  const mapEvents = filtered.filter((e) => {
     if (e.x == null || e.y == null) return false;
-    if (chart === "SHOTS") return e.event_type === "MADE" || e.event_type === "MISS";
-    return e.event_type === chart;
+    if (mapType === "ALL")
+      return ["MADE", "MISS", "FT_MADE", "FT_MISS", "REBOUND", "ASSIST", "STEAL", "TURNOVER", "BLOCK", "FOUL"].includes(
+        String(e.event_type),
+      );
+    if (mapType === "MADE") return e.event_type === "MADE" || e.event_type === "FT_MADE";
+    if (mapType === "MISS") return e.event_type === "MISS" || e.event_type === "FT_MISS";
+    return e.event_type === mapType;
   });
 
-  const box = roster.map((p) => {
-    const own = events.filter((e) => e.player_id === p.id);
-    const fga = own.filter((e) => e.event_type === "MADE" || e.event_type === "MISS").length;
-    const fgm = own.filter((e) => e.event_type === "MADE").length;
-    const threes = own.filter((e) => e.event_type === "MADE" && e.points === 3).length;
-    return {
-      p,
-      pts: own.reduce((s, e) => s + (e.points || 0), 0),
-      fgm,
-      fga,
-      threes,
-      reb: own.filter((e) => e.event_type === "REBOUND").length,
-      ast: own.filter((e) => e.event_type === "ASSIST").length,
-      stl: own.filter((e) => e.event_type === "STEAL").length,
-      to: own.filter((e) => e.event_type === "TURNOVER").length,
-      blk: own.filter((e) => e.event_type === "BLOCK").length,
-      pf: own.filter((e) => e.event_type === "FOUL").length,
-    };
-  });
+  const box = roster.map((p) => ({ p, ...boxRow(p, events) }));
 
   const zones: Zone[] = ["rim", "paint", "midrange", "corner3", "wing3", "top3", "deep3"];
   const zoneRows = zones.map((z) => {
@@ -91,32 +95,72 @@ function ReviewPage() {
     return { z, made, att: shots.length };
   });
 
-  const teamScore = events.filter((e) => e.event_type === "MADE").reduce((s, e) => s + e.points, 0);
+  const teamScore = events
+    .filter((e) => e.event_type !== "OPP_SCORE")
+    .reduce((s, e) => s + (e.points || 0), 0);
   const oppScore = events
     .filter((e) => e.event_type === "OPP_SCORE")
-    .reduce((s, e) => s + e.points, 0);
+    .reduce((s, e) => s + (e.points || 0), 0);
+  const oppFouls = events.filter((e) => e.event_type === "OPP_FOUL").length;
 
   const deleteEvent = async (e: GameEvent) => {
     await supabase.from("game_events").delete().eq("id", e.id);
     void eventsQ.refetch();
   };
 
+  const exportPdf = (scope: "team" | "player") => {
+    if (!game.data) return;
+    const selected =
+      scope === "player" && playerFilter !== "ALL"
+        ? roster.filter((p) => p.id === playerFilter)
+        : roster;
+    const doc = buildGamePdf({
+      title: `${game.data.opponent} — Game Report`,
+      subtitle: `${game.data.game_date} · CourtFlow Coach`,
+      players: selected,
+      events,
+      teamScore,
+      oppScore,
+      zones,
+    });
+    doc.save(
+      scope === "player" && playerFilter !== "ALL"
+        ? `player-${byId.get(playerFilter)?.jersey}-report.pdf`
+        : `team-game-report.pdf`,
+    );
+    toast.success("PDF report downloaded");
+  };
+
   return (
     <AppShell
       wide
-      title={game.data ? `${game.data.opponent} — Review` : "Game Review"}
+      title={game.data ? `${game.data.opponent} — Report` : "Game Report"}
       subtitle={game.data?.game_date}
       actions={
-        <Link to="/game/$gameId" params={{ gameId }}>
-          <BubbleButton tone="flame" size="sm">
-            Back To Live Court
+        <>
+          <BubbleButton size="sm" tone="grape" onClick={() => exportPdf("team")}>
+            PDF · Whole team
           </BubbleButton>
-        </Link>
+          <BubbleButton
+            size="sm"
+            tone="flame"
+            disabled={playerFilter === "ALL"}
+            onClick={() => exportPdf("player")}
+          >
+            PDF · Selected player
+          </BubbleButton>
+          <Link to="/game/$gameId" params={{ gameId }}>
+            <BubbleButton tone="neutral" size="sm">
+              Back To Live Court
+            </BubbleButton>
+          </Link>
+        </>
       }
     >
-      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
         <StatTile label="Us" value={teamScore} tone="grape" />
         <StatTile label="Opponent" value={oppScore} tone="flame" />
+        <StatTile label="Opp fouls" value={oppFouls} />
         <StatTile label="Events" value={events.length} />
         <StatTile label="Subs" value={subsQ.data?.length ?? 0} />
       </div>
@@ -128,7 +172,7 @@ function ReviewPage() {
           tone={playerFilter === "ALL" ? "grape" : "neutral"}
           onClick={() => setPlayerFilter("ALL")}
         >
-          All players
+          Whole team
         </BubbleButton>
         {roster.map((p) => (
           <BubbleButton
@@ -148,14 +192,14 @@ function ReviewPage() {
         >
           All periods
         </BubbleButton>
-        {[1, 2, 3, 4].map((q) => (
+        {periodList.map((q) => (
           <BubbleButton
             key={q}
             size="sm"
             tone={quarterFilter === q ? "flame" : "neutral"}
             onClick={() => setQuarterFilter(q)}
           >
-            Q{q}
+            {q > periods ? `OT${q - periods}` : `Q${q}`}
           </BubbleButton>
         ))}
       </Panel>
@@ -164,46 +208,55 @@ function ReviewPage() {
         <Panel className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <Label>Location map</Label>
-            {CHART_TYPES.map((c) => (
+            {MAP_TYPES.map((c) => (
               <BubbleButton
                 key={c}
                 size="sm"
-                tone={chart === c ? "grape" : "neutral"}
-                onClick={() => setChart(c)}
+                tone={mapType === c ? "grape" : "neutral"}
+                onClick={() => setMapType(c)}
               >
-                {c}
+                {c === "ALL" ? "EVERYTHING" : c}
               </BubbleButton>
             ))}
-            <Pill tone="muted">{chartEvents.length} plotted</Pill>
+            <Pill tone="muted">{mapEvents.length} plotted</Pill>
           </div>
           <Court
             cursor="default"
             overlay={
               <svg className="pointer-events-none absolute inset-0 h-full w-full">
-                {chartEvents.map((e) => {
-                  const made = e.event_type === "MADE";
+                {mapEvents.map((e) => {
+                  const c = statColor(String(e.event_type));
+                  const hollow = e.event_type === "MISS" || e.event_type === "FT_MISS";
                   return (
                     <circle
                       key={e.id}
                       cx={`${(e.x as number) * 100}%`}
                       cy={`${(e.y as number) * 100}%`}
                       r={7}
-                      fill={
-                        chart !== "SHOTS"
-                          ? "var(--grape)"
-                          : made
-                            ? "var(--flame)"
-                            : "transparent"
-                      }
-                      stroke={made || chart !== "SHOTS" ? "var(--flame)" : "var(--grape)"}
+                      fill={hollow ? "transparent" : c}
+                      stroke={c}
                       strokeWidth={2.5}
-                      opacity={0.85}
+                      opacity={0.8}
                     />
                   );
                 })}
               </svg>
             }
           />
+          <div className="flex flex-wrap gap-2">
+            {["MADE", "MISS", "REBOUND", "ASSIST", "STEAL", "TURNOVER", "BLOCK", "FOUL"].map((t) => (
+              <span
+                key={t}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2/70 px-3 py-1 text-xs font-semibold text-foreground"
+              >
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ background: statColor(t) }}
+                />
+                {STAT_LABELS[t] ?? t}
+              </span>
+            ))}
+          </div>
           <div className="flex flex-wrap gap-2">
             {zoneRows.map((r) => (
               <Pill key={r.z} tone={r.att ? "grape" : "muted"}>
@@ -221,7 +274,7 @@ function ReviewPage() {
               <table className="w-full text-xs font-bold">
                 <thead>
                   <tr className="text-muted-foreground">
-                    {["#", "PTS", "FG", "3", "REB", "AST", "STL", "TO", "BLK", "PF"].map((h) => (
+                    {["#", "PTS", "FG", "3", "FT", "REB", "AST", "STL", "TO", "BLK", "PF"].map((h) => (
                       <th key={h} className="px-1.5 py-1 text-left">
                         {h}
                       </th>
@@ -239,6 +292,9 @@ function ReviewPage() {
                         {r.fgm}/{r.fga}
                       </td>
                       <td className="px-1.5">{r.threes}</td>
+                      <td className="px-1.5">
+                        {r.ftm}/{r.fta}
+                      </td>
                       <td className="px-1.5">{r.reb}</td>
                       <td className="px-1.5">{r.ast}</td>
                       <td className="px-1.5">{r.stl}</td>

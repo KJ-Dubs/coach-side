@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
 import { supabase } from "@/integrations/supabase/client";
-import { DEMO_TEAM_ID, fetchPlayers, fetchTeams } from "@/lib/data";
+import { DEMO_TEAM_ID, fetchPlayers, fetchProfile, fetchTeams } from "@/lib/data";
 import type { Player } from "@/lib/types";
 
 export const Route = createFileRoute("/roster")({
@@ -42,6 +42,7 @@ function RosterPage() {
   const [name, setName] = useState("");
   const [position, setPosition] = useState("");
   const [newTeam, setNewTeam] = useState("");
+  const [newSeason, setNewSeason] = useState("");
 
   const addPlayer = useMutation({
     mutationFn: async () => {
@@ -81,9 +82,14 @@ function RosterPage() {
 
   const addTeam = useMutation({
     mutationFn: async () => {
+      const profile = await fetchProfile();
       const { data, error } = await supabase
         .from("teams")
-        .insert({ name: newTeam } as never)
+        .insert({
+          name: newTeam,
+          season: newSeason || new Date().getFullYear().toString(),
+          org_id: profile?.org_id ?? null,
+        } as never)
         .select("*")
         .single();
       if (error) throw error;
@@ -120,9 +126,15 @@ function RosterPage() {
             </div>
             <input
               className={inputCls}
-              placeholder="New team name"
+              placeholder="New team name (e.g. Varsity, JV)"
               value={newTeam}
               onChange={(e) => setNewTeam(e.target.value)}
+            />
+            <input
+              className={inputCls}
+              placeholder="Season (e.g. 2025-26)"
+              value={newSeason}
+              onChange={(e) => setNewSeason(e.target.value)}
             />
             <BubbleButton tone="flame" disabled={!newTeam} onClick={() => addTeam.mutate()}>
               Create Team
