@@ -225,6 +225,43 @@ function LiveGamePage() {
     setActivePlayer(null);
   };
 
+  /* ---------------- end of game ---------------- */
+  const saveGameState = useCallback(
+    (status: "live" | "final") => {
+      void enqueue({
+        id: opId(),
+        kind: "update_game",
+        payload: {
+          id: gameId,
+          status,
+          quarter,
+          clock_seconds: clockRef.current,
+          team_score: teamScore,
+          opp_score: oppScore,
+          ...(status === "final" ? { ended_at: new Date().toISOString() } : {}),
+        },
+      }).then(() => flushQueue().then(setPending));
+    },
+    [gameId, quarter, teamScore, oppScore],
+  );
+
+  const finishGame = useCallback(() => {
+    setRunning(false);
+    setFinalized(true);
+    setEndPrompt(true);
+    saveGameState("final");
+    toast.success("Game saved as final");
+  }, [saveGameState]);
+
+  // Time expired in the final period → auto-end and save.
+  useEffect(() => {
+    if (!loaded || finalized) return;
+    if (clock > 0) return;
+    setRunning(false);
+    if (quarter >= (game.data?.periods ?? 4)) finishGame();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clock, loaded, finalized, quarter]);
+
   /* ---------------- court tap ---------------- */
   const onCourtPoint = (p: { x: number; y: number }) => {
     if (step.kind === "reboundLoc") {
