@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { useRef } from "react";
 
 /**
@@ -19,6 +19,7 @@ type CourtProps = {
   onCourtPointerMove?: ((p: { x: number; y: number }) => void) | undefined;
   onCourtPointerUp?: ((p: { x: number; y: number }) => void) | undefined;
   cursor?: string | undefined;
+  style?: CSSProperties | undefined;
 };
 
 export const COURT_VIEW = {
@@ -57,6 +58,7 @@ export function Court({
   onCourtPointerMove,
   onCourtPointerUp,
   cursor = "crosshair",
+  style,
 }: CourtProps) {
   const view = COURT_VIEW[variant];
   const ref = useRef<HTMLDivElement>(null);
@@ -77,7 +79,7 @@ export function Court({
         "relative w-full select-none overflow-hidden rounded-3xl border-2 border-border bg-court shadow-2xl shadow-black/40",
         className,
       )}
-      style={{ aspectRatio: `${view.w} / ${view.h}`, cursor, touchAction: "none" }}
+      style={{ aspectRatio: `${view.w} / ${view.h}`, cursor, touchAction: "none", ...style }}
       onPointerDown={(e) => {
         const p = pointFrom(e);
         if (p && onCourtPoint) onCourtPoint(p);
