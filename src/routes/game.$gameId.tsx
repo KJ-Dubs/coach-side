@@ -462,7 +462,7 @@ function LiveGamePage() {
         <div className="flex flex-1 items-start justify-center">
           <Court
             className="mx-auto w-full"
-            style={{ maxWidth: "min(100%, calc(96vh * 0.94))" }}
+            style={{ maxWidth: "min(100%, calc((100dvh - 1.5rem) * 0.94))" }}
             onCourtPoint={onCourtPoint}
             overlay={
               <>
