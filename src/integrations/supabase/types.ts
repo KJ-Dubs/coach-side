@@ -87,6 +87,7 @@ export type Database = {
         Row: {
           clock_seconds: number
           created_at: string
+          ended_at: string | null
           game_date: string
           id: string
           opp_score: number
@@ -102,6 +103,7 @@ export type Database = {
         Insert: {
           clock_seconds?: number
           created_at?: string
+          ended_at?: string | null
           game_date?: string
           id?: string
           opp_score?: number
@@ -117,6 +119,7 @@ export type Database = {
         Update: {
           clock_seconds?: number
           created_at?: string
+          ended_at?: string | null
           game_date?: string
           id?: string
           opp_score?: number
@@ -138,6 +141,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       play_frames: {
         Row: {
@@ -256,6 +277,38 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          org_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          org_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          org_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       substitutions: {
         Row: {
           clock_seconds: number
@@ -316,28 +369,42 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          org_id: string | null
           season: string
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          org_id?: string | null
           season?: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          org_id?: string | null
           season?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "teams_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      game_visible: { Args: { _game: string }; Returns: boolean }
+      my_org_id: { Args: never; Returns: string }
+      play_visible: { Args: { _play: string }; Returns: boolean }
+      team_visible: { Args: { _team: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
