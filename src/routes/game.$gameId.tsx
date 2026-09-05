@@ -83,6 +83,9 @@ function LiveGamePage() {
   const [activePlayer, setActivePlayer] = useState<string | null>(null);
   const [subOut, setSubOut] = useState<string | null>(null);
   const [showBench, setShowBench] = useState(false);
+  const [ftPlayer, setFtPlayer] = useState<string | null>(null);
+  const [finalized, setFinalized] = useState(false);
+  const [endPrompt, setEndPrompt] = useState(false);
 
   const stateKey = `game-state-${gameId}`;
   const eventsKey = `game-events-${gameId}`;
