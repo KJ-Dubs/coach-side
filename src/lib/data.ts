@@ -541,26 +541,148 @@ export async function fetchTeamEvents(teamId: string): Promise<TeamEvent[]> {
   return (data ?? []) as unknown as TeamEvent[];
 }
 
-export async function createTeamEvent(input: {
+export async function fetchAllTeamEvents(): Promise<TeamEvent[]> {
+  const { data, error } = await supabase.from("team_events").select("*").order("starts_at");
+  if (error) throw error;
+  return (data ?? []) as unknown as TeamEvent[];
+}
+
+export type NewTeamEvent = {
   team_id: string;
-  kind: string;
+  event_type: string;
   title: string;
   starts_at: string;
   ends_at: string | null;
   location: string | null;
   notes: string | null;
-}): Promise<TeamEvent> {
-  const { data, error } = await supabase.from("team_events").insert(input).select("*").single();
+  opponent?: string | null;
+  home_away?: string | null;
+  arrival_at?: string | null;
+  uniform?: string | null;
+  visibility?: string;
+  timezone?: string | null;
+};
+
+export async function createTeamEvent(input: NewTeamEvent): Promise<TeamEvent> {
+  const { data: auth } = await supabase.auth.getUser();
+  const row = {
+    ...input,
+    kind:
+      input.event_type === "game" || input.event_type === "practice" ? input.event_type : "event",
+    created_by: auth.user?.id ?? null,
+    last_modified_at: new Date().toISOString(),
+  };
+  const { data, error } = await supabase.from("team_events").insert(row).select("*").single();
   if (error) throw error;
   return data as unknown as TeamEvent;
 }
 
 export async function updateTeamEvent(id: string, patch: Partial<TeamEvent>) {
-  const { error } = await supabase.from("team_events").update(patch as never).eq("id", id);
+  const next = { ...patch, last_modified_at: new Date().toISOString() };
+  if (patch.event_type) {
+    next.kind =
+      patch.event_type === "game" || patch.event_type === "practice" ? patch.event_type : "event";
+  }
+  const { error } = await supabase.from("team_events").update(next as never).eq("id", id);
   if (error) throw error;
 }
 
 export async function deleteTeamEvent(id: string) {
   const { error } = await supabase.from("team_events").delete().eq("id", id);
+  if (error) throw error;
+}
+
+/* ---------------- reminders ---------------- */
+
+export async function fetchReminders(eventIds: string[]): Promise<EventReminder[]> {
+  if (!eventIds.length) return [];
+  const { data, error } = await supabase
+    .from("event_reminders")
+    .select("*")
+    .in("event_id", eventIds);
+  if (error) throw error;
+  return (data ?? []) as unknown as EventReminder[];
+}
+
+export async function createReminders(
+  eventId: string,
+  reminders: { reminder_type: string; minutes_before: number | null; fixed_time: string | null }[],
+) {
+  if (!reminders.length) return;
+  const rows = reminders.map((r) => ({ ...r, event_id: eventId, delivery_method: "app" }));
+  const { error } = await supabase.from("event_reminders").insert(rows);
+  if (error) throw error;
+}
+
+export async function replaceReminders(
+  eventId: string,
+  reminders: { reminder_type: string; minutes_before: number | null; fixed_time: string | null }[],
+) {
+  const { error } = await supabase.from("event_reminders").delete().eq("event_id", eventId);
+  if (error) throw error;
+  await createReminders(eventId, reminders);
+}
+
+/* ---------------- calendar connection & mappings ---------------- */
+
+export async function fetchCalendarConnection(): Promise<CalendarConnection | null> {
+  const { data, error } = await supabase
+    .from("calendar_connections")
+    .select("*")
+    .eq("provider", "google")
+    .maybeSingle();
+  if (error) throw error;
+  return (data as unknown as CalendarConnection) ?? null;
+}
+
+export async function saveCalendarConnection(input: {
+  provider_account_email: string | null;
+  sync_direction: string;
+  enabled: boolean;
+}) {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth.user?.id;
+  if (!uid) throw new Error("Sign in first");
+  const { error } = await supabase
+    .from("calendar_connections")
+    .upsert({ ...input, user_id: uid, provider: "google" }, { onConflict: "user_id,provider" });
+  if (error) throw error;
+}
+
+export async function deleteCalendarConnection() {
+  const { error } = await supabase.from("calendar_connections").delete().eq("provider", "google");
+  if (error) throw error;
+}
+
+export async function fetchCalendarMappings(): Promise<CalendarMapping[]> {
+  const { data, error } = await supabase.from("calendar_mappings").select("*");
+  if (error) throw error;
+  return (data ?? []) as unknown as CalendarMapping[];
+}
+
+export async function saveCalendarMapping(input: {
+  team_id: string;
+  provider_calendar_id: string;
+  provider_calendar_name: string | null;
+  sync_direction: string;
+}) {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth.user?.id;
+  if (!uid) throw new Error("Sign in first");
+  const { error } = await supabase
+    .from("calendar_mappings")
+    .upsert(
+      { ...input, user_id: uid, provider: "google" },
+      { onConflict: "team_id,user_id,provider" },
+    );
+  if (error) throw error;
+}
+
+export async function deleteCalendarMapping(teamId: string) {
+  const { error } = await supabase
+    .from("calendar_mappings")
+    .delete()
+    .eq("team_id", teamId)
+    .eq("provider", "google");
   if (error) throw error;
 }
