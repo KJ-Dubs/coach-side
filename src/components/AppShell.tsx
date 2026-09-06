@@ -1,17 +1,36 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  BarChart3,
+  BookOpen,
+  ChevronDown,
+  ClipboardPenLine,
+  LogOut,
+  Settings,
+  Swords,
+  UserRound,
+  UsersRound,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import mark from "@/assets/coachside-mark.jpg.asset.json";
+import wordmark from "@/assets/coachside-wordmark.png.asset.json";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { initialsOf, signOut } from "@/lib/auth";
 import { useMe } from "@/lib/useMe";
 
 const QUICK = [
-  { to: "/games/new", label: "Start Game", tone: "flame" },
-  { to: "/plays", label: "Playbook", tone: "neutral" },
-  { to: "/stats/team", label: "Stats", tone: "neutral", match: "/stats" },
-  { to: "/roster", label: "Rosters", tone: "neutral" },
-  { to: "/games", label: "History", tone: "neutral" },
+  { to: "/roster", label: "Rosters", icon: UsersRound, tone: "grape" },
+  { to: "/games/new", label: "Live Game", icon: Swords, tone: "flame" },
+  { to: "/plays", label: "Playbook", icon: BookOpen, tone: "blue" },
+  { to: "/plays/new", label: "Play Maker", icon: ClipboardPenLine, tone: "rose" },
+  { to: "/stats/team", label: "Stats", icon: BarChart3, tone: "gold" },
 ] as const;
 
 export function AppShell({
@@ -39,66 +58,84 @@ export function AppShell({
   return (
     <div className="min-h-screen px-3 py-3 sm:px-5 sm:py-5">
       <div className={cn("mx-auto w-full", wide ? "max-w-[1600px]" : "max-w-6xl")}>
-        <header className="mb-4 flex flex-wrap items-center gap-2 rounded-3xl border border-border/70 bg-surface/80 p-2.5 shadow-lg shadow-black/30 backdrop-blur">
-          <Link
-            to="/dashboard"
-            aria-label="Home dashboard"
-            className="inline-flex items-center gap-2 rounded-2xl border border-grape/60 bg-grape/20 px-3 py-2 text-sm font-black uppercase tracking-[0.16em] text-foreground"
-          >
-            <img src={mark.url} alt="" aria-hidden className="h-7 w-7 rounded-xl object-cover" />
-            <span className="hidden sm:inline">CoachSide</span>
-          </Link>
-          <nav className="flex flex-wrap items-center gap-1.5">
-            {QUICK.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                activeOptions={{ exact: item.to === "/games" }}
-                className={cn(
-                  "rounded-full border px-3.5 py-2 text-xs font-bold uppercase tracking-wider transition-colors",
-                  item.tone === "flame"
-                    ? "border-flame/70 bg-flame/20 text-foreground hover:bg-flame/30"
-                    : "border-border bg-surface-2 text-muted-foreground hover:text-foreground",
-                )}
-                activeProps={{
-                  className:
-                    "rounded-full border border-grape bg-grape/30 px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-foreground",
-                }}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="ml-auto flex flex-wrap items-center gap-1.5">
-            {actions}
+        <header className="mb-4 rounded-3xl border border-border/70 bg-surface/85 p-2.5 shadow-lg shadow-black/30 backdrop-blur">
+          <div className="grid grid-cols-[1fr_auto] items-center gap-3 lg:grid-cols-[1fr_minmax(520px,auto)_1fr]">
             <Link
-              to="/settings"
-              className="rounded-full border border-border bg-surface-2 px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
-              activeProps={{
-                className:
-                  "rounded-full border border-grape bg-grape/30 px-3 py-2 text-xs font-bold uppercase tracking-wider text-foreground",
-              }}
+              to="/dashboard"
+              aria-label="CoachSide home dashboard"
+              className="inline-flex w-fit items-center rounded-2xl border border-border/70 bg-surface-2/70 px-3 py-1.5 transition-colors hover:border-flame/60"
             >
-              Settings
+              <img
+                src={wordmark.url}
+                alt="CoachSide"
+                className="h-8 w-auto max-w-[150px] object-contain sm:h-9 sm:max-w-[180px]"
+              />
             </Link>
-            <Link
-              to="/profile"
-              aria-label="Profile"
-              className="inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-flame/70 bg-flame/25 px-2 text-xs font-black text-foreground"
-              activeProps={{
-                className:
-                  "inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-flame bg-flame px-2 text-xs font-black text-accent-foreground",
-              }}
-            >
-              {initialsOf(me.profile?.full_name, me.user?.email)}
-            </Link>
-            <button
-              type="button"
-              onClick={() => void doSignOut()}
-              className="rounded-full border border-border/70 bg-surface/70 px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Sign out
-            </button>
+
+            <nav className="order-3 col-span-2 grid grid-cols-5 gap-1 rounded-2xl border border-border/80 bg-background/70 p-1.5 lg:order-none lg:col-span-1" aria-label="Primary navigation">
+              {QUICK.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    activeOptions={{ exact: item.to === "/plays" }}
+                    className={cn(
+                      "flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-transparent px-1.5 py-1.5 text-center text-[9px] font-extrabold uppercase text-muted-foreground transition-all hover:border-border hover:bg-surface-2 hover:text-foreground sm:min-h-14 sm:px-2 sm:text-[10px]",
+                      item.tone === "flame" && "hover:text-flame",
+                      item.tone === "grape" && "hover:text-grape-bright",
+                      item.tone === "blue" && "hover:text-blue",
+                      item.tone === "rose" && "hover:text-rose",
+                      item.tone === "gold" && "hover:text-gold",
+                    )}
+                    activeProps={{
+                      className:
+                        "flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-grape/50 bg-grape/15 px-1.5 py-1.5 text-center text-[9px] font-extrabold uppercase text-grape-bright sm:min-h-14 sm:px-2 sm:text-[10px]",
+                    }}
+                  >
+                    <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" aria-hidden />
+                    <span className="leading-tight">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="flex items-center justify-end gap-1.5">
+              {actions}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Open profile and settings menu"
+                    className="inline-flex h-11 items-center gap-2 rounded-full border border-grape/60 bg-grape/20 px-2.5 text-xs font-black text-foreground transition-colors hover:bg-grape/30"
+                  >
+                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-flame/70 bg-flame/25 px-1.5">
+                      {initialsOf(me.profile?.full_name, me.user?.email)}
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52 rounded-2xl border-border bg-popover p-2 shadow-xl shadow-black/40">
+                  <DropdownMenuLabel className="rounded-xl bg-surface-2 px-3 py-2 text-xs text-muted-foreground">
+                    Coach account
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 font-bold focus:bg-grape/20">
+                    <Link to="/profile"><UserRound /> Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 font-bold focus:bg-grape/20">
+                    <Link to="/settings"><Settings /> Settings</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer rounded-xl px-3 py-2.5 font-bold text-flame focus:bg-flame/15 focus:text-flame"
+                    onSelect={() => void doSignOut()}
+                  >
+                    <LogOut /> Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </header>
 

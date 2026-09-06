@@ -1,5 +1,11 @@
 # CourtSide Coach — production pass roadmap
 
+## Current interface refinement
+- [x] Add the horizontal CoachSide wordmark to the top of authenticated pages
+- [x] Center Rosters, Live Game, Playbook, Play Maker and Stats navigation
+- [x] Move Profile, Settings and Sign Out into the account dropdown
+- [x] Give every dashboard destination a distinct athletic accent
+
 ## In progress / ready
 - [ ] DB: additive migration (games.home_away/overtime_minutes, team settings columns, org_members roles, coach_invites, tightened RLS, invite RPCs, logo bucket)
 - [ ] Sign-in barrier (`/`, `/auth`) + `_authenticated` gate + global offline flusher
