@@ -13,10 +13,25 @@ import {
   Pill,
   TextInput,
 } from "@/components/Bubbles";
-import { createGame, fetchPlayers, fetchTeams } from "@/lib/data";
+import { createGame, fetchPlayers, fetchTeams, updateTeamEvent } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
+type NewGameSearch = {
+  team?: string | undefined;
+  opponent?: string | undefined;
+  homeAway?: string | undefined;
+  date?: string | undefined;
+  eventId?: string | undefined;
+};
+
 export const Route = createFileRoute("/_authenticated/games/new")({
+  validateSearch: (search: Record<string, unknown>): NewGameSearch => ({
+    team: typeof search['team'] === "string" ? search['team'] : undefined,
+    opponent: typeof search['opponent'] === "string" ? search['opponent'] : undefined,
+    homeAway: search['homeAway'] === "away" ? "away" : undefined,
+    date: typeof search['date'] === "string" ? search['date'] : undefined,
+    eventId: typeof search['eventId'] === "string" ? search['eventId'] : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Start a Game — CoachSide" },
@@ -74,14 +89,20 @@ function StepCard({
 
 function NewGamePage() {
   const navigate = useNavigate();
+  const prefill = Route.useSearch();
   const qc = useQueryClient();
   const teams = useQuery({ queryKey: ["teams"], queryFn: fetchTeams });
   const [teamId, setTeamId] = useState<string>("");
   const team = teams.data?.find((t) => t.id === teamId) ?? null;
 
   useEffect(() => {
-    if (!teamId && teams.data?.length === 1) setTeamId(teams.data[0]!.id);
-  }, [teams.data, teamId]);
+    if (teamId) return;
+    if (prefill.team && teams.data?.some((t) => t.id === prefill.team)) {
+      setTeamId(prefill.team);
+      return;
+    }
+    if (teams.data?.length === 1) setTeamId(teams.data[0]!.id);
+  }, [teams.data, teamId, prefill.team]);
 
   const players = useQuery({
     queryKey: ["players", teamId],
@@ -89,9 +110,13 @@ function NewGamePage() {
     enabled: !!teamId,
   });
 
-  const [opponent, setOpponent] = useState("");
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [homeAway, setHomeAway] = useState<"home" | "away">("home");
+  const [opponent, setOpponent] = useState(prefill.opponent ?? "");
+  const [date, setDate] = useState(
+    () => prefill.date ?? new Date().toISOString().slice(0, 10),
+  );
+  const [homeAway, setHomeAway] = useState<"home" | "away">(
+    prefill.homeAway === "away" ? "away" : "home",
+  );
   const [five, setFive] = useState<string[]>([]);
   const [periods, setPeriods] = useState(4);
   const [minutes, setMinutes] = useState(8);
@@ -137,6 +162,11 @@ function NewGamePage() {
       }),
     onSuccess: (g) => {
       void qc.invalidateQueries({ queryKey: ["games"] });
+      if (prefill.eventId) {
+        void updateTeamEvent(prefill.eventId, { game_id: g.id }).then(() =>
+          qc.invalidateQueries({ queryKey: ["team-events", g.team_id] }),
+        );
+      }
       navigate({ to: "/game/$gameId", params: { gameId: g.id } });
     },
     onError: (e: Error) => toast.error(e.message),
