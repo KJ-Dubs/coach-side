@@ -16,7 +16,9 @@ import {
   gameScore,
   groupByGame,
   playerGameLine,
+  lineupStats,
   seasonsOf,
+  sumPlayerLines,
 } from "@/lib/stats";
 
 type Search = { team?: string | undefined; player?: string | undefined; season?: string | undefined };
@@ -76,11 +78,23 @@ function PlayerStatsPage() {
     () => (players.data ?? []).filter((p) => p.team_id === teamId),
     [players.data, teamId],
   );
-  const playerId =
-    search.player && teamPlayers.some((p) => p.id === search.player)
-      ? search.player
-      : teamPlayers[0]?.id;
+  const selectedIds = useMemo(() => {
+    const ids = (search.player ?? "").split(",").filter(Boolean).filter((id) =>
+      teamPlayers.some((p) => p.id === id),
+    );
+    if (ids.length) return ids;
+    const first = teamPlayers[0]?.id;
+    return first ? [first] : [];
+  }, [search.player, teamPlayers]);
+  const multi = selectedIds.length > 1;
+  const playerId = selectedIds[0];
   const player = teamPlayers.find((p) => p.id === playerId) ?? null;
+  const togglePlayer = (id: string) => {
+    const next = selectedIds.includes(id)
+      ? selectedIds.filter((x) => x !== id)
+      : [...selectedIds, id];
+    setSearch({ player: next.join(",") || undefined });
+  };
 
   const teamGames = useMemo(
     () => (bundle.data?.games ?? []).filter((g) => g.team_id === teamId),
@@ -102,8 +116,16 @@ function PlayerStatsPage() {
   );
   const line = (playerId && lines.get(playerId)) || emptyPlayerLine(playerId ?? "");
   const playerEvents = useMemo(
-    () => teamEvents.filter((e) => e.player_id === playerId),
-    [teamEvents, playerId],
+    () => teamEvents.filter((e) => e.player_id && selectedIds.includes(e.player_id)),
+    [teamEvents, selectedIds],
+  );
+  const groupLine = useMemo(
+    () => sumPlayerLines(selectedIds.map((id) => lines.get(id) ?? emptyPlayerLine(id))),
+    [lines, selectedIds],
+  );
+  const together = useMemo(
+    () => lineupStats(teamGames, teamEvents, teamSubs, selectedIds),
+    [teamGames, teamEvents, teamSubs, selectedIds],
   );
   const evByGame = useMemo(() => groupByGame(teamEvents), [teamEvents]);
   const recent = useMemo(
@@ -175,15 +197,25 @@ function PlayerStatsPage() {
             <BubbleButton
               key={p.id}
               size="sm"
-              tone={p.id === playerId ? "flame" : "neutral"}
+              tone={selectedIds.includes(p.id) ? "flame" : "neutral"}
               className={!p.active ? "opacity-60" : undefined}
-              onClick={() => setSearch({ player: p.id })}
+              onClick={() => togglePlayer(p.id)}
             >
               #{p.jersey} {p.name.split(" ")[0]}
             </BubbleButton>
           ))}
           {!players.isLoading && teamPlayers.length === 0 ? (
             <Pill tone="muted">No players on this team</Pill>
+          ) : null}
+          <Pill tone="grape">Tap more than one player to compare a combination</Pill>
+          {multi ? (
+            <BubbleButton
+              size="sm"
+              tone="neutral"
+              onClick={() => setSearch({ player: playerId })}
+            >
+              Clear to one player
+            </BubbleButton>
           ) : null}
         </div>
       </Panel>
