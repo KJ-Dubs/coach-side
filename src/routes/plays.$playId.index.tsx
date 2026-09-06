@@ -392,8 +392,10 @@ function PlayDesignerPage() {
               ))}
             </div>
             <Pill tone="muted">
-              Legend: dotted = pass · solid arrow = cut/dribble · bar end = screen
+              Legend: dotted = pass · solid arrow = cut · curved arrow = curl cut · bumpy line =
+              dribble · bar end = screen
             </Pill>
+
           </Panel>
         </div>
       </div>
