@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedLockerRouteImport } from './routes/_authenticated/locker'
+import { Route as AuthenticatedLockerroomRouteImport } from './routes/_authenticated/lockerroom'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRosterRouteImport } from './routes/_authenticated/roster'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -61,6 +62,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedLockerRoute = AuthenticatedLockerRouteImport.update({
   id: '/locker',
   path: '/locker',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLockerroomRoute = AuthenticatedLockerroomRouteImport.update({
+  id: '/lockerroom',
+  path: '/lockerroom',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof AuthenticatedCalendarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/locker': typeof AuthenticatedLockerRoute
+  '/lockerroom': typeof AuthenticatedLockerroomRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof AuthenticatedCalendarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/locker': typeof AuthenticatedLockerRoute
+  '/lockerroom': typeof AuthenticatedLockerroomRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -217,6 +225,7 @@ export interface FileRoutesById {
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/locker': typeof AuthenticatedLockerRoute
+  '/_authenticated/lockerroom': typeof AuthenticatedLockerroomRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/roster': typeof AuthenticatedRosterRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -244,6 +253,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/dashboard'
     | '/locker'
+    | '/lockerroom'
     | '/profile'
     | '/roster'
     | '/settings'
@@ -269,6 +279,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/dashboard'
     | '/locker'
+    | '/lockerroom'
     | '/profile'
     | '/roster'
     | '/settings'
@@ -295,6 +306,7 @@ export interface FileRouteTypes {
     | '/_authenticated/calendar'
     | '/_authenticated/dashboard'
     | '/_authenticated/locker'
+    | '/_authenticated/lockerroom'
     | '/_authenticated/profile'
     | '/_authenticated/roster'
     | '/_authenticated/settings'
@@ -368,6 +380,13 @@ declare module '@tanstack/react-router' {
       path: '/locker'
       fullPath: '/locker'
       preLoaderRoute: typeof AuthenticatedLockerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/lockerroom': {
+      id: '/_authenticated/lockerroom'
+      path: '/lockerroom'
+      fullPath: '/lockerroom'
+      preLoaderRoute: typeof AuthenticatedLockerroomRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/profile': {
@@ -503,6 +522,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedLockerRoute: typeof AuthenticatedLockerRoute
+  AuthenticatedLockerroomRoute: typeof AuthenticatedLockerroomRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRosterRoute: typeof AuthenticatedRosterRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -522,6 +542,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedLockerRoute: AuthenticatedLockerRoute,
+  AuthenticatedLockerroomRoute: AuthenticatedLockerroomRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRosterRoute: AuthenticatedRosterRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
