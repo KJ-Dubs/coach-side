@@ -6,7 +6,14 @@ import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
 import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { fetchFrames, fetchPlay, saveFrames, updatePlay } from "@/lib/data";
-import { PLAY_CATEGORIES, type PlayAction, type PlayActionType, type PlayFrame } from "@/lib/types";
+import {
+  PLAY_CATEGORIES,
+  type PlayAction,
+  type PlayActionType,
+  type PlayFrame,
+  type PlayToken,
+} from "@/lib/types";
+
 import { uuid } from "@/lib/offline";
 
 export const Route = createFileRoute("/plays/$playId/")({
@@ -30,12 +37,30 @@ export const Route = createFileRoute("/plays/$playId/")({
 
 type Tool = "move" | "ball" | PlayActionType;
 
-const DEFAULT_TOKENS = [
-  { id: "p1", label: "1", x: 0.5, y: 0.5, ball: true },
-  { id: "p2", label: "2", x: 0.62, y: 0.14, ball: false },
-  { id: "p3", label: "3", x: 0.62, y: 0.86, ball: false },
-  { id: "p4", label: "4", x: 0.74, y: 0.32, ball: false },
-  { id: "p5", label: "5", x: 0.74, y: 0.68, ball: false },
+const DEFAULT_TOKENS: PlayToken[] = [
+  { id: "p1", label: "1", x: 0.5, y: 0.5, ball: true, team: "offense" },
+  { id: "p2", label: "2", x: 0.62, y: 0.14, ball: false, team: "offense" },
+  { id: "p3", label: "3", x: 0.62, y: 0.86, ball: false, team: "offense" },
+  { id: "p4", label: "4", x: 0.74, y: 0.32, ball: false, team: "offense" },
+  { id: "p5", label: "5", x: 0.74, y: 0.68, ball: false, team: "offense" },
+];
+
+/** Offense inbounding against a full court press (attacking right). */
+const PRESS_OFFENSE: PlayToken[] = [
+  { id: "o1", label: "1", x: 0.12, y: 0.35, ball: true, team: "offense" },
+  { id: "o2", label: "2", x: 0.12, y: 0.68, ball: false, team: "offense" },
+  { id: "o3", label: "3", x: 0.28, y: 0.16, ball: false, team: "offense" },
+  { id: "o4", label: "4", x: 0.3, y: 0.85, ball: false, team: "offense" },
+  { id: "o5", label: "5", x: 0.45, y: 0.5, ball: false, team: "offense" },
+];
+
+/** 1-2-1-1 full court press defense. */
+const PRESS_DEFENSE: PlayToken[] = [
+  { id: "d1", label: "1", x: 0.16, y: 0.5, ball: false, team: "defense" },
+  { id: "d2", label: "2", x: 0.28, y: 0.24, ball: false, team: "defense" },
+  { id: "d3", label: "3", x: 0.28, y: 0.76, ball: false, team: "defense" },
+  { id: "d4", label: "4", x: 0.45, y: 0.5, ball: false, team: "defense" },
+  { id: "d5", label: "5", x: 0.68, y: 0.5, ball: false, team: "defense" },
 ];
 
 function blankFrame(playId: string, idx: number): PlayFrame {
@@ -48,6 +73,7 @@ function blankFrame(playId: string, idx: number): PlayFrame {
     note: null,
   };
 }
+
 
 function PlayDesignerPage() {
   const { playId } = Route.useParams();
@@ -177,14 +203,38 @@ function PlayDesignerPage() {
     }
   };
 
+  const hasDefense = (frame?.tokens ?? []).some((t) => t.team === "defense");
+
+  const setTokens = (tokens: PlayToken[]) => patchFrame((f) => ({ ...f, tokens }));
+
+  const addDefense = () =>
+    patchFrame((f) => ({
+      ...f,
+      tokens: [
+        ...f.tokens.filter((t) => t.team !== "defense"),
+        ...PRESS_DEFENSE.map((t) => ({ ...t, id: uuid() })),
+      ],
+    }));
+
+  const removeDefense = () =>
+    patchFrame((f) => ({ ...f, tokens: f.tokens.filter((t) => t.team !== "defense") }));
+
+  const pressSetup = () =>
+    setTokens([
+      ...PRESS_OFFENSE.map((t) => ({ ...t, id: uuid() })),
+      ...PRESS_DEFENSE.map((t) => ({ ...t, id: uuid() })),
+    ]);
+
   const tools: { key: Tool; label: string }[] = [
     { key: "move", label: "Move Players" },
     { key: "ball", label: "Ball Handler" },
     { key: "pass", label: "Pass" },
     { key: "cut", label: "Cut / Move" },
+    { key: "curl", label: "Curl Cut" },
     { key: "dribble", label: "Dribble" },
     { key: "screen", label: "Screen" },
   ];
+
 
   return (
     <AppShell
@@ -248,7 +298,26 @@ function PlayDesignerPage() {
           </Panel>
 
           <Panel className="flex flex-col gap-2">
+            <Label>Press Maker · Two Teams</Label>
+            <div className="flex flex-wrap gap-2">
+              <BubbleButton size="sm" tone="flame" onClick={pressSetup}>
+                Full Court Press Setup
+              </BubbleButton>
+              <BubbleButton size="sm" tone={hasDefense ? "neutral" : "grape"} onClick={addDefense}>
+                Add Defense (X1–X5)
+              </BubbleButton>
+              <BubbleButton size="sm" tone="ghost" disabled={!hasDefense} onClick={removeDefense}>
+                Remove Defense
+              </BubbleButton>
+            </div>
+            <Pill tone="muted">
+              Purple circles = offense · dashed orange squares X1–X5 = defense
+            </Pill>
+          </Panel>
+
+          <Panel className="flex flex-col gap-2">
             <Label>Orientation</Label>
+
             <div className="flex flex-wrap gap-2">
               <BubbleButton size="sm" tone="flame" onClick={() => setFlip((f) => !f)}>
                 ⇄ Flip Court
@@ -323,8 +392,10 @@ function PlayDesignerPage() {
               ))}
             </div>
             <Pill tone="muted">
-              Legend: dotted = pass · solid arrow = cut/dribble · bar end = screen
+              Legend: dotted = pass · solid arrow = cut · curved arrow = curl cut · bumpy line =
+              dribble · bar end = screen
             </Pill>
+
           </Panel>
         </div>
       </div>

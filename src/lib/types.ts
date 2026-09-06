@@ -76,9 +76,11 @@ export type PlayToken = {
   x: number;
   y: number;
   ball: boolean;
+  /** Which side this token belongs to. Defaults to offense for older plays. */
+  team?: "offense" | "defense";
 };
 
-export type PlayActionType = "pass" | "cut" | "dribble" | "screen";
+export type PlayActionType = "pass" | "cut" | "curl" | "dribble" | "screen";
 
 export type PlayAction = {
   id: string;
@@ -86,6 +88,7 @@ export type PlayAction = {
   seq: number;
   points: { x: number; y: number }[];
 };
+
 
 export type Play = {
   id: string;
@@ -107,4 +110,11 @@ export type PlayFrame = {
   note: string | null;
 };
 
-export const PLAY_CATEGORIES = ["Offense", "BLOB", "SLOB", "Press Break"] as const;
+export const PLAY_CATEGORIES = [
+  "Offense",
+  "BLOB",
+  "SLOB",
+  "Press Break",
+  "Press Defense",
+] as const;
+
