@@ -35,6 +35,8 @@ export function Chat({
   canPost,
   canAttach,
   disabledNote,
+  meName,
+  meRoleLabel,
 }: {
   conversationId: string;
   teamId: string | null;
@@ -43,6 +45,8 @@ export function Chat({
   canPost: boolean;
   canAttach: boolean;
   disabledNote?: string;
+  meName?: string;
+  meRoleLabel?: string;
 }) {
   const qc = useQueryClient();
   const [body, setBody] = useState("");
@@ -128,10 +132,15 @@ export function Chat({
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Pill tone={coach ? "flame" : "grape"}>
                       {person?.jersey ? `#${person.jersey} ` : ""}
-                      {person?.full_name ?? person?.player_name ?? person?.email ?? "Team member"}
+                      {person?.full_name ??
+                        person?.player_name ??
+                        person?.email ??
+                        (mine ? (meName ?? "You") : "Team member")}
                     </Pill>
                     <Pill tone="muted">
-                      {person ? TEAM_ROLE_LABEL[person.role] : "Member"}
+                      {person
+                        ? TEAM_ROLE_LABEL[person.role]
+                        : (mine ? (meRoleLabel ?? "Coach") : "Member")}
                     </Pill>
                     <Pill tone="muted">{fmtTime(m.created_at)}</Pill>
                     {m.edited_at && !m.deleted_at ? <Pill tone="muted">Edited</Pill> : null}
