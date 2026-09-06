@@ -30,3 +30,10 @@
 ## Later ideas
 - Season-over-season comparisons once teams carry multiple seasons
 - Opponent scouting notes per game
+
+## Team Calendar
+- [x] Native /calendar (agenda/week/month, filters, event types, reminders, share link)
+- [x] Dashboard schedule card + nav item
+- [x] Calendar defaults in Settings
+- [x] Scheduled game -> Start Game prefill + review linkback
+- [ ] Google Calendar two-way sync (needs Google OAuth client setup)
