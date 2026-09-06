@@ -251,7 +251,7 @@ export async function fetchInviteRoster(token: string): Promise<InviteRosterRow[
 export async function acceptTeamInvite(token: string, playerId: string | null) {
   const { data, error } = await supabase.rpc("accept_team_invite", {
     _token: token,
-    _player_id: playerId,
+    _player_id: playerId ?? undefined,
   });
   if (error) throw error;
   return data as unknown as { team_id: string; role: TeamRole };
@@ -335,7 +335,7 @@ export async function sendMessage(input: {
         message_id: messageId,
         attachment_type: a.attachment_type,
         related_id: a.related_id,
-        metadata: a.metadata ?? {},
+        metadata: (a.metadata ?? {}) as never,
       })),
     );
     if (aErr) throw aErr;
@@ -445,7 +445,7 @@ export async function createAnnouncement(input: {
         announcement_id: id,
         attachment_type: a.attachment_type,
         related_id: a.related_id,
-        metadata: a.metadata ?? {},
+        metadata: (a.metadata ?? {}) as never,
       })),
     );
     if (aErr) throw aErr;
@@ -487,7 +487,7 @@ export async function markAnnouncement(
   }
   const { error } = await supabase
     .from("announcement_receipts")
-    .upsert(row, { onConflict: "announcement_id,user_id" });
+    .upsert(row as never, { onConflict: "announcement_id,user_id" });
   if (error) throw error;
 }
 
@@ -579,7 +579,7 @@ export async function setAssignmentStatus(target: {
   if (existing.data) {
     const { error } = await supabase
       .from("assignment_targets")
-      .update(patch)
+      .update(patch as never)
       .eq("id", (existing.data as { id: string }).id);
     if (error) throw error;
     return;
@@ -589,7 +589,7 @@ export async function setAssignmentStatus(target: {
     user_id: me,
     player_id: target.playerId,
     ...patch,
-  });
+  } as never);
   if (error) throw error;
 }
 
