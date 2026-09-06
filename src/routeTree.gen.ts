@@ -29,6 +29,7 @@ import { Route as AuthenticatedStatsPlayersRouteImport } from './routes/_authent
 import { Route as AuthenticatedStatsTeamRouteImport } from './routes/_authenticated/stats.team'
 import { Route as AuthenticatedPlaysPlayIdIndexRouteImport } from './routes/_authenticated/plays.$playId.index'
 import { Route as AuthenticatedPlaysPlayIdViewRouteImport } from './routes/_authenticated/plays.$playId.view'
+import { Route as ApiPublicLockerTokenCalendarRouteImport } from './routes/api/public/locker.$token.calendar'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -133,6 +134,12 @@ const AuthenticatedPlaysPlayIdViewRoute =
     path: '/plays/$playId/view',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicLockerTokenCalendarRoute =
+  ApiPublicLockerTokenCalendarRouteImport.update({
+    id: '/api/public/locker/$token/calendar',
+    path: '/api/public/locker/$token/calendar',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/plays/': typeof AuthenticatedPlaysIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
+  '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -175,6 +183,7 @@ export interface FileRoutesByTo {
   '/plays': typeof AuthenticatedPlaysIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/plays/$playId': typeof AuthenticatedPlaysPlayIdIndexRoute
+  '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -198,6 +207,7 @@ export interface FileRoutesById {
   '/_authenticated/plays/': typeof AuthenticatedPlaysIndexRoute
   '/_authenticated/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/_authenticated/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
+  '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/plays/'
     | '/plays/$playId/view'
     | '/plays/$playId/'
+    | '/api/public/locker/$token/calendar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -242,6 +253,7 @@ export interface FileRouteTypes {
     | '/plays'
     | '/plays/$playId/view'
     | '/plays/$playId'
+    | '/api/public/locker/$token/calendar'
   id:
     | '__root__'
     | '/'
@@ -264,6 +276,7 @@ export interface FileRouteTypes {
     | '/_authenticated/plays/'
     | '/_authenticated/plays/$playId/view'
     | '/_authenticated/plays/$playId/'
+    | '/api/public/locker/$token/calendar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -272,6 +285,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   InviteTokenRoute: typeof InviteTokenRoute
   ShareTokenRoute: typeof ShareTokenRoute
+  ApiPublicLockerTokenCalendarRoute: typeof ApiPublicLockerTokenCalendarRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -416,6 +430,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlaysPlayIdViewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/locker/$token/calendar': {
+      id: '/api/public/locker/$token/calendar'
+      path: '/api/public/locker/$token/calendar'
+      fullPath: '/api/public/locker/$token/calendar'
+      preLoaderRoute: typeof ApiPublicLockerTokenCalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -464,6 +485,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   InviteTokenRoute: InviteTokenRoute,
   ShareTokenRoute: ShareTokenRoute,
+  ApiPublicLockerTokenCalendarRoute: ApiPublicLockerTokenCalendarRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
