@@ -39,12 +39,14 @@ export function AppShell({
   subtitle,
   actions,
   wide,
+  logoUrl,
 }: {
   children: ReactNode;
   title: string;
   subtitle?: string | undefined;
   actions?: ReactNode | undefined;
   wide?: boolean | undefined;
+  logoUrl?: string | null | undefined;
 }) {
   const me = useMe();
   const qc = useQueryClient();
@@ -140,6 +142,11 @@ export function AppShell({
         </header>
 
         <div className="mb-4 flex flex-wrap items-center gap-2">
+          {logoUrl ? (
+            <span className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-flame/50 bg-surface-2/80 p-1 shadow-lg shadow-black/30">
+              <img src={logoUrl} alt="Team logo" className="h-full w-full object-contain" />
+            </span>
+          ) : null}
           <h1 className="rounded-2xl border border-border bg-surface/80 px-4 py-2 text-lg font-black tracking-tight text-foreground">
             {title}
           </h1>
