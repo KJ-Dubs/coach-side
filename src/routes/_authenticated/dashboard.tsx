@@ -7,6 +7,7 @@ import {
   ClipboardPenLine,
   Clock3,
   Settings,
+  KeyRound,
   Swords,
   Target,
   UsersRound,
@@ -14,7 +15,7 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Panel, Pill, StatTile } from "@/components/Bubbles";
-import { fetchGames, fetchAllPlayers, fetchPlays } from "@/lib/data";
+import { fetchGames, fetchAllPlayers, fetchPlays, logoSignedUrl } from "@/lib/data";
 import { useMe } from "@/lib/useMe";
 import { cn } from "@/lib/utils";
 
@@ -102,6 +103,14 @@ const CARDS: CardDef[] = [
     icon: Clock3,
   },
   {
+    to: "/locker",
+    title: "Locker Room",
+    blurb: "Share one link with players and families for stats, plays and the team calendar.",
+    action: "Share locker room",
+    tone: "teal",
+    icon: KeyRound,
+  },
+  {
     to: "/settings",
     title: "Settings",
     blurb: "Team name, logo, season, coaches, game defaults and assistant-coach invites.",
@@ -124,6 +133,12 @@ function Dashboard() {
   const games = useQuery({ queryKey: ["games"], queryFn: fetchGames });
   const players = useQuery({ queryKey: ["players", "all"], queryFn: fetchAllPlayers });
   const plays = useQuery({ queryKey: ["plays"], queryFn: fetchPlays });
+  const logoTeam = me.teams.find((t) => t.logo_url);
+  const teamLogo = useQuery({
+    queryKey: ["team-logo", logoTeam?.id],
+    queryFn: () => logoSignedUrl(logoTeam?.logo_url),
+    enabled: !!logoTeam?.logo_url,
+  });
 
   const live = (games.data ?? []).filter((g) => g.status !== "final");
   const finals = (games.data ?? []).filter((g) => g.status === "final");
@@ -155,6 +170,7 @@ function Dashboard() {
     <AppShell
       title={`Welcome back, ${greeting}`}
       subtitle={me.org?.name ?? "Your basketball program"}
+      logoUrl={teamLogo.data ?? null}
     >
       <Panel className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <StatTile label="Teams" value={me.teams.length} tone="grape" />

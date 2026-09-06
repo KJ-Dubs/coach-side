@@ -459,6 +459,53 @@ export type Database = {
           },
         ]
       }
+      team_events: {
+        Row: {
+          created_at: string
+          ends_at: string | null
+          id: string
+          kind: string
+          location: string | null
+          notes: string | null
+          starts_at: string
+          team_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          kind?: string
+          location?: string | null
+          notes?: string | null
+          starts_at: string
+          team_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          kind?: string
+          location?: string | null
+          notes?: string | null
+          starts_at?: string
+          team_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_events_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           assistant_coaches: string | null
@@ -468,6 +515,8 @@ export type Database = {
           default_periods: number
           head_coach_name: string | null
           id: string
+          locker_enabled: boolean
+          locker_token: string
           logo_url: string | null
           name: string
           org_id: string | null
@@ -481,6 +530,8 @@ export type Database = {
           default_periods?: number
           head_coach_name?: string | null
           id?: string
+          locker_enabled?: boolean
+          locker_token?: string
           logo_url?: string | null
           name: string
           org_id?: string | null
@@ -494,6 +545,8 @@ export type Database = {
           default_periods?: number
           head_coach_name?: string | null
           id?: string
+          locker_enabled?: boolean
+          locker_token?: string
           logo_url?: string | null
           name?: string
           org_id?: string | null

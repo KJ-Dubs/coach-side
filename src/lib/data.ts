@@ -10,6 +10,7 @@ import type {
   Player,
   Substitution,
   Team,
+  TeamEvent,
 } from "./types";
 
 export const DEMO_TEAM_ID = "11111111-1111-1111-1111-111111111111";
@@ -506,4 +507,60 @@ export async function createPlayer(input: {
   const { data, error } = await supabase.from("players").insert(input).select("*").single();
   if (error) throw error;
   return data as unknown as Player;
+}
+
+/* ---------------- locker room (team share link + calendar) ---------------- */
+
+export async function setLockerSharing(teamId: string, enabled: boolean) {
+  const { error } = await supabase
+    .from("teams")
+    .update({ locker_enabled: enabled })
+    .eq("id", teamId);
+  if (error) throw error;
+}
+
+export function lockerUrl(token: string | null | undefined) {
+  const path = `/locker/${token ?? ""}`;
+  if (typeof window === "undefined") return path;
+  return `${window.location.origin}${path}`;
+}
+
+export function lockerCalendarUrl(token: string | null | undefined) {
+  const path = `/api/public/locker/${token ?? ""}/calendar`;
+  if (typeof window === "undefined") return path;
+  return `${window.location.origin}${path}`;
+}
+
+export async function fetchTeamEvents(teamId: string): Promise<TeamEvent[]> {
+  const { data, error } = await supabase
+    .from("team_events")
+    .select("*")
+    .eq("team_id", teamId)
+    .order("starts_at");
+  if (error) throw error;
+  return (data ?? []) as unknown as TeamEvent[];
+}
+
+export async function createTeamEvent(input: {
+  team_id: string;
+  kind: string;
+  title: string;
+  starts_at: string;
+  ends_at: string | null;
+  location: string | null;
+  notes: string | null;
+}): Promise<TeamEvent> {
+  const { data, error } = await supabase.from("team_events").insert(input).select("*").single();
+  if (error) throw error;
+  return data as unknown as TeamEvent;
+}
+
+export async function updateTeamEvent(id: string, patch: Partial<TeamEvent>) {
+  const { error } = await supabase.from("team_events").update(patch as never).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteTeamEvent(id: string) {
+  const { error } = await supabase.from("team_events").delete().eq("id", id);
+  if (error) throw error;
 }

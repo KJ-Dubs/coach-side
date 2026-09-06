@@ -13,10 +13,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedLockerRouteImport } from './routes/_authenticated/locker'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRosterRouteImport } from './routes/_authenticated/roster'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as LockerTokenRouteImport } from './routes/locker.$token'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedGameGameIdRouteImport } from './routes/_authenticated/game.$gameId'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games.index'
@@ -28,6 +30,7 @@ import { Route as AuthenticatedStatsPlayersRouteImport } from './routes/_authent
 import { Route as AuthenticatedStatsTeamRouteImport } from './routes/_authenticated/stats.team'
 import { Route as AuthenticatedPlaysPlayIdIndexRouteImport } from './routes/_authenticated/plays.$playId.index'
 import { Route as AuthenticatedPlaysPlayIdViewRouteImport } from './routes/_authenticated/plays.$playId.view'
+import { Route as ApiPublicLockerTokenCalendarRouteImport } from './routes/api/public/locker.$token.calendar'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -48,6 +51,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLockerRoute = AuthenticatedLockerRouteImport.update({
+  id: '/locker',
+  path: '/locker',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -66,6 +74,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
 const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LockerTokenRoute = LockerTokenRouteImport.update({
+  id: '/locker/$token',
+  path: '/locker/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShareTokenRoute = ShareTokenRouteImport.update({
@@ -127,15 +140,23 @@ const AuthenticatedPlaysPlayIdViewRoute =
     path: '/plays/$playId/view',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicLockerTokenCalendarRoute =
+  ApiPublicLockerTokenCalendarRouteImport.update({
+    id: '/api/public/locker/$token/calendar',
+    path: '/api/public/locker/$token/calendar',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/locker': typeof AuthenticatedLockerRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
@@ -147,15 +168,18 @@ export interface FileRoutesByFullPath {
   '/plays/': typeof AuthenticatedPlaysIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
+  '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/locker': typeof AuthenticatedLockerRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
@@ -167,6 +191,7 @@ export interface FileRoutesByTo {
   '/plays': typeof AuthenticatedPlaysIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/plays/$playId': typeof AuthenticatedPlaysPlayIdIndexRoute
+  '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -174,10 +199,12 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/locker': typeof AuthenticatedLockerRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/roster': typeof AuthenticatedRosterRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/_authenticated/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/_authenticated/games/new': typeof AuthenticatedGamesNewRoute
@@ -189,6 +216,7 @@ export interface FileRoutesById {
   '/_authenticated/plays/': typeof AuthenticatedPlaysIndexRoute
   '/_authenticated/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/_authenticated/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
+  '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -196,10 +224,12 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/locker'
     | '/profile'
     | '/roster'
     | '/settings'
     | '/invite/$token'
+    | '/locker/$token'
     | '/share/$token'
     | '/game/$gameId'
     | '/games/new'
@@ -211,15 +241,18 @@ export interface FileRouteTypes {
     | '/plays/'
     | '/plays/$playId/view'
     | '/plays/$playId/'
+    | '/api/public/locker/$token/calendar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/locker'
     | '/profile'
     | '/roster'
     | '/settings'
     | '/invite/$token'
+    | '/locker/$token'
     | '/share/$token'
     | '/game/$gameId'
     | '/games/new'
@@ -231,16 +264,19 @@ export interface FileRouteTypes {
     | '/plays'
     | '/plays/$playId/view'
     | '/plays/$playId'
+    | '/api/public/locker/$token/calendar'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/dashboard'
+    | '/_authenticated/locker'
     | '/_authenticated/profile'
     | '/_authenticated/roster'
     | '/_authenticated/settings'
     | '/invite/$token'
+    | '/locker/$token'
     | '/share/$token'
     | '/_authenticated/game/$gameId'
     | '/_authenticated/games/new'
@@ -252,6 +288,7 @@ export interface FileRouteTypes {
     | '/_authenticated/plays/'
     | '/_authenticated/plays/$playId/view'
     | '/_authenticated/plays/$playId/'
+    | '/api/public/locker/$token/calendar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -259,7 +296,9 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  LockerTokenRoute: typeof LockerTokenRoute
   ShareTokenRoute: typeof ShareTokenRoute
+  ApiPublicLockerTokenCalendarRoute: typeof ApiPublicLockerTokenCalendarRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -292,6 +331,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/locker': {
+      id: '/_authenticated/locker'
+      path: '/locker'
+      fullPath: '/locker'
+      preLoaderRoute: typeof AuthenticatedLockerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -318,6 +364,13 @@ declare module '@tanstack/react-router' {
       path: '/invite/$token'
       fullPath: '/invite/$token'
       preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/locker/$token': {
+      id: '/locker/$token'
+      path: '/locker/$token'
+      fullPath: '/locker/$token'
+      preLoaderRoute: typeof LockerTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/share/$token': {
@@ -397,11 +450,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlaysPlayIdViewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/locker/$token/calendar': {
+      id: '/api/public/locker/$token/calendar'
+      path: '/api/public/locker/$token/calendar'
+      fullPath: '/api/public/locker/$token/calendar'
+      preLoaderRoute: typeof ApiPublicLockerTokenCalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedLockerRoute: typeof AuthenticatedLockerRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRosterRoute: typeof AuthenticatedRosterRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -419,6 +480,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedLockerRoute: AuthenticatedLockerRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRosterRoute: AuthenticatedRosterRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
@@ -442,7 +504,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   InviteTokenRoute: InviteTokenRoute,
+  LockerTokenRoute: LockerTokenRoute,
   ShareTokenRoute: ShareTokenRoute,
+  ApiPublicLockerTokenCalendarRoute: ApiPublicLockerTokenCalendarRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
