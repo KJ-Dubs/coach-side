@@ -11,6 +11,12 @@ export type Team = {
   default_overtime_minutes?: number;
   locker_token?: string;
   locker_enabled?: boolean;
+  home_gym?: string | null;
+  default_practice_location?: string | null;
+  default_arrival_offset_minutes?: number;
+  timezone?: string;
+  default_practice_reminder_minutes?: number;
+  default_game_reminder_minutes?: number;
   created_at?: string;
 };
 
