@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "./auth";
-import { fetchMyMemberships, isCoachRole, type TeamRole } from "./locker";
+import { fetchMyMemberships, isCoachRole, TEAM_ROLE_LABEL, type TeamRole } from "./locker";
 import { useMe } from "./useMe";
 
 /** Role + team list for everything in the Locker Room. */
@@ -37,6 +37,8 @@ export function useLocker(teamId: string | null) {
     isPlayer: role === "player",
     isParent: role === "parent",
     playerId: membership?.player_id ?? null,
+    displayName: me.profile?.full_name ?? user?.email ?? "You",
+    roleLabel: role ? TEAM_ROLE_LABEL[role] : "Member",
     loading: me.loading || memberships.isLoading,
   };
 }
