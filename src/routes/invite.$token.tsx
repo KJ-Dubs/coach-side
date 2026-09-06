@@ -31,9 +31,13 @@ function InvitePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const signedIn = ready && !!session;
+
   const invite = useQuery({
     queryKey: ["invite", token],
     queryFn: () => lookupInvite(token),
+    // Invite details are only visible to signed-in users.
+    enabled: signedIn,
   });
 
   const accept = useMutation({
@@ -56,7 +60,9 @@ function InvitePage() {
             <Pill tone="flame">Coaching staff invite</Pill>
             {info ? <Pill tone="muted">{ROLE_LABEL[info.role]}</Pill> : null}
           </div>
-          {invite.isLoading ? (
+          {!signedIn ? (
+            <Note>Sign in or create an account below to view and accept this invitation.</Note>
+          ) : invite.isLoading ? (
             <Pill tone="muted">Loading invite…</Pill>
           ) : !info ? (
             <EmptyState>This invite link is not valid.</EmptyState>
@@ -82,27 +88,24 @@ function InvitePage() {
           )}
         </Panel>
 
-        {info && info.status === "pending" ? (
-          ready && session ? (
-            <Panel className="flex flex-wrap items-center gap-2">
-              <Pill tone="muted">Signed in</Pill>
-              <BubbleButton
-                tone="flame"
-                disabled={accept.isPending}
-                onClick={() => accept.mutate()}
-              >
-                {accept.isPending ? "Joining…" : "Accept invitation"}
-              </BubbleButton>
-            </Panel>
-          ) : (
-            <AuthCard
-              initialMode="signup"
-              lockSignup
-              defaultOrgName={info.org_name}
-              banner={<Pill tone="grape">Create your account to join {info.org_name}</Pill>}
-              onDone={() => accept.mutate()}
-            />
-          )
+        {!signedIn ? (
+          <AuthCard
+            initialMode="signup"
+            lockSignup
+            banner={<Pill tone="grape">Create your account to join the coaching staff</Pill>}
+            onDone={() => accept.mutate()}
+          />
+        ) : info && info.status === "pending" ? (
+          <Panel className="flex flex-wrap items-center gap-2">
+            <Pill tone="muted">Signed in</Pill>
+            <BubbleButton
+              tone="flame"
+              disabled={accept.isPending}
+              onClick={() => accept.mutate()}
+            >
+              {accept.isPending ? "Joining…" : "Accept invitation"}
+            </BubbleButton>
+          </Panel>
         ) : null}
       </div>
     </main>
