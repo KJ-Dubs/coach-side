@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { statColor } from "@/lib/statColors";
 import { Court } from "@/components/court/Court";
@@ -22,13 +22,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/game/$gameId")({
   head: () => ({
     meta: [
-      { title: "Live Game — CourtFlow Coach" },
+      { title: "Live Game — CourtSide Coach" },
       {
         name: "description",
         content:
           "Tap the court, tap the player, tap the stat. Courtside basketball stat entry that never leaves the court.",
       },
-      { property: "og:title", content: "Live Game — CourtFlow Coach" },
+      { property: "og:title", content: "Live Game — CourtSide Coach" },
       {
         property: "og:description",
         content: "Courtside basketball stat entry that never leaves the court.",
@@ -63,6 +63,8 @@ const STAT_CHOICES: Choice[] = [
 
 function LiveGamePage() {
   const { gameId } = Route.useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const game = useQuery({ queryKey: ["game", gameId], queryFn: () => fetchGame(gameId) });
   const teamId = game.data?.team_id;
   const players = useQuery({
@@ -124,6 +126,7 @@ function LiveGamePage() {
       setLineup(cachedState?.lineup?.length ? cachedState.lineup : (g?.starting_five ?? []));
       setQuarter(cachedState?.quarter ?? g?.quarter ?? 1);
       setClock(cachedState?.clock ?? (g?.period_minutes ?? 8) * 60);
+      setFinalized(g?.status === "final");
       setLoaded(true);
     })();
     return () => {
@@ -229,8 +232,8 @@ function LiveGamePage() {
 
   /* ---------------- end of game ---------------- */
   const saveGameState = useCallback(
-    (status: "live" | "final") => {
-      void enqueue({
+    async (status: "live" | "final") => {
+      await enqueue({
         id: opId(),
         kind: "update_game",
         payload: {
@@ -242,25 +245,71 @@ function LiveGamePage() {
           opp_score: oppScore,
           ...(status === "final" ? { ended_at: new Date().toISOString() } : {}),
         },
-      }).then(() => flushQueue().then(setPending));
+      });
+      try {
+        setPending(await flushQueue());
+      } catch {
+        /* offline — the queue flushes when the connection returns */
+      }
     },
     [gameId, quarter, teamScore, oppScore],
   );
 
-  const finishGame = useCallback(() => {
+  /** Persist final status locally + remotely (queued when offline). */
+  const finalizeGame = useCallback(async () => {
     setRunning(false);
     setFinalized(true);
-    setEndPrompt(true);
-    saveGameState("final");
-    toast.success("Game saved as final");
-  }, [saveGameState]);
+    await saveGameState("final");
+    await cacheSet(`game-final-${gameId}`, {
+      status: "final",
+      team_score: teamScore,
+      opp_score: oppScore,
+      quarter,
+      ended_at: new Date().toISOString(),
+    });
+    void queryClient.invalidateQueries({ queryKey: ["game", gameId] });
+    void queryClient.invalidateQueries({ queryKey: ["games"] });
+    void queryClient.invalidateQueries({ queryKey: ["season-bundle"] });
+  }, [saveGameState, queryClient, gameId, teamScore, oppScore, quarter]);
 
-  // Time expired in the final period → auto-end and save.
+  /** Coach pressed End Game & Save → finalize then go straight to the review. */
+  const [ending, setEnding] = useState(false);
+  const finishGame = useCallback(async () => {
+    if (ending) return;
+    setEnding(true);
+    try {
+      await finalizeGame();
+      toast.success("Game saved — opening the review");
+      navigate({ to: "/review/$gameId", params: { gameId } });
+    } catch (e) {
+      toast.error((e as Error).message || "Could not save the game");
+      setEnding(false);
+    }
+  }, [ending, finalizeGame, navigate, gameId]);
+
+  const overtimeMinutes = game.data?.overtime_minutes ?? 4;
+  const startOvertime = useCallback(() => {
+    setQuarter((q) => Math.max(periods, q) + 1);
+    setClock(overtimeMinutes * 60);
+    setRunning(false);
+    setFinalized(false);
+    setEndPrompt(false);
+    void saveGameState("live");
+    toast.success("Overtime started");
+  }, [periods, overtimeMinutes, saveGameState]);
+
+  // Time expired in the final period → auto-end and save. A tied game is not
+  // finalized automatically: the coach picks overtime or ends it.
   useEffect(() => {
     if (!loaded || finalized) return;
     if (clock > 0) return;
     setRunning(false);
-    if (quarter >= (game.data?.periods ?? 4)) finishGame();
+    if (quarter >= periods) {
+      setEndPrompt(true);
+      if (teamScore !== oppScore) {
+        void finalizeGame().then(() => toast.success("Time expired — game saved as final"));
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clock, loaded, finalized, quarter]);
 
