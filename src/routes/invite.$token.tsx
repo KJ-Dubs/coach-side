@@ -60,7 +60,9 @@ function InvitePage() {
             <Pill tone="flame">Coaching staff invite</Pill>
             {info ? <Pill tone="muted">{ROLE_LABEL[info.role]}</Pill> : null}
           </div>
-          {invite.isLoading ? (
+          {!signedIn ? (
+            <Note>Sign in or create an account below to view and accept this invitation.</Note>
+          ) : invite.isLoading ? (
             <Pill tone="muted">Loading invite…</Pill>
           ) : !info ? (
             <EmptyState>This invite link is not valid.</EmptyState>
