@@ -23,6 +23,10 @@
 - [ ] Rebrand text to CourtSide Coach; bubble-wrap root not-found/error screens
 - [ ] Build/typecheck + Playwright verification
 
+## Locker Room
+- [x] Team logo beside the dashboard welcome
+- [x] Shareable Locker Room link (stats, playbook, schedule) with Google Calendar feed
+
 ## Later ideas
 - Season-over-season comparisons once teams carry multiple seasons
 - Opponent scouting notes per game
