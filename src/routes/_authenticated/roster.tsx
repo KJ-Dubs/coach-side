@@ -63,6 +63,7 @@ function RosterPage() {
   const [search, setSearch] = useState("");
   const [openForm, setOpenForm] = useState<"player" | "team" | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
+  const [editingTeam, setEditingTeam] = useState<string | null>(null);
 
   const lines = useMemo(
     () =>
