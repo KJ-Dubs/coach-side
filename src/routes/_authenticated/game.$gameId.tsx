@@ -564,6 +564,13 @@ function LiveGamePage() {
         {/* COURT — always visible, never replaced */}
         <div className="flex flex-1 flex-col items-center gap-2">
           <Panel className="flex w-full flex-wrap items-center gap-2 p-2">
+            <BubbleButton
+              size="sm"
+              tone="grape"
+              onClick={() => navigate({ to: "/dashboard" })}
+            >
+              ⌂ Home
+            </BubbleButton>
             <Pill tone="muted">Court view</Pill>
             <BubbleButton
               size="sm"
@@ -829,11 +836,13 @@ function LiveGamePage() {
               >
                 + Overtime ({overtimeMinutes} min)
               </BubbleButton>
-              <Link to="/review/$gameId" params={{ gameId }}>
-                <BubbleButton size="sm" tone="neutral">
-                  Review so far
-                </BubbleButton>
-              </Link>
+              <BubbleButton
+                size="sm"
+                tone="neutral"
+                onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}
+              >
+                Review so far
+              </BubbleButton>
             </div>
           </Panel>
 
