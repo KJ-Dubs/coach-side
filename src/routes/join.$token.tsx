@@ -76,7 +76,16 @@ function JoinPage() {
           <Note tone="grape">
             Create your CoachSide account or sign in, and you&apos;ll join the team right after.
           </Note>
-          <AuthCard initialMode="signup" onDone={() => undefined} />
+          <AuthCard
+            initialMode="signup"
+            hideOrgField
+            signupTitle={
+              invite.data?.invite_type === "parent"
+                ? "Create your parent account"
+                : "Create your player account"
+            }
+            onDone={() => undefined}
+          />
         </>
       ) : invite.isLoading ? (
         <Panel className="w-full">

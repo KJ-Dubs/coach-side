@@ -15,11 +15,15 @@ type Mode = "signin" | "signup" | "forgot" | "reset";
 export function AuthCard({
   initialMode = "signin",
   lockSignup,
+  hideOrgField,
+  signupTitle,
   banner,
   defaultOrgName,
   onDone,
 }: {
   initialMode?: Mode;
+  hideOrgField?: boolean;
+  signupTitle?: string;
   /** Invite flows may pre-fill and lock the program name. */
   lockSignup?: boolean;
   banner?: ReactNode;
@@ -118,7 +122,7 @@ export function AuthCard({
 
   const title =
     mode === "signup"
-      ? "Create your coach account"
+      ? (signupTitle ?? "Create your coach account")
       : mode === "forgot"
         ? "Reset your password"
         : mode === "reset"
@@ -174,14 +178,16 @@ export function AuthCard({
       >
         {mode === "signup" ? (
           <>
-            <Field label="Program / school">
-              <TextInput
-                placeholder="Aliso Niguel Basketball"
-                value={orgName}
-                disabled={!!lockSignup}
-                onChange={(e) => setOrgName(e.target.value)}
-              />
-            </Field>
+            {hideOrgField ? null : (
+              <Field label="Program / school">
+                <TextInput
+                  placeholder="Aliso Niguel Basketball"
+                  value={orgName}
+                  disabled={!!lockSignup}
+                  onChange={(e) => setOrgName(e.target.value)}
+                />
+              </Field>
+            )}
             <Field label="Your name">
               <TextInput
                 placeholder="Coach name"
