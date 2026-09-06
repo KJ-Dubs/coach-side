@@ -30,12 +30,30 @@ export const Route = createFileRoute("/plays/$playId/")({
 
 type Tool = "move" | "ball" | PlayActionType;
 
-const DEFAULT_TOKENS = [
-  { id: "p1", label: "1", x: 0.5, y: 0.5, ball: true },
-  { id: "p2", label: "2", x: 0.62, y: 0.14, ball: false },
-  { id: "p3", label: "3", x: 0.62, y: 0.86, ball: false },
-  { id: "p4", label: "4", x: 0.74, y: 0.32, ball: false },
-  { id: "p5", label: "5", x: 0.74, y: 0.68, ball: false },
+const DEFAULT_TOKENS: PlayToken[] = [
+  { id: "p1", label: "1", x: 0.5, y: 0.5, ball: true, team: "offense" },
+  { id: "p2", label: "2", x: 0.62, y: 0.14, ball: false, team: "offense" },
+  { id: "p3", label: "3", x: 0.62, y: 0.86, ball: false, team: "offense" },
+  { id: "p4", label: "4", x: 0.74, y: 0.32, ball: false, team: "offense" },
+  { id: "p5", label: "5", x: 0.74, y: 0.68, ball: false, team: "offense" },
+];
+
+/** Offense inbounding against a full court press (attacking right). */
+const PRESS_OFFENSE: PlayToken[] = [
+  { id: "o1", label: "1", x: 0.12, y: 0.35, ball: true, team: "offense" },
+  { id: "o2", label: "2", x: 0.12, y: 0.68, ball: false, team: "offense" },
+  { id: "o3", label: "3", x: 0.28, y: 0.16, ball: false, team: "offense" },
+  { id: "o4", label: "4", x: 0.3, y: 0.85, ball: false, team: "offense" },
+  { id: "o5", label: "5", x: 0.45, y: 0.5, ball: false, team: "offense" },
+];
+
+/** 1-2-1-1 full court press defense. */
+const PRESS_DEFENSE: PlayToken[] = [
+  { id: "d1", label: "1", x: 0.16, y: 0.5, ball: false, team: "defense" },
+  { id: "d2", label: "2", x: 0.28, y: 0.24, ball: false, team: "defense" },
+  { id: "d3", label: "3", x: 0.28, y: 0.76, ball: false, team: "defense" },
+  { id: "d4", label: "4", x: 0.45, y: 0.5, ball: false, team: "defense" },
+  { id: "d5", label: "5", x: 0.68, y: 0.5, ball: false, team: "defense" },
 ];
 
 function blankFrame(playId: string, idx: number): PlayFrame {
@@ -48,6 +66,7 @@ function blankFrame(playId: string, idx: number): PlayFrame {
     note: null,
   };
 }
+
 
 function PlayDesignerPage() {
   const { playId } = Route.useParams();
