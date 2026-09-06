@@ -1,5 +1,17 @@
 import { createFileRoute, Link, type LinkProps } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import {
+  BarChart3,
+  BookOpen,
+  CircleUserRound,
+  ClipboardPenLine,
+  Clock3,
+  Settings,
+  Swords,
+  Target,
+  UsersRound,
+  type LucideIcon,
+} from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Panel, Pill, StatTile } from "@/components/Bubbles";
 import { fetchGames, fetchAllPlayers, fetchPlays } from "@/lib/data";
@@ -28,8 +40,8 @@ type CardDef = {
   title: string;
   blurb: string;
   action: string;
-  tone: "flame" | "grape" | "neutral";
-  glyph: string;
+  tone: "flame" | "grape" | "blue" | "gold" | "teal" | "rose" | "green" | "sky" | "coral";
+  icon: LucideIcon;
 };
 
 const CARDS: CardDef[] = [
@@ -39,7 +51,7 @@ const CARDS: CardDef[] = [
     blurb: "Pick the team, opponent and starting five, then run live stats from the court.",
     action: "Set up game",
     tone: "flame",
-    glyph: "▶",
+    icon: Swords,
   },
   {
     to: "/plays/new",
@@ -47,63 +59,63 @@ const CARDS: CardDef[] = [
     blurb: "Open a fresh frame-by-frame diagram: passes, cuts, curls, dribbles and screens.",
     action: "New play",
     tone: "grape",
-    glyph: "✎",
+    icon: ClipboardPenLine,
   },
   {
     to: "/plays",
     title: "Playbook",
     blurb: "Browse Offense, BLOB, SLOB, Defense, Press Break and Presses. Present or share.",
     action: "Open playbook",
-    tone: "neutral",
-    glyph: "▤",
+    tone: "blue",
+    icon: BookOpen,
   },
   {
     to: "/stats/team",
     title: "Team Stats",
     blurb: "Record, points per game, shooting splits and a team shot chart from saved games.",
     action: "Team stats",
-    tone: "neutral",
-    glyph: "◆",
+    tone: "gold",
+    icon: BarChart3,
   },
   {
     to: "/stats/players",
     title: "Player Stats",
     blurb: "Per-player minutes, scoring, rebounds, splits and shot chart for the season.",
     action: "Player stats",
-    tone: "neutral",
-    glyph: "◉",
+    tone: "teal",
+    icon: Target,
   },
   {
     to: "/roster",
     title: "Rosters",
     blurb: "Every player across your teams with games, points and minutes. Add teams and players.",
     action: "Player directory",
-    tone: "neutral",
-    glyph: "☰",
+    tone: "rose",
+    icon: UsersRound,
   },
   {
     to: "/games",
     title: "Game History",
     blurb: "Every saved game with final score, W/L and a link straight into the review and PDF.",
     action: "History",
-    tone: "neutral",
-    glyph: "◷",
+    tone: "green",
+    icon: Clock3,
   },
   {
     to: "/settings",
     title: "Settings",
     blurb: "Team name, logo, season, coaches, game defaults and assistant-coach invites.",
     action: "Settings",
-    tone: "neutral",
-    glyph: "⚙",
+    tone: "sky",
+    icon: Settings,
   },
   {
     to: "/profile",
     title: "Profile",
     blurb: "Your coach name, email, role and the teams you have access to.",
     action: "Profile",
-    tone: "neutral",
-    glyph: "☺",
+    tone: "coral",
+    icon: CircleUserRound,
   },
 ];
 
@@ -116,6 +128,28 @@ function Dashboard() {
   const live = (games.data ?? []).filter((g) => g.status !== "final");
   const finals = (games.data ?? []).filter((g) => g.status === "final");
   const greeting = me.profile?.full_name?.split(" ")[0] || "Coach";
+  const cardTone = {
+    flame: "border-flame/70 bg-flame/10 hover:bg-flame/15",
+    grape: "border-grape/70 bg-grape/10 hover:bg-grape/15",
+    blue: "border-blue/70 bg-blue/10 hover:bg-blue/15",
+    gold: "border-gold/70 bg-gold/10 hover:bg-gold/15",
+    teal: "border-teal/70 bg-teal/10 hover:bg-teal/15",
+    rose: "border-rose/70 bg-rose/10 hover:bg-rose/15",
+    green: "border-green/70 bg-green/10 hover:bg-green/15",
+    sky: "border-sky/70 bg-sky/10 hover:bg-sky/15",
+    coral: "border-coral/70 bg-coral/10 hover:bg-coral/15",
+  } as const;
+  const accentTone = {
+    flame: "border-flame/60 bg-flame/20 text-flame",
+    grape: "border-grape/60 bg-grape/20 text-grape-bright",
+    blue: "border-blue/60 bg-blue/20 text-blue",
+    gold: "border-gold/60 bg-gold/20 text-gold",
+    teal: "border-teal/60 bg-teal/20 text-teal",
+    rose: "border-rose/60 bg-rose/20 text-rose",
+    green: "border-green/60 bg-green/20 text-green",
+    sky: "border-sky/60 bg-sky/20 text-sky",
+    coral: "border-coral/60 bg-coral/20 text-coral",
+  } as const;
 
   return (
     <AppShell
@@ -143,52 +177,34 @@ function Dashboard() {
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {CARDS.map((c) => (
-          <Link
-            key={c.title}
-            to={c.to}
-            className={cn(
-              "group flex min-h-[176px] flex-col justify-between rounded-3xl border p-4 shadow-lg shadow-black/30 transition-transform active:scale-[0.99]",
-              c.tone === "flame"
-                ? "border-flame/60 bg-gradient-to-br from-flame/25 to-surface/80"
-                : c.tone === "grape"
-                  ? "border-grape/60 bg-gradient-to-br from-grape/25 to-surface/80"
-                  : "border-border/70 bg-surface/80 hover:border-grape/60",
-            )}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-1.5 text-base font-black text-foreground">
-                {c.title}
-              </span>
-              <span
-                aria-hidden
-                className={cn(
-                  "inline-flex h-10 w-10 items-center justify-center rounded-2xl border text-lg font-black",
-                  c.tone === "flame"
-                    ? "border-flame bg-flame text-accent-foreground"
-                    : "border-grape/60 bg-grape/25 text-foreground",
-                )}
-              >
-                {c.glyph}
-              </span>
-            </div>
-            <p className="my-3 rounded-2xl border border-border/50 bg-surface-2/60 px-3 py-2 text-xs font-semibold leading-relaxed text-muted-foreground">
-              {c.blurb}
-            </p>
-            <span
+        {CARDS.map((c) => {
+          const Icon = c.icon;
+          return (
+            <Link
+              key={c.title}
+              to={c.to}
               className={cn(
-                "inline-flex w-fit rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-wider",
-                c.tone === "flame"
-                  ? "border-flame bg-flame text-accent-foreground"
-                  : c.tone === "grape"
-                    ? "border-grape bg-grape text-primary-foreground"
-                    : "border-border bg-surface-2 text-foreground group-hover:border-grape/70",
+                "group flex min-h-[176px] flex-col justify-between rounded-3xl border border-l-4 p-4 shadow-lg shadow-black/30 transition-all hover:-translate-y-0.5 active:scale-[0.99]",
+                cardTone[c.tone],
               )}
             >
-              {c.action} →
-            </span>
-          </Link>
-        ))}
+              <div className="flex items-center justify-between gap-2">
+                <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-1.5 text-base font-black text-foreground">
+                  {c.title}
+                </span>
+                <span aria-hidden className={cn("inline-flex h-10 w-10 items-center justify-center rounded-2xl border", accentTone[c.tone])}>
+                  <Icon className="h-5 w-5 transition-transform group-hover:scale-110" />
+                </span>
+              </div>
+              <p className="my-3 rounded-2xl border border-border/50 bg-surface-2/70 px-3 py-2 text-xs font-semibold leading-relaxed text-muted-foreground">
+                {c.blurb}
+              </p>
+              <span className={cn("inline-flex w-fit rounded-full border px-4 py-2 text-xs font-bold uppercase", accentTone[c.tone])}>
+                {c.action} →
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </AppShell>
   );
