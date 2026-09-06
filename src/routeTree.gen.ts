@@ -18,6 +18,7 @@ import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedGameGameIdRouteImport } from './routes/_authenticated/game.$gameId'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games.index'
 import { Route as AuthenticatedGamesNewRouteImport } from './routes/_authenticated/games.new'
+import { Route as AuthenticatedPlaysIndexRouteImport } from './routes/_authenticated/plays.index'
 import { Route as AuthenticatedReviewGameIdRouteImport } from './routes/_authenticated/review.$gameId'
 import { Route as AuthenticatedStatsPlayersRouteImport } from './routes/_authenticated/stats.players'
 import { Route as AuthenticatedStatsTeamRouteImport } from './routes/_authenticated/stats.team'
@@ -68,6 +69,11 @@ const AuthenticatedGamesNewRoute = AuthenticatedGamesNewRouteImport.update({
   path: '/games/new',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPlaysIndexRoute = AuthenticatedPlaysIndexRouteImport.update({
+  id: '/plays/',
+  path: '/plays/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedReviewGameIdRoute =
   AuthenticatedReviewGameIdRouteImport.update({
     id: '/review/$gameId',
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
   '/games/': typeof AuthenticatedGamesIndexRoute
+  '/plays/': typeof AuthenticatedPlaysIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
 }
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
   '/games': typeof AuthenticatedGamesIndexRoute
+  '/plays': typeof AuthenticatedPlaysIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/plays/$playId': typeof AuthenticatedPlaysPlayIdIndexRoute
 }
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/_authenticated/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/_authenticated/stats/team': typeof AuthenticatedStatsTeamRoute
   '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
+  '/_authenticated/plays/': typeof AuthenticatedPlaysIndexRoute
   '/_authenticated/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/_authenticated/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
 }
@@ -159,6 +168,7 @@ export interface FileRouteTypes {
     | '/stats/players'
     | '/stats/team'
     | '/games/'
+    | '/plays/'
     | '/plays/$playId/view'
     | '/plays/$playId/'
   fileRoutesByTo: FileRoutesByTo
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
     | '/stats/players'
     | '/stats/team'
     | '/games'
+    | '/plays'
     | '/plays/$playId/view'
     | '/plays/$playId'
   id:
@@ -190,6 +201,7 @@ export interface FileRouteTypes {
     | '/_authenticated/stats/players'
     | '/_authenticated/stats/team'
     | '/_authenticated/games/'
+    | '/_authenticated/plays/'
     | '/_authenticated/plays/$playId/view'
     | '/_authenticated/plays/$playId/'
   fileRoutesById: FileRoutesById
@@ -266,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGamesNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/plays/': {
+      id: '/_authenticated/plays/'
+      path: '/plays'
+      fullPath: '/plays/'
+      preLoaderRoute: typeof AuthenticatedPlaysIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/review/$gameId': {
       id: '/_authenticated/review/$gameId'
       path: '/review/$gameId'
@@ -313,6 +332,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStatsPlayersRoute: typeof AuthenticatedStatsPlayersRoute
   AuthenticatedStatsTeamRoute: typeof AuthenticatedStatsTeamRoute
   AuthenticatedGamesIndexRoute: typeof AuthenticatedGamesIndexRoute
+  AuthenticatedPlaysIndexRoute: typeof AuthenticatedPlaysIndexRoute
   AuthenticatedPlaysPlayIdViewRoute: typeof AuthenticatedPlaysPlayIdViewRoute
   AuthenticatedPlaysPlayIdIndexRoute: typeof AuthenticatedPlaysPlayIdIndexRoute
 }
@@ -326,6 +346,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStatsPlayersRoute: AuthenticatedStatsPlayersRoute,
   AuthenticatedStatsTeamRoute: AuthenticatedStatsTeamRoute,
   AuthenticatedGamesIndexRoute: AuthenticatedGamesIndexRoute,
+  AuthenticatedPlaysIndexRoute: AuthenticatedPlaysIndexRoute,
   AuthenticatedPlaysPlayIdViewRoute: AuthenticatedPlaysPlayIdViewRoute,
   AuthenticatedPlaysPlayIdIndexRoute: AuthenticatedPlaysPlayIdIndexRoute,
 }
