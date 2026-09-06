@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { BubbleButton, Field, Label, Note, Panel, Pill, TextInput } from "@/components/Bubbles";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
+import { setRememberDevice, rememberDevice } from "@/lib/remember";
 import wordmark from "@/assets/coachside-wordmark.png.asset.json";
 
 type Mode = "signin" | "signup" | "forgot" | "reset";
@@ -31,6 +33,27 @@ export function AuthCard({
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [remember, setRemember] = useState(true);
+
+  useEffect(() => {
+    setRemember(rememberDevice());
+  }, []);
+
+  const withGoogle = async () => {
+    setBusy(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) throw new Error(result.error.message ?? "Google sign-in failed");
+      if (result.redirected) return;
+      onDone?.();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // Supabase fires PASSWORD_RECOVERY after the reset-email link lands here.
   useEffect(() => {
@@ -104,11 +127,11 @@ export function AuthCard({
 
   return (
     <Panel className="flex w-full max-w-md flex-col gap-3 p-4 sm:p-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center overflow-hidden rounded-2xl border border-grape/60 bg-grape/20 px-3 py-2">
-          <img src={wordmark.url} alt="CoachSide" className="h-7 w-auto" />
+      <div className="flex flex-col items-center gap-2">
+        <span className="inline-flex w-full items-center justify-center overflow-hidden rounded-3xl border border-grape/60 bg-grape/15 px-5 py-4">
+          <img src={wordmark.url} alt="CoachSide" className="h-16 w-auto sm:h-20" />
         </span>
-        <Pill tone="flame">Basketball</Pill>
+        <Pill tone="flame">Basketball coaching platform</Pill>
       </div>
       {banner}
       <h1 className="inline-flex w-fit rounded-2xl border border-border bg-surface-2/80 px-4 py-2 text-lg font-black tracking-tight text-foreground">
@@ -227,6 +250,36 @@ export function AuthCard({
           ) : null}
         </div>
       </form>
+
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-center rounded-full border border-border/70 bg-surface-2/60 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+          or
+        </div>
+        <BubbleButton size="lg" tone="neutral" disabled={busy} onClick={() => void withGoogle()}>
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-[11px] font-black text-background">
+            G
+          </span>
+          Continue with Google
+        </BubbleButton>
+        <button
+          type="button"
+          onClick={() => {
+            setRemember(!remember);
+            setRememberDevice(!remember);
+          }}
+          className="inline-flex items-center gap-2 self-start rounded-full border border-border/70 bg-surface-2/70 px-3 py-2 text-xs font-bold text-foreground"
+        >
+          <span
+            className={
+              "inline-flex h-4 w-4 items-center justify-center rounded-md border " +
+              (remember ? "border-grape bg-grape text-primary-foreground" : "border-border bg-surface")
+            }
+          >
+            {remember ? "✓" : ""}
+          </span>
+          Remember this device & keep me signed in
+        </button>
+      </div>
 
       <div className="flex flex-wrap gap-2">
         <Label>Live stats from the court</Label>

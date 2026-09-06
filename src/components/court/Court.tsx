@@ -8,13 +8,31 @@ import { useRef } from "react";
  * Half court: basket on the LEFT.
  */
 
+export type CourtZoom = "full" | "left" | "right";
+
+/** Visible slice of the full court, in normalized full-court units. */
+export function zoomBox(zoom: CourtZoom) {
+  if (zoom === "left") return { x: 0, w: 0.5 };
+  if (zoom === "right") return { x: 0.5, w: 0.5 };
+  return { x: 0, w: 1 };
+}
+
+/** Full-court normalized point -> position inside the visible court box (0..1). */
+export function toLocal(zoom: CourtZoom, p: { x: number; y: number }) {
+  const b = zoomBox(zoom);
+  return { x: (p.x - b.x) / b.w, y: p.y };
+}
+
 type CourtProps = {
   variant?: "half" | "full" | undefined;
+  /** Only used with variant="full": which slice of the one court is visible. */
+  zoom?: CourtZoom | undefined;
   className?: string | undefined;
   /** SVG-space extras (markers, arrows) drawn on top of the court lines. */
   children?: ReactNode | undefined;
   /** HTML overlay layer rendered above the svg. */
   overlay?: ReactNode | undefined;
+  /** Normalized point in the coordinate space of the whole court surface. */
   onCourtPoint?: ((p: { x: number; y: number }) => void) | undefined;
   onCourtPointerMove?: ((p: { x: number; y: number }) => void) | undefined;
   onCourtPointerUp?: ((p: { x: number; y: number }) => void) | undefined;
@@ -26,6 +44,7 @@ export const COURT_VIEW = {
   half: { w: 470, h: 500 },
   full: { w: 940, h: 500 },
 };
+
 
 function HalfLines({ mirrored = false }: { mirrored?: boolean }) {
   // Drawn in a 470x500 space with the basket at the left.
@@ -53,6 +72,7 @@ function HalfLines({ mirrored = false }: { mirrored?: boolean }) {
 
 export function Court({
   variant = "half",
+  zoom = "full",
   className,
   children,
   overlay,
@@ -63,25 +83,27 @@ export function Court({
   style,
 }: CourtProps) {
   const view = COURT_VIEW[variant];
+  const box = variant === "full" ? zoomBox(zoom) : { x: 0, w: 1 };
+  const vb = { x: box.x * view.w, w: box.w * view.w };
   const ref = useRef<HTMLDivElement>(null);
 
   const pointFrom = (e: ReactPointerEvent) => {
     const el = ref.current;
     if (!el) return null;
     const r = el.getBoundingClientRect();
-    const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    const lx = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
     const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
-    return { x, y };
+    return { x: box.x + lx * box.w, y };
   };
 
   return (
     <div
       ref={ref}
       className={cn(
-        "relative w-full select-none overflow-hidden rounded-3xl border-2 border-border bg-court shadow-2xl shadow-black/40",
+        "relative w-full select-none overflow-hidden rounded-3xl border-2 border-border bg-court shadow-2xl shadow-black/40 transition-all duration-300",
         className,
       )}
-      style={{ aspectRatio: `${view.w} / ${view.h}`, cursor, touchAction: "none", ...style }}
+      style={{ aspectRatio: `${vb.w} / ${view.h}`, cursor, touchAction: "none", ...style }}
       onPointerDown={(e) => {
         const p = pointFrom(e);
         if (p && onCourtPoint) onCourtPoint(p);
@@ -96,13 +118,14 @@ export function Court({
       }}
     >
       <svg
-        viewBox={`0 0 ${view.w} ${view.h}`}
+        viewBox={`${vb.x} 0 ${vb.w} ${view.h}`}
         className="absolute inset-0 h-full w-full"
       >
         <rect x={0} y={0} width={view.w} height={view.h} fill="var(--court)" />
         <g fill="none" stroke="var(--court-line)" strokeWidth={3}>
           <rect x={2} y={2} width={view.w - 4} height={view.h - 4} rx={6} />
         </g>
+
         {variant === "half" ? (
           <>
             <HalfLines />

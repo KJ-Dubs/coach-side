@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { statColor } from "@/lib/statColors";
-import { Court } from "@/components/court/Court";
+import { Court, toLocal, type CourtZoom } from "@/components/court/Court";
 import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
 import { fetchEvents, fetchGame, fetchPlayers } from "@/lib/data";
 import { formatClock, shotValue, zoneOf, ZONE_LABEL } from "@/lib/court";
@@ -90,6 +90,7 @@ function LiveGamePage() {
   const [ftPlayer, setFtPlayer] = useState<string | null>(null);
   const [finalized, setFinalized] = useState(false);
   const [endPrompt, setEndPrompt] = useState(false);
+  const [courtZoom, setCourtZoom] = useState<CourtZoom>("left");
 
   const stateKey = `game-state-${gameId}`;
   const eventsKey = `game-events-${gameId}`;
@@ -314,7 +315,9 @@ function LiveGamePage() {
   }, [clock, loaded, finalized, quarter]);
 
   /* ---------------- court tap ---------------- */
-  const onCourtPoint = (p: { x: number; y: number }) => {
+  const onCourtPoint = (raw: { x: number; y: number }) => {
+    // The surface reports full-court coordinates; stats live in half-court space.
+    const p = { x: Math.min(1, Math.max(0, raw.x * 2)), y: raw.y };
     if (step.kind === "reboundLoc") {
       addEvent({
         event_type: "REBOUND",
@@ -520,7 +523,11 @@ function LiveGamePage() {
     };
   }
 
-  const overlayPoint = point ?? { x: 0.5, y: 0.5 };
+  // Stat coordinates stay in half-court space; the court surface draws the one
+  // full court, so half-court points are mapped into the visible slice.
+  const halfToLocal = (p: { x: number; y: number }) =>
+    toLocal(courtZoom, { x: p.x * 0.5, y: p.y });
+  const overlayPoint = halfToLocal(point ?? { x: 0.5, y: 0.5 });
   const clusterX = Math.min(0.82, Math.max(0.2, overlayPoint.x < 0.5 ? overlayPoint.x + 0.24 : overlayPoint.x - 0.24));
   const clusterY = Math.min(0.82, Math.max(0.18, overlayPoint.y));
 
@@ -554,17 +561,44 @@ function LiveGamePage() {
     <div className="min-h-screen p-2 sm:p-3">
       <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-2 lg:flex-row">
         {/* COURT — always visible, never replaced */}
-        <div className="flex flex-1 items-start justify-center">
+        <div className="flex flex-1 flex-col items-center gap-2">
+          <Panel className="flex w-full flex-wrap items-center gap-2 p-2">
+            <Pill tone="muted">Court view</Pill>
+            <BubbleButton
+              size="sm"
+              tone={courtZoom === "left" ? "grape" : "neutral"}
+              onClick={() => setCourtZoom("left")}
+            >
+              Half Court
+            </BubbleButton>
+            <BubbleButton
+              size="sm"
+              tone={courtZoom === "full" ? "flame" : "neutral"}
+              onClick={() => setCourtZoom("full")}
+            >
+              Full Court
+            </BubbleButton>
+          </Panel>
           <Court
+            variant="full"
+            zoom={courtZoom}
             className="mx-auto w-full"
-            style={{ maxWidth: "min(100%, calc((100dvh - 1.5rem) * 0.94))" }}
+            style={
+              courtZoom === "full"
+                ? { maxWidth: "100%" }
+                : { maxWidth: "min(100%, calc((100dvh - 5rem) * 0.94))" }
+            }
+
             onCourtPoint={onCourtPoint}
             overlay={
               <>
                 {point ? (
                   <div
                     className="pointer-events-none absolute z-10 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-flame bg-flame/40 bubble-pop"
-                    style={{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }}
+                    style={{
+                      left: `${halfToLocal(point).x * 100}%`,
+                      top: `${halfToLocal(point).y * 100}%`,
+                    }}
                   />
                 ) : null}
 
@@ -605,7 +639,7 @@ function LiveGamePage() {
                       return (
                         <circle
                           key={e.id}
-                          cx={`${(e.x as number) * 100}%`}
+                          cx={`${halfToLocal({ x: e.x as number, y: e.y as number }).x * 100}%`}
                           cy={`${(e.y as number) * 100}%`}
                           r={5}
                           fill={hollow ? "transparent" : c}
