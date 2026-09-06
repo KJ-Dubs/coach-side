@@ -9,12 +9,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Coach Dashboard — CourtSide Coach" },
+      { title: "Coach Dashboard — CoachSide" },
       {
         name: "description",
         content: "Start a game, design plays, open the playbook and review team and player stats.",
       },
-      { property: "og:title", content: "Coach Dashboard — CourtSide Coach" },
+      { property: "og:title", content: "Coach Dashboard — CoachSide" },
       { property: "og:description", content: "Your basketball coaching home base." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

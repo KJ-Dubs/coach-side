@@ -17,13 +17,13 @@ import type { GameEvent } from "@/lib/types";
 export const Route = createFileRoute("/_authenticated/review/$gameId")({
   head: () => ({
     meta: [
-      { title: "Game Report — CourtSide Coach" },
+      { title: "Game Report — CoachSide" },
       {
         name: "description",
         content:
           "Box score, colour-coded shot and rebound maps by team or player, plus a shareable PDF game report.",
       },
-      { property: "og:title", content: "Game Report — CourtSide Coach" },
+      { property: "og:title", content: "Game Report — CoachSide" },
       {
         property: "og:description",
         content: "Colour-coded location maps, box score and shareable PDF reports.",
@@ -142,7 +142,7 @@ function ReviewPage() {
         : roster;
     const doc = buildGamePdf({
       title: `${game.data.opponent} — Game Report`,
-      subtitle: `${game.data.game_date} · CourtSide Coach`,
+      subtitle: `${game.data.game_date} · CoachSide`,
       players: selected,
       events,
       teamScore,

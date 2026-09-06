@@ -10,13 +10,13 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/invite/$token")({
   head: () => ({
     meta: [
-      { title: "Coach Invitation — CourtSide Coach" },
+      { title: "Coach Invitation — CoachSide" },
       {
         name: "description",
         content: "Accept your coaching staff invitation to share team rosters, games, stats and plays.",
       },
-      { property: "og:title", content: "Coach Invitation — CourtSide Coach" },
-      { property: "og:description", content: "Join a CourtSide Coach coaching staff." },
+      { property: "og:title", content: "Coach Invitation — CoachSide" },
+      { property: "og:description", content: "Join a CoachSide coaching staff." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },

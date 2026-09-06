@@ -34,13 +34,13 @@ import { ROLE_LABEL, type CoachInvite, type CoachRole, type Team } from "@/lib/t
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — CourtSide Coach" },
+      { title: "Settings — CoachSide" },
       {
         name: "description",
         content:
-          "Account, team information, logo, game defaults and assistant-coach access for your CourtSide Coach program.",
+          "Account, team information, logo, game defaults and assistant-coach access for your CoachSide program.",
       },
-      { property: "og:title", content: "Settings — CourtSide Coach" },
+      { property: "og:title", content: "Settings — CoachSide" },
       {
         property: "og:description",
         content: "Team info, game defaults and coach access in one place.",

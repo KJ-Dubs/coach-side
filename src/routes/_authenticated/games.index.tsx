@@ -18,12 +18,12 @@ import type { Game } from "@/lib/types";
 export const Route = createFileRoute("/_authenticated/games/")({
   head: () => ({
     meta: [
-      { title: "Game History — CourtSide Coach" },
+      { title: "Game History — CoachSide" },
       {
         name: "description",
         content: "Season record, shooting splits and every saved game with final score and review.",
       },
-      { property: "og:title", content: "Game History — CourtSide Coach" },
+      { property: "og:title", content: "Game History — CoachSide" },
       { property: "og:description", content: "Season record and every saved game." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

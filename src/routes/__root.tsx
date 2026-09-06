@@ -31,7 +31,7 @@ function NotFoundComponent() {
           to="/"
           className="inline-flex items-center justify-center rounded-full border border-grape bg-grape px-5 py-2.5 text-sm font-bold text-primary-foreground transition-colors hover:bg-grape/90"
         >
-          Back to CourtSide Coach
+          Back to CoachSide
         </Link>
       </div>
     </div>
@@ -82,13 +82,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "CourtSide Coach" },
+      { title: "CoachSide" },
       {
         name: "description",
         content:
           "Fast courtside basketball stat tracking, season stats and a visual play designer for coaches.",
       },
-      { name: "author", content: "CourtSide Coach" },
+      { name: "author", content: "CoachSide" },
       { name: "theme-color", content: "#0f0f12" },
     ],
     links: [
@@ -96,7 +96,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

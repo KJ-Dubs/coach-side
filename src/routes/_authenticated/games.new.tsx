@@ -19,12 +19,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/games/new")({
   head: () => ({
     meta: [
-      { title: "Start a Game — CourtSide Coach" },
+      { title: "Start a Game — CoachSide" },
       {
         name: "description",
         content: "Choose the team, opponent, starting five and period rules, then tip off live stats.",
       },
-      { property: "og:title", content: "Start a Game — CourtSide Coach" },
+      { property: "og:title", content: "Start a Game — CoachSide" },
       { property: "og:description", content: "Set up a basketball game and run live stats." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

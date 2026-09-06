@@ -29,12 +29,12 @@ export const Route = createFileRoute("/_authenticated/stats/players")({
   }),
   head: () => ({
     meta: [
-      { title: "Player Stats — CourtSide Coach" },
+      { title: "Player Stats — CoachSide" },
       {
         name: "description",
         content: "Season totals, per-game averages, shooting splits and shot chart for every player.",
       },
-      { property: "og:title", content: "Player Stats — CourtSide Coach" },
+      { property: "og:title", content: "Player Stats — CoachSide" },
       { property: "og:description", content: "Per-player season stats and shot chart." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

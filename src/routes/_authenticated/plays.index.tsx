@@ -35,13 +35,13 @@ export const Route = createFileRoute("/_authenticated/plays/")({
   validateSearch: (s) => searchSchema.parse(s),
   head: () => ({
     meta: [
-      { title: "Playbook — CourtSide Coach" },
+      { title: "Playbook — CoachSide" },
       {
         name: "description",
         content:
           "Your basketball playbook organised into Offense, BLOB, SLOB, Defense, Press Break and Presses folders.",
       },
-      { property: "og:title", content: "Playbook — CourtSide Coach" },
+      { property: "og:title", content: "Playbook — CoachSide" },
       {
         property: "og:description",
         content: "Present, edit, share and duplicate plays from organised category folders.",

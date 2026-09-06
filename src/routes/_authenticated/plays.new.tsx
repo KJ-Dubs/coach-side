@@ -23,13 +23,13 @@ export const Route = createFileRoute("/_authenticated/plays/new")({
   validateSearch: (s) => searchSchema.parse(s),
   head: () => ({
     meta: [
-      { title: "Create a Play — CourtSide Coach" },
+      { title: "Create a Play — CoachSide" },
       {
         name: "description",
         content:
           "Name a new play, file it in the right folder, pick the team and attack basket, then open the frame-by-frame designer.",
       },
-      { property: "og:title", content: "Create a Play — CourtSide Coach" },
+      { property: "og:title", content: "Create a Play — CoachSide" },
       {
         property: "og:description",
         content: "Quick new-play flow that drops you straight into the play designer.",

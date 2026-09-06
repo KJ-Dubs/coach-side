@@ -7,13 +7,13 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CourtSide Coach — Basketball Live Stats & Playbook" },
+      { title: "CoachSide — Basketball Live Stats & Playbook" },
       {
         name: "description",
         content:
-          "Sign in to CourtSide Coach: tap-the-court live stats, season player and team stats, and a frame-by-frame play designer for your basketball program.",
+          "Sign in to CoachSide: tap-the-court live stats, season player and team stats, and a frame-by-frame play designer for your basketball program.",
       },
-      { property: "og:title", content: "CourtSide Coach — Basketball Live Stats & Playbook" },
+      { property: "og:title", content: "CoachSide — Basketball Live Stats & Playbook" },
       {
         property: "og:description",
         content: "Live stats from the court, season stats and a play designer for basketball coaches.",
@@ -37,7 +37,7 @@ function Landing() {
     <main className="flex min-h-screen items-center justify-center px-3 py-6">
       {!ready || session ? (
         <Panel className="p-4">
-          <Pill tone="muted">Loading CourtSide Coach…</Pill>
+          <Pill tone="muted">Loading CoachSide…</Pill>
         </Panel>
       ) : (
         <AuthCard onDone={() => navigate({ to: "/dashboard", replace: true })} />
