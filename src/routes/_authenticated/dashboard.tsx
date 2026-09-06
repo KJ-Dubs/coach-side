@@ -159,7 +159,7 @@ function SchedulePanel() {
   return (
     <Panel className="mb-3 flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <Pill tone="gold">Calendar / Schedule</Pill>
+        <Pill tone="flame">Calendar / Schedule</Pill>
         <div className="ml-auto flex gap-2">
           <Link to="/calendar">
             <BubbleButton size="sm" tone="grape">View Calendar</BubbleButton>
