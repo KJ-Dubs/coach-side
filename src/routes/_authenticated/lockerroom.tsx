@@ -376,8 +376,6 @@ function LockerRoomPage() {
                 teamId={teamId}
                 isCoach={locker.isCoach}
                 meId={locker.user?.id ?? null}
-            meName={locker.displayName}
-            meRoleLabel={locker.roleLabel}
                 receipts={(receipts.data ?? []).filter((r) => r.announcement_id === a.id)}
                 memberCount={(directory.data ?? []).length}
                 onChanged={() => {
@@ -409,8 +407,8 @@ function LockerRoomPage() {
               teamId={teamId}
               directory={directory.data ?? []}
               meId={locker.user?.id ?? null}
-            meName={locker.displayName}
-            meRoleLabel={locker.roleLabel}
+              meName={locker.displayName}
+              meRoleLabel={locker.roleLabel}
               canPost={locker.isCoach || (locker.isPlayer && team?.allow_player_posting !== false)}
               canAttach={locker.isCoach}
               disabledNote="Your coach has set team chat to coach announcements only."
@@ -434,8 +432,8 @@ function LockerRoomPage() {
               teamId={teamId}
               directory={directory.data ?? []}
               meId={locker.user?.id ?? null}
-            meName={locker.displayName}
-            meRoleLabel={locker.roleLabel}
+              meName={locker.displayName}
+              meRoleLabel={locker.roleLabel}
               canPost
               canAttach
             />
