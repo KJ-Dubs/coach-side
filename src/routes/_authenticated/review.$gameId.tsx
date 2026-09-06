@@ -6,7 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
 import { Court } from "@/components/court/Court";
 import { fetchEvents, fetchGame, fetchPlayers, fetchSubs } from "@/lib/data";
-import { cacheGet } from "@/lib/offline";
+import { cacheGet, pendingOps } from "@/lib/offline";
 import { gameResult } from "@/lib/stats";
 import { formatClock, ZONE_LABEL, type Zone } from "@/lib/court";
 import { statColor, STAT_LABELS } from "@/lib/statColors";
@@ -60,10 +60,14 @@ function ReviewPage() {
     queryFn: async () => {
       try {
         const server = await fetchEvents(gameId);
-        const cached = (await cacheGet<GameEvent[]>(`game-events-${gameId}`)) ?? [];
-        if (!cached.length) return server;
+        // Events still waiting in the offline queue belong in the review too.
+        const queued = (await pendingOps())
+          .filter((o) => o.kind === "insert_event")
+          .map((o) => o.payload as GameEvent)
+          .filter((e) => e.game_id === gameId);
+        if (!queued.length) return server;
         const byId = new Map<string, GameEvent>();
-        for (const e of [...server, ...cached]) byId.set(e.id, e);
+        for (const e of [...server, ...queued]) byId.set(e.id, e);
         return [...byId.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
       } catch (err) {
         const cached = await cacheGet<GameEvent[]>(`game-events-${gameId}`);
