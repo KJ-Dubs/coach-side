@@ -462,6 +462,12 @@ export async function updateTeam(
       | "default_periods"
       | "default_period_minutes"
       | "default_overtime_minutes"
+      | "home_gym"
+      | "default_practice_location"
+      | "default_arrival_offset_minutes"
+      | "default_game_reminder_minutes"
+      | "default_practice_reminder_minutes"
+      | "timezone"
       | "org_id"
     >
   >,
