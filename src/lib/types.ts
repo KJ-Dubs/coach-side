@@ -110,4 +110,11 @@ export type PlayFrame = {
   note: string | null;
 };
 
-export const PLAY_CATEGORIES = ["Offense", "BLOB", "SLOB", "Press Break"] as const;
+export const PLAY_CATEGORIES = [
+  "Offense",
+  "BLOB",
+  "SLOB",
+  "Press Break",
+  "Press Defense",
+] as const;
+
