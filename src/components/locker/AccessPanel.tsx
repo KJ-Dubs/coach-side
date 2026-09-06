@@ -172,16 +172,7 @@ export function LockerAccessPanel({ team }: { team: Team }) {
               size="sm"
               tone="ghost"
               onClick={async () => {
-                const members = await fetchTeamInvites(team.id).then(() => d);
-                void members;
-                const { supabase } = await import("@/integrations/supabase/client");
-                const { data } = await supabase
-                  .from("team_members")
-                  .select("id")
-                  .eq("team_id", team.id)
-                  .eq("user_id", d.user_id)
-                  .maybeSingle();
-                if (data) await removeTeamMember((data as { id: string }).id);
+                await removeTeamMember(team.id, d.user_id);
                 await qc.invalidateQueries({ queryKey: ["team-directory", team.id] });
                 toast.success("Access removed");
               }}
