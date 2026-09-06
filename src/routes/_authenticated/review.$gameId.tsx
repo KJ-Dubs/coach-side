@@ -6,6 +6,8 @@ import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
 import { Court } from "@/components/court/Court";
 import { fetchEvents, fetchGame, fetchPlayers, fetchSubs } from "@/lib/data";
+import { cacheGet } from "@/lib/offline";
+import { gameResult } from "@/lib/stats";
 import { formatClock, ZONE_LABEL, type Zone } from "@/lib/court";
 import { statColor, STAT_LABELS } from "@/lib/statColors";
 import { buildGamePdf, boxRow } from "@/lib/pdf";
@@ -15,13 +17,13 @@ import type { GameEvent } from "@/lib/types";
 export const Route = createFileRoute("/_authenticated/review/$gameId")({
   head: () => ({
     meta: [
-      { title: "Game Report — CourtFlow Coach" },
+      { title: "Game Report — CourtSide Coach" },
       {
         name: "description",
         content:
           "Box score, colour-coded shot and rebound maps by team or player, plus a shareable PDF game report.",
       },
-      { property: "og:title", content: "Game Report — CourtFlow Coach" },
+      { property: "og:title", content: "Game Report — CourtSide Coach" },
       {
         property: "og:description",
         content: "Colour-coded location maps, box score and shareable PDF reports.",
@@ -51,7 +53,25 @@ function ReviewPage() {
     queryFn: () => fetchPlayers(game.data!.team_id),
     enabled: !!game.data,
   });
-  const eventsQ = useQuery({ queryKey: ["events", gameId], queryFn: () => fetchEvents(gameId) });
+  // Server first; if the gym wifi is down, fall back to the locally cached events
+  // so the coach can still review right after End Game.
+  const eventsQ = useQuery({
+    queryKey: ["events", gameId],
+    queryFn: async () => {
+      try {
+        const server = await fetchEvents(gameId);
+        const cached = (await cacheGet<GameEvent[]>(`game-events-${gameId}`)) ?? [];
+        if (!cached.length) return server;
+        const byId = new Map<string, GameEvent>();
+        for (const e of [...server, ...cached]) byId.set(e.id, e);
+        return [...byId.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
+      } catch (err) {
+        const cached = await cacheGet<GameEvent[]>(`game-events-${gameId}`);
+        if (cached?.length) return cached;
+        throw err;
+      }
+    },
+  });
   const subsQ = useQuery({ queryKey: ["subs", gameId], queryFn: () => fetchSubs(gameId) });
 
   const [playerFilter, setPlayerFilter] = useState<string | "ALL">("ALL");
@@ -102,6 +122,8 @@ function ReviewPage() {
     .filter((e) => e.event_type === "OPP_SCORE")
     .reduce((s, e) => s + (e.points || 0), 0);
   const oppFouls = events.filter((e) => e.event_type === "OPP_FOUL").length;
+  const isFinal = game.data?.status === "final";
+  const result = game.data ? gameResult(game.data, eventsQ.data ?? []) : null;
 
   const deleteEvent = async (e: GameEvent) => {
     await supabase.from("game_events").delete().eq("id", e.id);
@@ -116,7 +138,7 @@ function ReviewPage() {
         : roster;
     const doc = buildGamePdf({
       title: `${game.data.opponent} — Game Report`,
-      subtitle: `${game.data.game_date} · CourtFlow Coach`,
+      subtitle: `${game.data.game_date} · CourtSide Coach`,
       players: selected,
       events,
       teamScore,
@@ -149,14 +171,47 @@ function ReviewPage() {
           >
             PDF · Selected player
           </BubbleButton>
-          <Link to="/game/$gameId" params={{ gameId }}>
-            <BubbleButton tone="neutral" size="sm">
-              Back To Live Court
-            </BubbleButton>
-          </Link>
+          {isFinal ? (
+            <Link to="/games">
+              <BubbleButton tone="neutral" size="sm">
+                Game History
+              </BubbleButton>
+            </Link>
+          ) : (
+            <Link to="/game/$gameId" params={{ gameId }}>
+              <BubbleButton tone="neutral" size="sm">
+                Back To Live Court
+              </BubbleButton>
+            </Link>
+          )}
         </>
       }
     >
+      <Panel className="mb-3 flex flex-wrap items-center gap-2">
+        <Pill tone={isFinal ? "grape" : "flame"}>{isFinal ? "FINAL — saved" : "In progress"}</Pill>
+        {result ? (
+          <Pill tone={result === "W" ? "success" : result === "L" ? "danger" : "muted"}>
+            {result === "W" ? "WIN" : result === "L" ? "LOSS" : "TIE"}
+          </Pill>
+        ) : null}
+        {game.data ? (
+          <>
+            <Pill tone="muted">{game.data.home_away === "away" ? "Away" : "Home"}</Pill>
+            <Pill tone="muted">
+              {game.data.periods} × {game.data.period_minutes} min
+            </Pill>
+            {game.data.quarter > game.data.periods ? <Pill tone="flame">Overtime</Pill> : null}
+          </>
+        ) : null}
+        {isFinal ? <Label>Counted in Team & Player Stats</Label> : null}
+        {!isFinal && game.data ? (
+          <Link to="/game/$gameId" params={{ gameId }}>
+            <BubbleButton size="sm" tone="flame">
+              Resume live court
+            </BubbleButton>
+          </Link>
+        ) : null}
+      </Panel>
       <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
         <StatTile label="Us" value={teamScore} tone="grape" />
         <StatTile label="Opponent" value={oppScore} tone="flame" />
