@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 type CardDef = {
-  to: LinkProps["to"];
+  to: NonNullable<LinkProps["to"]>;
   title: string;
   blurb: string;
   action: string;
