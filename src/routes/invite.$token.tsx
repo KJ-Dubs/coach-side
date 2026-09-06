@@ -88,27 +88,24 @@ function InvitePage() {
           )}
         </Panel>
 
-        {info && info.status === "pending" ? (
-          ready && session ? (
-            <Panel className="flex flex-wrap items-center gap-2">
-              <Pill tone="muted">Signed in</Pill>
-              <BubbleButton
-                tone="flame"
-                disabled={accept.isPending}
-                onClick={() => accept.mutate()}
-              >
-                {accept.isPending ? "Joining…" : "Accept invitation"}
-              </BubbleButton>
-            </Panel>
-          ) : (
-            <AuthCard
-              initialMode="signup"
-              lockSignup
-              defaultOrgName={info.org_name}
-              banner={<Pill tone="grape">Create your account to join {info.org_name}</Pill>}
-              onDone={() => accept.mutate()}
-            />
-          )
+        {!signedIn ? (
+          <AuthCard
+            initialMode="signup"
+            lockSignup
+            banner={<Pill tone="grape">Create your account to join the coaching staff</Pill>}
+            onDone={() => accept.mutate()}
+          />
+        ) : info && info.status === "pending" ? (
+          <Panel className="flex flex-wrap items-center gap-2">
+            <Pill tone="muted">Signed in</Pill>
+            <BubbleButton
+              tone="flame"
+              disabled={accept.isPending}
+              onClick={() => accept.mutate()}
+            >
+              {accept.isPending ? "Joining…" : "Accept invitation"}
+            </BubbleButton>
+          </Panel>
         ) : null}
       </div>
     </main>
