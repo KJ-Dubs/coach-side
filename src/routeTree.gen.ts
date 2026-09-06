@@ -16,6 +16,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRosterRouteImport } from './routes/_authenticated/roster'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedGameGameIdRouteImport } from './routes/_authenticated/game.$gameId'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games.index'
@@ -61,6 +62,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ShareTokenRoute = ShareTokenRouteImport.update({
   id: '/share/$token',
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRoute
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
@@ -148,6 +155,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRoute
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/roster': typeof AuthenticatedRosterRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/_authenticated/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/_authenticated/games/new': typeof AuthenticatedGamesNewRoute
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/roster'
     | '/settings'
+    | '/invite/$token'
     | '/share/$token'
     | '/game/$gameId'
     | '/games/new'
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/roster'
     | '/settings'
+    | '/invite/$token'
     | '/share/$token'
     | '/game/$gameId'
     | '/games/new'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/roster'
     | '/_authenticated/settings'
+    | '/invite/$token'
     | '/share/$token'
     | '/_authenticated/game/$gameId'
     | '/_authenticated/games/new'
@@ -246,6 +258,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   ShareTokenRoute: typeof ShareTokenRoute
 }
 
@@ -299,6 +312,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/share/$token': {
       id: '/share/$token'
@@ -421,6 +441,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  InviteTokenRoute: InviteTokenRoute,
   ShareTokenRoute: ShareTokenRoute,
 }
 export const routeTree = rootRouteImport
