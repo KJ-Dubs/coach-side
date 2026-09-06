@@ -22,6 +22,7 @@ import {
   fetchSeasonBundle,
   fetchTeams,
   updatePlayer,
+  updateTeam,
 } from "@/lib/data";
 import { aggregatePlayers, fmtMinutes } from "@/lib/stats";
 import type { Player } from "@/lib/types";
