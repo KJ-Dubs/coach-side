@@ -12,7 +12,7 @@ import { buildGamePdf, boxRow } from "@/lib/pdf";
 import { supabase } from "@/integrations/supabase/client";
 import type { GameEvent } from "@/lib/types";
 
-export const Route = createFileRoute("/review/$gameId")({
+export const Route = createFileRoute("/_authenticated/review/$gameId")({
   head: () => ({
     meta: [
       { title: "Game Report — CourtFlow Coach" },

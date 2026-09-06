@@ -6,7 +6,7 @@ import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
 import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { fetchFrames, fetchPlay } from "@/lib/data";
 
-export const Route = createFileRoute("/plays/$playId/view")({
+export const Route = createFileRoute("/_authenticated/plays/$playId/view")({
   head: () => ({
     meta: [
       { title: "Play Slideshow — CourtFlow Coach" },

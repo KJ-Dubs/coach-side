@@ -16,7 +16,7 @@ import {
 
 import { uuid } from "@/lib/offline";
 
-export const Route = createFileRoute("/plays/$playId/")({
+export const Route = createFileRoute("/_authenticated/plays/$playId/")({
   head: () => ({
     meta: [
       { title: "Play Designer — CourtFlow Coach" },

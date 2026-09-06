@@ -19,7 +19,7 @@ import {
 import type { GameEvent, Player } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/game/$gameId")({
+export const Route = createFileRoute("/_authenticated/game/$gameId")({
   head: () => ({
     meta: [
       { title: "Live Game — CourtFlow Coach" },
