@@ -1353,6 +1353,14 @@ export type Database = {
       }
       can_post_conversation: { Args: { _conv: string }; Returns: boolean }
       can_read_conversation: { Args: { _conv: string }; Returns: boolean }
+      ensure_direct_conversation: {
+        Args: { _other: string; _team: string }
+        Returns: string
+      }
+      ensure_team_conversation: {
+        Args: { _team: string; _type: string }
+        Returns: string
+      }
       game_visible: { Args: { _game: string }; Returns: boolean }
       get_invite: {
         Args: { _token: string }
@@ -1395,6 +1403,18 @@ export type Database = {
       }
       my_team_role: { Args: { _team: string }; Returns: string }
       play_visible: { Args: { _play: string }; Returns: boolean }
+      team_directory: {
+        Args: { _team: string }
+        Returns: {
+          email: string
+          full_name: string
+          jersey: string
+          player_id: string
+          player_name: string
+          role: string
+          user_id: string
+        }[]
+      }
       team_visible: { Args: { _team: string }; Returns: boolean }
     }
     Enums: {
