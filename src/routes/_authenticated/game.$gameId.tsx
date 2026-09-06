@@ -715,42 +715,42 @@ function LiveGamePage() {
           </Panel>
 
           {/* END OF GAME */}
-          <Panel className="flex flex-col gap-2 p-2">
+          <Panel className={cn("flex flex-col gap-2 p-2", endPrompt && "border-flame/60")}>
             <div className="flex flex-wrap items-center gap-2">
               <Label>Game status</Label>
               <Pill tone={finalized ? "muted" : "grape"}>{finalized ? "Final — saved" : "In progress"}</Pill>
+              {isOvertime ? <Pill tone="flame">OT{quarter - periods > 1 ? quarter - periods : ""}</Pill> : null}
             </div>
+            {endPrompt ? (
+              <Pill tone="flame">
+                {teamScore === oppScore
+                  ? "Time expired — tied. Start overtime or end the game."
+                  : "Time expired — saved as final. Open the review or add overtime."}
+              </Pill>
+            ) : null}
             <div className="flex flex-wrap gap-1.5">
-              <BubbleButton size="sm" tone="danger" onClick={finishGame}>
-                End Game & Save
+              <BubbleButton
+                size="sm"
+                tone="danger"
+                disabled={ending}
+                onClick={() => void finishGame()}
+              >
+                {ending ? "Saving…" : finalized ? "Save & open review" : "End Game & Save"}
               </BubbleButton>
               <BubbleButton
                 size="sm"
                 tone="grape"
                 disabled={quarter < periods}
-                onClick={() => {
-                  setQuarter((q) => Math.max(periods, q) + 1);
-                  setClock(4 * 60);
-                  setRunning(false);
-                  setFinalized(false);
-                  setEndPrompt(false);
-                  saveGameState("live");
-                  toast.success("Overtime started");
-                }}
+                onClick={startOvertime}
               >
-                + Overtime
+                + Overtime ({overtimeMinutes} min)
               </BubbleButton>
               <Link to="/review/$gameId" params={{ gameId }}>
                 <BubbleButton size="sm" tone="neutral">
-                  Stats & PDF
+                  Review so far
                 </BubbleButton>
               </Link>
             </div>
-            {endPrompt ? (
-              <Pill tone="flame">
-                Time expired — game saved. Start overtime or open the report.
-              </Pill>
-            ) : null}
           </Panel>
 
           <Panel className="flex flex-col gap-2 p-2">
