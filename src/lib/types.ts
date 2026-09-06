@@ -9,6 +9,8 @@ export type Team = {
   default_periods?: number;
   default_period_minutes?: number;
   default_overtime_minutes?: number;
+  locker_token?: string;
+  locker_enabled?: boolean;
   created_at?: string;
 };
 
@@ -168,4 +170,18 @@ export type CoachInvite = {
 export const ROLE_LABEL: Record<CoachRole, string> = {
   head_coach: "Head Coach",
   assistant_coach: "Assistant Coach",
+};
+
+export type TeamEventKind = "game" | "practice" | "event";
+
+export type TeamEvent = {
+  id: string;
+  team_id: string;
+  kind: TeamEventKind | string;
+  title: string;
+  starts_at: string;
+  ends_at: string | null;
+  location: string | null;
+  notes: string | null;
+  created_at?: string;
 };
