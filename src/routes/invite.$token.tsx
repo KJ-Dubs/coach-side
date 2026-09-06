@@ -31,9 +31,13 @@ function InvitePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const signedIn = ready && !!session;
+
   const invite = useQuery({
     queryKey: ["invite", token],
     queryFn: () => lookupInvite(token),
+    // Invite details are only visible to signed-in users.
+    enabled: signedIn,
   });
 
   const accept = useMutation({
