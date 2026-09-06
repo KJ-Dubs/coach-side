@@ -468,6 +468,8 @@ export async function updateTeam(
       | "default_game_reminder_minutes"
       | "default_practice_reminder_minutes"
       | "timezone"
+      | "allow_player_posting"
+      | "require_ack_default"
       | "org_id"
     >
   >,

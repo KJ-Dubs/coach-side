@@ -257,8 +257,12 @@ export async function acceptTeamInvite(token: string, playerId: string | null) {
   return data as unknown as { team_id: string; role: TeamRole };
 }
 
-export async function removeTeamMember(id: string) {
-  const { error } = await supabase.from("team_members").delete().eq("id", id);
+export async function removeTeamMember(teamId: string, userId: string) {
+  const { error } = await supabase
+    .from("team_members")
+    .delete()
+    .eq("team_id", teamId)
+    .eq("user_id", userId);
   if (error) throw error;
 }
 
