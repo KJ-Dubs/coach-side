@@ -317,6 +317,42 @@ function RosterPage() {
         </div>
       </Panel>
 
+      <Panel className="mb-3 flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Pill tone="grape">Teams &amp; seasons</Pill>
+          <Label>Rename a team or change its season</Label>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {(teams.data ?? []).map((t) => (
+            <div
+              key={t.id}
+              className="flex flex-col gap-2 rounded-2xl border border-border bg-surface-2/60 p-2"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <Pill tone="neutral">{t.name}</Pill>
+                <Pill tone="muted">{t.season}</Pill>
+                <BubbleButton
+                  size="sm"
+                  tone={editingTeam === t.id ? "grape" : "ghost"}
+                  className="ml-auto"
+                  onClick={() => setEditingTeam(editingTeam === t.id ? null : t.id)}
+                >
+                  {editingTeam === t.id ? "Close" : "Edit"}
+                </BubbleButton>
+              </div>
+              {editingTeam === t.id ? (
+                <TeamEditor
+                  team={t}
+                  saving={patchTeam.isPending}
+                  onSave={(name, season) => patchTeam.mutate({ id: t.id, name, season })}
+                />
+              ) : null}
+            </div>
+          ))}
+          {!teams.data?.length ? <EmptyState>No teams yet — add one above</EmptyState> : null}
+        </div>
+      </Panel>
+
       <Panel className="mb-3 grid grid-cols-3 gap-2">
         <StatTile label="Teams" value={teams.data?.length ?? "—"} tone="grape" />
         <StatTile label="Active players" value={activeCount} />
