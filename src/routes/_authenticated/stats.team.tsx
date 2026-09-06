@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, EmptyState, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
 import { ShotChart } from "@/components/court/ShotChart";
@@ -8,12 +8,14 @@ import { fetchAllPlayers, fetchSeasonBundle, fetchTeams } from "@/lib/data";
 import {
   aggregatePlayers,
   aggregateTeam,
+  fmtMinutes,
   fmtPct,
   fmtPer,
   fmtSplit,
   gameResult,
   gameScore,
   groupByGame,
+  lineupStats,
   seasonsOf,
 } from "@/lib/stats";
 
@@ -98,6 +100,17 @@ function TeamStatsPage() {
       [...rows].sort((a, b) => b.l[key] - a.l[key])[0] ?? null;
     return { pts: top("pts"), reb: top("reb"), ast: top("ast"), stl: top("stl"), blk: top("blk") };
   }, [players.data, playerLines, teamId]);
+
+  const [combo, setCombo] = useState<string[]>([]);
+  const roster = useMemo(
+    () => (players.data ?? []).filter((p) => p.team_id === teamId),
+    [players.data, teamId],
+  );
+  useEffect(() => setCombo([]), [teamId]);
+  const together = useMemo(
+    () => lineupStats(games, events, subs, combo),
+    [games, events, subs, combo],
+  );
 
   const recent = [...games].sort((a, b) => b.game_date.localeCompare(a.game_date)).slice(0, 8);
   const g = line.games;
@@ -211,6 +224,51 @@ function TeamStatsPage() {
                   />
                 ))}
               </div>
+            </Panel>
+
+            <Panel className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Pill tone="grape">Player combinations</Pill>
+                <Label>Tap two or more players to see them together</Label>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {roster.map((p) => (
+                  <BubbleButton
+                    key={p.id}
+                    size="sm"
+                    tone={combo.includes(p.id) ? "flame" : "neutral"}
+                    onClick={() =>
+                      setCombo((c) => (c.includes(p.id) ? c.filter((x) => x !== p.id) : [...c, p.id]))
+                    }
+                  >
+                    #{p.jersey} {p.name.split(" ")[0]}
+                  </BubbleButton>
+                ))}
+                {combo.length ? (
+                  <BubbleButton size="sm" tone="neutral" onClick={() => setCombo([])}>
+                    Clear
+                  </BubbleButton>
+                ) : null}
+              </div>
+              {combo.length < 2 ? (
+                <Pill tone="muted">Pick at least two players</Pill>
+              ) : together.seconds === 0 ? (
+                <Pill tone="muted">No shared floor time in saved games yet</Pill>
+              ) : (
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  <StatTile label="Minutes together" value={fmtMinutes(together.seconds)} tone="grape" />
+                  <StatTile label="Team points" value={together.pts} tone="flame" />
+                  <StatTile label="Opponent points" value={together.oppPts} />
+                  <StatTile
+                    label="Plus / minus"
+                    value={`${together.pts - together.oppPts > 0 ? "+" : ""}${together.pts - together.oppPts}`}
+                  />
+                  <StatTile label="FG%" value={fmtPct(together.fg)} hint={fmtSplit(together.fg)} />
+                  <StatTile label="Rebounds" value={together.reb} />
+                  <StatTile label="Assists" value={together.ast} />
+                  <StatTile label="Turnovers" value={together.to} />
+                </div>
+              )}
             </Panel>
 
             <Panel className="flex flex-col gap-2">

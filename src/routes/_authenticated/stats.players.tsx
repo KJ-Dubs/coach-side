@@ -16,7 +16,9 @@ import {
   gameScore,
   groupByGame,
   playerGameLine,
+  lineupStats,
   seasonsOf,
+  sumPlayerLines,
 } from "@/lib/stats";
 
 type Search = { team?: string | undefined; player?: string | undefined; season?: string | undefined };
@@ -76,11 +78,23 @@ function PlayerStatsPage() {
     () => (players.data ?? []).filter((p) => p.team_id === teamId),
     [players.data, teamId],
   );
-  const playerId =
-    search.player && teamPlayers.some((p) => p.id === search.player)
-      ? search.player
-      : teamPlayers[0]?.id;
+  const selectedIds = useMemo(() => {
+    const ids = (search.player ?? "").split(",").filter(Boolean).filter((id) =>
+      teamPlayers.some((p) => p.id === id),
+    );
+    if (ids.length) return ids;
+    const first = teamPlayers[0]?.id;
+    return first ? [first] : [];
+  }, [search.player, teamPlayers]);
+  const multi = selectedIds.length > 1;
+  const playerId = selectedIds[0];
   const player = teamPlayers.find((p) => p.id === playerId) ?? null;
+  const togglePlayer = (id: string) => {
+    const next = selectedIds.includes(id)
+      ? selectedIds.filter((x) => x !== id)
+      : [...selectedIds, id];
+    setSearch({ player: next.join(",") || undefined });
+  };
 
   const teamGames = useMemo(
     () => (bundle.data?.games ?? []).filter((g) => g.team_id === teamId),
@@ -102,8 +116,16 @@ function PlayerStatsPage() {
   );
   const line = (playerId && lines.get(playerId)) || emptyPlayerLine(playerId ?? "");
   const playerEvents = useMemo(
-    () => teamEvents.filter((e) => e.player_id === playerId),
-    [teamEvents, playerId],
+    () => teamEvents.filter((e) => e.player_id && selectedIds.includes(e.player_id)),
+    [teamEvents, selectedIds],
+  );
+  const groupLine = useMemo(
+    () => sumPlayerLines(selectedIds.map((id) => lines.get(id) ?? emptyPlayerLine(id))),
+    [lines, selectedIds],
+  );
+  const together = useMemo(
+    () => lineupStats(teamGames, teamEvents, teamSubs, selectedIds),
+    [teamGames, teamEvents, teamSubs, selectedIds],
   );
   const evByGame = useMemo(() => groupByGame(teamEvents), [teamEvents]);
   const recent = useMemo(
@@ -175,9 +197,9 @@ function PlayerStatsPage() {
             <BubbleButton
               key={p.id}
               size="sm"
-              tone={p.id === playerId ? "flame" : "neutral"}
+              tone={selectedIds.includes(p.id) ? "flame" : "neutral"}
               className={!p.active ? "opacity-60" : undefined}
-              onClick={() => setSearch({ player: p.id })}
+              onClick={() => togglePlayer(p.id)}
             >
               #{p.jersey} {p.name.split(" ")[0]}
             </BubbleButton>
@@ -185,12 +207,108 @@ function PlayerStatsPage() {
           {!players.isLoading && teamPlayers.length === 0 ? (
             <Pill tone="muted">No players on this team</Pill>
           ) : null}
+          <Pill tone="grape">Tap more than one player to compare a combination</Pill>
+          {multi ? (
+            <BubbleButton
+              size="sm"
+              tone="neutral"
+              onClick={() => setSearch({ player: playerId })}
+            >
+              Clear to one player
+            </BubbleButton>
+          ) : null}
         </div>
       </Panel>
 
       {!player ? (
         <EmptyState>Pick a player to see their season</EmptyState>
+      ) : multi ? (
+        <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
+          <div className="flex flex-col gap-3">
+            <Panel className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Pill tone="flame">Selected group</Pill>
+                {selectedIds.map((id) => {
+                  const p = teamPlayers.find((x) => x.id === id)!;
+                  return (
+                    <Pill key={id} tone="grape">
+                      #{p.jersey} {p.name.split(" ")[0]}
+                    </Pill>
+                  );
+                })}
+              </div>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                <StatTile label="Combined points" value={groupLine.pts} tone="flame" />
+                <StatTile label="Rebounds" value={groupLine.reb} />
+                <StatTile label="Assists" value={groupLine.ast} />
+                <StatTile label="Steals" value={groupLine.stl} />
+                <StatTile label="Blocks" value={groupLine.blk} />
+                <StatTile label="Turnovers" value={groupLine.to} />
+                <StatTile label="FG%" value={fmtPct(groupLine.fg)} hint={fmtSplit(groupLine.fg)} tone="grape" />
+                <StatTile label="3PT%" value={fmtPct(groupLine.three)} hint={fmtSplit(groupLine.three)} />
+              </div>
+            </Panel>
+
+            <Panel className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Pill tone="grape">On the floor together</Pill>
+                <Label>Only counts time all selected players shared</Label>
+              </div>
+              {together.seconds === 0 ? (
+                <EmptyState>No shared floor time in saved games yet</EmptyState>
+              ) : (
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  <StatTile label="Games together" value={together.games} tone="grape" />
+                  <StatTile label="Minutes together" value={fmtMinutes(together.seconds)} />
+                  <StatTile label="Team points" value={together.pts} tone="flame" />
+                  <StatTile label="Opponent points" value={together.oppPts} />
+                  <StatTile
+                    label="Plus / minus"
+                    value={`${together.pts - together.oppPts > 0 ? "+" : ""}${together.pts - together.oppPts}`}
+                    tone={together.pts - together.oppPts >= 0 ? "grape" : "flame"}
+                  />
+                  <StatTile label="Team FG%" value={fmtPct(together.fg)} hint={fmtSplit(together.fg)} />
+                  <StatTile label="Rebounds" value={together.reb} />
+                  <StatTile label="Turnovers" value={together.to} />
+                </div>
+              )}
+            </Panel>
+
+            <Panel className="flex flex-col gap-2">
+              <Pill tone="flame">Side by side</Pill>
+              <div className="flex flex-col gap-1.5">
+                {selectedIds.map((id) => {
+                  const p = teamPlayers.find((x) => x.id === id)!;
+                  const l = lines.get(id) ?? emptyPlayerLine(id);
+                  return (
+                    <div
+                      key={id}
+                      className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-border/60 bg-surface-2/60 px-2.5 py-2"
+                    >
+                      <Pill tone="grape">#{p.jersey} {p.name.split(" ")[0]}</Pill>
+                      <Pill tone="muted">{l.games} G</Pill>
+                      <Pill tone="flame">{l.pts} pts</Pill>
+                      <Pill tone="muted">{l.reb} reb</Pill>
+                      <Pill tone="muted">{l.ast} ast</Pill>
+                      <Pill tone="muted">{fmtSplit(l.fg)} FG</Pill>
+                      <Pill tone="muted">{fmtMinutes(l.seconds)}</Pill>
+                    </div>
+                  );
+                })}
+              </div>
+            </Panel>
+          </div>
+
+          <Panel className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Pill tone="flame">Group shot chart</Pill>
+              <Label>All selected players</Label>
+            </div>
+            <ShotChart events={playerEvents} />
+          </Panel>
+        </div>
       ) : (
+
         <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
           <div className="flex flex-col gap-3">
             <Panel className="flex flex-col gap-3">

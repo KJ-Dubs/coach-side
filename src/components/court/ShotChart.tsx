@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { BubbleButton, Pill } from "@/components/Bubbles";
-import { Court } from "@/components/court/Court";
+import { Court, toLocal, type CourtZoom } from "@/components/court/Court";
 import { ZONE_LABEL, zoneOf, type Zone } from "@/lib/court";
 import { STAT_LABELS, statColor } from "@/lib/statColors";
 import type { GameEvent } from "@/lib/types";
 
-const FILTERS = ["SHOTS", "MADE", "MISS", "REBOUND", "ALL"] as const;
+const FILTERS = ["SHOTS", "MADE", "MISS", "REBOUND", "STEAL", "TURNOVER", "ALL"] as const;
 type Filter = (typeof FILTERS)[number];
 
 const LEGEND = ["MADE", "MISS", "REBOUND", "ASSIST", "STEAL", "TURNOVER", "BLOCK", "FOUL"];
@@ -13,9 +13,12 @@ const LEGEND = ["MADE", "MISS", "REBOUND", "ASSIST", "STEAL", "TURNOVER", "BLOCK
 /**
  * Season/aggregate location map. Same colour language as the live court,
  * review page and PDF: green makes, red misses, blue rebounds, etc.
+ * Stored x is in half-court units (1 = half line, up to 2 in the backcourt),
+ * so the chart can show the attacking half or the whole floor.
  */
 export function ShotChart({ events, compact }: { events: GameEvent[]; compact?: boolean }) {
   const [filter, setFilter] = useState<Filter>("SHOTS");
+  const [zoom, setZoom] = useState<CourtZoom>("left");
 
   const located = useMemo(
     () => events.filter((e) => e.x != null && e.y != null && e.event_type !== "OPP_SCORE"),
@@ -29,6 +32,18 @@ export function ShotChart({ events, compact }: { events: GameEvent[]; compact?: 
         return e.event_type === filter;
       }),
     [located, filter],
+  );
+  const backcourt = useMemo(() => located.filter((e) => (e.x as number) > 1).length, [located]);
+
+  const marks = useMemo(
+    () =>
+      plotted
+        .map((e) => ({
+          e,
+          p: toLocal(zoom, { x: (e.x as number) / 2, y: e.y as number }),
+        }))
+        .filter((m) => m.p.x >= -0.02 && m.p.x <= 1.02),
+    [plotted, zoom],
   );
 
   const zones = useMemo(() => {
@@ -59,20 +74,31 @@ export function ShotChart({ events, compact }: { events: GameEvent[]; compact?: 
             {f === "SHOTS" ? "Makes + misses" : f === "ALL" ? "Everything" : STAT_LABELS[f] ?? f}
           </BubbleButton>
         ))}
-        <Pill tone="muted">{plotted.length} plotted</Pill>
+        <Pill tone="muted">{marks.length} plotted</Pill>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <BubbleButton size="sm" tone={zoom === "left" ? "flame" : "neutral"} onClick={() => setZoom("left")}>
+          Half Court
+        </BubbleButton>
+        <BubbleButton size="sm" tone={zoom === "full" ? "flame" : "neutral"} onClick={() => setZoom("full")}>
+          Full Court
+        </BubbleButton>
+        <Pill tone="muted">{backcourt} in the backcourt</Pill>
       </div>
       <Court
+        variant="full"
+        zoom={zoom}
         cursor="default"
         overlay={
           <svg className="pointer-events-none absolute inset-0 h-full w-full">
-            {plotted.map((e) => {
+            {marks.map(({ e, p }) => {
               const c = statColor(String(e.event_type));
               const hollow = e.event_type === "MISS" || e.event_type === "FT_MISS";
               return (
                 <circle
                   key={e.id}
-                  cx={`${(e.x as number) * 100}%`}
-                  cy={`${(e.y as number) * 100}%`}
+                  cx={`${p.x * 100}%`}
+                  cy={`${p.y * 100}%`}
                   r={compact ? 5 : 7}
                   fill={hollow ? "transparent" : c}
                   stroke={c}

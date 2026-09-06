@@ -391,3 +391,131 @@ export function sortByJersey<T extends { player: Player }>(rows: T[]) {
 export function seasonsOf(teams: { season: string }[]) {
   return Array.from(new Set(teams.map((t) => t.season).filter(Boolean))).sort().reverse();
 }
+
+/* ---------------- lineup / combination stats ---------------- */
+
+/** Time slices of one game with the set of players on the floor. */
+function onFloorSegments(game: Game, events: GameEvent[], subs: Substitution[]) {
+  const start = new Set<string>(game.starting_five ?? []);
+  const ordered = [...subs].sort(
+    (a, b) =>
+      absoluteSeconds(game, a.quarter, a.clock_seconds) -
+        absoluteSeconds(game, b.quarter, b.clock_seconds) || a.created_at.localeCompare(b.created_at),
+  );
+  const end = gameLengthSeconds(game, events, subs);
+  const segs: { start: number; end: number; on: Set<string> }[] = [];
+  const on = new Set<string>(start);
+  let prev = 0;
+  for (const s of ordered) {
+    const t = Math.min(end, absoluteSeconds(game, s.quarter, s.clock_seconds));
+    if (t > prev) segs.push({ start: prev, end: t, on: new Set(on) });
+    prev = Math.max(prev, t);
+    if (s.player_out) on.delete(s.player_out);
+    if (s.player_in) on.add(s.player_in);
+  }
+  if (end > prev) segs.push({ start: prev, end, on: new Set(on) });
+  return segs;
+}
+
+export type LineupLine = {
+  players: string[];
+  games: number;
+  seconds: number;
+  pts: number;
+  oppPts: number;
+  reb: number;
+  ast: number;
+  stl: number;
+  to: number;
+  fg: Split;
+  three: Split;
+};
+
+/**
+ * How a group of players performs when they are all on the floor together.
+ * Derived from the starting five + substitution log; games without that data
+ * simply contribute nothing (numbers are never invented).
+ */
+export function lineupStats(
+  games: Game[],
+  events: GameEvent[],
+  subs: Substitution[],
+  playerIds: string[],
+): LineupLine {
+  const line: LineupLine = {
+    players: playerIds,
+    games: 0,
+    seconds: 0,
+    pts: 0,
+    oppPts: 0,
+    reb: 0,
+    ast: 0,
+    stl: 0,
+    to: 0,
+    fg: emptySplit(),
+    three: emptySplit(),
+  };
+  if (playerIds.length === 0) return line;
+  const evByGame = groupByGame(events);
+  const subsByGame = groupByGame(subs);
+  for (const g of games) {
+    const ev = evByGame.get(g.id) ?? [];
+    const sb = subsByGame.get(g.id) ?? [];
+    if ((g.starting_five ?? []).length === 0 && sb.length === 0) continue;
+    const segs = onFloorSegments(g, ev, sb).filter((s) => playerIds.every((p) => s.on.has(p)));
+    if (segs.length === 0) continue;
+    const together = segs.reduce((n, s) => n + (s.end - s.start), 0);
+    if (together <= 0) continue;
+    line.games++;
+    line.seconds += together;
+    for (const e of ev) {
+      const t = absoluteSeconds(g, e.quarter, e.clock_seconds);
+      if (!segs.some((s) => t >= s.start && t <= s.end)) continue;
+      if (e.event_type === "OPP_SCORE") {
+        line.oppPts += e.points || 0;
+        continue;
+      }
+      line.pts += e.points || 0;
+      if (e.event_type === "REBOUND") line.reb++;
+      if (e.event_type === "ASSIST") line.ast++;
+      if (e.event_type === "STEAL") line.stl++;
+      if (e.event_type === "TURNOVER") line.to++;
+      if (isFieldGoal(e)) {
+        line.fg.att++;
+        if (e.event_type === "MADE") line.fg.made++;
+        if (isThreeAttempt(e)) {
+          line.three.att++;
+          if (e.event_type === "MADE") line.three.made++;
+        }
+      }
+    }
+  }
+  return line;
+}
+
+/** Sum of several player lines (a selected group's combined production). */
+export function sumPlayerLines(lines: PlayerLine[]): PlayerLine {
+  const out = emptyPlayerLine("group");
+  const addSplit = (a: Split, b: Split) => {
+    a.made += b.made;
+    a.att += b.att;
+  };
+  for (const l of lines) {
+    out.games = Math.max(out.games, l.games);
+    out.starts += l.starts;
+    out.seconds += l.seconds;
+    out.pts += l.pts;
+    out.reb += l.reb;
+    out.ast += l.ast;
+    out.stl += l.stl;
+    out.blk += l.blk;
+    out.to += l.to;
+    out.pf += l.pf;
+    addSplit(out.fg, l.fg);
+    addSplit(out.two, l.two);
+    addSplit(out.three, l.three);
+    addSplit(out.ft, l.ft);
+    addSplit(out.rim, l.rim);
+  }
+  return out;
+}
