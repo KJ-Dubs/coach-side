@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      coach_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          org_id: string
+          role: Database["public"]["Enums"]["coach_role"]
+          team_id: string | null
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          org_id: string
+          role?: Database["public"]["Enums"]["coach_role"]
+          team_id?: string | null
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          org_id?: string
+          role?: Database["public"]["Enums"]["coach_role"]
+          team_id?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_invites_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_invites_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_events: {
         Row: {
           clock_seconds: number
@@ -89,9 +146,11 @@ export type Database = {
           created_at: string
           ended_at: string | null
           game_date: string
+          home_away: string
           id: string
           opp_score: number
           opponent: string
+          overtime_minutes: number
           period_minutes: number
           periods: number
           quarter: number
@@ -105,9 +164,11 @@ export type Database = {
           created_at?: string
           ended_at?: string | null
           game_date?: string
+          home_away?: string
           id?: string
           opp_score?: number
           opponent: string
+          overtime_minutes?: number
           period_minutes?: number
           periods?: number
           quarter?: number
@@ -121,9 +182,11 @@ export type Database = {
           created_at?: string
           ended_at?: string | null
           game_date?: string
+          home_away?: string
           id?: string
           opp_score?: number
           opponent?: string
+          overtime_minutes?: number
           period_minutes?: number
           periods?: number
           quarter?: number
@@ -138,6 +201,38 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_members: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          role: Database["public"]["Enums"]["coach_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          role?: Database["public"]["Enums"]["coach_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          role?: Database["public"]["Enums"]["coach_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -366,22 +461,40 @@ export type Database = {
       }
       teams: {
         Row: {
+          assistant_coaches: string | null
           created_at: string
+          default_overtime_minutes: number
+          default_period_minutes: number
+          default_periods: number
+          head_coach_name: string | null
           id: string
+          logo_url: string | null
           name: string
           org_id: string | null
           season: string
         }
         Insert: {
+          assistant_coaches?: string | null
           created_at?: string
+          default_overtime_minutes?: number
+          default_period_minutes?: number
+          default_periods?: number
+          head_coach_name?: string | null
           id?: string
+          logo_url?: string | null
           name: string
           org_id?: string | null
           season?: string
         }
         Update: {
+          assistant_coaches?: string | null
           created_at?: string
+          default_overtime_minutes?: number
+          default_period_minutes?: number
+          default_periods?: number
+          head_coach_name?: string | null
           id?: string
+          logo_url?: string | null
           name?: string
           org_id?: string | null
           season?: string
@@ -401,13 +514,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invite: { Args: { _token: string }; Returns: Json }
       game_visible: { Args: { _game: string }; Returns: boolean }
+      get_invite: {
+        Args: { _token: string }
+        Returns: {
+          email: string
+          org_name: string
+          role: string
+          status: string
+          team_name: string
+        }[]
+      }
+      is_head_coach: { Args: never; Returns: boolean }
       my_org_id: { Args: never; Returns: string }
+      my_role: {
+        Args: never
+        Returns: Database["public"]["Enums"]["coach_role"]
+      }
       play_visible: { Args: { _play: string }; Returns: boolean }
       team_visible: { Args: { _team: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      coach_role: "head_coach" | "assistant_coach"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -534,6 +663,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      coach_role: ["head_coach", "assistant_coach"],
+    },
   },
 } as const

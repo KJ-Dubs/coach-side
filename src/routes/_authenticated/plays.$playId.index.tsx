@@ -8,6 +8,7 @@ import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { fetchFrames, fetchPlay, saveFrames, updatePlay } from "@/lib/data";
 import {
   PLAY_CATEGORIES,
+  normalizeCategory,
   type PlayAction,
   type PlayActionType,
   type PlayFrame,
@@ -16,16 +17,16 @@ import {
 
 import { uuid } from "@/lib/offline";
 
-export const Route = createFileRoute("/plays/$playId/")({
+export const Route = createFileRoute("/_authenticated/plays/$playId/")({
   head: () => ({
     meta: [
-      { title: "Play Designer — CourtFlow Coach" },
+      { title: "Play Designer — CourtSide Coach" },
       {
         name: "description",
         content:
           "Place players, mark the ball handler, and draw passes, cuts and screens across multiple frames.",
       },
-      { property: "og:title", content: "Play Designer — CourtFlow Coach" },
+      { property: "og:title", content: "Play Designer — CourtSide Coach" },
       {
         property: "og:description",
         content: "Place players and draw passes, cuts and screens frame by frame.",
@@ -100,7 +101,7 @@ function PlayDesignerPage() {
   useEffect(() => {
     if (play.data) {
       setName(play.data.name);
-      setCategory(play.data.category);
+      setCategory(normalizeCategory(play.data.category));
       setFlip(play.data.attack_basket === "left");
     }
   }, [play.data]);
@@ -243,6 +244,11 @@ function PlayDesignerPage() {
       subtitle="Drag players, drag to draw actions, build frames"
       actions={
         <div className="flex flex-wrap gap-2">
+          <Link to="/plays" search={{ category: normalizeCategory(category) }}>
+            <BubbleButton size="sm" tone="ghost">
+              Playbook
+            </BubbleButton>
+          </Link>
           <Link to="/plays/$playId/view" params={{ playId }}>
             <BubbleButton size="sm" tone="neutral">
               Slideshow

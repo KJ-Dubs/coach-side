@@ -1,0 +1,22 @@
+# CourtSide Coach — production pass roadmap
+
+## In progress / ready
+- [ ] DB: additive migration (games.home_away/overtime_minutes, team settings columns, org_members roles, coach_invites, tightened RLS, invite RPCs, logo bucket)
+- [ ] Sign-in barrier (`/`, `/auth`) + `_authenticated` gate + global offline flusher
+- [ ] Home dashboard (`/dashboard`) with 9 cards
+- [ ] AppShell navigation reorganised (Home, Start Game, Playbook, Stats, Rosters, History, Settings/Profile)
+- [ ] Start a Game step flow (`/games/new`) with Home/Away + OT length
+- [ ] End Game -> confirm -> finalize -> review; review shows Final/W-L
+- [ ] Game History (`/games`) with season summary + In Progress section
+- [ ] Rosters directory (`/roster`) with derived games/points/minutes
+- [ ] Player Stats (`/stats/players`) + Team Stats (`/stats/team`) from game_events
+- [ ] Playbook directory categories + Create Plays flow (`/plays/new`), migrate Press Defense -> Presses
+- [ ] Settings (`/settings`) incl. team logo, defaults, invites
+- [ ] Profile (`/profile`)
+- [ ] Invite acceptance (`/invite/$token`)
+- [ ] Rebrand text to CourtSide Coach; bubble-wrap root not-found/error screens
+- [ ] Build/typecheck + Playwright verification
+
+## Later ideas
+- Season-over-season comparisons once teams carry multiple seasons
+- Opponent scouting notes per game
