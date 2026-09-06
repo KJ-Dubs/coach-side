@@ -13,9 +13,10 @@ import {
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Panel, Pill, StatTile } from "@/components/Bubbles";
-import { fetchGames, fetchAllPlayers, fetchPlays, logoSignedUrl } from "@/lib/data";
+import { fetchTeamEvents, fetchGames, fetchAllPlayers, fetchPlays, logoSignedUrl } from "@/lib/data";
 import { useMe } from "@/lib/useMe";
 import { cn } from "@/lib/utils";
 
@@ -103,6 +104,14 @@ const CARDS: CardDef[] = [
     icon: Clock3,
   },
   {
+    to: "/calendar",
+    title: "Calendar / Schedule",
+    blurb: "Practices, games and team events with arrival times, uniforms and reminders.",
+    action: "View calendar",
+    tone: "gold",
+    icon: CalendarDays,
+  },
+  {
     to: "/locker",
     title: "Locker Room",
     blurb: "Share one link with players and families for stats, plays and the team calendar.",
@@ -127,6 +136,66 @@ const CARDS: CardDef[] = [
     icon: CircleUserRound,
   },
 ];
+
+function SchedulePanel() {
+  const me = useMe();
+  const teamId = me.teams[0]?.id ?? "";
+  const events = useQuery({
+    queryKey: ["team-events", teamId],
+    queryFn: () => fetchTeamEvents(teamId),
+    enabled: !!teamId,
+  });
+  const now = Date.now();
+  const upcoming = (events.data ?? [])
+    .filter((e) => new Date(e.starts_at).getTime() >= now)
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  const pick = (kinds: string[]) => upcoming.find((e) => kinds.includes(e.event_type)) ?? null;
+  const rows = [
+    ["Next practice", pick(["practice", "workout"])],
+    ["Next game", pick(["game", "tournament"])],
+    ["Next team event", upcoming.find((e) => !["practice", "workout", "game", "tournament"].includes(e.event_type)) ?? null],
+  ] as const;
+
+  return (
+    <Panel className="mb-3 flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone="gold">Calendar / Schedule</Pill>
+        <div className="ml-auto flex gap-2">
+          <Link to="/calendar">
+            <BubbleButton size="sm" tone="grape">View Calendar</BubbleButton>
+          </Link>
+          <Link to="/calendar">
+            <BubbleButton size="sm" tone="flame">+ Event</BubbleButton>
+          </Link>
+        </div>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-3">
+        {rows.map(([label, e]) => (
+          <div key={label} className="flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-surface-2/70 p-3">
+            <Pill tone="neutral">{label}</Pill>
+            {e ? (
+              <>
+                <Pill tone="muted">{e.title}</Pill>
+                <Pill tone="muted">
+                  {new Date(e.starts_at).toLocaleString(undefined, {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </Pill>
+                {e.location ? <Pill tone="muted">{e.location}</Pill> : null}
+              </>
+            ) : (
+              <Pill tone="muted">Nothing scheduled</Pill>
+            )}
+          </div>
+        ))}
+      </div>
+    </Panel>
+  );
+}
 
 function Dashboard() {
   const me = useMe();
@@ -178,6 +247,8 @@ function Dashboard() {
         <StatTile label="Saved games" value={finals.length} />
         <StatTile label="Plays" value={plays.data?.length ?? "—"} tone="flame" />
       </Panel>
+
+      <SchedulePanel />
 
       {live.length ? (
         <Panel className="mb-3 flex flex-wrap items-center gap-2">

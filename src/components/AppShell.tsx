@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
+  CalendarDays,
   BookOpen,
   ChevronDown,
   ClipboardPenLine,
@@ -30,6 +31,7 @@ const QUICK = [
   { to: "/games/new", label: "Live Game", icon: Swords, tone: "flame" },
   { to: "/plays", label: "Playbook", icon: BookOpen, tone: "blue" },
   { to: "/plays/new", label: "Play Maker", icon: ClipboardPenLine, tone: "rose" },
+  { to: "/calendar", label: "Calendar", icon: CalendarDays, tone: "teal" },
   { to: "/stats/team", label: "Stats", icon: BarChart3, tone: "gold" },
 ] as const;
 
