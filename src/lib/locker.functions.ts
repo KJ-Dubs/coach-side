@@ -28,7 +28,7 @@ export type LockerBundle = {
 /** Public, token-gated read of everything the Locker Room page shows. */
 export const getLockerBundle = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => tokenSchema.parse(d))
-  .handler(async ({ data }): Promise<LockerBundle | null> => {
+  .handler(async ({ data }): Promise<string | null> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: team } = await supabaseAdmin
@@ -86,7 +86,7 @@ export const getLockerBundle = createServerFn({ method: "GET" })
       }
     }
 
-    return {
+    const bundle: LockerBundle = {
       team: {
         id: team.id,
         name: team.name,
@@ -103,4 +103,6 @@ export const getLockerBundle = createServerFn({ method: "GET" })
       frames: (frames.data ?? []) as unknown as PlayFrame[],
       schedule: (schedule.data ?? []) as unknown as TeamEvent[],
     };
+    // Serialized as JSON so the transport does not need per-field serializers.
+    return JSON.stringify(bundle);
   });

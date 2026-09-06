@@ -6,6 +6,7 @@ import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles
 import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { ShotChart } from "@/components/court/ShotChart";
 import { getLockerBundle, type LockerBundle } from "@/lib/locker.functions";
+import type { GameEvent } from "@/lib/types";
 import { aggregatePlayers, aggregateTeam, fmtMinutes, fmtPct, fmtPer } from "@/lib/stats";
 import wordmark from "@/assets/coachside-wordmark.png.asset.json";
 
@@ -47,7 +48,10 @@ function LockerRoom() {
   const load = useServerFn(getLockerBundle);
   const q = useQuery({
     queryKey: ["locker", token],
-    queryFn: () => load({ data: { token } }),
+    queryFn: async () => {
+      const raw = await load({ data: { token } });
+      return raw ? (JSON.parse(raw) as LockerBundle) : null;
+    },
   });
   const [tab, setTab] = useState<Tab>("stats");
 
@@ -175,7 +179,7 @@ function StatsTab({ bundle }: { bundle: LockerBundle }) {
 
       <Panel className="flex flex-col gap-2">
         <Label>Team shot chart</Label>
-        <ShotChart events={bundle.events} />
+        <ShotChart events={bundle.events as GameEvent[]} />
       </Panel>
     </>
   );
