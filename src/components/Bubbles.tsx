@@ -1,5 +1,11 @@
 import { cn } from "@/lib/utils";
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
+import type {
+  ButtonHTMLAttributes,
+  HTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+} from "react";
 
 /**
  * Shared "everything lives inside a surface" primitives.
@@ -29,12 +35,16 @@ export function Pill({
   tone = "neutral",
   children,
   ...rest
-}: HTMLAttributes<HTMLSpanElement> & { tone?: "neutral" | "grape" | "flame" | "muted" }) {
+}: HTMLAttributes<HTMLSpanElement> & {
+  tone?: "neutral" | "grape" | "flame" | "muted" | "success" | "danger";
+}) {
   const tones = {
     neutral: "bg-surface-2 text-foreground border-border",
     grape: "bg-grape/20 text-foreground border-grape/60",
     flame: "bg-flame/20 text-foreground border-flame/60",
     muted: "bg-surface-2/60 text-muted-foreground border-border/60",
+    success: "bg-chart-4/20 text-foreground border-chart-4/60",
+    danger: "bg-destructive/20 text-foreground border-destructive/60",
   } as const;
   return (
     <span
@@ -79,6 +89,7 @@ export function BubbleButton({
   } as const;
   return (
     <button
+      type="button"
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-full border font-bold tracking-wide shadow-lg shadow-black/20 transition-all active:scale-95 disabled:opacity-40",
         tones[tone],
@@ -109,11 +120,13 @@ export function Label({ children, className }: { children: ReactNode; className?
 export function StatTile({
   label,
   value,
+  hint,
   tone = "neutral",
   className,
 }: {
   label: string;
   value: ReactNode;
+  hint?: ReactNode;
   tone?: "neutral" | "grape" | "flame";
   className?: string;
 }) {
@@ -128,6 +141,117 @@ export function StatTile({
         {label}
       </div>
       <div className="text-lg font-black leading-tight text-foreground">{value}</div>
+      {hint ? (
+        <div className="mt-0.5 text-[10px] font-semibold text-muted-foreground">{hint}</div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Big heading bubble (page titles inside cards). */
+export function Heading({
+  children,
+  tone = "grape",
+  className,
+}: {
+  children: ReactNode;
+  tone?: "grape" | "flame" | "neutral";
+  className?: string;
+}) {
+  const tones = {
+    grape: "border-grape/60 bg-grape/20",
+    flame: "border-flame/60 bg-flame/20",
+    neutral: "border-border bg-surface-2/80",
+  } as const;
+  return (
+    <span
+      className={cn(
+        "inline-flex w-fit rounded-2xl border px-4 py-2 text-lg font-black tracking-tight text-foreground",
+        tones[tone],
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** Helper / body copy always sits on a surface. */
+export function Note({
+  children,
+  tone = "muted",
+  className,
+}: {
+  children: ReactNode;
+  tone?: "muted" | "grape" | "flame" | "danger";
+  className?: string;
+}) {
+  const tones = {
+    muted: "border-border/60 bg-surface-2/70 text-muted-foreground",
+    grape: "border-grape/50 bg-grape/15 text-foreground",
+    flame: "border-flame/50 bg-flame/15 text-foreground",
+    danger: "border-destructive/50 bg-destructive/15 text-foreground",
+  } as const;
+  return (
+    <p
+      className={cn(
+        "inline-flex w-fit max-w-full rounded-2xl border px-3 py-2 text-xs font-semibold leading-relaxed",
+        tones[tone],
+        className,
+      )}
+    >
+      {children}
+    </p>
+  );
+}
+
+export const inputCls =
+  "w-full rounded-2xl border border-input bg-surface-2/70 px-4 py-2.5 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-grape disabled:opacity-60";
+
+export function TextInput({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
+  return <input className={cn(inputCls, className)} {...rest} />;
+}
+
+export function SelectInput({
+  className,
+  children,
+  ...rest
+}: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select className={cn(inputCls, "appearance-none", className)} {...rest}>
+      {children}
+    </select>
+  );
+}
+
+/** Labelled form row: label pill above an input. */
+export function Field({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <Label>{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+/** Empty / loading state that still lives inside a bubble. */
+export function EmptyState({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-center rounded-2xl border border-dashed border-border/70 bg-surface-2/40 px-4 py-6",
+        className,
+      )}
+    >
+      <Pill tone="muted">{children}</Pill>
     </div>
   );
 }

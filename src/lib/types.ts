@@ -2,6 +2,13 @@ export type Team = {
   id: string;
   name: string;
   season: string;
+  org_id?: string | null;
+  logo_url?: string | null;
+  head_coach_name?: string | null;
+  assistant_coaches?: string | null;
+  default_periods?: number;
+  default_period_minutes?: number;
+  default_overtime_minutes?: number;
   created_at?: string;
 };
 
@@ -27,18 +34,26 @@ export type Game = {
   quarter: number;
   clock_seconds: number;
   starting_five: string[];
+  home_away?: "home" | "away" | string;
+  overtime_minutes?: number;
+  ended_at?: string | null;
+  created_at?: string;
 };
 
 export type EventType =
   | "MADE"
   | "MISS"
+  | "FT_MADE"
+  | "FT_MISS"
   | "REBOUND"
   | "ASSIST"
   | "STEAL"
   | "TURNOVER"
   | "BLOCK"
   | "FOUL"
+  | "OPP_FOUL"
   | "OPP_REBOUND"
+  | "OUT_OF_BOUNDS"
   | "OPP_SCORE";
 
 export type GameEvent = {
@@ -89,7 +104,6 @@ export type PlayAction = {
   points: { x: number; y: number }[];
 };
 
-
 export type Play = {
   id: string;
   team_id: string | null;
@@ -114,7 +128,44 @@ export const PLAY_CATEGORIES = [
   "Offense",
   "BLOB",
   "SLOB",
+  "Defense",
   "Press Break",
-  "Press Defense",
+  "Presses",
 ] as const;
 
+export type PlayCategory = (typeof PLAY_CATEGORIES)[number];
+
+/** Older plays were filed under "Press Defense"; they live in "Presses" now. */
+export function normalizeCategory(category: string): string {
+  if (category === "Press Defense") return "Presses";
+  return category;
+}
+
+export type CoachRole = "head_coach" | "assistant_coach";
+
+export type OrgMember = {
+  id: string;
+  org_id: string;
+  user_id: string;
+  role: CoachRole;
+  created_at: string;
+};
+
+export type CoachInvite = {
+  id: string;
+  org_id: string;
+  team_id: string | null;
+  email: string;
+  role: CoachRole;
+  token: string;
+  invited_by: string | null;
+  accepted_by: string | null;
+  accepted_at: string | null;
+  expires_at: string;
+  created_at: string;
+};
+
+export const ROLE_LABEL: Record<CoachRole, string> = {
+  head_coach: "Head Coach",
+  assistant_coach: "Assistant Coach",
+};
