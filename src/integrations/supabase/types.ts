@@ -14,6 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_connections: {
+        Row: {
+          connection_ref: string | null
+          created_at: string
+          enabled: boolean
+          id: string
+          provider: string
+          provider_account_email: string | null
+          sync_direction: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          connection_ref?: string | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          provider?: string
+          provider_account_email?: string | null
+          sync_direction?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          connection_ref?: string | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          provider?: string
+          provider_account_email?: string | null
+          sync_direction?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      calendar_mappings: {
+        Row: {
+          created_at: string
+          id: string
+          provider: string
+          provider_calendar_id: string
+          provider_calendar_name: string | null
+          sync_direction: string
+          team_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          provider?: string
+          provider_calendar_id: string
+          provider_calendar_name?: string | null
+          sync_direction?: string
+          team_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          provider?: string
+          provider_calendar_id?: string
+          provider_calendar_name?: string | null
+          sync_direction?: string
+          team_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_mappings_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coach_invites: {
         Row: {
           accepted_at: string | null
@@ -67,6 +147,97 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_reminders: {
+        Row: {
+          created_at: string
+          delivery_method: string
+          event_id: string
+          fixed_time: string | null
+          id: string
+          minutes_before: number | null
+          reminder_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_method?: string
+          event_id: string
+          fixed_time?: string | null
+          id?: string
+          minutes_before?: number | null
+          reminder_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_method?: string
+          event_id?: string
+          fixed_time?: string | null
+          id?: string
+          minutes_before?: number | null
+          reminder_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_reminders_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "team_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_sync_links: {
+        Row: {
+          created_at: string
+          id: string
+          last_synced_at: string
+          provider: string
+          provider_calendar_id: string | null
+          provider_event_id: string
+          sync_source: string
+          sync_status: string
+          team_event_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_synced_at?: string
+          provider?: string
+          provider_calendar_id?: string | null
+          provider_event_id: string
+          sync_source?: string
+          sync_status?: string
+          team_event_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_synced_at?: string
+          provider?: string
+          provider_calendar_id?: string | null
+          provider_event_id?: string
+          sync_source?: string
+          sync_status?: string
+          team_event_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_sync_links_team_event_id_fkey"
+            columns: ["team_event_id"]
+            isOneToOne: false
+            referencedRelation: "team_events"
             referencedColumns: ["id"]
           },
         ]
@@ -461,42 +632,85 @@ export type Database = {
       }
       team_events: {
         Row: {
+          arrival_at: string | null
+          attachments: Json
           created_at: string
+          created_by: string | null
           ends_at: string | null
+          event_type: string
+          game_id: string | null
+          home_away: string | null
           id: string
           kind: string
+          last_modified_at: string
           location: string | null
           notes: string | null
+          opponent: string | null
           starts_at: string
+          status: string
           team_id: string
+          timezone: string | null
           title: string
+          uniform: string | null
           updated_at: string
+          visibility: string
         }
         Insert: {
+          arrival_at?: string | null
+          attachments?: Json
           created_at?: string
+          created_by?: string | null
           ends_at?: string | null
+          event_type?: string
+          game_id?: string | null
+          home_away?: string | null
           id?: string
           kind?: string
+          last_modified_at?: string
           location?: string | null
           notes?: string | null
+          opponent?: string | null
           starts_at: string
+          status?: string
           team_id: string
+          timezone?: string | null
           title: string
+          uniform?: string | null
           updated_at?: string
+          visibility?: string
         }
         Update: {
+          arrival_at?: string | null
+          attachments?: Json
           created_at?: string
+          created_by?: string | null
           ends_at?: string | null
+          event_type?: string
+          game_id?: string | null
+          home_away?: string | null
           id?: string
           kind?: string
+          last_modified_at?: string
           location?: string | null
           notes?: string | null
+          opponent?: string | null
           starts_at?: string
+          status?: string
           team_id?: string
+          timezone?: string | null
           title?: string
+          uniform?: string | null
           updated_at?: string
+          visibility?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "team_events_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "team_events_team_id_fkey"
             columns: ["team_id"]
@@ -510,10 +724,15 @@ export type Database = {
         Row: {
           assistant_coaches: string | null
           created_at: string
+          default_arrival_offset_minutes: number
+          default_game_reminder_minutes: number
           default_overtime_minutes: number
           default_period_minutes: number
           default_periods: number
+          default_practice_location: string | null
+          default_practice_reminder_minutes: number
           head_coach_name: string | null
+          home_gym: string | null
           id: string
           locker_enabled: boolean
           locker_token: string
@@ -521,14 +740,20 @@ export type Database = {
           name: string
           org_id: string | null
           season: string
+          timezone: string
         }
         Insert: {
           assistant_coaches?: string | null
           created_at?: string
+          default_arrival_offset_minutes?: number
+          default_game_reminder_minutes?: number
           default_overtime_minutes?: number
           default_period_minutes?: number
           default_periods?: number
+          default_practice_location?: string | null
+          default_practice_reminder_minutes?: number
           head_coach_name?: string | null
+          home_gym?: string | null
           id?: string
           locker_enabled?: boolean
           locker_token?: string
@@ -536,14 +761,20 @@ export type Database = {
           name: string
           org_id?: string | null
           season?: string
+          timezone?: string
         }
         Update: {
           assistant_coaches?: string | null
           created_at?: string
+          default_arrival_offset_minutes?: number
+          default_game_reminder_minutes?: number
           default_overtime_minutes?: number
           default_period_minutes?: number
           default_periods?: number
+          default_practice_location?: string | null
+          default_practice_reminder_minutes?: number
           head_coach_name?: string | null
+          home_gym?: string | null
           id?: string
           locker_enabled?: boolean
           locker_token?: string
@@ -551,6 +782,7 @@ export type Database = {
           name?: string
           org_id?: string | null
           season?: string
+          timezone?: string
         }
         Relationships: [
           {
