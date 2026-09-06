@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -186,6 +186,7 @@ function GameCard({
   const score = gameScore(g, events);
   const result = gameResult(g, events);
   const isFinal = g.status === "final";
+  const navigate = useNavigate();
   return (
     <Panel className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -218,23 +219,29 @@ function GameCard({
       </div>
       <div className="flex flex-wrap gap-2">
         {isFinal ? (
-          <Link to="/review/$gameId" params={{ gameId: g.id }}>
-            <BubbleButton tone="grape" size="sm">
-              View Game Review
-            </BubbleButton>
-          </Link>
+          <BubbleButton
+            tone="grape"
+            size="sm"
+            onClick={() => navigate({ to: "/review/$gameId", params: { gameId: g.id } })}
+          >
+            View Game Review
+          </BubbleButton>
         ) : (
           <>
-            <Link to="/game/$gameId" params={{ gameId: g.id }}>
-              <BubbleButton tone="flame" size="sm">
-                Resume live court
-              </BubbleButton>
-            </Link>
-            <Link to="/review/$gameId" params={{ gameId: g.id }}>
-              <BubbleButton tone="neutral" size="sm">
-                Review so far
-              </BubbleButton>
-            </Link>
+            <BubbleButton
+              tone="flame"
+              size="sm"
+              onClick={() => navigate({ to: "/game/$gameId", params: { gameId: g.id } })}
+            >
+              Resume live court
+            </BubbleButton>
+            <BubbleButton
+              tone="neutral"
+              size="sm"
+              onClick={() => navigate({ to: "/review/$gameId", params: { gameId: g.id } })}
+            >
+              Review so far
+            </BubbleButton>
           </>
         )}
       </div>

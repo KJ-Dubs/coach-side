@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -47,6 +47,7 @@ const MAP_TYPES = [
 
 function ReviewPage() {
   const { gameId } = Route.useParams();
+  const navigate = useNavigate();
   const game = useQuery({ queryKey: ["game", gameId], queryFn: () => fetchGame(gameId) });
   const players = useQuery({
     queryKey: ["players", game.data?.team_id],
@@ -177,17 +178,21 @@ function ReviewPage() {
             PDF · Selected player
           </BubbleButton>
           {isFinal ? (
-            <Link to="/games">
-              <BubbleButton tone="neutral" size="sm">
-                Game History
-              </BubbleButton>
-            </Link>
+            <BubbleButton
+              tone="neutral"
+              size="sm"
+              onClick={() => navigate({ to: "/games" })}
+            >
+              Game History
+            </BubbleButton>
           ) : (
-            <Link to="/game/$gameId" params={{ gameId }}>
-              <BubbleButton tone="neutral" size="sm">
-                Back To Live Court
-              </BubbleButton>
-            </Link>
+            <BubbleButton
+              tone="neutral"
+              size="sm"
+              onClick={() => navigate({ to: "/game/$gameId", params: { gameId } })}
+            >
+              Back To Live Court
+            </BubbleButton>
           )}
         </>
       }
@@ -210,11 +215,13 @@ function ReviewPage() {
         ) : null}
         {isFinal ? <Label>Counted in Team & Player Stats</Label> : null}
         {!isFinal && game.data ? (
-          <Link to="/game/$gameId" params={{ gameId }}>
-            <BubbleButton size="sm" tone="flame">
-              Resume live court
-            </BubbleButton>
-          </Link>
+          <BubbleButton
+            size="sm"
+            tone="flame"
+            onClick={() => navigate({ to: "/game/$gameId", params: { gameId } })}
+          >
+            Resume live court
+          </BubbleButton>
         ) : null}
       </Panel>
       <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-5">

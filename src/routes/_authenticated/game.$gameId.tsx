@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -564,6 +564,13 @@ function LiveGamePage() {
         {/* COURT — always visible, never replaced */}
         <div className="flex flex-1 flex-col items-center gap-2">
           <Panel className="flex w-full flex-wrap items-center gap-2 p-2">
+            <BubbleButton
+              size="sm"
+              tone="grape"
+              onClick={() => navigate({ to: "/dashboard" })}
+            >
+              ⌂ Home
+            </BubbleButton>
             <Pill tone="muted">Court view</Pill>
             <BubbleButton
               size="sm"
@@ -829,11 +836,13 @@ function LiveGamePage() {
               >
                 + Overtime ({overtimeMinutes} min)
               </BubbleButton>
-              <Link to="/review/$gameId" params={{ gameId }}>
-                <BubbleButton size="sm" tone="neutral">
-                  Review so far
-                </BubbleButton>
-              </Link>
+              <BubbleButton
+                size="sm"
+                tone="neutral"
+                onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}
+              >
+                Review so far
+              </BubbleButton>
             </div>
           </Panel>
 
@@ -898,11 +907,13 @@ function LiveGamePage() {
               >
                 ↺ Undo Last
               </BubbleButton>
-              <Link to="/review/$gameId" params={{ gameId }}>
-                <BubbleButton tone="neutral" size="sm">
-                  Review
-                </BubbleButton>
-              </Link>
+              <BubbleButton
+                tone="neutral"
+                size="sm"
+                onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}
+              >
+                Review
+              </BubbleButton>
             </div>
             <Label>Recent events</Label>
             <div className="flex max-h-[30vh] flex-col gap-1.5 overflow-y-auto">
