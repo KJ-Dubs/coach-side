@@ -85,7 +85,7 @@ function LockerAdmin() {
     mutationFn: () =>
       createTeamEvent({
         team_id: teamId,
-        kind,
+        event_type: kind,
         title: title.trim(),
         starts_at: new Date(starts).toISOString(),
         ends_at: ends ? new Date(ends).toISOString() : null,

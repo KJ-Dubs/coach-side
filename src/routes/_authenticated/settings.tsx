@@ -26,6 +26,7 @@ import {
   updateOrg,
   updateProfile,
   updateTeam,
+  lockerCalendarUrl,
   uploadTeamLogo,
 } from "@/lib/data";
 import { useMe } from "@/lib/useMe";
@@ -118,6 +119,14 @@ function SettingsPage() {
         {team ? (
           <GameDefaultsCard
             key={`defaults-${team.id}`}
+            team={team}
+            onSaved={() => void queryClient.invalidateQueries({ queryKey: ["teams"] })}
+          />
+        ) : null}
+
+        {team ? (
+          <CalendarDefaultsCard
+            key={`cal-${team.id}`}
             team={team}
             onSaved={() => void queryClient.invalidateQueries({ queryKey: ["teams"] })}
           />
@@ -358,6 +367,116 @@ function TeamCard({ team, onSaved }: { team: Team; onSaved: () => void }) {
         </Link>
       </div>
     </div>
+  );
+}
+
+/* ---------------- calendar defaults ---------------- */
+
+function CalendarDefaultsCard({ team, onSaved }: { team: Team; onSaved: () => void }) {
+  const [homeGym, setHomeGym] = useState(team.home_gym ?? "");
+  const [practiceSpot, setPracticeSpot] = useState(team.default_practice_location ?? "");
+  const [arrival, setArrival] = useState<number>(team.default_arrival_offset_minutes ?? 60);
+  const [gameRem, setGameRem] = useState<number>(team.default_game_reminder_minutes ?? 60);
+  const [practiceRem, setPracticeRem] = useState<number>(
+    team.default_practice_reminder_minutes ?? 60,
+  );
+  const [tz, setTz] = useState(
+    team.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? "America/Los_Angeles",
+  );
+
+  const save = useMutation({
+    mutationFn: () =>
+      updateTeam(team.id, {
+        home_gym: homeGym.trim() || null,
+        default_practice_location: practiceSpot.trim() || null,
+        default_arrival_offset_minutes: arrival,
+        default_game_reminder_minutes: gameRem,
+        default_practice_reminder_minutes: practiceRem,
+        timezone: tz,
+      }),
+    onSuccess: () => {
+      onSaved();
+      toast.success("Calendar defaults saved");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const feed = team.locker_token ? lockerCalendarUrl(team.locker_token) : "";
+
+  return (
+    <Panel className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Heading tone="grape">Calendar</Heading>
+        <Pill tone="muted">{team.name}</Pill>
+      </div>
+      <Note>These pre-fill new practices and games on the team calendar.</Note>
+      <Field label="Home gym">
+        <TextInput value={homeGym} placeholder="Aliso Niguel Main Gym" onChange={(e) => setHomeGym(e.target.value)} />
+      </Field>
+      <Field label="Default practice location">
+        <TextInput value={practiceSpot} placeholder="Main Gym" onChange={(e) => setPracticeSpot(e.target.value)} />
+      </Field>
+      <Field label="Arrival before tip-off">
+        <div className="flex flex-wrap gap-2">
+          {[45, 60, 75, 90].map((m) => (
+            <BubbleButton key={m} size="sm" tone={arrival === m ? "flame" : "neutral"} onClick={() => setArrival(m)}>
+              {m} min
+            </BubbleButton>
+          ))}
+        </div>
+      </Field>
+      <Field label="Default game reminder">
+        <div className="flex flex-wrap gap-2">
+          {[30, 60, 120].map((m) => (
+            <BubbleButton key={m} size="sm" tone={gameRem === m ? "flame" : "neutral"} onClick={() => setGameRem(m)}>
+              {m >= 60 ? `${m / 60} hr before` : `${m} min before`}
+            </BubbleButton>
+          ))}
+        </div>
+      </Field>
+      <Field label="Default practice reminder">
+        <div className="flex flex-wrap gap-2">
+          {[30, 60, 120].map((m) => (
+            <BubbleButton key={m} size="sm" tone={practiceRem === m ? "grape" : "neutral"} onClick={() => setPracticeRem(m)}>
+              {m >= 60 ? `${m / 60} hr before` : `${m} min before`}
+            </BubbleButton>
+          ))}
+        </div>
+      </Field>
+      <Field label="Timezone">
+        <TextInput value={tz} onChange={(e) => setTz(e.target.value)} />
+      </Field>
+      <Field label="Share with players, families and other calendars">
+        <div className="flex flex-wrap gap-2">
+          {team.locker_enabled && feed ? (
+            <>
+              <BubbleButton
+                size="sm"
+                tone="grape"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(feed);
+                  toast.success("Calendar link copied");
+                }}
+              >
+                Copy calendar link
+              </BubbleButton>
+              <a
+                href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(feed.replace(/^https?:/, "webcal:"))}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <BubbleButton size="sm" tone="flame">Add to Google Calendar</BubbleButton>
+              </a>
+            </>
+          ) : (
+            <Pill tone="muted">Turn on the subscribe link from the Calendar page</Pill>
+          )}
+        </div>
+      </Field>
+      <BubbleButton tone="flame" disabled={save.isPending} onClick={() => save.mutate()}>
+        Save calendar defaults
+      </BubbleButton>
+    </Panel>
   );
 }
 
