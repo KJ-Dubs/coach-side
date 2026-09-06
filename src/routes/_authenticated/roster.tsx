@@ -25,7 +25,7 @@ import {
   updateTeam,
 } from "@/lib/data";
 import { aggregatePlayers, fmtMinutes } from "@/lib/stats";
-import type { Player } from "@/lib/types";
+import type { Player, Team } from "@/lib/types";
 import { useMe } from "@/lib/useMe";
 import { cn } from "@/lib/utils";
 
