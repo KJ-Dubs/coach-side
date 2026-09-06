@@ -907,11 +907,13 @@ function LiveGamePage() {
               >
                 ↺ Undo Last
               </BubbleButton>
-              <Link to="/review/$gameId" params={{ gameId }}>
-                <BubbleButton tone="neutral" size="sm">
-                  Review
-                </BubbleButton>
-              </Link>
+              <BubbleButton
+                tone="neutral"
+                size="sm"
+                onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}
+              >
+                Review
+              </BubbleButton>
             </div>
             <Label>Recent events</Label>
             <div className="flex max-h-[30vh] flex-col gap-1.5 overflow-y-auto">
