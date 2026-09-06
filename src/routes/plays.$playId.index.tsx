@@ -298,7 +298,26 @@ function PlayDesignerPage() {
           </Panel>
 
           <Panel className="flex flex-col gap-2">
+            <Label>Press Maker · Two Teams</Label>
+            <div className="flex flex-wrap gap-2">
+              <BubbleButton size="sm" tone="flame" onClick={pressSetup}>
+                Full Court Press Setup
+              </BubbleButton>
+              <BubbleButton size="sm" tone={hasDefense ? "neutral" : "grape"} onClick={addDefense}>
+                Add Defense (X1–X5)
+              </BubbleButton>
+              <BubbleButton size="sm" tone="ghost" disabled={!hasDefense} onClick={removeDefense}>
+                Remove Defense
+              </BubbleButton>
+            </div>
+            <Pill tone="muted">
+              Purple circles = offense · dashed orange squares X1–X5 = defense
+            </Pill>
+          </Panel>
+
+          <Panel className="flex flex-col gap-2">
             <Label>Orientation</Label>
+
             <div className="flex flex-wrap gap-2">
               <BubbleButton size="sm" tone="flame" onClick={() => setFlip((f) => !f)}>
                 ⇄ Flip Court
