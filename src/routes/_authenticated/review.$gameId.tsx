@@ -99,6 +99,7 @@ function ReviewPage() {
 
   const mapEvents = filtered.filter((e) => {
     if (e.x == null || e.y == null) return false;
+    if ((e.x as number) > 1) return false; // backcourt actions: see the full-court shot chart
     if (mapType === "ALL")
       return ["MADE", "MISS", "FT_MADE", "FT_MISS", "REBOUND", "ASSIST", "STEAL", "TURNOVER", "BLOCK", "FOUL"].includes(
         String(e.event_type),
@@ -289,7 +290,7 @@ function ReviewPage() {
                   return (
                     <circle
                       key={e.id}
-                      cx={`${(e.x as number) * 100}%`}
+                      cx={`${Math.min(1, e.x as number) * 100}%`}
                       cy={`${(e.y as number) * 100}%`}
                       r={7}
                       fill={hollow ? "transparent" : c}

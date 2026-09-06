@@ -93,6 +93,7 @@ function hexToRgb(hex: string): [number, number, number] {
 function plot(doc: jsPDF, x: number, y: number, w: number, h: number, events: GameEvent[]) {
   for (const e of events) {
     if (e.x == null || e.y == null) continue;
+    if (e.x > 1) continue; // half-court image: backcourt actions are not plotted
     const [r, g, b] = hexToRgb(statColor(String(e.event_type)));
     doc.setFillColor(r, g, b);
     doc.setDrawColor(r, g, b);
