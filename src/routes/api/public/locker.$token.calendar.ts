@@ -38,22 +38,48 @@ export const Route = createFileRoute("/api/public/locker/$token/calendar")({
           "METHOD:PUBLISH",
           `X-WR-CALNAME:${esc(team.name)} Locker Room`,
         ];
+        const LABEL: Record<string, string> = {
+          practice: "Practice",
+          game: "Game",
+          team_event: "Team Event",
+          film: "Film Session",
+          workout: "Workout",
+          meeting: "Meeting",
+          tournament: "Tournament",
+          other: "Event",
+        };
         for (const e of rows ?? []) {
+          if (e.visibility === "coaches") continue;
           const end =
             e.ends_at ?? new Date(new Date(e.starts_at).getTime() + 90 * 60000).toISOString();
-          const kindLabel = e.kind === "game" ? "Game" : e.kind === "practice" ? "Practice" : "Team";
+          const type = (e.event_type ?? e.kind ?? "team_event") as string;
+          const kindLabel = LABEL[type] ?? "Event";
+          const summary =
+            type === "game" && e.opponent
+              ? `Game: ${e.home_away === "away" ? "@" : "vs"} ${e.opponent}`
+              : `${kindLabel}: ${e.title}`;
+          const details = [
+            e.arrival_at
+              ? `Arrival: ${new Date(e.arrival_at).toLocaleString("en-US", { timeStyle: "short", dateStyle: "short" })}`
+              : "",
+            e.uniform ? `Uniform: ${e.uniform}` : "",
+            e.notes ?? "",
+          ]
+            .filter(Boolean)
+            .join("\n");
           lines.push(
             "BEGIN:VEVENT",
             `UID:${e.id}@coachside`,
             `DTSTAMP:${ics(e.created_at ?? e.starts_at)}`,
             `DTSTART:${ics(e.starts_at)}`,
             `DTEND:${ics(end)}`,
-            `SUMMARY:${esc(`${kindLabel}: ${e.title}`)}`,
+            `SUMMARY:${esc(summary)}`,
             ...(e.location ? [`LOCATION:${esc(e.location)}`] : []),
-            ...(e.notes ? [`DESCRIPTION:${esc(e.notes)}`] : []),
+            ...(details ? [`DESCRIPTION:${esc(details)}`] : []),
             "END:VEVENT",
           );
         }
+
         lines.push("END:VCALENDAR");
 
         return new Response(lines.join("\r\n"), {
