@@ -191,7 +191,7 @@ export const EVENT_TYPES = [
   "other",
 ] as const;
 
-export type EventType = (typeof EVENT_TYPES)[number];
+export type CalendarEventType = (typeof EVENT_TYPES)[number];
 
 export const EVENT_TYPE_LABEL: Record<string, string> = {
   practice: "Practice",
