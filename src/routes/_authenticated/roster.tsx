@@ -22,9 +22,10 @@ import {
   fetchSeasonBundle,
   fetchTeams,
   updatePlayer,
+  updateTeam,
 } from "@/lib/data";
 import { aggregatePlayers, fmtMinutes } from "@/lib/stats";
-import type { Player } from "@/lib/types";
+import type { Player, Team } from "@/lib/types";
 import { useMe } from "@/lib/useMe";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +63,7 @@ function RosterPage() {
   const [search, setSearch] = useState("");
   const [openForm, setOpenForm] = useState<"player" | "team" | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
+  const [editingTeam, setEditingTeam] = useState<string | null>(null);
 
   const lines = useMemo(
     () =>
@@ -134,6 +136,17 @@ function RosterPage() {
     mutationFn: (v: { id: string; patch: Parameters<typeof updatePlayer>[1] }) =>
       updatePlayer(v.id, v.patch),
     onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const patchTeam = useMutation({
+    mutationFn: (v: { id: string; name: string; season: string }) =>
+      updateTeam(v.id, { name: v.name, season: v.season }),
+    onSuccess: () => {
+      toast.success("Team saved");
+      setEditingTeam(null);
+      invalidate();
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -304,6 +317,42 @@ function RosterPage() {
         </div>
       </Panel>
 
+      <Panel className="mb-3 flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Pill tone="grape">Teams &amp; seasons</Pill>
+          <Label>Rename a team or change its season</Label>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {(teams.data ?? []).map((t) => (
+            <div
+              key={t.id}
+              className="flex flex-col gap-2 rounded-2xl border border-border bg-surface-2/60 p-2"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <Pill tone="neutral">{t.name}</Pill>
+                <Pill tone="muted">{t.season}</Pill>
+                <BubbleButton
+                  size="sm"
+                  tone={editingTeam === t.id ? "grape" : "ghost"}
+                  className="ml-auto"
+                  onClick={() => setEditingTeam(editingTeam === t.id ? null : t.id)}
+                >
+                  {editingTeam === t.id ? "Close" : "Edit"}
+                </BubbleButton>
+              </div>
+              {editingTeam === t.id ? (
+                <TeamEditor
+                  team={t}
+                  saving={patchTeam.isPending}
+                  onSave={(name, season) => patchTeam.mutate({ id: t.id, name, season })}
+                />
+              ) : null}
+            </div>
+          ))}
+          {!teams.data?.length ? <EmptyState>No teams yet — add one above</EmptyState> : null}
+        </div>
+      </Panel>
+
       <Panel className="mb-3 grid grid-cols-3 gap-2">
         <StatTile label="Teams" value={teams.data?.length ?? "—"} tone="grape" />
         <StatTile label="Active players" value={activeCount} />
@@ -437,6 +486,41 @@ function PlayerEditor({
           {p.active ? "Archive (inactive)" : "Reactivate"}
         </BubbleButton>
       </div>
+    </div>
+  );
+}
+
+function TeamEditor({
+  team,
+  saving,
+  onSave,
+}: {
+  team: Team;
+  saving: boolean;
+  onSave: (name: string, season: string) => void;
+}) {
+  const [name, setName] = useState(team.name);
+  const [season, setSeason] = useState(team.season);
+  return (
+    <div className="flex flex-col gap-2">
+      <Field label="Team name">
+        <TextInput value={name} onChange={(e) => setName(e.target.value)} />
+      </Field>
+      <Field label="Season">
+        <TextInput
+          placeholder="2025-26"
+          value={season}
+          onChange={(e) => setSeason(e.target.value)}
+        />
+      </Field>
+      <BubbleButton
+        size="sm"
+        tone="grape"
+        disabled={!name.trim() || saving}
+        onClick={() => onSave(name.trim(), season.trim() || team.season)}
+      >
+        {saving ? "Saving…" : "Save team"}
+      </BubbleButton>
     </div>
   );
 }
