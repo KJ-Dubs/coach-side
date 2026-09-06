@@ -19,6 +19,7 @@ import { Route as AuthenticatedGameGameIdRouteImport } from './routes/_authentic
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games.index'
 import { Route as AuthenticatedGamesNewRouteImport } from './routes/_authenticated/games.new'
 import { Route as AuthenticatedPlaysIndexRouteImport } from './routes/_authenticated/plays.index'
+import { Route as AuthenticatedPlaysNewRouteImport } from './routes/_authenticated/plays.new'
 import { Route as AuthenticatedReviewGameIdRouteImport } from './routes/_authenticated/review.$gameId'
 import { Route as AuthenticatedStatsPlayersRouteImport } from './routes/_authenticated/stats.players'
 import { Route as AuthenticatedStatsTeamRouteImport } from './routes/_authenticated/stats.team'
@@ -74,6 +75,11 @@ const AuthenticatedPlaysIndexRoute = AuthenticatedPlaysIndexRouteImport.update({
   path: '/plays/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPlaysNewRoute = AuthenticatedPlaysNewRouteImport.update({
+  id: '/plays/new',
+  path: '/plays/new',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedReviewGameIdRoute =
   AuthenticatedReviewGameIdRouteImport.update({
     id: '/review/$gameId',
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/share/$token': typeof ShareTokenRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
+  '/plays/new': typeof AuthenticatedPlaysNewRoute
   '/review/$gameId': typeof AuthenticatedReviewGameIdRoute
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/share/$token': typeof ShareTokenRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
+  '/plays/new': typeof AuthenticatedPlaysNewRoute
   '/review/$gameId': typeof AuthenticatedReviewGameIdRoute
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/share/$token': typeof ShareTokenRoute
   '/_authenticated/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/_authenticated/games/new': typeof AuthenticatedGamesNewRoute
+  '/_authenticated/plays/new': typeof AuthenticatedPlaysNewRoute
   '/_authenticated/review/$gameId': typeof AuthenticatedReviewGameIdRoute
   '/_authenticated/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/_authenticated/stats/team': typeof AuthenticatedStatsTeamRoute
@@ -164,6 +173,7 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/game/$gameId'
     | '/games/new'
+    | '/plays/new'
     | '/review/$gameId'
     | '/stats/players'
     | '/stats/team'
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/game/$gameId'
     | '/games/new'
+    | '/plays/new'
     | '/review/$gameId'
     | '/stats/players'
     | '/stats/team'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/_authenticated/game/$gameId'
     | '/_authenticated/games/new'
+    | '/_authenticated/plays/new'
     | '/_authenticated/review/$gameId'
     | '/_authenticated/stats/players'
     | '/_authenticated/stats/team'
@@ -285,6 +297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlaysIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/plays/new': {
+      id: '/_authenticated/plays/new'
+      path: '/plays/new'
+      fullPath: '/plays/new'
+      preLoaderRoute: typeof AuthenticatedPlaysNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/review/$gameId': {
       id: '/_authenticated/review/$gameId'
       path: '/review/$gameId'
@@ -328,6 +347,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRosterRoute: typeof AuthenticatedRosterRoute
   AuthenticatedGameGameIdRoute: typeof AuthenticatedGameGameIdRoute
   AuthenticatedGamesNewRoute: typeof AuthenticatedGamesNewRoute
+  AuthenticatedPlaysNewRoute: typeof AuthenticatedPlaysNewRoute
   AuthenticatedReviewGameIdRoute: typeof AuthenticatedReviewGameIdRoute
   AuthenticatedStatsPlayersRoute: typeof AuthenticatedStatsPlayersRoute
   AuthenticatedStatsTeamRoute: typeof AuthenticatedStatsTeamRoute
@@ -342,6 +362,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRosterRoute: AuthenticatedRosterRoute,
   AuthenticatedGameGameIdRoute: AuthenticatedGameGameIdRoute,
   AuthenticatedGamesNewRoute: AuthenticatedGamesNewRoute,
+  AuthenticatedPlaysNewRoute: AuthenticatedPlaysNewRoute,
   AuthenticatedReviewGameIdRoute: AuthenticatedReviewGameIdRoute,
   AuthenticatedStatsPlayersRoute: AuthenticatedStatsPlayersRoute,
   AuthenticatedStatsTeamRoute: AuthenticatedStatsTeamRoute,
