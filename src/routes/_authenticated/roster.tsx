@@ -489,3 +489,38 @@ function PlayerEditor({
     </div>
   );
 }
+
+function TeamEditor({
+  team,
+  saving,
+  onSave,
+}: {
+  team: Team;
+  saving: boolean;
+  onSave: (name: string, season: string) => void;
+}) {
+  const [name, setName] = useState(team.name);
+  const [season, setSeason] = useState(team.season);
+  return (
+    <div className="flex flex-col gap-2">
+      <Field label="Team name">
+        <TextInput value={name} onChange={(e) => setName(e.target.value)} />
+      </Field>
+      <Field label="Season">
+        <TextInput
+          placeholder="2025-26"
+          value={season}
+          onChange={(e) => setSeason(e.target.value)}
+        />
+      </Field>
+      <BubbleButton
+        size="sm"
+        tone="grape"
+        disabled={!name.trim() || saving}
+        onClick={() => onSave(name.trim(), season.trim() || team.season)}
+      >
+        {saving ? "Saving…" : "Save team"}
+      </BubbleButton>
+    </div>
+  );
+}
