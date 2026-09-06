@@ -13,12 +13,26 @@ import {
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, MessagesSquare } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Panel, Pill, StatTile } from "@/components/Bubbles";
 import { fetchTeamEvents, fetchGames, fetchAllPlayers, fetchPlays, logoSignedUrl } from "@/lib/data";
+import { useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { fetchMyMemberships, isCoachRole } from "@/lib/locker";
 import { useMe } from "@/lib/useMe";
 import { cn } from "@/lib/utils";
+
+/** Players and parents land in the Locker Room instead of the coach dashboard. */
+function useRedirectPlayersToLockerRoom() {
+  const navigate = useNavigate();
+  const memberships = useQuery({ queryKey: ["my-memberships"], queryFn: fetchMyMemberships });
+  useEffect(() => {
+    const rows = memberships.data ?? [];
+    if (!rows.length) return;
+    if (rows.every((m) => !isCoachRole(m.role))) navigate({ to: "/lockerroom", replace: true });
+  }, [memberships.data, navigate]);
+}
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -54,6 +68,14 @@ const CARDS: CardDef[] = [
     action: "Set up game",
     tone: "flame",
     icon: Swords,
+  },
+  {
+    to: "/lockerroom",
+    title: "Locker Room",
+    blurb: "Team announcements, chat, assignments, plays and schedule for coaches, players and families.",
+    action: "Open Locker Room",
+    tone: "grape",
+    icon: MessagesSquare,
   },
   {
     to: "/plays/new",
@@ -113,9 +135,9 @@ const CARDS: CardDef[] = [
   },
   {
     to: "/locker",
-    title: "Locker Room",
-    blurb: "Share one link with players and families for stats, plays and the team calendar.",
-    action: "Share locker room",
+    title: "Public Share Link",
+    blurb: "One read-only link for families: team and player stats, the playbook and the calendar.",
+    action: "Share the link",
     tone: "teal",
     icon: KeyRound,
   },
@@ -198,6 +220,7 @@ function SchedulePanel() {
 }
 
 function Dashboard() {
+  useRedirectPlayersToLockerRoom();
   const me = useMe();
   const games = useQuery({ queryKey: ["games"], queryFn: fetchGames });
   const players = useQuery({ queryKey: ["players", "all"], queryFn: fetchAllPlayers });
