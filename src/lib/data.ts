@@ -1,7 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import type {
+  CalendarConnection,
+  CalendarMapping,
   CoachInvite,
   CoachRole,
+  EventReminder,
   Game,
   GameEvent,
   OrgMember,
