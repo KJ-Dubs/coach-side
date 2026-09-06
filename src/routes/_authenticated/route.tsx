@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { flushQueue } from "@/lib/offline";
+import { rememberDevice } from "@/lib/remember";
 
 /**
  * Sign-in gate for every coach-only page. Client-only because the session
@@ -38,9 +39,15 @@ function AuthenticatedLayout() {
     sync();
     const t = setInterval(sync, 10000);
     window.addEventListener("online", sync);
+    // "Remember this device" off → drop the local session when the tab closes.
+    const onHide = () => {
+      if (!rememberDevice()) void supabase.auth.signOut({ scope: "local" });
+    };
+    window.addEventListener("pagehide", onHide);
     return () => {
       clearInterval(t);
       window.removeEventListener("online", sync);
+      window.removeEventListener("pagehide", onHide);
     };
   }, []);
   return <Outlet />;

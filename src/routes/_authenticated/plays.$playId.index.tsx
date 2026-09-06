@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
 import { PlayCanvas } from "@/components/court/PlayCanvas";
+import type { CourtZoom } from "@/components/court/Court";
 import { fetchFrames, fetchPlay, saveFrames, updatePlay } from "@/lib/data";
 import {
   PLAY_CATEGORIES,
@@ -85,6 +86,7 @@ function PlayDesignerPage() {
   const [current, setCurrent] = useState(0);
   const [tool, setTool] = useState<Tool>("move");
   const [flip, setFlip] = useState(false);
+  const [zoom, setZoom] = useState<CourtZoom>("full");
   const [sameSeq, setSameSeq] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [ghost, setGhost] = useState<{ from: { x: number; y: number }; to: { x: number; y: number } } | null>(null);
@@ -264,6 +266,7 @@ function PlayDesignerPage() {
         <PlayCanvas
           frame={frame}
           flip={flip}
+          zoom={zoom}
           ghost={ghost}
           onCourtPoint={onDown}
           onCourtPointerMove={onMove}
@@ -319,6 +322,22 @@ function PlayDesignerPage() {
             <Pill tone="muted">
               Purple circles = offense · dashed orange squares X1–X5 = defense
             </Pill>
+          </Panel>
+
+          <Panel className="flex flex-col gap-2">
+            <Label>Court view</Label>
+            <div className="flex flex-wrap gap-2">
+              <BubbleButton size="sm" tone={zoom === "full" ? "grape" : "neutral"} onClick={() => setZoom("full")}>
+                Full Court
+              </BubbleButton>
+              <BubbleButton size="sm" tone={zoom === "left" ? "grape" : "neutral"} onClick={() => setZoom("left")}>
+                Zoom Left Half
+              </BubbleButton>
+              <BubbleButton size="sm" tone={zoom === "right" ? "grape" : "neutral"} onClick={() => setZoom("right")}>
+                Zoom Right Half
+              </BubbleButton>
+            </div>
+            <Pill tone="muted">Same play, same court — zoom in for half-court detail.</Pill>
           </Panel>
 
           <Panel className="flex flex-col gap-2">

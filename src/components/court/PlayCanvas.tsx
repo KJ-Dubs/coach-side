@@ -1,4 +1,4 @@
-import { Court } from "./Court";
+import { Court, type CourtZoom } from "./Court";
 import type { PlayAction, PlayFrame, PlayToken } from "@/lib/types";
 
 const W = 940;
@@ -178,6 +178,7 @@ function TokenShape({ t, flip }: { t: PlayToken; flip: boolean }) {
 export function PlayCanvas({
   frame,
   flip = false,
+  zoom = "full",
   className,
   onCourtPoint,
   onCourtPointerMove,
@@ -186,6 +187,7 @@ export function PlayCanvas({
 }: {
   frame: PlayFrame | undefined;
   flip?: boolean | undefined;
+  zoom?: CourtZoom | undefined;
   className?: string | undefined;
   onCourtPoint?: ((p: { x: number; y: number }) => void) | undefined;
   onCourtPointerMove?: ((p: { x: number; y: number }) => void) | undefined;
@@ -195,6 +197,7 @@ export function PlayCanvas({
   return (
     <Court
       variant="full"
+      zoom={zoom}
       className={className}
       onCourtPoint={onCourtPoint}
       onCourtPointerMove={onCourtPointerMove}

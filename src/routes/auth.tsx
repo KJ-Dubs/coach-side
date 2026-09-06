@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AuthCard } from "@/components/AuthCard";
+import { SignInShowcase } from "@/components/SignInShowcase";
 import { Panel, Pill } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
 
@@ -33,16 +34,19 @@ function AuthPage() {
   }, [ready, session, navigate, recovering]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-3 py-6">
+    <main className="flex min-h-screen flex-col items-center justify-start gap-4 px-3 py-6">
       {!ready || (session && !recovering) ? (
         <Panel className="p-4">
           <Pill tone="muted">Loading…</Pill>
         </Panel>
       ) : (
-        <AuthCard
-          initialMode={recovering ? "reset" : "signin"}
-          onDone={() => navigate({ to: "/dashboard", replace: true })}
-        />
+        <>
+          <AuthCard
+            initialMode={recovering ? "reset" : "signin"}
+            onDone={() => navigate({ to: "/dashboard", replace: true })}
+          />
+          <SignInShowcase />
+        </>
       )}
     </main>
   );
