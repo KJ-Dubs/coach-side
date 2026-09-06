@@ -249,10 +249,9 @@ export async function fetchInviteRoster(token: string): Promise<InviteRosterRow[
 }
 
 export async function acceptTeamInvite(token: string, playerId: string | null) {
-  const { data, error } = await supabase.rpc("accept_team_invite", {
-    _token: token,
-    _player_id: playerId ?? undefined,
-  });
+  const args: { _token: string; _player_id?: string } = { _token: token };
+  if (playerId) args._player_id = playerId;
+  const { data, error } = await supabase.rpc("accept_team_invite", args as { _token: string; _player_id: string });
   if (error) throw error;
   return data as unknown as { team_id: string; role: TeamRole };
 }
