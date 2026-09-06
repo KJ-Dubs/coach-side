@@ -6,7 +6,14 @@ import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
 import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { fetchFrames, fetchPlay, saveFrames, updatePlay } from "@/lib/data";
-import { PLAY_CATEGORIES, type PlayAction, type PlayActionType, type PlayFrame } from "@/lib/types";
+import {
+  PLAY_CATEGORIES,
+  type PlayAction,
+  type PlayActionType,
+  type PlayFrame,
+  type PlayToken,
+} from "@/lib/types";
+
 import { uuid } from "@/lib/offline";
 
 export const Route = createFileRoute("/plays/$playId/")({
