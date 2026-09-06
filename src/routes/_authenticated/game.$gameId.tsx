@@ -316,8 +316,9 @@ function LiveGamePage() {
 
   /* ---------------- court tap ---------------- */
   const onCourtPoint = (raw: { x: number; y: number }) => {
-    // The surface reports full-court coordinates; stats live in half-court space.
-    const p = { x: Math.min(1, Math.max(0, raw.x * 2)), y: raw.y };
+    // The surface reports full-court coordinates 0..1; stats are stored in
+    // half-court units (1 = half line) so backcourt taps land in 1..2.
+    const p = { x: Math.min(2, Math.max(0, raw.x * 2)), y: raw.y };
     if (step.kind === "reboundLoc") {
       addEvent({
         event_type: "REBOUND",
