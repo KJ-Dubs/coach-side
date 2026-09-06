@@ -22,13 +22,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/game/$gameId")({
   head: () => ({
     meta: [
-      { title: "Live Game — CourtSide Coach" },
+      { title: "Live Game — CoachSide" },
       {
         name: "description",
         content:
           "Tap the court, tap the player, tap the stat. Courtside basketball stat entry that never leaves the court.",
       },
-      { property: "og:title", content: "Live Game — CourtSide Coach" },
+      { property: "og:title", content: "Live Game — CoachSide" },
       {
         property: "og:description",
         content: "Courtside basketball stat entry that never leaves the court.",

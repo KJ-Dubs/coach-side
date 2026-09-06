@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import mark from "@/assets/coachside-mark.jpg.asset.json";
 import { initialsOf, signOut } from "@/lib/auth";
 import { useMe } from "@/lib/useMe";
 
@@ -44,8 +45,8 @@ export function AppShell({
             aria-label="Home dashboard"
             className="inline-flex items-center gap-2 rounded-2xl border border-grape/60 bg-grape/20 px-3 py-2 text-sm font-black uppercase tracking-[0.16em] text-foreground"
           >
-            <span aria-hidden className="text-base leading-none">⌂</span>
-            <span className="hidden sm:inline">CourtSide</span>
+            <img src={mark.url} alt="" aria-hidden className="h-7 w-7 rounded-xl object-cover" />
+            <span className="hidden sm:inline">CoachSide</span>
           </Link>
           <nav className="flex flex-wrap items-center gap-1.5">
             {QUICK.map((item) => (

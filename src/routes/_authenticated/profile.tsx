@@ -22,12 +22,12 @@ import { ROLE_LABEL } from "@/lib/types";
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
-      { title: "Coach Profile — CourtSide Coach" },
+      { title: "Coach Profile — CoachSide" },
       {
         name: "description",
-        content: "Your coach name, email, role, program and assigned teams in CourtSide Coach.",
+        content: "Your coach name, email, role, program and assigned teams in CoachSide.",
       },
-      { property: "og:title", content: "Coach Profile — CourtSide Coach" },
+      { property: "og:title", content: "Coach Profile — CoachSide" },
       { property: "og:description", content: "Coach name, role, program and assigned teams." },
     ],
   }),

@@ -7,13 +7,13 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign In — CourtSide Coach" },
+      { title: "Sign In — CoachSide" },
       {
         name: "description",
-        content: "Coach sign-in and account creation for CourtSide Coach basketball stats and plays.",
+        content: "Coach sign-in and account creation for CoachSide basketball stats and plays.",
       },
-      { property: "og:title", content: "Sign In — CourtSide Coach" },
-      { property: "og:description", content: "Coach sign-in for CourtSide Coach." },
+      { property: "og:title", content: "Sign In — CoachSide" },
+      { property: "og:description", content: "Coach sign-in for CoachSide." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },

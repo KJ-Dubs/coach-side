@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { BubbleButton, Field, Label, Note, Panel, Pill, TextInput } from "@/components/Bubbles";
 import { supabase } from "@/integrations/supabase/client";
+import wordmark from "@/assets/coachside-wordmark.png.asset.json";
 
 type Mode = "signin" | "signup" | "forgot" | "reset";
 
@@ -99,13 +100,13 @@ export function AuthCard({
         ? "Reset your password"
         : mode === "reset"
           ? "Choose a new password"
-          : "Sign in to CourtSide Coach";
+          : "Sign in to CoachSide";
 
   return (
     <Panel className="flex w-full max-w-md flex-col gap-3 p-4 sm:p-5">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-2xl border border-grape/60 bg-grape/20 px-3 py-2 text-sm font-black uppercase tracking-[0.18em] text-foreground">
-          CourtSide Coach
+        <span className="inline-flex items-center overflow-hidden rounded-2xl border border-grape/60 bg-grape/20 px-3 py-2">
+          <img src={wordmark.url} alt="CoachSide" className="h-7 w-auto" />
         </span>
         <Pill tone="flame">Basketball</Pill>
       </div>

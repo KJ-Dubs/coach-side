@@ -9,12 +9,12 @@ import { fetchFrames, fetchPlay } from "@/lib/data";
 export const Route = createFileRoute("/_authenticated/plays/$playId/view")({
   head: () => ({
     meta: [
-      { title: "Play Slideshow — CourtSide Coach" },
+      { title: "Play Slideshow — CoachSide" },
       {
         name: "description",
         content: "Step through a basketball play frame by frame with previous, next and play.",
       },
-      { property: "og:title", content: "Play Slideshow — CourtSide Coach" },
+      { property: "og:title", content: "Play Slideshow — CoachSide" },
       {
         property: "og:description",
         content: "Step through a play frame by frame.",

@@ -31,12 +31,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/roster")({
   head: () => ({
     meta: [
-      { title: "Rosters — CourtSide Coach" },
+      { title: "Rosters — CoachSide" },
       {
         name: "description",
         content: "Player directory across every team: jersey, games, points, minutes and status.",
       },
-      { property: "og:title", content: "Rosters — CourtSide Coach" },
+      { property: "og:title", content: "Rosters — CoachSide" },
       { property: "og:description", content: "Player directory and roster management." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

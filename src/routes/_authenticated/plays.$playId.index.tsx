@@ -20,13 +20,13 @@ import { uuid } from "@/lib/offline";
 export const Route = createFileRoute("/_authenticated/plays/$playId/")({
   head: () => ({
     meta: [
-      { title: "Play Designer — CourtSide Coach" },
+      { title: "Play Designer — CoachSide" },
       {
         name: "description",
         content:
           "Place players, mark the ball handler, and draw passes, cuts and screens across multiple frames.",
       },
-      { property: "og:title", content: "Play Designer — CourtSide Coach" },
+      { property: "og:title", content: "Play Designer — CoachSide" },
       {
         property: "og:description",
         content: "Place players and draw passes, cuts and screens frame by frame.",
