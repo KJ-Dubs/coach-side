@@ -203,14 +203,38 @@ function PlayDesignerPage() {
     }
   };
 
+  const hasDefense = (frame?.tokens ?? []).some((t) => t.team === "defense");
+
+  const setTokens = (tokens: PlayToken[]) => patchFrame((f) => ({ ...f, tokens }));
+
+  const addDefense = () =>
+    patchFrame((f) => ({
+      ...f,
+      tokens: [
+        ...f.tokens.filter((t) => t.team !== "defense"),
+        ...PRESS_DEFENSE.map((t) => ({ ...t, id: uuid() })),
+      ],
+    }));
+
+  const removeDefense = () =>
+    patchFrame((f) => ({ ...f, tokens: f.tokens.filter((t) => t.team !== "defense") }));
+
+  const pressSetup = () =>
+    setTokens([
+      ...PRESS_OFFENSE.map((t) => ({ ...t, id: uuid() })),
+      ...PRESS_DEFENSE.map((t) => ({ ...t, id: uuid() })),
+    ]);
+
   const tools: { key: Tool; label: string }[] = [
     { key: "move", label: "Move Players" },
     { key: "ball", label: "Ball Handler" },
     { key: "pass", label: "Pass" },
     { key: "cut", label: "Cut / Move" },
+    { key: "curl", label: "Curl Cut" },
     { key: "dribble", label: "Dribble" },
     { key: "screen", label: "Screen" },
   ];
+
 
   return (
     <AppShell
