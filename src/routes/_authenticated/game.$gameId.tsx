@@ -91,6 +91,38 @@ function LiveGamePage() {
   const [finalized, setFinalized] = useState(false);
   const [endPrompt, setEndPrompt] = useState(false);
   const [courtZoom, setCourtZoom] = useState<CourtZoom>("left");
+  const [orientLocked, setOrientLocked] = useState(false);
+
+  const toggleOrientationLock = useCallback(async () => {
+    try {
+      if (orientLocked) {
+        screen.orientation.unlock();
+        if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
+        setOrientLocked(false);
+        toast.success("Orientation unlocked");
+        return;
+      }
+      // iPadOS/Safari only allow orientation lock while fullscreen.
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen().catch(() => {});
+      }
+      await (screen.orientation as ScreenOrientation & { lock: (o: string) => Promise<void> }).lock(
+        "landscape",
+      );
+      setOrientLocked(true);
+      toast.success("Screen locked to landscape");
+    } catch {
+      toast.error("This browser won't allow orientation lock — try rotating the iPad manually.");
+    }
+  }, [orientLocked]);
+
+  useEffect(() => {
+    const onChange = () => {
+      if (!document.fullscreenElement) setOrientLocked(false);
+    };
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
 
   const stateKey = `game-state-${gameId}`;
   const eventsKey = `game-events-${gameId}`;
@@ -585,6 +617,13 @@ function LiveGamePage() {
               onClick={() => setCourtZoom("full")}
             >
               Full Court
+            </BubbleButton>
+            <BubbleButton
+              size="sm"
+              tone={orientLocked ? "flame" : "neutral"}
+              onClick={() => void toggleOrientationLock()}
+            >
+              {orientLocked ? "🔒 Landscape" : "⟳ Lock Landscape"}
             </BubbleButton>
           </Panel>
           <Court
