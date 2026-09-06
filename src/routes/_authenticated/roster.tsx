@@ -139,6 +139,17 @@ function RosterPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const patchTeam = useMutation({
+    mutationFn: (v: { id: string; name: string; season: string }) =>
+      updateTeam(v.id, { name: v.name, season: v.season }),
+    onSuccess: () => {
+      toast.success("Team saved");
+      setEditingTeam(null);
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const activeCount = (players.data ?? []).filter((p) => p.active).length;
 
   return (
