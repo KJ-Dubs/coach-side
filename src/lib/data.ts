@@ -471,7 +471,10 @@ export async function uploadTeamLogo(teamId: string, file: File): Promise<string
   const path = `${teamId}/logo-${Date.now()}.${ext}`;
   const { error } = await supabase.storage
     .from("team-logos")
-    .upload(path, file, { upsert: true, contentType: file.type || undefined });
+    .upload(path, file, {
+      upsert: true,
+      ...(file.type ? { contentType: file.type } : {}),
+    });
   if (error) throw error;
   await updateTeam(teamId, { logo_url: path });
   return path;
