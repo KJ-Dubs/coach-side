@@ -10,6 +10,8 @@ export type Team = {
   default_period_minutes?: number;
   default_overtime_minutes?: number;
   locker_token?: string;
+  allow_player_posting?: boolean;
+  require_ack_default?: boolean;
   locker_enabled?: boolean;
   home_gym?: string | null;
   default_practice_location?: string | null;

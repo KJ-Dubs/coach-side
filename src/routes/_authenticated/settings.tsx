@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { LockerAccessPanel } from "@/components/locker/AccessPanel";
 import { AppShell } from "@/components/AppShell";
 import {
   BubbleButton,
@@ -115,6 +116,8 @@ function SettingsPage() {
             <EmptyState>Pick a team to edit its details</EmptyState>
           )}
         </Panel>
+
+        {team ? <LockerAccessPanel key={`access-${team.id}`} team={team} /> : null}
 
         {team ? (
           <GameDefaultsCard

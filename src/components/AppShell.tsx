@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ClipboardPenLine,
   LogOut,
+  MessagesSquare,
   Settings,
   Swords,
   UserRound,
@@ -32,6 +33,7 @@ const QUICK = [
   { to: "/plays", label: "Playbook", icon: BookOpen, tone: "blue" },
   { to: "/plays/new", label: "Play Maker", icon: ClipboardPenLine, tone: "rose" },
   { to: "/calendar", label: "Calendar", icon: CalendarDays, tone: "teal" },
+  { to: "/lockerroom", label: "Locker Room", icon: MessagesSquare, tone: "grape" },
   { to: "/stats/team", label: "Stats", icon: BarChart3, tone: "gold" },
 ] as const;
 
@@ -76,7 +78,7 @@ export function AppShell({
               />
             </Link>
 
-            <nav className="order-3 col-span-2 grid grid-cols-5 gap-1 rounded-2xl border border-border/80 bg-background/70 p-1.5 lg:order-none lg:col-span-1" aria-label="Primary navigation">
+            <nav className="order-3 col-span-2 grid grid-cols-4 gap-1 sm:grid-cols-7 rounded-2xl border border-border/80 bg-background/70 p-1.5 lg:order-none lg:col-span-1" aria-label="Primary navigation">
               {QUICK.map((item) => {
                 const Icon = item.icon;
                 return (
