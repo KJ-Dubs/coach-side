@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
 import { PlayCanvas } from "@/components/court/PlayCanvas";
-import { fetchFrames, fetchPlayByToken } from "@/lib/data";
+import { getSharedPlay, type SharedPlayBundle } from "@/lib/share.functions";
 
 export const Route = createFileRoute("/share/$token")({
   head: () => ({
@@ -25,12 +25,15 @@ export const Route = createFileRoute("/share/$token")({
 
 function SharedPlayPage() {
   const { token } = Route.useParams();
-  const play = useQuery({ queryKey: ["shared-play", token], queryFn: () => fetchPlayByToken(token) });
-  const frames = useQuery({
-    queryKey: ["frames", play.data?.id],
-    queryFn: () => fetchFrames(play.data!.id),
-    enabled: !!play.data,
+  const bundle = useQuery({
+    queryKey: ["shared-play", token],
+    queryFn: async () => {
+      const raw = await getSharedPlay({ data: { token } });
+      return raw ? (JSON.parse(raw) as SharedPlayBundle) : null;
+    },
   });
+  const play = { isLoading: bundle.isLoading, data: bundle.data?.play ?? null };
+  const frames = { data: bundle.data?.frames ?? [] };
 
   const [i, setI] = useState(0);
   const [playing, setPlaying] = useState(false);
