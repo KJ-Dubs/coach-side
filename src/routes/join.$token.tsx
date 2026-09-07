@@ -37,7 +37,7 @@ function JoinPage() {
   const invite = useQuery({
     queryKey: ["team-invite", token],
     queryFn: () => lookupTeamInvite(token),
-    enabled: signedIn,
+    enabled: ready,
   });
 
   const roster = useQuery({
