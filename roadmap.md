@@ -37,3 +37,10 @@
 - [x] Calendar defaults in Settings
 - [x] Scheduled game -> Start Game prefill + review linkback
 - [ ] Google Calendar two-way sync (needs Google OAuth client setup)
+
+## Locker Room & messaging (done)
+- Player/parent accounts, reusable invite links with rotate/revoke, roster claiming
+- Announcements with audiences, pinning, acknowledgment receipts
+- Team chat, staff chat, coach↔player direct messages, reactions, edit/delete, unread
+- Assignments with player status, resources, plays/schedule tabs
+- Attachment model ready for game video/clips later (no video UI yet)
