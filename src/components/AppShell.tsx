@@ -53,6 +53,7 @@ export function AppShell({
   logoUrl?: string | null | undefined;
 }) {
   const me = useMe();
+  const { access } = useAccess();
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -60,6 +61,72 @@ export function AppShell({
     await signOut(qc);
     navigate({ to: "/auth", replace: true });
   };
+
+  // Players get a Locker-Room-only shell. This is decided by database
+  // membership, never by anything stored on the device.
+  if (access.isPlayerOnly) {
+    const playerTeam =
+      me.teams.find((t) => access.playerTeamIds.includes(t.id)) ?? me.teams[0] ?? null;
+    return (
+      <div className="min-h-screen px-3 py-3 sm:px-5 sm:py-5">
+        <div className="mx-auto w-full max-w-3xl">
+          <header className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-3xl border border-border/70 bg-surface/85 p-2.5 shadow-lg shadow-black/30 backdrop-blur">
+            <span className="inline-flex items-center rounded-2xl border border-border/70 bg-surface-2/70 px-3 py-1.5">
+              <img src={wordmark.url} alt="CoachSide" className="h-8 w-auto max-w-[150px] object-contain" />
+            </span>
+            {playerTeam ? (
+              <span className="rounded-full border border-grape/60 bg-grape/20 px-3 py-2 text-xs font-black text-foreground">
+                {playerTeam.name}
+              </span>
+            ) : null}
+            <nav className="flex items-center gap-1.5" aria-label="Player navigation">
+              <Link
+                to="/lockerroom"
+                className="inline-flex min-h-11 items-center rounded-full border border-border bg-surface-2/70 px-4 text-xs font-black uppercase text-foreground"
+                activeProps={{
+                  className:
+                    "inline-flex min-h-11 items-center rounded-full border border-grape/60 bg-grape/25 px-4 text-xs font-black uppercase text-grape-bright",
+                }}
+              >
+                Locker Room
+              </Link>
+              <Link
+                to="/profile"
+                className="inline-flex min-h-11 items-center rounded-full border border-border bg-surface-2/70 px-4 text-xs font-black uppercase text-foreground"
+                activeProps={{
+                  className:
+                    "inline-flex min-h-11 items-center rounded-full border border-grape/60 bg-grape/25 px-4 text-xs font-black uppercase text-grape-bright",
+                }}
+              >
+                Profile
+              </Link>
+              <button
+                type="button"
+                onClick={() => void doSignOut()}
+                className="inline-flex min-h-11 items-center rounded-full border border-flame/60 bg-flame/20 px-4 text-xs font-black uppercase text-foreground"
+              >
+                Sign out
+              </button>
+            </nav>
+          </header>
+
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <h1 className="rounded-2xl border border-border bg-surface/80 px-4 py-2 text-lg font-black tracking-tight text-foreground">
+              {title}
+            </h1>
+            {subtitle ? (
+              <p className="rounded-2xl border border-border/60 bg-surface-2/70 px-3 py-2 text-xs font-semibold text-muted-foreground">
+                {subtitle}
+              </p>
+            ) : null}
+          </div>
+
+          {children}
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen px-3 py-3 sm:px-5 sm:py-5">
