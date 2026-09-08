@@ -778,6 +778,110 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          announcement_notifications: boolean
+          assignment_notifications: boolean
+          challenge_notifications: boolean
+          created_at: string
+          email_enabled: boolean
+          game_reminders: boolean
+          id: string
+          new_play_notifications: boolean
+          practice_reminders: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_notifications?: boolean
+          assignment_notifications?: boolean
+          challenge_notifications?: boolean
+          created_at?: string
+          email_enabled?: boolean
+          game_reminders?: boolean
+          id?: string
+          new_play_notifications?: boolean
+          practice_reminders?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          announcement_notifications?: boolean
+          assignment_notifications?: boolean
+          challenge_notifications?: boolean
+          created_at?: string
+          email_enabled?: boolean
+          game_reminders?: boolean
+          id?: string
+          new_play_notifications?: boolean
+          practice_reminders?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          channel: string
+          created_at: string
+          id: string
+          read_at: string | null
+          related_id: string | null
+          related_type: string | null
+          scheduled_for: string
+          sent_at: string | null
+          status: string
+          team_id: string | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          channel?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+          team_id?: string | null
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          channel?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+          team_id?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_members: {
         Row: {
           created_at: string
@@ -1427,6 +1531,8 @@ export type Database = {
         Args: { _token: string }
         Returns: {
           invite_type: string
+          locker_enabled: boolean
+          locker_token: string
           season: string
           status: string
           team_id: string
@@ -1447,6 +1553,7 @@ export type Database = {
       is_team_head_coach: { Args: { _team: string }; Returns: boolean }
       is_team_member: { Args: { _team: string }; Returns: boolean }
       is_team_staff_or_player: { Args: { _team: string }; Returns: boolean }
+      my_access: { Args: never; Returns: Json }
       my_org_id: { Args: never; Returns: string }
       my_role: {
         Args: never
@@ -1454,6 +1561,18 @@ export type Database = {
       }
       my_team_role: { Args: { _team: string }; Returns: string }
       play_visible: { Args: { _play: string }; Returns: boolean }
+      queue_team_notification: {
+        Args: {
+          _body: string
+          _pref_column: string
+          _related_id: string
+          _related_type: string
+          _team: string
+          _title: string
+          _type: string
+        }
+        Returns: undefined
+      }
       team_directory: {
         Args: { _team: string }
         Returns: {
