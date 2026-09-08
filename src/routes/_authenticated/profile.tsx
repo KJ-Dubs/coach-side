@@ -100,45 +100,66 @@ function ProfilePage() {
           </BubbleButton>
         </Panel>
 
-        <Panel className="flex flex-col gap-3">
-          <Heading tone="flame">Assigned teams</Heading>
-          {me.loading ? <EmptyState>Loading teams…</EmptyState> : null}
-          {!me.loading && !me.teams.length ? (
-            <EmptyState>No teams yet — add one in Rosters</EmptyState>
-          ) : null}
-          <div className="flex flex-col gap-2">
-            {me.teams.map((t) => (
-              <div
-                key={t.id}
-                className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-2/70 px-3 py-2"
-              >
-                <Pill tone="grape">{t.name}</Pill>
-                <Pill tone="muted">{t.season}</Pill>
-                {t.head_coach_name ? <Pill tone="neutral">HC {t.head_coach_name}</Pill> : null}
-                <div className="ml-auto flex gap-1.5">
-                  <Link to="/roster">
-                    <BubbleButton size="sm" tone="neutral">
-                      Roster
-                    </BubbleButton>
-                  </Link>
-                  <Link to="/stats/team" search={{ team: t.id }}>
-                    <BubbleButton size="sm" tone="ghost">
-                      Stats
-                    </BubbleButton>
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Label>Access</Label>
+        {isPlayer ? (
+          <Panel className="flex flex-col gap-3">
+            <Heading tone="flame">Your team</Heading>
+            <div className="flex flex-wrap gap-2">
+              {playerTeam ? <Pill tone="grape">{playerTeam.name}</Pill> : null}
+              {playerTeam ? <Pill tone="muted">{playerTeam.season}</Pill> : null}
+              {myPlayer.data ? <Pill tone="flame">#{myPlayer.data.jersey}</Pill> : null}
+              {myPlayer.data ? <Pill tone="neutral">{myPlayer.data.name}</Pill> : null}
+            </div>
             <Note>
-              {me.isHeadCoach
-                ? "Full access: rosters, settings, invitations, games, stats and plays."
-                : "Shared access to rosters, games, stats and plays for your program."}
+              Your account is linked to this roster spot by your coach. Ask your coach if it needs to
+              change.
             </Note>
-          </div>
-        </Panel>
+          </Panel>
+        ) : (
+          <Panel className="flex flex-col gap-3">
+            <Heading tone="flame">Assigned teams</Heading>
+            {me.loading ? <EmptyState>Loading teams…</EmptyState> : null}
+            {!me.loading && !me.teams.length ? (
+              <EmptyState>No teams yet — add one in Rosters</EmptyState>
+            ) : null}
+            <div className="flex flex-col gap-2">
+              {me.teams.map((t) => (
+                <div
+                  key={t.id}
+                  className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-2/70 px-3 py-2"
+                >
+                  <Pill tone="grape">{t.name}</Pill>
+                  <Pill tone="muted">{t.season}</Pill>
+                  {t.head_coach_name ? <Pill tone="neutral">HC {t.head_coach_name}</Pill> : null}
+                  <div className="ml-auto flex gap-1.5">
+                    <Link to="/roster">
+                      <BubbleButton size="sm" tone="neutral">
+                        Roster
+                      </BubbleButton>
+                    </Link>
+                    <Link to="/stats/team" search={{ team: t.id }}>
+                      <BubbleButton size="sm" tone="ghost">
+                        Stats
+                      </BubbleButton>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Label>Access</Label>
+              <Note>
+                {me.isHeadCoach
+                  ? "Full access: rosters, settings, invitations, games, stats and plays."
+                  : "Shared access to rosters, games, stats and plays for your program."}
+              </Note>
+            </div>
+          </Panel>
+        )}
+
+        <div className="lg:col-span-2">
+          <NotificationPrefsPanel />
+        </div>
+
       </div>
     </AppShell>
   );
