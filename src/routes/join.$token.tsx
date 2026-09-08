@@ -40,6 +40,17 @@ function JoinPage() {
     enabled: ready,
   });
 
+  const isParent = invite.data?.invite_type === "parent";
+  const parentLink =
+    isParent && invite.data?.locker_token && invite.data.locker_enabled !== false
+      ? invite.data.locker_token
+      : null;
+
+  // Parents never make an account: send them straight to the public team page.
+  useEffect(() => {
+    if (parentLink) navigate({ to: "/locker/$token", params: { token: parentLink }, replace: true });
+  }, [parentLink, navigate]);
+
   const roster = useQuery({
     queryKey: ["invite-roster", token],
     queryFn: () => fetchInviteRoster(token),
@@ -71,19 +82,27 @@ function JoinPage() {
         ) : null}
       </Panel>
 
-      {!signedIn ? (
+      {isParent ? (
+        <Panel className="w-full">
+          {parentLink ? (
+            <EmptyState>Opening the team page — no account needed…</EmptyState>
+          ) : (
+            <EmptyState>
+              The parent team page is turned off right now. Ask your coach to turn it back on.
+            </EmptyState>
+          )}
+        </Panel>
+      ) : !signedIn ? (
         <>
           <Note tone="grape">
-            Create your CoachSide account or sign in, and you&apos;ll join the team right after.
+            Create your CoachSide player account or sign in, and you&apos;ll join the team right
+            after.
           </Note>
           <AuthCard
             initialMode="signup"
             hideOrgField
-            signupTitle={
-              invite.data?.invite_type === "parent"
-                ? "Create your parent account"
-                : "Create your player account"
-            }
+            playerSignup
+            signupTitle="Create your player account"
             onDone={() => undefined}
           />
         </>
@@ -103,6 +122,7 @@ function JoinPage() {
           </EmptyState>
         </Panel>
       ) : (
+
         <Panel className="flex w-full flex-col gap-3 p-4">
           {invite.data.invite_type === "player" ? (
             <>
