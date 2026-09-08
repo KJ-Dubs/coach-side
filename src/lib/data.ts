@@ -260,27 +260,88 @@ export async function updatePlay(id: string, patch: Partial<Play>) {
   if (error) throw error;
 }
 
+export type PlayTeamAssignment = {
+  id: string;
+  play_id: string;
+  team_id: string;
+  is_visible: boolean;
+};
+
+/** Every play↔team link the signed-in coach can see. Source of truth for team playbooks. */
+export async function fetchPlayAssignments(): Promise<PlayTeamAssignment[]> {
+  const { data, error } = await supabase
+    .from("play_team_assignments")
+    .select("id,play_id,team_id,is_visible");
+  if (error) throw error;
+  return (data ?? []) as unknown as PlayTeamAssignment[];
+}
+
+export async function fetchTeamsForPlay(playId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("play_team_assignments")
+    .select("team_id")
+    .eq("play_id", playId);
+  if (error) throw error;
+  return (data ?? []).map((r) => (r as { team_id: string }).team_id);
+}
+
+/** Replace the set of teams a play is shared with. */
+export async function setPlayTeams(playId: string, teamIds: string[]) {
+  const current = await fetchTeamsForPlay(playId);
+  const add = teamIds.filter((t) => !current.includes(t));
+  const remove = current.filter((t) => !teamIds.includes(t));
+  const { data: auth } = await supabase.auth.getUser();
+
+  if (add.length) {
+    const { error } = await supabase.from("play_team_assignments").insert(
+      add.map((team_id) => ({
+        play_id: playId,
+        team_id,
+        assigned_by: auth.user?.id ?? null,
+      })) as never,
+    );
+    if (error) throw error;
+  }
+  if (remove.length) {
+    const { error } = await supabase
+      .from("play_team_assignments")
+      .delete()
+      .eq("play_id", playId)
+      .in("team_id", remove);
+    if (error) throw error;
+  }
+  // Keep the legacy single column pointing at one of the assigned teams.
+  await updatePlay(playId, { team_id: teamIds[0] ?? null } as Partial<Play>);
+}
+
 export async function createPlay(input: {
   team_id: string | null;
   name: string;
   category: string;
   attack_basket?: "left" | "right";
+  team_ids?: string[];
 }): Promise<Play> {
+  const { team_ids, ...row } = input;
   const { data, error } = await supabase
     .from("plays")
-    .insert(input as never)
+    .insert(row as never)
     .select("*")
     .single();
   if (error) throw error;
-  return data as unknown as Play;
+  const play = data as unknown as Play;
+  const teams = team_ids?.length ? team_ids : row.team_id ? [row.team_id] : [];
+  if (teams.length) await setPlayTeams(play.id, teams);
+  return play;
 }
 
 export async function duplicatePlay(play: Play): Promise<Play> {
+  const teams = await fetchTeamsForPlay(play.id);
   const copy = await createPlay({
     team_id: play.team_id,
     name: `${play.name} (copy)`,
     category: play.category,
     attack_basket: play.attack_basket === "left" ? "left" : "right",
+    team_ids: teams,
   });
   const frames = await fetchFrames(play.id);
   if (frames.length) {
@@ -296,6 +357,7 @@ export async function duplicatePlay(play: Play): Promise<Play> {
   }
   return copy;
 }
+
 
 export async function deletePlay(id: string) {
   const { error } = await supabase.from("plays").delete().eq("id", id);
