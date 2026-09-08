@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
 import { PlayCanvas } from "@/components/court/PlayCanvas";
+import type { CourtZoom } from "@/components/court/Court";
 import { buildSteps, sampleStep, DO_MS, SHOW_MS, type PlayStep } from "@/lib/playAnimation";
 import type { Play, PlayFrame } from "@/lib/types";
 
@@ -63,6 +64,7 @@ export function PlayPresenter({
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [focus, setFocus] = useState<string | null>(null);
+  const [zoom, setZoom] = useState<CourtZoom>("full");
   const raf = useRef(0);
 
   useEffect(() => {
@@ -145,6 +147,7 @@ export function PlayPresenter({
           <PlayCanvas
             frame={frame}
             flip={model.flip}
+            zoom={zoom}
             {...(sample
               ? {
                   tokens: sample.tokens,
@@ -188,6 +191,19 @@ export function PlayPresenter({
           </BubbleButton>
           <BubbleButton tone="grape" disabled={idx >= total - 1} onClick={() => goto(idx + 1)}>
             Next →
+          </BubbleButton>
+        </Panel>
+
+        <Panel className="flex flex-wrap items-center justify-center gap-2">
+          <Pill tone="muted">Court view</Pill>
+          <BubbleButton size="sm" tone={zoom === "full" ? "grape" : "neutral"} onClick={() => setZoom("full")}>
+            Full Court
+          </BubbleButton>
+          <BubbleButton size="sm" tone={zoom === "left" ? "grape" : "neutral"} onClick={() => setZoom("left")}>
+            Zoom Left Half
+          </BubbleButton>
+          <BubbleButton size="sm" tone={zoom === "right" ? "grape" : "neutral"} onClick={() => setZoom("right")}>
+            Zoom Right Half
           </BubbleButton>
         </Panel>
 
