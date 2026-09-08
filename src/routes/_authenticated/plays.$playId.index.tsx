@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { buildTimeline, sampleTimeline } from "@/lib/playAnimation";
+import { simplifyPath, type Point } from "@/lib/playPath";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
@@ -89,7 +91,10 @@ function PlayDesignerPage() {
   const [zoom, setZoom] = useState<CourtZoom>("full");
   const [sameSeq, setSameSeq] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
-  const [ghost, setGhost] = useState<{ from: { x: number; y: number }; to: { x: number; y: number } } | null>(null);
+  const [stroke, setStroke] = useState<Point[] | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [timeMs, setTimeMs] = useState(0);
+  const rafRef = useRef<number | null>(null);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Offense");
   const [saving, setSaving] = useState(false);
@@ -124,9 +129,40 @@ function PlayDesignerPage() {
     return best && best.d < 0.06 ? best.id : null;
   };
 
+  const timeline = useMemo(() => buildTimeline(frame), [frame]);
+  const live = playing || timeMs > 0 ? sampleTimeline(timeline, timeMs) : null;
+
+  useEffect(() => {
+    if (!playing) return;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = now - last;
+      last = now;
+      setTimeMs((prev) => {
+        const next = prev + dt;
+        if (next >= timeline.totalMs) {
+          setPlaying(false);
+          return Math.max(0, timeline.totalMs - 1);
+        }
+        return next;
+      });
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [playing, timeline.totalMs]);
+
+  const stopAnimation = () => {
+    setPlaying(false);
+    setTimeMs(0);
+  };
+
   const onDown = (raw: { x: number; y: number }) => {
     const p = toCoords(raw);
     if (!frame) return;
+    stopAnimation();
     if (tool === "move") {
       setDragId(nearestToken(p));
       return;
@@ -136,7 +172,7 @@ function PlayDesignerPage() {
       if (id) patchFrame((f) => ({ ...f, tokens: f.tokens.map((t) => ({ ...t, ball: t.id === id })) }));
       return;
     }
-    setGhost({ from: p, to: p });
+    setStroke([p]);
   };
 
   const onMove = (raw: { x: number; y: number }) => {
@@ -146,8 +182,8 @@ function PlayDesignerPage() {
         ...f,
         tokens: f.tokens.map((t) => (t.id === dragId ? { ...t, x: p.x, y: p.y } : t)),
       }));
-    } else if (ghost) {
-      setGhost({ ...ghost, to: p });
+    } else if (stroke) {
+      setStroke([...stroke, p]);
     }
   };
 
@@ -157,21 +193,36 @@ function PlayDesignerPage() {
       setDragId(null);
       return;
     }
-    if (ghost && tool !== "move" && tool !== "ball") {
-      const dist = Math.hypot(p.x - ghost.from.x, p.y - ghost.from.y);
+    if (stroke && tool !== "move" && tool !== "ball") {
+      const pts = simplifyPath([...stroke, p]);
+      const first = pts[0]!;
+      const dist = Math.hypot(p.x - first.x, p.y - first.y);
       if (dist > 0.03 && frame) {
         const maxSeq = frame.actions.reduce((m, a) => Math.max(m, a.seq), 0);
         const seq = sameSeq && maxSeq > 0 ? maxSeq : maxSeq + 1;
+        const actorId = nearestToken(first);
+        const targetId = tool === "pass" || tool === "handoff" ? nearestToken(p) : null;
         const action: PlayAction = {
           id: uuid(),
           type: tool,
           seq,
-          points: [ghost.from, p],
+          points: pts,
+          ...(actorId ? { actor: actorId } : {}),
+          ...(targetId ? { target: targetId, transfersBall: true } : {}),
         };
         patchFrame((f) => ({ ...f, actions: [...f.actions, action] }));
       }
-      setGhost(null);
+      setStroke(null);
     }
+  };
+
+  /** Commit the animated end state as the frame's new starting positions. */
+  const applyEndState = () => {
+    const last = timeline.steps[timeline.steps.length - 1];
+    if (!last) return;
+    patchFrame((f) => ({ ...f, tokens: last.endTokens.map((t) => ({ ...t })), actions: [] }));
+    stopAnimation();
+    toast.success("Ending positions saved as the new setup");
   };
 
   const addFrame = (duplicate: boolean) => {
