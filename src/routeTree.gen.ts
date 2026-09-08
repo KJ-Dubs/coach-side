@@ -31,6 +31,7 @@ import { Route as AuthenticatedPlaysNewRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedReviewGameIdRouteImport } from './routes/_authenticated/review.$gameId'
 import { Route as AuthenticatedStatsPlayersRouteImport } from './routes/_authenticated/stats.players'
 import { Route as AuthenticatedStatsTeamRouteImport } from './routes/_authenticated/stats.team'
+import { Route as SharePlayTokenRouteImport } from './routes/share.play.$token'
 import { Route as AuthenticatedPlaysPlayIdIndexRouteImport } from './routes/_authenticated/plays.$playId.index'
 import { Route as AuthenticatedPlaysPlayIdViewRouteImport } from './routes/_authenticated/plays.$playId.view'
 import { Route as ApiPublicLockerTokenCalendarRouteImport } from './routes/api/public/locker.$token.calendar'
@@ -146,6 +147,11 @@ const AuthenticatedStatsTeamRoute = AuthenticatedStatsTeamRouteImport.update({
   path: '/stats/team',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const SharePlayTokenRoute = SharePlayTokenRouteImport.update({
+  id: '/share/play/$token',
+  path: '/share/play/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedPlaysPlayIdIndexRoute =
   AuthenticatedPlaysPlayIdIndexRouteImport.update({
     id: '/plays/$playId/',
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/review/$gameId': typeof AuthenticatedReviewGameIdRoute
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
+  '/share/play/$token': typeof SharePlayTokenRoute
   '/games/': typeof AuthenticatedGamesIndexRoute
   '/plays/': typeof AuthenticatedPlaysIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
@@ -211,6 +218,7 @@ export interface FileRoutesByTo {
   '/review/$gameId': typeof AuthenticatedReviewGameIdRoute
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
+  '/share/play/$token': typeof SharePlayTokenRoute
   '/games': typeof AuthenticatedGamesIndexRoute
   '/plays': typeof AuthenticatedPlaysIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
@@ -239,6 +247,7 @@ export interface FileRoutesById {
   '/_authenticated/review/$gameId': typeof AuthenticatedReviewGameIdRoute
   '/_authenticated/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/_authenticated/stats/team': typeof AuthenticatedStatsTeamRoute
+  '/share/play/$token': typeof SharePlayTokenRoute
   '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
   '/_authenticated/plays/': typeof AuthenticatedPlaysIndexRoute
   '/_authenticated/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
@@ -267,6 +276,7 @@ export interface FileRouteTypes {
     | '/review/$gameId'
     | '/stats/players'
     | '/stats/team'
+    | '/share/play/$token'
     | '/games/'
     | '/plays/'
     | '/plays/$playId/view'
@@ -293,6 +303,7 @@ export interface FileRouteTypes {
     | '/review/$gameId'
     | '/stats/players'
     | '/stats/team'
+    | '/share/play/$token'
     | '/games'
     | '/plays'
     | '/plays/$playId/view'
@@ -320,6 +331,7 @@ export interface FileRouteTypes {
     | '/_authenticated/review/$gameId'
     | '/_authenticated/stats/players'
     | '/_authenticated/stats/team'
+    | '/share/play/$token'
     | '/_authenticated/games/'
     | '/_authenticated/plays/'
     | '/_authenticated/plays/$playId/view'
@@ -335,6 +347,7 @@ export interface RootRouteChildren {
   JoinTokenRoute: typeof JoinTokenRoute
   LockerTokenRoute: typeof LockerTokenRoute
   ShareTokenRoute: typeof ShareTokenRoute
+  SharePlayTokenRoute: typeof SharePlayTokenRoute
   ApiPublicLockerTokenCalendarRoute: typeof ApiPublicLockerTokenCalendarRoute
 }
 
@@ -494,6 +507,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStatsTeamRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/share/play/$token': {
+      id: '/share/play/$token'
+      path: '/share/play/$token'
+      fullPath: '/share/play/$token'
+      preLoaderRoute: typeof SharePlayTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/plays/$playId/': {
       id: '/_authenticated/plays/$playId/'
       path: '/plays/$playId'
@@ -569,6 +589,7 @@ const rootRouteChildren: RootRouteChildren = {
   JoinTokenRoute: JoinTokenRoute,
   LockerTokenRoute: LockerTokenRoute,
   ShareTokenRoute: ShareTokenRoute,
+  SharePlayTokenRoute: SharePlayTokenRoute,
   ApiPublicLockerTokenCalendarRoute: ApiPublicLockerTokenCalendarRoute,
 }
 export const routeTree = rootRouteImport
