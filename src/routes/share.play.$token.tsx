@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SharedPlayView } from "@/components/court/SharedPlayView";
 
-export const Route = createFileRoute("/share/$token")({
+export const Route = createFileRoute("/share/play/$token")({
   head: () => ({
     meta: [
       { title: "Shared Play — CoachSide" },
