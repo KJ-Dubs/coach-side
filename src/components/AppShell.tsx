@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { initialsOf, signOut } from "@/lib/auth";
+import { useAccess } from "@/lib/access";
 import { useMe } from "@/lib/useMe";
 
 const QUICK = [
