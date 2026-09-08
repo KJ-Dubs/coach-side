@@ -115,11 +115,11 @@ function BallMark({ p }: { p: { x: number; y: number } }) {
   );
 }
 
-function TokenShape({ t, flip }: { t: PlayToken; flip: boolean }) {
+function TokenShape({ t, flip, dim }: { t: PlayToken; flip: boolean; dim?: boolean }) {
   const p = xf(t, flip);
   const defense = t.team === "defense";
   return (
-    <g>
+    <g opacity={dim ? 0.35 : 1}>
       {defense ? (
         <rect
           x={p.x - 19}
@@ -148,6 +148,7 @@ function TokenShape({ t, flip }: { t: PlayToken; flip: boolean }) {
     </g>
   );
 }
+
 
 export function PlayCanvas({
   frame,
