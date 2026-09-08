@@ -866,6 +866,57 @@ export type Database = {
           },
         ]
       }
+      play_team_assignments: {
+        Row: {
+          assigned_by: string | null
+          category_override: string | null
+          created_at: string
+          id: string
+          is_visible: boolean
+          notes: string | null
+          play_id: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          category_override?: string | null
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          notes?: string | null
+          play_id: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          category_override?: string | null
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          notes?: string | null
+          play_id?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "play_team_assignments_play_id_fkey"
+            columns: ["play_id"]
+            isOneToOne: false
+            referencedRelation: "plays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "play_team_assignments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           active: boolean

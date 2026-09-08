@@ -39,6 +39,14 @@ export const getLockerBundle = createServerFn({ method: "GET" })
 
     if (!team || !team.locker_enabled) return null;
 
+    const { data: assigned } = await supabaseAdmin
+      .from("play_team_assignments")
+      .select("play_id")
+      .eq("team_id", team.id)
+      .eq("is_visible", true);
+
+    const assignedIds = (assigned ?? []).map((a) => (a as { play_id: string }).play_id);
+
     const [players, games, plays, schedule] = await Promise.all([
       supabaseAdmin.from("players").select("*").eq("team_id", team.id).order("jersey"),
       supabaseAdmin
@@ -47,11 +55,17 @@ export const getLockerBundle = createServerFn({ method: "GET" })
         .eq("team_id", team.id)
         .eq("status", "final")
         .order("game_date", { ascending: false }),
-      supabaseAdmin
-        .from("plays")
-        .select("*")
-        .eq("team_id", team.id)
-        .order("created_at", { ascending: false }),
+      assignedIds.length
+        ? supabaseAdmin
+            .from("plays")
+            .select("*")
+            .in("id", assignedIds)
+            .order("created_at", { ascending: false })
+        : supabaseAdmin
+            .from("plays")
+            .select("*")
+            .eq("team_id", team.id)
+            .order("created_at", { ascending: false }),
       supabaseAdmin
         .from("team_events")
         .select("*")
@@ -61,6 +75,7 @@ export const getLockerBundle = createServerFn({ method: "GET" })
 
     const gameIds = (games.data ?? []).map((g) => g.id);
     const playIds = (plays.data ?? []).map((p) => p.id);
+
 
     const [events, subs, frames] = await Promise.all([
       gameIds.length

@@ -12,18 +12,26 @@ import {
   Note,
   Panel,
   Pill,
-  SelectInput,
   TextInput,
 } from "@/components/Bubbles";
 import {
   createPlay,
   deletePlay,
   duplicatePlay,
+  fetchPlayAssignments,
   fetchPlays,
   fetchTeams,
+  setPlayTeams,
   updatePlay,
 } from "@/lib/data";
-import { PLAY_CATEGORIES, normalizeCategory, type Play, type PlayCategory } from "@/lib/types";
+
+import {
+  PLAY_CATEGORIES,
+  normalizeCategory,
+  type Play,
+  type PlayCategory,
+  type Team,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
@@ -73,15 +81,34 @@ function PlaybookPage() {
   const queryClient = useQueryClient();
   const plays = useQuery({ queryKey: ["plays"], queryFn: fetchPlays });
   const teams = useQuery({ queryKey: ["teams"], queryFn: fetchTeams });
+  const assignments = useQuery({
+    queryKey: ["play-assignments"],
+    queryFn: fetchPlayAssignments,
+  });
 
   const selected = isCategory(search.category) ? search.category : null;
   const teamFilter = search.team ?? "ALL";
 
+  /** playId -> teamIds it is shared with (legacy team_id counts as an assignment). */
+  const teamsByPlay = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const p of plays.data ?? []) map.set(p.id, p.team_id ? [p.team_id] : []);
+    for (const a of assignments.data ?? []) {
+      const list = map.get(a.play_id) ?? [];
+      if (!list.includes(a.team_id)) list.push(a.team_id);
+      map.set(a.play_id, list);
+    }
+    return map;
+  }, [plays.data, assignments.data]);
+
   const visiblePlays = useMemo(
     () =>
-      (plays.data ?? []).filter((p) => teamFilter === "ALL" || p.team_id === teamFilter),
-    [plays.data, teamFilter],
+      (plays.data ?? []).filter(
+        (p) => teamFilter === "ALL" || (teamsByPlay.get(p.id) ?? []).includes(teamFilter),
+      ),
+    [plays.data, teamFilter, teamsByPlay],
   );
+
 
   const counts = useMemo(() => {
     const out = new Map<string, number>();
@@ -174,7 +201,19 @@ function PlaybookPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const assignTeams = useMutation({
+    mutationFn: ({ playId, teamIds }: { playId: string; teamIds: string[] }) =>
+      setPlayTeams(playId, teamIds),
+    onSuccess: () => {
+      void invalidate();
+      void queryClient.invalidateQueries({ queryKey: ["play-assignments"] });
+      toast.success("Team access updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const [quickOpen, setQuickOpen] = useState(false);
+
 
   return (
     <AppShell
@@ -292,79 +331,188 @@ function PlaybookPage() {
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {inCategory.map((p) => (
-              <Panel key={p.id} className="flex flex-col gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-2xl border border-grape/60 bg-grape/20 px-3 py-1.5 text-sm font-black text-foreground">
-                    {p.name}
-                  </span>
-                  <Pill tone="muted">{teamName(p.team_id)}</Pill>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Pill tone="neutral">Attack {p.attack_basket === "left" ? "left" : "right"}</Pill>
-                  <Pill tone={p.is_shared ? "success" : "muted"}>
-                    {p.is_shared ? "Shared link on" : "Private"}
-                  </Pill>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <Link to="/plays/$playId/view" params={{ playId: p.id }}>
-                    <BubbleButton size="sm" tone="grape">
-                      Present
-                    </BubbleButton>
-                  </Link>
-                  <Link to="/plays/$playId" params={{ playId: p.id }}>
-                    <BubbleButton size="sm" tone="flame">
-                      Edit
-                    </BubbleButton>
-                  </Link>
-                  <BubbleButton
-                    size="sm"
-                    tone="neutral"
-                    disabled={share.isPending}
-                    onClick={() => share.mutate(p)}
-                  >
-                    {p.is_shared ? "Copy link" : "Share"}
-                  </BubbleButton>
-                  {p.is_shared ? (
-                    <BubbleButton
-                      size="sm"
-                      tone="ghost"
-                      disabled={unshare.isPending}
-                      onClick={() => unshare.mutate(p)}
-                    >
-                      Stop sharing
-                    </BubbleButton>
-                  ) : null}
-                  <BubbleButton
-                    size="sm"
-                    tone="neutral"
-                    disabled={duplicate.isPending}
-                    onClick={() => duplicate.mutate(p)}
-                  >
-                    Duplicate
-                  </BubbleButton>
-                  <BubbleButton
-                    size="sm"
-                    tone="ghost"
-                    disabled={remove.isPending}
-                    onClick={() => {
-                      if (window.confirm(`Delete “${p.name}”? This cannot be undone.`)) {
-                        remove.mutate(p);
-                      }
-                    }}
-                  >
-                    Delete
-                  </BubbleButton>
-                </div>
-              </Panel>
+              <PlayCard
+                key={p.id}
+                play={p}
+                assignedTeams={teamsByPlay.get(p.id) ?? []}
+                allTeams={teams.data ?? []}
+                teamName={teamName}
+                busy={share.isPending || duplicate.isPending || remove.isPending}
+                onShareLink={() => share.mutate(p)}
+                onUnshare={() => unshare.mutate(p)}
+                onDuplicate={() => duplicate.mutate(p)}
+                onDelete={() => {
+                  if (window.confirm(`Delete “${p.name}”? This cannot be undone.`)) {
+                    remove.mutate(p);
+                  }
+                }}
+                onSaveTeams={(ids) => assignTeams.mutate({ playId: p.id, teamIds: ids })}
+                savingTeams={assignTeams.isPending}
+              />
             ))}
           </div>
+
         </div>
       )}
     </AppShell>
   );
 }
 
-/** Inline quick-create: name + team, then straight into the designer. */
+/** Menu-driven play card with View / Present / Edit / Share and team access. */
+function PlayCard({
+  play,
+  assignedTeams,
+  allTeams,
+  teamName,
+  busy,
+  onShareLink,
+  onUnshare,
+  onDuplicate,
+  onDelete,
+  onSaveTeams,
+  savingTeams,
+}: {
+  play: Play;
+  assignedTeams: string[];
+  allTeams: Team[];
+  teamName: (id: string | null) => string;
+  busy: boolean;
+  onShareLink: () => void;
+  onUnshare: () => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+  onSaveTeams: (ids: string[]) => void;
+  savingTeams: boolean;
+}) {
+  const [menu, setMenu] = useState(false);
+  const [teamsOpen, setTeamsOpen] = useState(false);
+  const [picked, setPicked] = useState<string[]>(assignedTeams);
+
+  const openTeams = () => {
+    setPicked(assignedTeams);
+    setTeamsOpen(true);
+    setMenu(false);
+  };
+
+  return (
+    <Panel className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-2xl border border-grape/60 bg-grape/20 px-3 py-1.5 text-sm font-black text-foreground">
+          {play.name}
+        </span>
+        <BubbleButton
+          size="sm"
+          tone={menu ? "grape" : "neutral"}
+          className="ml-auto"
+          onClick={() => setMenu((m) => !m)}
+        >
+          •••
+        </BubbleButton>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone="neutral">Attack {play.attack_basket === "left" ? "left" : "right"}</Pill>
+        <Pill tone={play.is_shared ? "success" : "muted"}>
+          {play.is_shared ? "Shared link on" : "Private"}
+        </Pill>
+        {assignedTeams.length ? (
+          assignedTeams.map((t) => (
+            <Pill key={t} tone="muted">
+              {teamName(t)}
+            </Pill>
+          ))
+        ) : (
+          <Pill tone="muted">No team yet</Pill>
+        )}
+      </div>
+
+      {menu ? (
+        <div className="flex flex-wrap gap-1.5 rounded-2xl border border-border bg-surface-2/70 p-2">
+          <Link to="/plays/$playId/view" params={{ playId: play.id }}>
+            <BubbleButton size="sm" tone="neutral">
+              View
+            </BubbleButton>
+          </Link>
+          <Link to="/plays/$playId/view" params={{ playId: play.id }}>
+            <BubbleButton size="sm" tone="grape">
+              Present
+            </BubbleButton>
+          </Link>
+          <Link to="/plays/$playId" params={{ playId: play.id }}>
+            <BubbleButton size="sm" tone="flame">
+              Edit
+            </BubbleButton>
+          </Link>
+          <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onShareLink}>
+            {play.is_shared ? "Copy link" : "Share"}
+          </BubbleButton>
+          <BubbleButton size="sm" tone="neutral" onClick={openTeams}>
+            Teams
+          </BubbleButton>
+          {play.is_shared ? (
+            <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onUnshare}>
+              Stop sharing
+            </BubbleButton>
+          ) : null}
+          <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onDuplicate}>
+            Duplicate
+          </BubbleButton>
+          <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onDelete}>
+            Delete
+          </BubbleButton>
+        </div>
+      ) : null}
+
+      {teamsOpen ? (
+        <div className="flex flex-col gap-2 rounded-2xl border border-grape/50 bg-grape/10 p-2">
+          <Label>Available to</Label>
+          <div className="flex flex-wrap gap-1.5">
+            {allTeams.map((t) => (
+              <BubbleButton
+                key={t.id}
+                size="sm"
+                tone={picked.includes(t.id) ? "grape" : "neutral"}
+                onClick={() =>
+                  setPicked((cur) =>
+                    cur.includes(t.id) ? cur.filter((x) => x !== t.id) : [...cur, t.id],
+                  )
+                }
+              >
+                {picked.includes(t.id) ? "✓ " : ""}
+                {t.name}
+              </BubbleButton>
+            ))}
+            <BubbleButton
+              size="sm"
+              tone="neutral"
+              onClick={() => setPicked(allTeams.map((t) => t.id))}
+            >
+              Select all
+            </BubbleButton>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <BubbleButton
+              size="sm"
+              tone="flame"
+              disabled={savingTeams}
+              onClick={() => {
+                onSaveTeams(picked);
+                setTeamsOpen(false);
+              }}
+            >
+              {savingTeams ? "Saving…" : "Save team access"}
+            </BubbleButton>
+            <BubbleButton size="sm" tone="ghost" onClick={() => setTeamsOpen(false)}>
+              Cancel
+            </BubbleButton>
+          </div>
+        </div>
+      ) : null}
+    </Panel>
+  );
+}
+
+/** Inline quick-create: name + teams, then straight into the designer. */
 function QuickCreate({
   category,
   defaultTeam,
@@ -378,18 +526,20 @@ function QuickCreate({
   const queryClient = useQueryClient();
   const teams = useQuery({ queryKey: ["teams"], queryFn: fetchTeams });
   const [name, setName] = useState("");
-  const [teamId, setTeamId] = useState(defaultTeam);
+  const [teamIds, setTeamIds] = useState<string[]>(defaultTeam ? [defaultTeam] : []);
 
   const create = useMutation({
     mutationFn: () =>
       createPlay({
-        team_id: teamId || null,
+        team_id: teamIds[0] ?? null,
         name: name.trim(),
         category,
         attack_basket: "right",
+        team_ids: teamIds,
       }),
     onSuccess: (p) => {
       void queryClient.invalidateQueries({ queryKey: ["plays"] });
+      void queryClient.invalidateQueries({ queryKey: ["play-assignments"] });
       toast.success("Play created — opening the designer");
       onDone();
       navigate({ to: "/plays/$playId", params: { playId: p.id } });
@@ -398,7 +548,7 @@ function QuickCreate({
   });
 
   return (
-    <Panel className="grid gap-3 sm:grid-cols-[1fr_220px_auto] sm:items-end">
+    <Panel className="flex flex-col gap-3">
       <Field label="Play name">
         <TextInput
           autoFocus
@@ -410,18 +560,35 @@ function QuickCreate({
           }}
         />
       </Field>
-      <Field label="Team">
-        <SelectInput value={teamId} onChange={(e) => setTeamId(e.target.value)}>
+      <Field label="Available to">
+        <div className="flex flex-wrap gap-1.5">
           {teams.data?.map((t) => (
-            <option key={t.id} value={t.id}>
+            <BubbleButton
+              key={t.id}
+              size="sm"
+              tone={teamIds.includes(t.id) ? "grape" : "neutral"}
+              onClick={() =>
+                setTeamIds((cur) =>
+                  cur.includes(t.id) ? cur.filter((x) => x !== t.id) : [...cur, t.id],
+                )
+              }
+            >
+              {teamIds.includes(t.id) ? "✓ " : ""}
               {t.name}
-            </option>
+            </BubbleButton>
           ))}
-        </SelectInput>
+          <BubbleButton
+            size="sm"
+            tone="neutral"
+            onClick={() => setTeamIds((teams.data ?? []).map((t) => t.id))}
+          >
+            Select all
+          </BubbleButton>
+        </div>
       </Field>
       <BubbleButton
         tone="flame"
-        disabled={!name.trim() || create.isPending}
+        disabled={!name.trim() || !teamIds.length || create.isPending}
         onClick={() => create.mutate()}
       >
         {create.isPending ? "Creating…" : "Create & design"}
@@ -429,3 +596,4 @@ function QuickCreate({
     </Panel>
   );
 }
+
