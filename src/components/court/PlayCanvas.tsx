@@ -115,11 +115,11 @@ function BallMark({ p }: { p: { x: number; y: number } }) {
   );
 }
 
-function TokenShape({ t, flip }: { t: PlayToken; flip: boolean }) {
+function TokenShape({ t, flip, dim }: { t: PlayToken; flip: boolean; dim?: boolean }) {
   const p = xf(t, flip);
   const defense = t.team === "defense";
   return (
-    <g>
+    <g opacity={dim ? 0.35 : 1}>
       {defense ? (
         <rect
           x={p.x - 19}
@@ -149,6 +149,7 @@ function TokenShape({ t, flip }: { t: PlayToken; flip: boolean }) {
   );
 }
 
+
 export function PlayCanvas({
   frame,
   flip = false,
@@ -163,6 +164,7 @@ export function PlayCanvas({
   ball,
   dimOtherActions = false,
   activeSeq,
+  focusTokenId,
 }: {
   frame: PlayFrame | undefined;
   flip?: boolean | undefined;
@@ -178,6 +180,8 @@ export function PlayCanvas({
   ball?: Point | null | undefined;
   dimOtherActions?: boolean | undefined;
   activeSeq?: number | undefined;
+  /** Emphasize one player and their actions (read-only presenter view). */
+  focusTokenId?: string | undefined;
 }) {
   const shownTokens = tokens ?? frame?.tokens ?? [];
   const shownActions = actions ?? frame?.actions ?? [];
@@ -206,12 +210,16 @@ export function PlayCanvas({
           key={a.id}
           a={a}
           flip={flip}
-          dim={dimOtherActions && activeSeq !== undefined && a.seq !== activeSeq}
+          dim={
+            (dimOtherActions && activeSeq !== undefined && a.seq !== activeSeq) ||
+            (!!focusTokenId && a.actor !== focusTokenId && a.target !== focusTokenId)
+          }
         />
       ))}
       {shownTokens.map((t) => (
-        <TokenShape key={t.id} t={t} flip={flip} />
+        <TokenShape key={t.id} t={t} flip={flip} dim={!!focusTokenId && t.id !== focusTokenId} />
       ))}
+
       {ballPx ? (
         <BallMark p={attached ? { x: ballPx.x + 22, y: ballPx.y - 20 } : ballPx} />
       ) : null}
