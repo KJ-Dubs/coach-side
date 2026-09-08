@@ -136,21 +136,31 @@ function CreatePlayPage() {
             <Note>{CATEGORY_HINT[category]}</Note>
           </Field>
 
-          <Field label="Team">
+          <Field label="Available to">
             <div className="flex flex-wrap gap-2">
               {teams.data?.map((t) => (
                 <BubbleButton
                   key={t.id}
                   size="sm"
-                  tone={teamId === t.id ? "grape" : "neutral"}
-                  onClick={() => setTeamId(t.id)}
+                  tone={teamIds.includes(t.id) ? "grape" : "neutral"}
+                  onClick={() => toggleTeam(t.id)}
                 >
+                  {teamIds.includes(t.id) ? "✓ " : ""}
                   {t.name}
                 </BubbleButton>
               ))}
+              <BubbleButton
+                size="sm"
+                tone="neutral"
+                onClick={() => setTeamIds((teams.data ?? []).map((t) => t.id))}
+              >
+                Select all
+              </BubbleButton>
               {teams.isLoading ? <Pill tone="muted">Loading teams…</Pill> : null}
             </div>
+            <Note>The same play can live in more than one team playbook.</Note>
           </Field>
+
 
           <Field label="Attack basket">
             <div className="flex flex-wrap gap-2">
