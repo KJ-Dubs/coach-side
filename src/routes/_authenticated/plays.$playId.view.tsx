@@ -29,23 +29,43 @@ export function PlaySlideshow({ playId }: { playId: string }) {
   const frames = useQuery({ queryKey: ["frames", playId], queryFn: () => fetchFrames(playId) });
   const [i, setI] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [timeMs, setTimeMs] = useState(0);
   const total = frames.data?.length ?? 0;
+  const frame = frames.data?.[Math.min(i, Math.max(0, total - 1))];
+  const timeline = useMemo(() => buildTimeline(frame), [frame]);
+  const live = timeline.steps.length ? sampleTimeline(timeline, timeMs) : null;
 
   useEffect(() => {
     if (!playing || total === 0) return;
-    const t = setInterval(() => {
-      setI((prev) => {
-        if (prev + 1 >= total) {
+    let raf = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = now - last;
+      last = now;
+      setTimeMs((prev) => {
+        const span = timeline.totalMs || 1400;
+        const next = prev + dt;
+        if (next >= span) {
+          if (i + 1 < total) {
+            setI(i + 1);
+            return 0;
+          }
           setPlaying(false);
-          return prev;
+          return Math.max(0, span - 1);
         }
-        return prev + 1;
+        return next;
       });
-    }, 1600);
-    return () => clearInterval(t);
-  }, [playing, total]);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [playing, total, timeline.totalMs, i]);
 
-  const frame = frames.data?.[Math.min(i, Math.max(0, total - 1))];
+  const goto = (n: number) => {
+    setI(n);
+    setTimeMs(0);
+  };
+
   const flip = play.data?.attack_basket === "left";
 
   return (
@@ -56,26 +76,48 @@ export function PlaySlideshow({ playId }: { playId: string }) {
         <Pill tone="flame">
           Frame {total ? Math.min(i + 1, total) : 0} / {total}
         </Pill>
+        {live ? (
+          <Pill tone="neutral">
+            Sequence {live.step.seq} · {live.phase === "show" ? "Showing paths" : "Running"}
+          </Pill>
+        ) : null}
         {frame?.note ? <Pill tone="neutral">{frame.note}</Pill> : null}
       </Panel>
-      <div className="transition-opacity duration-300" key={frame?.id}>
-        <PlayCanvas frame={frame} flip={flip} className="bubble-pop" />
-      </div>
+      <PlayCanvas
+        frame={frame}
+        flip={flip}
+        className="bubble-pop"
+        {...(live
+          ? {
+              tokens: live.sample.tokens,
+              ball: live.sample.ball,
+              actions: live.step.actions,
+              activeSeq: live.step.seq,
+              dimOtherActions: true,
+            }
+          : {})}
+      />
       <Panel className="flex flex-wrap items-center justify-center gap-2">
-        <BubbleButton tone="neutral" onClick={() => setI((v) => Math.max(0, v - 1))} disabled={i === 0}>
+        <BubbleButton tone="neutral" onClick={() => goto(Math.max(0, i - 1))} disabled={i === 0}>
           ← Previous
         </BubbleButton>
         <BubbleButton tone="flame" onClick={() => setPlaying((p) => !p)}>
-          {playing ? "Pause" : "Play"}
+          {playing ? "❚❚ Pause" : "▶ Play"}
         </BubbleButton>
         <BubbleButton
           tone="grape"
-          onClick={() => setI((v) => Math.min(total - 1, v + 1))}
+          onClick={() => goto(Math.min(total - 1, i + 1))}
           disabled={i >= total - 1}
         >
           Next →
         </BubbleButton>
-        <BubbleButton tone="ghost" onClick={() => setI(0)}>
+        <BubbleButton
+          tone="ghost"
+          onClick={() => {
+            setPlaying(false);
+            goto(0);
+          }}
+        >
           Restart
         </BubbleButton>
       </Panel>
