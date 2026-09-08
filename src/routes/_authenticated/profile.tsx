@@ -36,6 +36,7 @@ export const Route = createFileRoute("/_authenticated/profile")({
 
 function ProfilePage() {
   const me = useMe();
+  const { access } = useAccess();
   const queryClient = useQueryClient();
   const [name, setName] = useState(me.profile?.full_name ?? "");
   useEffect(() => setName(me.profile?.full_name ?? ""), [me.profile?.full_name]);
@@ -49,7 +50,20 @@ function ProfilePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const isPlayer = access.isPlayerOnly;
+  const playerTeamId = access.playerTeamIds[0] ?? null;
+  const playerTeam = me.teams.find((t) => t.id === playerTeamId) ?? null;
+  const roster = useQuery({
+    queryKey: ["players", playerTeamId],
+    queryFn: () => fetchPlayers(playerTeamId!),
+    enabled: isPlayer && !!playerTeamId,
+  });
+  const myPlayer = {
+    data: (roster.data ?? []).find((p) => p.id === access.playerId) ?? null,
+  };
+
   const email = me.user?.email ?? me.profile?.email ?? "";
+
 
   return (
     <AppShell
