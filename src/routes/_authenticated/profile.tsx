@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
+import { NotificationPrefsPanel } from "@/components/NotificationPrefsPanel";
 import {
   BubbleButton,
   EmptyState,
@@ -14,8 +15,9 @@ import {
   Pill,
   TextInput,
 } from "@/components/Bubbles";
-import { updateProfile } from "@/lib/data";
+import { fetchPlayers, updateProfile } from "@/lib/data";
 import { initialsOf } from "@/lib/auth";
+import { useAccess } from "@/lib/access";
 import { useMe } from "@/lib/useMe";
 import { ROLE_LABEL } from "@/lib/types";
 
