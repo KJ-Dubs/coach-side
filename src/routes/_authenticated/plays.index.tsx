@@ -193,7 +193,19 @@ function PlaybookPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const assignTeams = useMutation({
+    mutationFn: ({ playId, teamIds }: { playId: string; teamIds: string[] }) =>
+      setPlayTeams(playId, teamIds),
+    onSuccess: () => {
+      void invalidate();
+      void queryClient.invalidateQueries({ queryKey: ["play-assignments"] });
+      toast.success("Team access updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const [quickOpen, setQuickOpen] = useState(false);
+
 
   return (
     <AppShell
