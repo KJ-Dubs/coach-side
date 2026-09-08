@@ -62,30 +62,36 @@ function CreatePlayPage() {
   const [category, setCategory] = useState<PlayCategory>(
     isCategory(search.category) ? search.category : "Offense",
   );
-  const [teamId, setTeamId] = useState<string>("");
+  const [teamIds, setTeamIds] = useState<string[]>([]);
   const [basket, setBasket] = useState<"left" | "right">("right");
 
   useEffect(() => {
-    if (!teamId && teams.data?.length) setTeamId(teams.data[0]!.id);
-  }, [teams.data, teamId]);
+    if (!teamIds.length && teams.data?.length) setTeamIds([teams.data[0]!.id]);
+  }, [teams.data, teamIds.length]);
+
+  const toggleTeam = (id: string) =>
+    setTeamIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
 
   const create = useMutation({
     mutationFn: () =>
       createPlay({
-        team_id: teamId || null,
+        team_id: teamIds[0] ?? null,
         name: name.trim(),
         category,
         attack_basket: basket,
+        team_ids: teamIds,
       }),
     onSuccess: (p) => {
       void queryClient.invalidateQueries({ queryKey: ["plays"] });
+      void queryClient.invalidateQueries({ queryKey: ["play-assignments"] });
       toast.success("Play created — opening the designer");
       navigate({ to: "/plays/$playId", params: { playId: p.id } });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const ready = name.trim().length > 0 && !!teamId;
+  const ready = name.trim().length > 0 && teamIds.length > 0;
+
 
   return (
     <AppShell
