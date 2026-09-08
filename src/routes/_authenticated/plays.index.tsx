@@ -12,7 +12,6 @@ import {
   Note,
   Panel,
   Pill,
-  SelectInput,
   TextInput,
 } from "@/components/Bubbles";
 import {
@@ -26,7 +25,13 @@ import {
   updatePlay,
 } from "@/lib/data";
 
-import { PLAY_CATEGORIES, normalizeCategory, type Play, type PlayCategory } from "@/lib/types";
+import {
+  PLAY_CATEGORIES,
+  normalizeCategory,
+  type Play,
+  type PlayCategory,
+  type Team,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
