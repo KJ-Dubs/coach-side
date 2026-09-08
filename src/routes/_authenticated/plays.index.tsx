@@ -73,15 +73,34 @@ function PlaybookPage() {
   const queryClient = useQueryClient();
   const plays = useQuery({ queryKey: ["plays"], queryFn: fetchPlays });
   const teams = useQuery({ queryKey: ["teams"], queryFn: fetchTeams });
+  const assignments = useQuery({
+    queryKey: ["play-assignments"],
+    queryFn: fetchPlayAssignments,
+  });
 
   const selected = isCategory(search.category) ? search.category : null;
   const teamFilter = search.team ?? "ALL";
 
+  /** playId -> teamIds it is shared with (legacy team_id counts as an assignment). */
+  const teamsByPlay = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const p of plays.data ?? []) map.set(p.id, p.team_id ? [p.team_id] : []);
+    for (const a of assignments.data ?? []) {
+      const list = map.get(a.play_id) ?? [];
+      if (!list.includes(a.team_id)) list.push(a.team_id);
+      map.set(a.play_id, list);
+    }
+    return map;
+  }, [plays.data, assignments.data]);
+
   const visiblePlays = useMemo(
     () =>
-      (plays.data ?? []).filter((p) => teamFilter === "ALL" || p.team_id === teamFilter),
-    [plays.data, teamFilter],
+      (plays.data ?? []).filter(
+        (p) => teamFilter === "ALL" || (teamsByPlay.get(p.id) ?? []).includes(teamFilter),
+      ),
+    [plays.data, teamFilter, teamsByPlay],
   );
+
 
   const counts = useMemo(() => {
     const out = new Map<string, number>();
