@@ -9,7 +9,7 @@ import {
   Panel,
   Pill,
 } from "@/components/Bubbles";
-import { updateTeam } from "@/lib/data";
+import { lockerUrl, resetLockerToken, setLockerSharing, updateTeam } from "@/lib/data";
 import {
   ensureTeamInvite,
   fetchTeamDirectory,
@@ -114,11 +114,58 @@ export function LockerAccessPanel({ team }: { team: Team }) {
           "Player Invite Link",
           "Players open this link, create an account and pick their name from your roster.",
         )}
-        {row(
-          "parent",
-          "Parent Locker Room Link",
-          "Parents get the schedule, family announcements and team resources only — no staff or private messages.",
-        )}
+        <div className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-surface-2/60 p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Pill tone="flame">Parent View Link</Pill>
+            <Pill tone={team.locker_enabled === false ? "muted" : "success"}>
+              {team.locker_enabled === false ? "Turned off" : "Link is live"}
+            </Pill>
+          </div>
+          <Note>
+            Anyone with this link can view parent-access team information: schedule, results, team
+            and player stats and family announcements. No account needed, and nothing can be
+            changed.
+          </Note>
+          {team.locker_token && team.locker_enabled !== false ? (
+            <Pill tone="muted" className="max-w-full break-all">
+              {lockerUrl(team.locker_token)}
+            </Pill>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <BubbleButton
+              tone="grape"
+              onClick={async () => {
+                if (team.locker_enabled === false) await setLockerSharing(team.id, true);
+                await navigator.clipboard?.writeText(lockerUrl(team.locker_token));
+                await qc.invalidateQueries({ queryKey: ["teams"] });
+                toast.success("Parent link copied");
+              }}
+            >
+              Copy link
+            </BubbleButton>
+            <BubbleButton
+              tone="neutral"
+              onClick={async () => {
+                const token = await resetLockerToken(team.id);
+                await navigator.clipboard?.writeText(lockerUrl(token));
+                await qc.invalidateQueries({ queryKey: ["teams"] });
+                toast.success("New parent link created and copied — the old one no longer works");
+              }}
+            >
+              Reset link
+            </BubbleButton>
+            <BubbleButton
+              tone="ghost"
+              onClick={async () => {
+                await setLockerSharing(team.id, team.locker_enabled === false);
+                await qc.invalidateQueries({ queryKey: ["teams"] });
+                toast.success(team.locker_enabled === false ? "Parent link turned on" : "Parent link disabled");
+              }}
+            >
+              {team.locker_enabled === false ? "Turn on" : "Disable link"}
+            </BubbleButton>
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
