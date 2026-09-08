@@ -287,6 +287,8 @@ function PlayDesignerPage() {
     { key: "curl", label: "Curl Cut" },
     { key: "dribble", label: "Dribble" },
     { key: "screen", label: "Screen" },
+    { key: "handoff", label: "Handoff" },
+    { key: "shot", label: "Shot" },
   ];
 
 
@@ -314,15 +316,60 @@ function PlayDesignerPage() {
       }
     >
       <div className="grid gap-3 xl:grid-cols-[1fr_340px]">
-        <PlayCanvas
-          frame={frame}
-          flip={flip}
-          zoom={zoom}
-          ghost={ghost}
-          onCourtPoint={onDown}
-          onCourtPointerMove={onMove}
-          onCourtPointerUp={onUp}
-        />
+        <div className="flex flex-col gap-3">
+          <PlayCanvas
+            frame={frame}
+            flip={flip}
+            zoom={zoom}
+            ghost={stroke}
+            {...(live
+              ? {
+                  tokens: live.sample.tokens,
+                  ball: live.sample.ball,
+                  actions: live.step.actions,
+                  activeSeq: live.step.seq,
+                  dimOtherActions: true,
+                }
+              : {})}
+            onCourtPoint={onDown}
+            onCourtPointerMove={onMove}
+            onCourtPointerUp={onUp}
+          />
+          <Panel className="flex flex-wrap items-center gap-2">
+            <Label>Animate</Label>
+            <BubbleButton
+              size="sm"
+              tone="flame"
+              disabled={timeline.steps.length === 0}
+              onClick={() => {
+                if (playing) {
+                  setPlaying(false);
+                } else {
+                  if (timeMs >= timeline.totalMs - 1) setTimeMs(0);
+                  setPlaying(true);
+                }
+              }}
+            >
+              {playing ? "❚❚ Pause" : "▶ Play"}
+            </BubbleButton>
+            <BubbleButton size="sm" tone="neutral" onClick={stopAnimation}>
+              ↺ Reset
+            </BubbleButton>
+            <BubbleButton
+              size="sm"
+              tone="grape"
+              disabled={timeline.steps.length === 0}
+              onClick={applyEndState}
+            >
+              Use End Positions
+            </BubbleButton>
+            <Pill tone={live ? "grape" : "muted"}>
+              {live
+                ? `Sequence ${live.step.seq} · ${live.phase === "show" ? "Showing paths" : "Running"}`
+                : `${timeline.steps.length} sequence${timeline.steps.length === 1 ? "" : "s"} ready`}
+            </Pill>
+          </Panel>
+        </div>
 
         <div className="flex flex-col gap-3">
           <Panel className="flex flex-col gap-2">
