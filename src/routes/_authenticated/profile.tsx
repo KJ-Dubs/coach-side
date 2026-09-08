@@ -54,15 +54,18 @@ function ProfilePage() {
   return (
     <AppShell
       title="Profile"
-      subtitle="Who you are in this program"
+      subtitle={isPlayer ? "Your player account" : "Who you are in this program"}
       actions={
-        <Link to="/settings">
-          <BubbleButton size="sm" tone="neutral">
-            Settings
-          </BubbleButton>
-        </Link>
+        isPlayer ? undefined : (
+          <Link to="/settings">
+            <BubbleButton size="sm" tone="neutral">
+              Settings
+            </BubbleButton>
+          </Link>
+        )
       }
     >
+
       <div className="grid gap-3 lg:grid-cols-[1fr_1fr]">
         <Panel className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
