@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AuthCard } from "@/components/AuthCard";
 import { BubbleButton, EmptyState, Heading, Note, Panel, Pill } from "@/components/Bubbles";
@@ -166,7 +166,7 @@ function JoinPage() {
             disabled={join.isPending}
             onClick={() => join.mutate()}
           >
-            {invite.data.invite_type === "player" ? "Join the team" : "Get parent access"}
+            Join the team
           </BubbleButton>
         </Panel>
       )}

@@ -16,6 +16,7 @@ export function AuthCard({
   initialMode = "signin",
   lockSignup,
   hideOrgField,
+  playerSignup,
   signupTitle,
   banner,
   defaultOrgName,
@@ -24,6 +25,8 @@ export function AuthCard({
   initialMode?: Mode;
   hideOrgField?: boolean;
   signupTitle?: string;
+  /** Player invite signup: joins the coach's existing program, no new program. */
+  playerSignup?: boolean;
   /** Invite flows may pre-fill and lock the program name. */
   lockSignup?: boolean;
   banner?: ReactNode;
@@ -81,12 +84,14 @@ export function AuthCard({
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth`,
-            data: { org_name: orgName.trim() || "My Program", full_name: fullName.trim() },
+            data: playerSignup
+              ? { signup_type: "player", full_name: fullName.trim() }
+              : { org_name: orgName.trim() || "My Program", full_name: fullName.trim() },
           },
         });
         if (error) throw error;
         if (data.session) {
-          toast.success("Account created — welcome, Coach");
+          toast.success(playerSignup ? "Account created — welcome" : "Account created — welcome, Coach");
           onDone?.();
         } else {
           setNotice("Account created. Check your email to confirm, then sign in here.");
