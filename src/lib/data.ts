@@ -592,6 +592,17 @@ export async function setLockerSharing(teamId: string, enabled: boolean) {
   if (error) throw error;
 }
 
+/** New opaque token for the public parent page; the old link stops working. */
+export async function resetLockerToken(teamId: string) {
+  const token = crypto.randomUUID().replace(/-/g, "");
+  const { error } = await supabase
+    .from("teams")
+    .update({ locker_token: token, locker_enabled: true })
+    .eq("id", teamId);
+  if (error) throw error;
+  return token;
+}
+
 export function lockerUrl(token: string | null | undefined) {
   const path = `/locker/${token ?? ""}`;
   if (typeof window === "undefined") return path;
