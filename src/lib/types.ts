@@ -105,13 +105,29 @@ export type PlayToken = {
   team?: "offense" | "defense";
 };
 
-export type PlayActionType = "pass" | "cut" | "curl" | "dribble" | "screen";
+export type PlayActionType =
+  | "pass"
+  | "cut"
+  | "curl"
+  | "dribble"
+  | "screen"
+  | "move"
+  | "handoff"
+  | "shot";
 
 export type PlayAction = {
   id: string;
   type: PlayActionType;
   seq: number;
+  /** Full drawn polyline in normalized court coords (0..1). */
   points: { x: number; y: number }[];
+  /** Token that performs the action. */
+  actor?: string;
+  /** Receiving token for passes and handoffs. */
+  target?: string;
+  transfersBall?: boolean;
+  durationMs?: number;
+  label?: string;
 };
 
 export type Play = {

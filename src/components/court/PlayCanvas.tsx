@@ -1,108 +1,69 @@
 import { Court, type CourtZoom } from "./Court";
 import type { PlayAction, PlayFrame, PlayToken } from "@/lib/types";
+import {
+  PW as W,
+  PH as H,
+  curlGeom,
+  dribbleD,
+  polyD,
+  resolvePath,
+  toPx,
+  type Point,
+} from "@/lib/playPath";
 
-const W = 940;
-const H = 500;
-
-function xf(p: { x: number; y: number }, flip: boolean) {
+function xf(p: Point, flip: boolean) {
   return { x: (flip ? 1 - p.x : p.x) * W, y: (flip ? 1 - p.y : p.y) * H };
 }
 
 const ACTION_COLOR: Record<string, string> = {
   pass: "var(--flame)",
+  handoff: "var(--flame)",
+  shot: "var(--flame)",
   cut: "var(--grape)",
+  move: "var(--grape)",
   curl: "var(--grape)",
   dribble: "var(--grape)",
   screen: "var(--court-line)",
 };
 
-type Pt = { x: number; y: number };
-
-/** Curved (curl) path: bends away from the straight line then hooks into the end. */
-function curlPath(a: Pt, b: Pt) {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const len = Math.hypot(dx, dy) || 1;
-  const nx = -dy / len;
-  const ny = dx / len;
-  const bend = Math.min(120, len * 0.45);
-  const c1 = { x: a.x + dx * 0.25 + nx * bend, y: a.y + dy * 0.25 + ny * bend };
-  const c2 = { x: a.x + dx * 0.8 + nx * bend * 0.55, y: a.y + dy * 0.8 + ny * bend * 0.55 };
-  return {
-    d: `M ${a.x} ${a.y} C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${b.x} ${b.y}`,
-    // tangent at the end of the curve, for the arrow head
-    angle: Math.atan2(b.y - c2.y, b.x - c2.x),
-    mid: {
-      x: 0.125 * a.x + 0.375 * c1.x + 0.375 * c2.x + 0.125 * b.x,
-      y: 0.125 * a.y + 0.375 * c1.y + 0.375 * c2.y + 0.125 * b.y,
-    },
-  };
-}
-
-/** Bumpy (wavy) path used for dribbles. */
-function dribblePath(a: Pt, b: Pt) {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len;
-  const uy = dy / len;
-  const nx = -uy;
-  const ny = ux;
-  const wave = 26;
-  const amp = 11;
-  const humps = Math.max(2, Math.round((len - 22) / wave));
-  const usable = Math.max(0, len - 22);
-  const step = usable / humps;
-  let d = `M ${a.x} ${a.y}`;
-  for (let i = 0; i < humps; i++) {
-    const s = i * step;
-    const e = (i + 1) * step;
-    const dir = i % 2 === 0 ? 1 : -1;
-    const cx = a.x + ux * ((s + e) / 2) + nx * amp * 2 * dir;
-    const cy = a.y + uy * ((s + e) / 2) + ny * amp * 2 * dir;
-    d += ` Q ${cx} ${cy} ${a.x + ux * e} ${a.y + uy * e}`;
-  }
-  d += ` L ${b.x} ${b.y}`;
-  return d;
-}
-
-function ActionShape({ a, flip }: { a: PlayAction; flip: boolean }) {
-  const pts = a.points.map((p) => xf(p, flip));
-  if (pts.length < 2) return null;
-  const start = pts[0];
-  const end = pts[pts.length - 1];
-  if (!start || !end) return null;
+function ActionShape({ a, flip, dim }: { a: PlayAction; flip: boolean; dim?: boolean }) {
+  const raw = a.points ?? [];
+  if (raw.length < 2) return null;
+  const freehand = raw.length > 2;
+  const pts = raw.map((p) => xf(p, flip));
+  const start = pts[0]!;
+  const end = pts[pts.length - 1]!;
   const color = ACTION_COLOR[a.type] ?? "var(--grape)";
-  const straightAngle = Math.atan2(end.y - start.y, end.x - start.x);
-  const curl = a.type === "curl" ? curlPath(start, end) : null;
-  const angle = curl ? curl.angle : straightAngle;
-  const mid = curl ? curl.mid : { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+  const dashed = a.type === "pass" || a.type === "shot";
+
+  const prev = pts[pts.length - 2] ?? start;
+  const curl = !freehand && a.type === "curl" ? curlGeom(start, end) : null;
+  const angle = curl ? curl.angle : Math.atan2(end.y - prev.y, end.x - prev.x);
+  const mid = curl
+    ? curl.mid
+    : freehand
+      ? pts[Math.floor(pts.length / 2)]!
+      : { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+
+  const d = curl
+    ? curl.d
+    : freehand
+      ? polyD(pts)
+      : a.type === "dribble"
+        ? dribbleD(start, end)
+        : `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
 
   return (
-    <g>
-      {curl ? (
-        <path d={curl.d} fill="none" stroke={color} strokeWidth={5} strokeLinecap="round" />
-      ) : a.type === "dribble" ? (
-        <path
-          d={dribblePath(start, end)}
-          fill="none"
-          stroke={color}
-          strokeWidth={5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      ) : (
-        <line
-          x1={start.x}
-          y1={start.y}
-          x2={end.x}
-          y2={end.y}
-          stroke={color}
-          strokeWidth={5}
-          strokeLinecap="round"
-          strokeDasharray={a.type === "pass" ? "14 12" : undefined}
-        />
-      )}
+    <g opacity={dim ? 0.28 : 1}>
+      <path
+        d={d}
+        fill="none"
+        stroke={color}
+        strokeWidth={5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray={dashed ? "14 12" : undefined}
+      />
       {a.type === "screen" ? (
         <line
           x1={end.x - Math.sin(angle) * 18}
@@ -123,6 +84,9 @@ function ActionShape({ a, flip }: { a: PlayAction; flip: boolean }) {
           fill={color}
         />
       )}
+      {a.type === "shot" ? (
+        <circle cx={end.x} cy={end.y} r={11} fill="none" stroke={color} strokeWidth={4} />
+      ) : null}
       <circle cx={mid.x} cy={mid.y} r={14} fill="var(--grape)" stroke="var(--background)" strokeWidth={3} />
       <text
         x={mid.x}
@@ -138,14 +102,24 @@ function ActionShape({ a, flip }: { a: PlayAction; flip: boolean }) {
   );
 }
 
+function BallMark({ p }: { p: { x: number; y: number } }) {
+  return (
+    <g>
+      <circle cx={p.x} cy={p.y} r={13} fill="var(--flame)" stroke="var(--background)" strokeWidth={3} />
+      <path
+        d={`M ${p.x - 13} ${p.y} L ${p.x + 13} ${p.y} M ${p.x} ${p.y - 13} L ${p.x} ${p.y + 13}`}
+        stroke="var(--background)"
+        strokeWidth={2}
+      />
+    </g>
+  );
+}
+
 function TokenShape({ t, flip }: { t: PlayToken; flip: boolean }) {
   const p = xf(t, flip);
   const defense = t.team === "defense";
   return (
     <g>
-      {t.ball ? (
-        <circle cx={p.x} cy={p.y} r={30} fill="none" stroke="var(--flame)" strokeWidth={4} />
-      ) : null}
       {defense ? (
         <rect
           x={p.x - 19}
@@ -184,16 +158,40 @@ export function PlayCanvas({
   onCourtPointerMove,
   onCourtPointerUp,
   ghost,
+  tokens,
+  actions,
+  ball,
+  dimOtherActions = false,
+  activeSeq,
 }: {
   frame: PlayFrame | undefined;
   flip?: boolean | undefined;
   zoom?: CourtZoom | undefined;
   className?: string | undefined;
-  onCourtPoint?: ((p: { x: number; y: number }) => void) | undefined;
-  onCourtPointerMove?: ((p: { x: number; y: number }) => void) | undefined;
-  onCourtPointerUp?: ((p: { x: number; y: number }) => void) | undefined;
-  ghost?: { from: { x: number; y: number }; to: { x: number; y: number } } | null | undefined;
+  onCourtPoint?: ((p: Point) => void) | undefined;
+  onCourtPointerMove?: ((p: Point) => void) | undefined;
+  onCourtPointerUp?: ((p: Point) => void) | undefined;
+  ghost?: { from: Point; to: Point } | Point[] | null | undefined;
+  /** Animation overrides. */
+  tokens?: PlayToken[] | undefined;
+  actions?: PlayAction[] | undefined;
+  ball?: Point | null | undefined;
+  dimOtherActions?: boolean | undefined;
+  activeSeq?: number | undefined;
 }) {
+  const shownTokens = tokens ?? frame?.tokens ?? [];
+  const shownActions = actions ?? frame?.actions ?? [];
+  const ballToken = shownTokens.find((t) => t.ball);
+  const ballPoint =
+    ball ?? (ballToken ? { x: ballToken.x, y: ballToken.y } : null);
+  const ballPx = ballPoint ? xf(ballPoint, flip) : null;
+  const attached = !ball && ballToken;
+  const ghostPts = Array.isArray(ghost)
+    ? ghost
+    : ghost
+      ? [ghost.from, ghost.to]
+      : null;
+
   return (
     <Court
       variant="full"
@@ -203,14 +201,24 @@ export function PlayCanvas({
       onCourtPointerMove={onCourtPointerMove}
       onCourtPointerUp={onCourtPointerUp}
     >
-      {frame?.actions.map((a) => <ActionShape key={a.id} a={a} flip={flip} />)}
-      {frame?.tokens.map((t) => <TokenShape key={t.id} t={t} flip={flip} />)}
-      {ghost ? (
-        <line
-          x1={xf(ghost.from, flip).x}
-          y1={xf(ghost.from, flip).y}
-          x2={xf(ghost.to, flip).x}
-          y2={xf(ghost.to, flip).y}
+      {shownActions.map((a) => (
+        <ActionShape
+          key={a.id}
+          a={a}
+          flip={flip}
+          dim={dimOtherActions && activeSeq !== undefined && a.seq !== activeSeq}
+        />
+      ))}
+      {shownTokens.map((t) => (
+        <TokenShape key={t.id} t={t} flip={flip} />
+      ))}
+      {ballPx ? (
+        <BallMark p={attached ? { x: ballPx.x + 22, y: ballPx.y - 20 } : ballPx} />
+      ) : null}
+      {ghostPts && ghostPts.length > 1 ? (
+        <path
+          d={polyD(ghostPts.map((p) => xf(p, flip)))}
+          fill="none"
           stroke="var(--flame)"
           strokeWidth={4}
           strokeDasharray="10 8"
@@ -219,3 +227,5 @@ export function PlayCanvas({
     </Court>
   );
 }
+
+export { resolvePath, toPx };
