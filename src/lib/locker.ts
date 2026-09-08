@@ -232,7 +232,15 @@ export type TeamInviteLookup = {
   season: string;
   invite_type: "player" | "parent";
   status: "active" | "revoked" | "expired";
+  locker_token: string | null;
+  locker_enabled: boolean | null;
 };
+
+/** Public, no-account team page parents open. */
+export function parentViewUrl(lockerToken: string) {
+  if (typeof window === "undefined") return `/locker/${lockerToken}`;
+  return `${window.location.origin}/locker/${lockerToken}`;
+}
 
 export async function lookupTeamInvite(token: string): Promise<TeamInviteLookup | null> {
   const { data, error } = await supabase.rpc("get_team_invite", { _token: token });
