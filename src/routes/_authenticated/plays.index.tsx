@@ -311,72 +311,27 @@ function PlaybookPage() {
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {inCategory.map((p) => (
-              <Panel key={p.id} className="flex flex-col gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-2xl border border-grape/60 bg-grape/20 px-3 py-1.5 text-sm font-black text-foreground">
-                    {p.name}
-                  </span>
-                  <Pill tone="muted">{teamName(p.team_id)}</Pill>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Pill tone="neutral">Attack {p.attack_basket === "left" ? "left" : "right"}</Pill>
-                  <Pill tone={p.is_shared ? "success" : "muted"}>
-                    {p.is_shared ? "Shared link on" : "Private"}
-                  </Pill>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <Link to="/plays/$playId/view" params={{ playId: p.id }}>
-                    <BubbleButton size="sm" tone="grape">
-                      Present
-                    </BubbleButton>
-                  </Link>
-                  <Link to="/plays/$playId" params={{ playId: p.id }}>
-                    <BubbleButton size="sm" tone="flame">
-                      Edit
-                    </BubbleButton>
-                  </Link>
-                  <BubbleButton
-                    size="sm"
-                    tone="neutral"
-                    disabled={share.isPending}
-                    onClick={() => share.mutate(p)}
-                  >
-                    {p.is_shared ? "Copy link" : "Share"}
-                  </BubbleButton>
-                  {p.is_shared ? (
-                    <BubbleButton
-                      size="sm"
-                      tone="ghost"
-                      disabled={unshare.isPending}
-                      onClick={() => unshare.mutate(p)}
-                    >
-                      Stop sharing
-                    </BubbleButton>
-                  ) : null}
-                  <BubbleButton
-                    size="sm"
-                    tone="neutral"
-                    disabled={duplicate.isPending}
-                    onClick={() => duplicate.mutate(p)}
-                  >
-                    Duplicate
-                  </BubbleButton>
-                  <BubbleButton
-                    size="sm"
-                    tone="ghost"
-                    disabled={remove.isPending}
-                    onClick={() => {
-                      if (window.confirm(`Delete “${p.name}”? This cannot be undone.`)) {
-                        remove.mutate(p);
-                      }
-                    }}
-                  >
-                    Delete
-                  </BubbleButton>
-                </div>
-              </Panel>
+              <PlayCard
+                key={p.id}
+                play={p}
+                assignedTeams={teamsByPlay.get(p.id) ?? []}
+                allTeams={teams.data ?? []}
+                teamName={teamName}
+                busy={share.isPending || duplicate.isPending || remove.isPending}
+                onShareLink={() => share.mutate(p)}
+                onUnshare={() => unshare.mutate(p)}
+                onDuplicate={() => duplicate.mutate(p)}
+                onDelete={() => {
+                  if (window.confirm(`Delete “${p.name}”? This cannot be undone.`)) {
+                    remove.mutate(p);
+                  }
+                }}
+                onSaveTeams={(ids) => assignTeams.mutate({ playId: p.id, teamIds: ids })}
+                savingTeams={assignTeams.isPending}
+              />
             ))}
           </div>
+
         </div>
       )}
     </AppShell>
