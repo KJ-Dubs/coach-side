@@ -353,7 +353,161 @@ function PlaybookPage() {
   );
 }
 
-/** Inline quick-create: name + team, then straight into the designer. */
+/** Menu-driven play card with View / Present / Edit / Share and team access. */
+function PlayCard({
+  play,
+  assignedTeams,
+  allTeams,
+  teamName,
+  busy,
+  onShareLink,
+  onUnshare,
+  onDuplicate,
+  onDelete,
+  onSaveTeams,
+  savingTeams,
+}: {
+  play: Play;
+  assignedTeams: string[];
+  allTeams: Team[];
+  teamName: (id: string | null) => string;
+  busy: boolean;
+  onShareLink: () => void;
+  onUnshare: () => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+  onSaveTeams: (ids: string[]) => void;
+  savingTeams: boolean;
+}) {
+  const [menu, setMenu] = useState(false);
+  const [teamsOpen, setTeamsOpen] = useState(false);
+  const [picked, setPicked] = useState<string[]>(assignedTeams);
+
+  const openTeams = () => {
+    setPicked(assignedTeams);
+    setTeamsOpen(true);
+    setMenu(false);
+  };
+
+  return (
+    <Panel className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-2xl border border-grape/60 bg-grape/20 px-3 py-1.5 text-sm font-black text-foreground">
+          {play.name}
+        </span>
+        <BubbleButton
+          size="sm"
+          tone={menu ? "grape" : "neutral"}
+          className="ml-auto"
+          onClick={() => setMenu((m) => !m)}
+        >
+          •••
+        </BubbleButton>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone="neutral">Attack {play.attack_basket === "left" ? "left" : "right"}</Pill>
+        <Pill tone={play.is_shared ? "success" : "muted"}>
+          {play.is_shared ? "Shared link on" : "Private"}
+        </Pill>
+        {assignedTeams.length ? (
+          assignedTeams.map((t) => (
+            <Pill key={t} tone="muted">
+              {teamName(t)}
+            </Pill>
+          ))
+        ) : (
+          <Pill tone="muted">No team yet</Pill>
+        )}
+      </div>
+
+      {menu ? (
+        <div className="flex flex-wrap gap-1.5 rounded-2xl border border-border bg-surface-2/70 p-2">
+          <Link to="/plays/$playId/view" params={{ playId: play.id }}>
+            <BubbleButton size="sm" tone="neutral">
+              View
+            </BubbleButton>
+          </Link>
+          <Link to="/plays/$playId/view" params={{ playId: play.id }}>
+            <BubbleButton size="sm" tone="grape">
+              Present
+            </BubbleButton>
+          </Link>
+          <Link to="/plays/$playId" params={{ playId: play.id }}>
+            <BubbleButton size="sm" tone="flame">
+              Edit
+            </BubbleButton>
+          </Link>
+          <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onShareLink}>
+            {play.is_shared ? "Copy link" : "Share"}
+          </BubbleButton>
+          <BubbleButton size="sm" tone="neutral" onClick={openTeams}>
+            Teams
+          </BubbleButton>
+          {play.is_shared ? (
+            <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onUnshare}>
+              Stop sharing
+            </BubbleButton>
+          ) : null}
+          <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onDuplicate}>
+            Duplicate
+          </BubbleButton>
+          <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onDelete}>
+            Delete
+          </BubbleButton>
+        </div>
+      ) : null}
+
+      {teamsOpen ? (
+        <div className="flex flex-col gap-2 rounded-2xl border border-grape/50 bg-grape/10 p-2">
+          <Label>Available to</Label>
+          <div className="flex flex-wrap gap-1.5">
+            {allTeams.map((t) => (
+              <BubbleButton
+                key={t.id}
+                size="sm"
+                tone={picked.includes(t.id) ? "grape" : "neutral"}
+                onClick={() =>
+                  setPicked((cur) =>
+                    cur.includes(t.id) ? cur.filter((x) => x !== t.id) : [...cur, t.id],
+                  )
+                }
+              >
+                {picked.includes(t.id) ? "✓ " : ""}
+                {t.name}
+              </BubbleButton>
+            ))}
+            <BubbleButton
+              size="sm"
+              tone="neutral"
+              onClick={() => setPicked(allTeams.map((t) => t.id))}
+            >
+              Select all
+            </BubbleButton>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <BubbleButton
+              size="sm"
+              tone="flame"
+              disabled={savingTeams}
+              onClick={() => {
+                onSaveTeams(picked);
+                setTeamsOpen(false);
+              }}
+            >
+              {savingTeams ? "Saving…" : "Save team access"}
+            </BubbleButton>
+            <BubbleButton size="sm" tone="ghost" onClick={() => setTeamsOpen(false)}>
+              Cancel
+            </BubbleButton>
+          </div>
+        </div>
+      ) : null}
+    </Panel>
+  );
+}
+
+/** Inline quick-create: name + teams, then straight into the designer. */
 function QuickCreate({
   category,
   defaultTeam,
@@ -367,18 +521,20 @@ function QuickCreate({
   const queryClient = useQueryClient();
   const teams = useQuery({ queryKey: ["teams"], queryFn: fetchTeams });
   const [name, setName] = useState("");
-  const [teamId, setTeamId] = useState(defaultTeam);
+  const [teamIds, setTeamIds] = useState<string[]>(defaultTeam ? [defaultTeam] : []);
 
   const create = useMutation({
     mutationFn: () =>
       createPlay({
-        team_id: teamId || null,
+        team_id: teamIds[0] ?? null,
         name: name.trim(),
         category,
         attack_basket: "right",
+        team_ids: teamIds,
       }),
     onSuccess: (p) => {
       void queryClient.invalidateQueries({ queryKey: ["plays"] });
+      void queryClient.invalidateQueries({ queryKey: ["play-assignments"] });
       toast.success("Play created — opening the designer");
       onDone();
       navigate({ to: "/plays/$playId", params: { playId: p.id } });
@@ -387,7 +543,7 @@ function QuickCreate({
   });
 
   return (
-    <Panel className="grid gap-3 sm:grid-cols-[1fr_220px_auto] sm:items-end">
+    <Panel className="flex flex-col gap-3">
       <Field label="Play name">
         <TextInput
           autoFocus
@@ -399,18 +555,35 @@ function QuickCreate({
           }}
         />
       </Field>
-      <Field label="Team">
-        <SelectInput value={teamId} onChange={(e) => setTeamId(e.target.value)}>
+      <Field label="Available to">
+        <div className="flex flex-wrap gap-1.5">
           {teams.data?.map((t) => (
-            <option key={t.id} value={t.id}>
+            <BubbleButton
+              key={t.id}
+              size="sm"
+              tone={teamIds.includes(t.id) ? "grape" : "neutral"}
+              onClick={() =>
+                setTeamIds((cur) =>
+                  cur.includes(t.id) ? cur.filter((x) => x !== t.id) : [...cur, t.id],
+                )
+              }
+            >
+              {teamIds.includes(t.id) ? "✓ " : ""}
               {t.name}
-            </option>
+            </BubbleButton>
           ))}
-        </SelectInput>
+          <BubbleButton
+            size="sm"
+            tone="neutral"
+            onClick={() => setTeamIds((teams.data ?? []).map((t) => t.id))}
+          >
+            Select all
+          </BubbleButton>
+        </div>
       </Field>
       <BubbleButton
         tone="flame"
-        disabled={!name.trim() || create.isPending}
+        disabled={!name.trim() || !teamIds.length || create.isPending}
         onClick={() => create.mutate()}
       >
         {create.isPending ? "Creating…" : "Create & design"}
@@ -418,3 +591,4 @@ function QuickCreate({
     </Panel>
   );
 }
+
