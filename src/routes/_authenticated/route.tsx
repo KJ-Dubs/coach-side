@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUserAccess, isPlayerAllowedPath } from "@/lib/access";
 import { flushQueue } from "@/lib/offline";
 import { rememberDevice } from "@/lib/remember";
 
@@ -9,27 +10,43 @@ import { rememberDevice } from "@/lib/remember";
  * lives in browser storage. Works offline: a locally stored session is
  * accepted when the auth server cannot be reached (gym wifi), and the
  * database still enforces access on every request.
+ *
+ * What someone is allowed to open comes from database membership only —
+ * never from anything remembered on this device.
  */
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const { data: local } = await supabase.auth.getSession();
     if (!local.session) throw redirect({ to: "/auth" });
+    let user = local.session.user;
     try {
       const { data, error } = await supabase.auth.getUser();
-      if (data.user) return { user: data.user };
-      if (error && /network|fetch|Failed/i.test(error.message)) {
-        return { user: local.session.user };
+      if (data.user) user = data.user;
+      else if (!(error && /network|fetch|Failed/i.test(error.message))) {
+        throw redirect({ to: "/auth" });
       }
-      throw redirect({ to: "/auth" });
     } catch (e) {
       if (e && typeof e === "object" && "to" in e) throw e;
-      // Offline: trust the stored session; RLS still guards the data.
-      return { user: local.session.user };
+      // Offline: trust the stored session; the database still guards the data.
     }
+
+    // Players may only reach the Locker Room and their own profile.
+    try {
+      const access = await getCurrentUserAccess();
+      if (access.isPlayerOnly && !isPlayerAllowedPath(location.pathname)) {
+        throw redirect({ to: "/lockerroom" });
+      }
+    } catch (e) {
+      if (e && typeof e === "object" && "to" in e) throw e;
+      // Access lookup unavailable (offline) — page-level queries stay guarded.
+    }
+
+    return { user };
   },
   component: AuthenticatedLayout,
 });
+
 
 function AuthenticatedLayout() {
   // App-wide offline queue flusher so events recorded in a gym without
