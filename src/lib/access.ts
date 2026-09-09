@@ -129,16 +129,25 @@ export type ResolvedRole = {
 };
 
 export function resolveRole(access: Access): ResolvedRole {
-  const isCoach = access.isCoach;
+  // Recomputed here so any coach authority always wins, whatever the caller passed.
+  const coachTeamIds = new Set([
+    ...access.coachTeamIds,
+    ...access.teamMemberships
+      .filter((m) => m.role === "head_coach" || m.role === "assistant_coach")
+      .map((m) => m.team_id),
+  ]);
+  const isCoach = coachTeamIds.size > 0 || access.orgMemberships.length > 0;
+  const playerTeams = access.playerTeamIds.filter((id) => !coachTeamIds.has(id));
   return {
     isCoach,
-    isPlayerOnly: !isCoach && access.playerTeamIds.length > 0,
+    isPlayerOnly: !isCoach && playerTeams.length > 0,
     canCoachTeam: (teamId) =>
-      !!teamId && (access.coachTeamIds.includes(teamId) || access.orgMemberships.length > 0),
+      !!teamId && (coachTeamIds.has(teamId) || access.orgMemberships.length > 0),
     canCreatePlays: isCoach,
     allowedPath: (pathname) => (isCoach ? true : isPlayerAllowedPath(pathname)),
   };
 }
+
 
 export { purgeDeviceRoleCache } from "./roleCache";
 
