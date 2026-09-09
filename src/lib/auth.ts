@@ -28,8 +28,11 @@ export async function signOut(queryClient?: QueryClient) {
     await queryClient.cancelQueries();
     queryClient.clear();
   }
+  // Never let one account's role linger on this device for the next sign-in.
+  purgeDeviceRoleCache();
   await supabase.auth.signOut();
 }
+
 
 export function initialsOf(name: string | null | undefined, email: string | null | undefined) {
   const src = (name || "").trim() || (email || "").split("@")[0] || "C";
