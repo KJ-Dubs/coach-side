@@ -100,6 +100,41 @@ export const getLockerBundle = createServerFn({ method: "GET" })
         : Promise.resolve({ data: [] }),
     ]);
 
+    // Current in-progress game (server-synced records only).
+    const { data: liveGameRow } = await supabaseAdmin
+      .from("games")
+      .select("*")
+      .eq("team_id", team.id)
+      .neq("status", "final")
+      .order("game_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let live: LockerBundle["live"] = null;
+    if (liveGameRow) {
+      const [liveEvents, liveSubs] = await Promise.all([
+        supabaseAdmin.from("game_events").select("*").eq("game_id", liveGameRow.id).order("created_at"),
+        supabaseAdmin.from("substitutions").select("*").eq("game_id", liveGameRow.id).order("created_at"),
+      ]);
+      const evRows = (liveEvents.data ?? []) as unknown as GameEvent[];
+      const sbRows = (liveSubs.data ?? []) as unknown as Substitution[];
+      const stamps = [
+        ...evRows.map((e) => e.created_at),
+        ...sbRows.map((s) => s.created_at),
+        (liveGameRow as { created_at?: string }).created_at,
+      ].filter((v): v is string => typeof v === "string" && v.length > 0);
+      const newest = stamps.length
+        ? stamps.reduce((a, b) => (new Date(a).getTime() >= new Date(b).getTime() ? a : b))
+        : new Date().toISOString();
+      live = {
+        game: liveGameRow as unknown as Game,
+        events: evRows,
+        subs: sbRows,
+        lastSyncedAt: newest,
+      };
+    }
+
     let logoUrl: string | null = null;
     if (team.logo_url) {
       if (/^https?:\/\//.test(team.logo_url)) {
