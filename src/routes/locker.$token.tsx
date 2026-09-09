@@ -1,13 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
 import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { ShotChart } from "@/components/court/ShotChart";
 import { getLockerBundle, type LockerBundle } from "@/lib/locker.functions";
 import type { GameEvent } from "@/lib/types";
-import { aggregatePlayers, aggregateTeam, fmtMinutes, fmtPct, fmtPer } from "@/lib/stats";
+import {
+  aggregatePlayers,
+  aggregateTeam,
+  fmtMinutes,
+  fmtPct,
+  fmtPer,
+  fmtSplit,
+  gameScore,
+} from "@/lib/stats";
 import wordmark from "@/assets/coachside-wordmark.png.asset.json";
 
 export const Route = createFileRoute("/locker/$token")({
