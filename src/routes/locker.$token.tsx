@@ -52,6 +52,8 @@ function LockerRoom() {
       const raw = await load({ data: { token } });
       return raw ? (JSON.parse(raw) as LockerBundle) : null;
     },
+    // Poll every 15s only while a live game exists.
+    refetchInterval: (query) => (query.state.data?.live ? 15000 : false),
   });
   const [tab, setTab] = useState<Tab>("stats");
 
