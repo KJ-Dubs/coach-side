@@ -132,7 +132,125 @@ function LockerRoom() {
   );
 }
 
-function StatsTab({ bundle }: { bundle: LockerBundle }) {
+function fmtClock(seconds: number) {
+  const s = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+function fmtAgo(iso: string, now: number) {
+  const diff = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
+  if (diff < 60) return `Updated ${diff} second${diff === 1 ? "" : "s"} ago`;
+  const m = Math.round(diff / 60);
+  if (m < 60) return `Updated ${m} minute${m === 1 ? "" : "s"} ago`;
+  const h = Math.round(m / 60);
+  return `Updated ${h} hour${h === 1 ? "" : "s"} ago`;
+}
+
+function LiveGameCard({
+  live,
+  players,
+  onRefresh,
+  refreshing,
+}: {
+  live: NonNullable<LockerBundle["live"]>;
+  players: LockerBundle["players"];
+  onRefresh: () => void;
+  refreshing: boolean;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 10000);
+    return () => clearInterval(t);
+  }, []);
+
+  const g = live.game;
+  const hasEvents = live.events.length > 0;
+  const score = useMemo(() => gameScore(g, live.events), [g, live.events]);
+  const lines = useMemo(
+    () => aggregatePlayers([g], live.events, live.subs),
+    [g, live.events, live.subs],
+  );
+  const rows = players
+    .map((p) => ({ p, l: lines.get(p.id) }))
+    .filter((r) => r.l && (r.l.games > 0 || r.l.seconds > 0));
+
+  return (
+    <Panel className="flex flex-col gap-3 border-2 border-flame ring-2 ring-flame/40">
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone="flame" className="animate-pulse text-base font-black">
+          ● LIVE GAME
+        </Pill>
+        <Pill tone="grape" className="text-base font-black">
+          vs {g.opponent}
+        </Pill>
+        <Pill tone="muted">{g.home_away === "away" ? "Away" : "Home"}</Pill>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <StatTile label="Us" value={String(score.team)} tone="grape" />
+        <StatTile label={g.opponent} value={String(score.opp)} tone="flame" />
+        <StatTile
+          label="Period"
+          value={g.quarter ? `Q${g.quarter}` : "—"}
+        />
+        <StatTile
+          label="Clock"
+          value={typeof g.clock_seconds === "number" ? fmtClock(g.clock_seconds) : "—"}
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone="muted">{fmtAgo(live.lastSyncedAt, now)}</Pill>
+        <BubbleButton
+          tone="flame"
+          className="ml-auto min-h-14 px-6 text-base font-black"
+          onClick={onRefresh}
+          disabled={refreshing}
+        >
+          {refreshing ? "Refreshing…" : "↻ Refresh"}
+        </BubbleButton>
+      </div>
+
+      {!hasEvents ? (
+        <Pill tone="neutral">Waiting for first sync from your coach</Pill>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <Label>Live player stats</Label>
+          {rows.map(({ p, l }) => (
+            <div
+              key={p.id}
+              className="flex flex-wrap items-center gap-2 rounded-2xl border border-flame/40 bg-surface-2/70 p-2"
+            >
+              <Pill tone="flame">#{p.jersey}</Pill>
+              <Pill tone="neutral">{p.name}</Pill>
+              <Pill tone="muted">{l!.pts} PTS</Pill>
+              <Pill tone="muted">{l!.reb} REB</Pill>
+              <Pill tone="muted">{l!.ast} AST</Pill>
+              <Pill tone="muted">{l!.stl} STL</Pill>
+              <Pill tone="muted">{l!.blk} BLK</Pill>
+              <Pill tone="muted">{l!.to} TO</Pill>
+              <Pill tone="muted">{l!.pf} FOULS</Pill>
+              <Pill tone="muted">FG {fmtSplit(l!.fg)}</Pill>
+              <Pill tone="muted">3PT {fmtSplit(l!.three)}</Pill>
+              <Pill tone="muted">FT {fmtSplit(l!.ft)}</Pill>
+              {l!.seconds > 0 ? <Pill tone="muted">{fmtMinutes(l!.seconds)} MIN</Pill> : null}
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+function StatsTab({
+  bundle,
+  onRefresh,
+  refreshing,
+}: {
+  bundle: LockerBundle;
+  onRefresh: () => void;
+  refreshing: boolean;
+}) {
   const team = useMemo(() => aggregateTeam(bundle.games, bundle.events), [bundle]);
   const lines = useMemo(
     () => aggregatePlayers(bundle.games, bundle.events, bundle.subs),
@@ -142,16 +260,29 @@ function StatsTab({ bundle }: { bundle: LockerBundle }) {
     .map((p) => ({ p, l: lines.get(p.id) }))
     .filter((r) => r.l && r.l.games > 0);
 
+  const liveCard = bundle.live ? (
+    <LiveGameCard
+      live={bundle.live}
+      players={bundle.players}
+      onRefresh={onRefresh}
+      refreshing={refreshing}
+    />
+  ) : null;
+
   if (!bundle.games.length) {
     return (
-      <Panel>
-        <Label>No finished games have been saved yet</Label>
-      </Panel>
+      <>
+        {liveCard}
+        <Panel>
+          <Label>No finished games have been saved yet</Label>
+        </Panel>
+      </>
     );
   }
 
   return (
     <>
+      {liveCard}
       <Panel className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <StatTile label="Record" value={`${team.wins}-${team.losses}`} tone="grape" />
         <StatTile label="Points / game" value={fmtPer(team.pts, team.games)} tone="flame" />
