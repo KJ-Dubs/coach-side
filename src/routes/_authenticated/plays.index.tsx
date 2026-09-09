@@ -276,7 +276,7 @@ function PlaybookPage() {
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="rounded-2xl border border-border/70 bg-surface-2/80 px-3 py-1.5 text-base font-black tracking-tight text-foreground">
+                  <span className="rounded-2xl border border-border/70 bg-surface-2/80 px-3 py-2 text-xl font-black leading-tight text-foreground sm:text-2xl">
                     {c}
                   </span>
                   <Pill tone={n ? "flame" : "muted"}>{n}</Pill>
@@ -397,7 +397,7 @@ function PlayCard({
   return (
     <Panel className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-2xl border border-grape/60 bg-grape/20 px-3 py-1.5 text-sm font-black text-foreground">
+        <span className="rounded-2xl border border-grape/60 bg-grape/20 px-3 py-2 text-xl font-black leading-tight text-foreground">
           {play.name}
         </span>
         <BubbleButton

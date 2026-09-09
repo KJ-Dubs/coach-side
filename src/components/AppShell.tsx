@@ -113,11 +113,11 @@ export function AppShell({
           </header>
 
           <div className="mb-4 flex flex-wrap items-center gap-2">
-            <h1 className="rounded-2xl border border-border bg-surface/80 px-4 py-2 text-lg font-black tracking-tight text-foreground">
+            <h1 className="rounded-2xl border border-border bg-surface/80 px-4 py-2 text-2xl font-black leading-none text-foreground sm:text-3xl">
               {title}
             </h1>
             {subtitle ? (
-              <p className="rounded-2xl border border-border/60 bg-surface-2/70 px-3 py-2 text-xs font-semibold text-muted-foreground">
+              <p className="rounded-2xl border border-border/60 bg-surface-2/70 px-3 py-2 text-sm font-semibold text-muted-foreground">
                 {subtitle}
               </p>
             ) : null}
@@ -220,11 +220,11 @@ export function AppShell({
               <img src={logoUrl} alt="Team logo" className="h-full w-full object-contain" />
             </span>
           ) : null}
-          <h1 className="rounded-2xl border border-border bg-surface/80 px-4 py-2 text-lg font-black tracking-tight text-foreground">
+          <h1 className="rounded-2xl border border-border bg-surface/80 px-4 py-2 text-2xl font-black leading-none text-foreground sm:text-3xl">
             {title}
           </h1>
           {subtitle ? (
-            <p className="rounded-2xl border border-border/60 bg-surface-2/70 px-3 py-2 text-xs font-semibold text-muted-foreground">
+            <p className="rounded-2xl border border-border/60 bg-surface-2/70 px-3 py-2 text-sm font-semibold text-muted-foreground">
               {subtitle}
             </p>
           ) : null}

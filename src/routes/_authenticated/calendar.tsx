@@ -215,7 +215,7 @@ function CalendarPage() {
                   <Pill tone={typeTone(k)}>{label}</Pill>
                   {e ? (
                     <>
-                      <Pill tone="neutral">{e.title}</Pill>
+                      <span className="rounded-2xl border border-border bg-surface px-3 py-2 text-lg font-black leading-tight text-foreground">{e.title}</span>
                       <Pill tone="muted">
                         {fmtDay(e.starts_at)} · {fmtTime(e.starts_at)}
                       </Pill>
@@ -348,11 +348,11 @@ function CalendarPage() {
                       <Pill tone={typeTone(e.event_type)}>
                         {(EVENT_TYPE_LABEL[e.event_type] ?? "Event").toUpperCase()}
                       </Pill>
-                      <Pill tone="neutral">
+                      <span className="rounded-2xl border border-border bg-surface px-3 py-2 text-lg font-black leading-tight text-foreground">
                         {e.event_type === "game" && e.opponent
                           ? `${e.home_away === "away" ? "@" : "vs"} ${e.opponent}`
                           : e.title}
-                      </Pill>
+                      </span>
                       {e.event_type === "game" && e.home_away ? (
                         <Pill tone="muted">
                           {e.home_away === "home"
