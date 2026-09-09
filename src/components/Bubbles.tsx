@@ -137,10 +137,10 @@ export function StatTile({
   } as const;
   return (
     <div className={cn("rounded-2xl border px-3 py-2 text-center", tones[tone], className)}>
-      <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+      <div className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </div>
-      <div className="text-lg font-black leading-tight text-foreground">{value}</div>
+      <div className="text-xl font-black leading-none text-foreground sm:text-2xl">{value}</div>
       {hint ? (
         <div className="mt-0.5 text-[10px] font-semibold text-muted-foreground">{hint}</div>
       ) : null}
@@ -166,7 +166,7 @@ export function Heading({
   return (
     <span
       className={cn(
-        "inline-flex w-fit rounded-2xl border px-4 py-2 text-lg font-black tracking-tight text-foreground",
+        "inline-flex w-fit rounded-2xl border px-4 py-2 text-xl font-black leading-tight text-foreground sm:text-2xl",
         tones[tone],
         className,
       )}
@@ -206,7 +206,7 @@ export function Note({
 }
 
 export const inputCls =
-  "w-full rounded-2xl border border-input bg-surface-2/70 px-4 py-2.5 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-grape disabled:opacity-60";
+  "w-full rounded-2xl border border-input bg-surface-2/70 px-4 py-2.5 text-base font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-grape disabled:opacity-60";
 
 export function TextInput({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={cn(inputCls, className)} {...rest} />;

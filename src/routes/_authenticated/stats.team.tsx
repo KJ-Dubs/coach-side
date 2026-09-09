@@ -169,7 +169,7 @@ function TeamStatsPage() {
           <div className="flex flex-col gap-3">
             <Panel className="flex flex-col gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-2xl border border-grape/60 bg-grape/20 px-3 py-2 text-base font-black text-foreground">
+                <span className="rounded-2xl border border-grape/60 bg-grape/20 px-3 py-2 text-xl font-black leading-tight text-foreground sm:text-2xl">
                   {team.name}
                 </span>
                 <Pill tone="muted">{team.season}</Pill>

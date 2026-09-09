@@ -77,7 +77,7 @@ function StepCard({
         >
           {step}
         </span>
-        <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-1.5 text-sm font-black text-foreground">
+        <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-2 text-xl font-black leading-tight text-foreground sm:text-2xl">
           {title}
         </span>
         {done ? <Pill tone="grape">✓ Set</Pill> : null}

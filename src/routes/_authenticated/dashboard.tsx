@@ -299,17 +299,17 @@ function Dashboard() {
               )}
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-1.5 text-base font-black text-foreground">
+                <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-2 text-xl font-black leading-tight text-foreground sm:text-2xl">
                   {c.title}
                 </span>
                 <span aria-hidden className={cn("inline-flex h-10 w-10 items-center justify-center rounded-2xl border", accentTone[c.tone])}>
                   <Icon className="h-5 w-5 transition-transform group-hover:scale-110" />
                 </span>
               </div>
-              <p className="my-3 rounded-2xl border border-border/50 bg-surface-2/70 px-3 py-2 text-xs font-semibold leading-relaxed text-muted-foreground">
+              <p className="my-3 rounded-2xl border border-border/50 bg-surface-2/70 px-3 py-2 text-sm font-semibold leading-relaxed text-muted-foreground">
                 {c.blurb}
               </p>
-              <span className={cn("inline-flex w-fit rounded-full border px-4 py-2 text-xs font-bold uppercase", accentTone[c.tone])}>
+              <span className={cn("inline-flex w-fit rounded-full border px-4 py-2 text-sm font-bold", accentTone[c.tone])}>
                 {c.action} →
               </span>
             </Link>

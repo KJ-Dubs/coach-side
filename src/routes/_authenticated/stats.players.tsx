@@ -231,7 +231,7 @@ function PlayerStatsPage() {
                 {selectedIds.map((id) => {
                   const p = teamPlayers.find((x) => x.id === id)!;
                   return (
-                    <Pill key={id} tone="grape">
+                    <Pill key={id} tone="grape" className="text-sm font-black">
                       #{p.jersey} {p.name.split(" ")[0]}
                     </Pill>
                   );
@@ -316,7 +316,7 @@ function PlayerStatsPage() {
                 <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-grape/60 bg-grape/25 text-xl font-black text-foreground">
                   {player.jersey}
                 </span>
-                <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-2 text-base font-black text-foreground">
+                 <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-2 text-xl font-black leading-tight text-foreground sm:text-2xl">
                   {player.name}
                 </span>
                 <Pill tone="grape">{teamName(player.team_id)}</Pill>

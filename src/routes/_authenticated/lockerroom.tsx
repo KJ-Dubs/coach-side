@@ -295,7 +295,7 @@ function LockerRoomPage() {
               {nextPractice ? (
                 <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-grape/50 bg-grape/15 p-3">
                   <Pill tone="grape">Practice</Pill>
-                  <span className="text-base font-black text-foreground">{nextPractice.title}</span>
+                  <span className="text-lg font-black leading-tight text-foreground">{nextPractice.title}</span>
                   <Pill tone="muted">{fmtWhen(nextPractice.starts_at)}</Pill>
                   {nextPractice.location ? <Pill tone="muted">{nextPractice.location}</Pill> : null}
                 </div>
@@ -306,7 +306,7 @@ function LockerRoomPage() {
               {nextGame ? (
                 <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-flame/50 bg-flame/15 p-3">
                   <Pill tone="flame">Game</Pill>
-                  <span className="text-base font-black text-foreground">{nextGame.title}</span>
+                  <span className="text-lg font-black leading-tight text-foreground">{nextGame.title}</span>
                   <Pill tone="muted">{fmtWhen(nextGame.starts_at)}</Pill>
                   {nextGame.location ? <Pill tone="muted">{nextGame.location}</Pill> : null}
                   {nextGame.arrival_at ? (
@@ -331,7 +331,7 @@ function LockerRoomPage() {
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <Pill tone="flame">Pinned</Pill>
-                      <span className="text-base font-black text-foreground">{a.title}</span>
+                      <span className="text-lg font-black leading-tight text-foreground">{a.title}</span>
                     </div>
                     <p className="rounded-2xl border border-border/60 bg-surface-2/70 px-3 py-2 text-base font-semibold text-foreground">
                       {a.body}
@@ -483,7 +483,7 @@ function LockerRoomPage() {
                 <Panel key={a.id} className="flex flex-col gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <Pill tone="grape">{a.assignment_type.replace("_", " ")}</Pill>
-                    <span className="text-lg font-black text-foreground">{a.title}</span>
+                    <span className="text-xl font-black leading-tight text-foreground">{a.title}</span>
                     {a.due_at ? <Pill tone="flame">Due {fmtWhen(a.due_at)}</Pill> : null}
                     {mine ? <Pill tone="muted">{mine.status.replace("_", " ")}</Pill> : null}
                   </div>
@@ -599,7 +599,7 @@ function LockerRoomPage() {
                   params={{ playId: p.id }}
                   className="flex min-h-14 flex-wrap items-center gap-2 rounded-2xl border border-grape/50 bg-grape/15 px-4 py-3 transition-colors hover:bg-grape/25"
                 >
-                  <span className="text-base font-black text-foreground">{p.name}</span>
+                  <span className="text-lg font-black leading-tight text-foreground sm:text-xl">{p.name}</span>
                   <Pill tone="muted">{p.category}</Pill>
                 </Link>
               ))}
@@ -623,7 +623,7 @@ function LockerRoomPage() {
                 <Pill tone={e.event_type === "game" ? "flame" : "grape"}>
                   {EVENT_TYPE_LABEL[e.event_type] ?? "Event"}
                 </Pill>
-                <span className="text-base font-black text-foreground">{e.title}</span>
+                <span className="text-lg font-black leading-tight text-foreground">{e.title}</span>
                 <Pill tone="muted">{fmtWhen(e.starts_at)}</Pill>
                 {e.location ? <Pill tone="muted">{e.location}</Pill> : null}
                 {e.opponent ? <Pill tone="neutral">vs {e.opponent}</Pill> : null}
@@ -656,7 +656,7 @@ function LockerRoomPage() {
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <Pill tone="grape">{r.category}</Pill>
-                    <span className="text-base font-black text-foreground">{r.title}</span>
+                    <span className="text-lg font-black leading-tight text-foreground">{r.title}</span>
                     <Pill tone="muted">
                       {AUDIENCES.find((a) => a.value === r.audience)?.label ?? r.audience}
                     </Pill>

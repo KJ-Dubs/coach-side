@@ -329,7 +329,7 @@ function RosterPage() {
               className="flex flex-col gap-2 rounded-2xl border border-border bg-surface-2/60 p-2"
             >
               <div className="flex flex-wrap items-center gap-2">
-                <Pill tone="neutral">{t.name}</Pill>
+                <span className="rounded-2xl border border-border bg-surface px-3 py-2 text-lg font-black leading-tight text-foreground sm:text-xl">{t.name}</span>
                 <Pill tone="muted">{t.season}</Pill>
                 <BubbleButton
                   size="sm"
@@ -386,7 +386,7 @@ function RosterPage() {
                     {p.jersey}
                   </span>
                   <span className="flex min-w-0 flex-col gap-1">
-                    <span className="truncate rounded-xl border border-border bg-surface-2/80 px-2.5 py-1 text-sm font-black text-foreground">
+                    <span className="truncate rounded-xl border border-border bg-surface-2/80 px-2.5 py-1.5 text-lg font-black leading-tight text-foreground sm:text-xl">
                       {p.name}
                     </span>
                     <span className="flex flex-wrap gap-1">

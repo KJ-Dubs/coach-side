@@ -1,6 +1,7 @@
 # CourtSide Coach — production pass roadmap
 
 ## Current interface refinement
+- [x] Apply a consistent page, section, entity, stat, body and metadata hierarchy
 - [x] Add the horizontal CoachSide wordmark to the top of authenticated pages
 - [x] Center Rosters, Live Game, Playbook, Play Maker and Stats navigation
 - [x] Move Profile, Settings and Sign Out into the account dropdown
