@@ -23,6 +23,17 @@ export type LockerBundle = {
   plays: Play[];
   frames: PlayFrame[];
   schedule: TeamEvent[];
+  /**
+   * The current non-final game for this team, with only the records the coach
+   * has actually synced to the server. Never includes unsynced device data.
+   */
+  live: {
+    game: Game;
+    events: GameEvent[];
+    subs: Substitution[];
+    /** Newest synced record timestamp, or the game's own creation time. */
+    lastSyncedAt: string;
+  } | null;
 };
 
 /** Public, token-gated read of everything the Locker Room page shows. */
