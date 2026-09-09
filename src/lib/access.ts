@@ -35,14 +35,33 @@ export const EMPTY_ACCESS: Access = {
   playerId: null,
 };
 
+const COACH_ROLES = new Set(["head_coach", "assistant_coach"]);
+
 function shape(raw: unknown): Access {
   const r = (raw ?? {}) as Record<string, unknown>;
   const orgMemberships = (r["org_memberships"] ?? []) as OrgMembershipRow[];
-  const teamMemberships = (r["team_memberships"] ?? []) as TeamMembershipRow[];
-  const coachTeamIds = ((r["coach_team_ids"] ?? []) as string[]).filter(Boolean);
-  const playerTeamIds = ((r["player_team_ids"] ?? []) as string[]).filter(Boolean);
+  const teamMemberships = ((r["team_memberships"] ?? []) as TeamMembershipRow[]).filter(
+    (m) => m && m.team_id,
+  );
+  // Coach authority always wins over any duplicate/stale player row.
+  const coachTeamIds = Array.from(
+    new Set([
+      ...((r["coach_team_ids"] ?? []) as string[]).filter(Boolean),
+      ...teamMemberships.filter((m) => COACH_ROLES.has(m.role)).map((m) => m.team_id),
+    ]),
+  );
+  const playerTeamIds = Array.from(
+    new Set(
+      [
+        ...((r["player_team_ids"] ?? []) as string[]).filter(Boolean),
+        ...teamMemberships.filter((m) => m.role === "player").map((m) => m.team_id),
+      ].filter((id) => !coachTeamIds.includes(id)),
+    ),
+  );
   const isCoach = coachTeamIds.length > 0 || orgMemberships.length > 0;
-  const playerRow = teamMemberships.find((m) => m.role === "player" && m.player_id);
+  const playerRow = teamMemberships.find(
+    (m) => m.role === "player" && m.player_id && !coachTeamIds.includes(m.team_id),
+  );
   return {
     userId: (r["user_id"] as string) ?? null,
     orgMemberships,
@@ -50,10 +69,12 @@ function shape(raw: unknown): Access {
     coachTeamIds,
     playerTeamIds,
     isCoach,
+    // A linked player_id never demotes an account that holds any coach authority.
     isPlayerOnly: !isCoach && playerTeamIds.length > 0,
     playerId: playerRow?.player_id ?? null,
   };
 }
+
 
 export async function getCurrentUserAccess(): Promise<Access> {
   const { data, error } = await supabase.rpc("my_access");
