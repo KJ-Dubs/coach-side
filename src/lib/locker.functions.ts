@@ -163,6 +163,7 @@ export const getLockerBundle = createServerFn({ method: "GET" })
       plays: (plays.data ?? []) as unknown as Play[],
       frames: (frames.data ?? []) as unknown as PlayFrame[],
       schedule: (schedule.data ?? []) as unknown as TeamEvent[],
+      live,
     };
     // Serialized as JSON so the transport does not need per-field serializers.
     return JSON.stringify(bundle);
