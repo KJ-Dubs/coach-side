@@ -101,16 +101,70 @@ export function useAccess() {
 export function roleForTeam(access: Access, teamId: string | null): TeamRole | null {
   if (!teamId) return null;
   if (access.coachTeamIds.includes(teamId)) {
-    const m = access.teamMemberships.find((x) => x.team_id === teamId);
-    return m && m.role === "assistant_coach" ? "assistant_coach" : "head_coach";
+    const m = access.teamMemberships.find(
+      (x) => x.team_id === teamId && (x.role === "head_coach" || x.role === "assistant_coach"),
+    );
+    return m?.role === "assistant_coach" ? "assistant_coach" : "head_coach";
   }
   return access.teamMemberships.find((x) => x.team_id === teamId)?.role ?? null;
 }
 
 export function playerIdForTeam(access: Access, teamId: string | null) {
   if (!teamId) return null;
-  return access.teamMemberships.find((x) => x.team_id === teamId)?.player_id ?? null;
+  const rows = access.teamMemberships.filter((x) => x.team_id === teamId);
+  return rows.find((x) => x.role === "player" && x.player_id)?.player_id ?? rows[0]?.player_id ?? null;
 }
+
+/**
+ * The single safe role resolver. Everything that gates UI or navigation
+ * should read from here, so authority always comes from the database
+ * memberships loaded for the signed-in user and never from this device.
+ */
+export type ResolvedRole = {
+  isCoach: boolean;
+  isPlayerOnly: boolean;
+  canCoachTeam: (teamId: string | null) => boolean;
+  canCreatePlays: boolean;
+  allowedPath: (pathname: string) => boolean;
+};
+
+export function resolveRole(access: Access): ResolvedRole {
+  const isCoach = access.isCoach;
+  return {
+    isCoach,
+    isPlayerOnly: !isCoach && access.playerTeamIds.length > 0,
+    canCoachTeam: (teamId) =>
+      !!teamId && (access.coachTeamIds.includes(teamId) || access.orgMemberships.length > 0),
+    canCreatePlays: isCoach,
+    allowedPath: (pathname) => (isCoach ? true : isPlayerAllowedPath(pathname)),
+  };
+}
+
+/**
+ * Older builds cached a role/player id on the device. Authorization must
+ * never read those, so remove them whenever the app loads or a session ends.
+ */
+const LEGACY_ROLE_KEYS = [
+  "coachside.role",
+  "coachside.player-id",
+  "coachside.player-role",
+  "coachside.team-role",
+  "coachside.active-player",
+  "coachside.access",
+];
+
+export function purgeDeviceRoleCache() {
+  if (typeof window === "undefined") return;
+  for (const k of LEGACY_ROLE_KEYS) {
+    try {
+      window.localStorage.removeItem(k);
+      window.sessionStorage.removeItem(k);
+    } catch {
+      /* storage unavailable */
+    }
+  }
+}
+
 
 /** The only pages a player-only account may open. */
 export const PLAYER_ROUTES = ["/lockerroom", "/profile"];
