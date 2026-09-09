@@ -141,3 +141,10 @@ export function resolveRole(access: Access): ResolvedRole {
 }
 
 export { purgeDeviceRoleCache } from "./roleCache";
+
+/** The only pages a player-only account may open. */
+export const PLAYER_ROUTES = ["/lockerroom", "/profile"];
+
+export function isPlayerAllowedPath(pathname: string) {
+  return PLAYER_ROUTES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { purgeDeviceRoleCache } from "./roleCache";
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
