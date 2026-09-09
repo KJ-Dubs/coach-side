@@ -119,7 +119,13 @@ function LockerRoom() {
         ))}
       </Panel>
 
-      {tab === "stats" ? <StatsTab bundle={b} /> : null}
+      {tab === "stats" ? (
+        <StatsTab
+          bundle={b}
+          onRefresh={() => void q.refetch()}
+          refreshing={q.isFetching}
+        />
+      ) : null}
       {tab === "playbook" ? <PlaybookTab bundle={b} /> : null}
       {tab === "schedule" ? <ScheduleTab bundle={b} token={token} /> : null}
     </div>
