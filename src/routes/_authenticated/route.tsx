@@ -1,7 +1,8 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentUserAccess, isPlayerAllowedPath } from "@/lib/access";
+import { getCurrentUserAccess, resolveRole } from "@/lib/access";
+import { purgeDeviceRoleCache } from "@/lib/roleCache";
 import { flushQueue } from "@/lib/offline";
 import { rememberDevice } from "@/lib/remember";
 
@@ -33,8 +34,9 @@ export const Route = createFileRoute("/_authenticated")({
 
     // Players may only reach the Locker Room and their own profile.
     try {
-      const access = await getCurrentUserAccess();
-      if (access.isPlayerOnly && !isPlayerAllowedPath(location.pathname)) {
+      purgeDeviceRoleCache();
+      const role = resolveRole(await getCurrentUserAccess());
+      if (!role.allowedPath(location.pathname)) {
         throw redirect({ to: "/lockerroom" });
       }
     } catch (e) {

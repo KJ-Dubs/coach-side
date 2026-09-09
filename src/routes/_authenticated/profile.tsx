@@ -17,7 +17,7 @@ import {
 } from "@/components/Bubbles";
 import { fetchPlayers, updateProfile } from "@/lib/data";
 import { initialsOf } from "@/lib/auth";
-import { useAccess } from "@/lib/access";
+import { useAccess, resolveRole } from "@/lib/access";
 import { useMe } from "@/lib/useMe";
 import { ROLE_LABEL } from "@/lib/types";
 
@@ -52,7 +52,7 @@ function ProfilePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const isPlayer = access.isPlayerOnly;
+  const isPlayer = resolveRole(access).isPlayerOnly;
   const playerTeamId = access.playerTeamIds[0] ?? null;
   const playerTeam = me.teams.find((t) => t.id === playerTeamId) ?? null;
   const roster = useQuery({

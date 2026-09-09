@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { initialsOf, signOut } from "@/lib/auth";
-import { useAccess } from "@/lib/access";
+import { resolveRole, useAccess } from "@/lib/access";
 import { useMe } from "@/lib/useMe";
 
 const QUICK = [
@@ -55,6 +55,7 @@ export function AppShell({
 }) {
   const me = useMe();
   const { access } = useAccess();
+  const role = resolveRole(access);
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -65,7 +66,7 @@ export function AppShell({
 
   // Players get a Locker-Room-only shell. This is decided by database
   // membership, never by anything stored on the device.
-  if (access.isPlayerOnly) {
+  if (role.isPlayerOnly) {
     const playerTeam =
       me.teams.find((t) => access.playerTeamIds.includes(t.id)) ?? me.teams[0] ?? null;
     return (
