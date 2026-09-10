@@ -26,6 +26,8 @@ import {
 } from "@/lib/data";
 import { EVENT_TYPES, EVENT_TYPE_LABEL, type TeamEvent } from "@/lib/types";
 import { useMe } from "@/lib/useMe";
+import { useAccess, resolveRole } from "@/lib/access";
+import { GoogleCalendarPanel } from "@/components/GoogleCalendarPanel";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
@@ -198,6 +200,12 @@ function CalendarPage() {
         </Panel>
       ) : (
         <>
+          <GoogleCalendarPanel
+            teamId={teamId || null}
+            teamName={team.name}
+            canManage={isTeamCoach}
+          />
+
           <Panel className="mb-3 grid gap-2 sm:grid-cols-3">
             {(
               [
