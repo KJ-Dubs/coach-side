@@ -41,6 +41,51 @@ export function googleConfig(): ConfigState {
   return { configured: true, reason: null };
 }
 
+/** The one production origin. Google Cloud must list PRODUCTION_REDIRECT_URI. */
+export const PRODUCTION_ORIGIN = "https://coachside.live";
+export const PRODUCTION_HOSTS = ["coachside.live", "www.coachside.live"];
+export const PRODUCTION_REDIRECT_URI = `${PRODUCTION_ORIGIN}${CALLBACK_PATH}`;
+
+/**
+ * Optional preview origin (e.g. https://<preview>.lovable.app). When set, the
+ * preview uses its OWN registered callback; it never borrows production's.
+ */
+export function previewOrigin(): string | null {
+  const raw = process.env["GOOGLE_OAUTH_PREVIEW_ORIGIN"];
+  if (!raw) return null;
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return null;
+  }
+}
+
+export type OAuthTarget = { redirectUri: string; returnOrigin: string };
+
+/**
+ * Deterministic redirect URI. www.coachside.live and coachside.live both map to
+ * the single canonical production callback, so window.location.origin can never
+ * shift what Google is asked to match.
+ */
+export function resolveOAuthTarget(browserOrigin: string): OAuthTarget {
+  let host = "";
+  try {
+    host = new URL(browserOrigin).host.toLowerCase();
+  } catch {
+    host = "";
+  }
+  if (PRODUCTION_HOSTS.includes(host)) {
+    return { redirectUri: PRODUCTION_REDIRECT_URI, returnOrigin: PRODUCTION_ORIGIN };
+  }
+  const preview = previewOrigin();
+  if (preview && new URL(preview).host.toLowerCase() === host) {
+    return { redirectUri: `${preview}${CALLBACK_PATH}`, returnOrigin: preview };
+  }
+  throw new Error(
+    `Google Calendar can only be connected from ${PRODUCTION_ORIGIN}. Open CoachSide at that address and try again.`,
+  );
+}
+
 export function buildAuthUrl(input: { state: string; redirectUri: string }): string {
   const p = new URLSearchParams({
     client_id: clientId() ?? "",
