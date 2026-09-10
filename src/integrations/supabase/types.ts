@@ -1619,6 +1619,7 @@ export type Database = {
           taken: boolean
         }[]
       }
+      is_game_coach: { Args: { _game: string }; Returns: boolean }
       is_head_coach: { Args: never; Returns: boolean }
       is_team_coach: { Args: { _team: string }; Returns: boolean }
       is_team_head_coach: { Args: { _team: string }; Returns: boolean }
