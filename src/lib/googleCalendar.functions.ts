@@ -64,13 +64,16 @@ export const startGoogleCalendarConnect = createServerFn({ method: "POST" })
     z.object({ teamId: z.string().uuid(), origin: z.string().url() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<{ url: string }> => {
-    const { googleConfig, buildAuthUrl, CALLBACK_PATH } = await import("./googleCalendar.server");
+    const { googleConfig, buildAuthUrl, resolveOAuthTarget } = await import(
+      "./googleCalendar.server"
+    );
     const cfg = googleConfig();
     if (!cfg.configured) throw new Error(cfg.reason ?? "Google Calendar is not set up yet.");
     await assertCoach(context.supabase, data.teamId);
 
-    const origin = new URL(data.origin).origin;
-    const redirectUri = `${origin}${CALLBACK_PATH}`;
+    // Canonical per-environment callback: never derived from the browser origin.
+    const { redirectUri, returnOrigin } = resolveOAuthTarget(data.origin);
+    const origin = returnOrigin;
     const state = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
