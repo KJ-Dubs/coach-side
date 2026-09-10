@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
-import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { ShotChart } from "@/components/court/ShotChart";
 import { getLockerBundle, type LockerBundle } from "@/lib/locker.functions";
 import type { GameEvent } from "@/lib/types";
@@ -25,12 +24,12 @@ export const Route = createFileRoute("/locker/$token")({
       {
         name: "description",
         content:
-          "Team and player stats, the playbook and the shared game and practice calendar, shared by your coach.",
+          "Team and player stats and the shared game and practice calendar, shared by your coach. Read-only, no account needed.",
       },
       { property: "og:title", content: "Team Locker Room — CoachSide" },
       {
         property: "og:description",
-        content: "Stats, plays and the team schedule in one shared link.",
+        content: "Team stats and the team schedule in one read-only shared link.",
       },
       { property: "og:type", content: "website" },
       { property: "og:image", content: "https://coachside.live/og-cover.png" },
@@ -114,11 +113,10 @@ function LockerRoom() {
         />
       </Panel>
 
-      <Panel className="grid grid-cols-3 gap-2">
+      <Panel className="grid grid-cols-2 gap-2">
         {(
           [
             ["stats", "Stats"],
-            ["playbook", "Playbook"],
             ["schedule", "Schedule"],
           ] as const
         ).map(([key, label]) => (
@@ -135,7 +133,6 @@ function LockerRoom() {
           refreshing={q.isFetching}
         />
       ) : null}
-      {tab === "playbook" ? <PlaybookTab bundle={b} /> : null}
       {tab === "schedule" ? <ScheduleTab bundle={b} token={token} /> : null}
     </div>
   );
@@ -329,92 +326,6 @@ function StatsTab({
         <Label>Team shot chart</Label>
         <ShotChart events={bundle.events as GameEvent[]} />
       </Panel>
-    </>
-  );
-}
-
-function PlaybookTab({ bundle }: { bundle: LockerBundle }) {
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [i, setI] = useState(0);
-  const play = bundle.plays.find((p) => p.id === openId) ?? null;
-  const frames = bundle.frames.filter((f) => f.play_id === openId).sort((a, b) => a.idx - b.idx);
-  const current = frames[Math.min(i, Math.max(0, frames.length - 1))];
-
-  if (!bundle.plays.length) {
-    return (
-      <Panel>
-        <Label>Your coach has not added plays to this locker room yet</Label>
-      </Panel>
-    );
-  }
-
-  const categories = Array.from(new Set(bundle.plays.map((p) => p.category)));
-
-  return (
-    <>
-      {play ? (
-        <Panel className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Pill tone="grape">{play.name}</Pill>
-            <Pill tone="muted">{play.category}</Pill>
-            <Pill tone="flame">
-              Frame {frames.length ? Math.min(i + 1, frames.length) : 0} / {frames.length}
-            </Pill>
-            <BubbleButton
-              size="sm"
-              tone="neutral"
-              className="ml-auto"
-              onClick={() => {
-                setOpenId(null);
-                setI(0);
-              }}
-            >
-              Close
-            </BubbleButton>
-          </div>
-          <PlayCanvas frame={current} flip={play.attack_basket === "left"} />
-          {current?.note ? <Pill tone="neutral">{current.note}</Pill> : null}
-          <div className="flex flex-wrap justify-center gap-2">
-            <BubbleButton
-              tone="neutral"
-              disabled={i === 0}
-              onClick={() => setI((v) => Math.max(0, v - 1))}
-            >
-              ← Prev
-            </BubbleButton>
-            <BubbleButton
-              tone="grape"
-              disabled={i >= frames.length - 1}
-              onClick={() => setI((v) => Math.min(frames.length - 1, v + 1))}
-            >
-              Next →
-            </BubbleButton>
-          </div>
-        </Panel>
-      ) : null}
-
-      {categories.map((cat) => (
-        <Panel key={cat} className="flex flex-col gap-2">
-          <Label>{cat}</Label>
-          <div className="flex flex-wrap gap-2">
-            {bundle.plays
-              .filter((p) => p.category === cat)
-              .map((p) => (
-                <BubbleButton
-                  key={p.id}
-                  size="sm"
-                  tone={openId === p.id ? "grape" : "neutral"}
-                  onClick={() => {
-                    setOpenId(p.id);
-                    setI(0);
-                  }}
-                >
-                  {p.name}
-                </BubbleButton>
-              ))}
-          </div>
-        </Panel>
-      ))}
     </>
   );
 }
