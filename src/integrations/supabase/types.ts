@@ -675,6 +675,7 @@ export type Database = {
       }
       google_calendar_connections: {
         Row: {
+          access_token_ciphertext: string | null
           connection_key_ciphertext: string | null
           created_at: string
           google_account_email: string | null
@@ -683,13 +684,18 @@ export type Database = {
           id: string
           last_sync_error: string | null
           last_synced_at: string | null
+          needs_reauth: boolean
+          refresh_token_ciphertext: string | null
+          scope: string | null
           sync_enabled: boolean
+          sync_status: string
           team_id: string
           token_expiry: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          access_token_ciphertext?: string | null
           connection_key_ciphertext?: string | null
           created_at?: string
           google_account_email?: string | null
@@ -698,13 +704,18 @@ export type Database = {
           id?: string
           last_sync_error?: string | null
           last_synced_at?: string | null
+          needs_reauth?: boolean
+          refresh_token_ciphertext?: string | null
+          scope?: string | null
           sync_enabled?: boolean
+          sync_status?: string
           team_id: string
           token_expiry?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          access_token_ciphertext?: string | null
           connection_key_ciphertext?: string | null
           created_at?: string
           google_account_email?: string | null
@@ -713,7 +724,11 @@ export type Database = {
           id?: string
           last_sync_error?: string | null
           last_synced_at?: string | null
+          needs_reauth?: boolean
+          refresh_token_ciphertext?: string | null
+          scope?: string | null
           sync_enabled?: boolean
+          sync_status?: string
           team_id?: string
           token_expiry?: string | null
           updated_at?: string
@@ -724,6 +739,44 @@ export type Database = {
             foreignKeyName: "google_calendar_connections_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      google_oauth_states: {
+        Row: {
+          created_at: string
+          expires_at: string
+          redirect_uri: string
+          return_to: string
+          state: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          redirect_uri: string
+          return_to: string
+          state: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          redirect_uri?: string
+          return_to?: string
+          state?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_oauth_states_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]
           },
