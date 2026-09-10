@@ -5,7 +5,11 @@ import { SignInShowcase } from "@/components/SignInShowcase";
 import { Panel, Pill } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
 
+type AuthSearch = { mode?: "signin" | "signup" };
+
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>): AuthSearch =>
+    search["mode"] === "signup" ? { mode: "signup" } : search["mode"] === "signin" ? { mode: "signin" } : {},
   head: () => ({
     meta: [
       { title: "Sign In — CoachSide" },
@@ -26,6 +30,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { session, ready } = useAuth();
   const navigate = useNavigate();
+  const { mode } = Route.useSearch();
   const recovering =
     typeof window !== "undefined" && window.location.hash.includes("type=recovery");
 
@@ -42,7 +47,7 @@ function AuthPage() {
       ) : (
         <>
           <AuthCard
-            initialMode={recovering ? "reset" : "signin"}
+            initialMode={recovering ? "reset" : mode === "signup" ? "signup" : "signin"}
             onDone={() => navigate({ to: "/dashboard", replace: true })}
           />
           <SignInShowcase />
