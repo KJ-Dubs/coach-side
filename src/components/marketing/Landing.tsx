@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { BubbleButton, Panel, Pill } from "@/components/Bubbles";
 import { DemoPlay } from "@/components/marketing/DemoPlay";
+import { InstallAppPill } from "@/components/InstallApp";
 import wordmark from "@/assets/coachside-wordmark.png.asset.json";
 import mark from "@/assets/coachside-mark.jpg.asset.json";
 import shotChart from "@/assets/snapshot-shot-chart.jpg.asset.json";
@@ -155,6 +156,7 @@ export function Landing() {
               <SignUpButton />
               <SignInButton />
             </div>
+            <InstallAppPill />
             <div className="flex flex-wrap gap-2">
               <Pill tone="muted">Live stat tracking</Pill>
               <Pill tone="muted">Play designer</Pill>

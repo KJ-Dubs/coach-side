@@ -147,6 +147,11 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
 
+  // Installable app shell (published site only; never in previews or dev).
+  useEffect(() => {
+    registerAppServiceWorker();
+  }, []);
+
   // Single auth listener: identity changes re-run route guards and refresh
   // cached data. Sign-out does not refetch (the cache is torn down by signOut()).
   useEffect(() => {

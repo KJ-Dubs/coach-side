@@ -23,6 +23,7 @@ import { fetchMyMemberships, isCoachRole } from "@/lib/locker";
 import { useMe } from "@/lib/useMe";
 import { cn } from "@/lib/utils";
 import { PlayerQrPanel } from "@/components/PlayerQrPanel";
+import { InstallAppCard } from "@/components/InstallApp";
 
 /** Players and parents land in the Locker Room instead of the coach dashboard. */
 function useRedirectPlayersToLockerRoom() {
@@ -274,6 +275,8 @@ function Dashboard() {
         <StatTile label="Saved games" value={finals.length} />
         <StatTile label="Plays" value={plays.data?.length ?? "—"} tone="flame" />
       </Panel>
+
+      <InstallAppCard />
 
       <SchedulePanel />
 
