@@ -41,7 +41,7 @@ export const Route = createFileRoute("/locker/$token")({
   component: LockerRoom,
 });
 
-type Tab = "stats" | "playbook" | "schedule";
+type Tab = "stats" | "schedule";
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleString(undefined, {
