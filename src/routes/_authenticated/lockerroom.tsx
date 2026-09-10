@@ -50,13 +50,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/lockerroom")({
   head: () => ({
     meta: [
-      { title: "Locker Room — CoachSide" },
+      { title: "Team Hub & Messages — CoachSide" },
       {
         name: "description",
         content:
           "Team announcements, chat, assignments, plays, schedule and resources in one basketball team hub.",
       },
-      { property: "og:title", content: "Locker Room — CoachSide" },
+      { property: "og:title", content: "Team Hub & Messages — CoachSide" },
       {
         property: "og:description",
         content: "The CoachSide team hub for announcements, messages, assignments and schedule.",

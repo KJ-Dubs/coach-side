@@ -25,13 +25,13 @@ import { useMe } from "@/lib/useMe";
 export const Route = createFileRoute("/_authenticated/locker")({
   head: () => ({
     meta: [
-      { title: "Locker Room — CoachSide" },
+      { title: "Share Team Locker Room Link — CoachSide" },
       {
         name: "description",
         content:
           "Share one link with your team for stats, the playbook and a Google-Calendar-ready schedule of games and practices.",
       },
-      { property: "og:title", content: "Locker Room — CoachSide" },
+      { property: "og:title", content: "Share Team Locker Room Link — CoachSide" },
       {
         property: "og:description",
         content: "One shared link for team stats, plays and the schedule.",
