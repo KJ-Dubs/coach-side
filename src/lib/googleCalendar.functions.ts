@@ -139,9 +139,7 @@ async function loadKey(teamId: string, userId: string) {
   if (!row || row.connection_key_ciphertext == null) {
     throw new Error("No Google Calendar is connected for this team yet.");
   }
-  if (userId && row.id) {
-    // ownership is enforced by the coach check on the team, not by user match
-  }
+  void userId; // authority comes from the team coach check, not row ownership
   return { row, key: decryptConnectionKey(row.connection_key_ciphertext), supabaseAdmin };
 }
 
