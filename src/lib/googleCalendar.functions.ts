@@ -40,7 +40,14 @@ function present(row: Row): GoogleConnection {
   return { ...rest, connected: Boolean(connection_key_ciphertext) };
 }
 
-async function assertCoach(supabase: { rpc: (fn: string, args: object) => PromiseLike<{ data: unknown; error: unknown }> }, teamId: string) {
+type RpcClient = {
+  rpc: (fn: "is_team_coach", args: { _team: string }) => PromiseLike<{
+    data: unknown;
+    error: unknown;
+  }>;
+};
+
+async function assertCoach(supabase: RpcClient, teamId: string) {
   const { data, error } = await supabase.rpc("is_team_coach", { _team: teamId });
   if (error || data !== true) throw new Error("You are not a coach for this team.");
 }
