@@ -22,25 +22,9 @@ export default defineConfig({
       devOptions: { enabled: false },
       filename: "sw.js",
       manifestFilename: "manifest.webmanifest",
-      manifest: {
-        name: "CoachSide",
-        short_name: "CoachSide",
-        description:
-          "Basketball coaching platform: live court stats, season reports, animated plays, team Locker Room and schedule.",
-        id: "/",
-        start_url: "/",
-        scope: "/",
-        display: "standalone",
-        orientation: "any",
-        theme_color: "#0f0f12",
-        background_color: "#0f0f12",
-        categories: ["sports", "productivity"],
-        icons: [
-          { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-          { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-          { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
-        ],
-      },
+      // The manifest is a static file in public/ so it also resolves in dev.
+      manifest: false,
+      includeManifestIcons: false,
       workbox: {
         // Pin to the client (public) output so the worker ships next to the
         // static assets nitro serves, and never precaches server bundles.
