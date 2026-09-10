@@ -26,6 +26,8 @@ import {
 } from "@/lib/data";
 import { EVENT_TYPES, EVENT_TYPE_LABEL, type TeamEvent } from "@/lib/types";
 import { useMe } from "@/lib/useMe";
+import { useAccess, resolveRole } from "@/lib/access";
+import { GoogleCalendarPanel } from "@/components/GoogleCalendarPanel";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
@@ -98,6 +100,8 @@ function CalendarPage() {
   }, [me.teams, teamId]);
 
   const team = me.teams.find((t) => t.id === teamId) ?? null;
+  const { access } = useAccess();
+  const isTeamCoach = resolveRole(access).canCoachTeam(teamId || null);
 
   const events = useQuery({
     queryKey: ["team-events", teamId],
@@ -198,6 +202,12 @@ function CalendarPage() {
         </Panel>
       ) : (
         <>
+          <GoogleCalendarPanel
+            teamId={teamId || null}
+            teamName={team.name}
+            canManage={isTeamCoach}
+          />
+
           <Panel className="mb-3 grid gap-2 sm:grid-cols-3">
             {(
               [
@@ -419,23 +429,29 @@ function CalendarPage() {
                             Start Game
                           </BubbleButton>
                         ) : null}
-                        <BubbleButton
-                          size="sm"
-                          tone="neutral"
-                          onClick={() => {
-                            setEditing(e);
-                            setOpen(true);
-                          }}
-                        >
-                          Edit
-                        </BubbleButton>
-                        <BubbleButton
-                          size="sm"
-                          tone="neutral"
-                          onClick={() => remove.mutate(e.id)}
-                        >
-                          Remove
-                        </BubbleButton>
+                        {e.source === "google" ? (
+                          <Pill tone="flame">Managed by Google Calendar</Pill>
+                        ) : (
+                          <>
+                            <BubbleButton
+                              size="sm"
+                              tone="neutral"
+                              onClick={() => {
+                                setEditing(e);
+                                setOpen(true);
+                              }}
+                            >
+                              Edit
+                            </BubbleButton>
+                            <BubbleButton
+                              size="sm"
+                              tone="neutral"
+                              onClick={() => remove.mutate(e.id)}
+                            >
+                              Remove
+                            </BubbleButton>
+                          </>
+                        )}
                       </div>
                     </div>
                   );

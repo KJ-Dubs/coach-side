@@ -77,10 +77,13 @@ export const getLockerBundle = createServerFn({ method: "GET" })
             .select("*")
             .eq("team_id", team.id)
             .order("created_at", { ascending: false }),
+      // Public parent link: only team/public events, never staff-only ones.
       supabaseAdmin
         .from("team_events")
         .select("*")
         .eq("team_id", team.id)
+        .in("visibility", ["team", "public"])
+        .neq("status", "cancelled")
         .order("starts_at", { ascending: true }),
     ]);
 

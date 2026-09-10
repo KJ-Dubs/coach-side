@@ -673,6 +673,62 @@ export type Database = {
           },
         ]
       }
+      google_calendar_connections: {
+        Row: {
+          connection_key_ciphertext: string | null
+          created_at: string
+          google_account_email: string | null
+          google_calendar_id: string | null
+          google_calendar_name: string | null
+          id: string
+          last_sync_error: string | null
+          last_synced_at: string | null
+          sync_enabled: boolean
+          team_id: string
+          token_expiry: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          connection_key_ciphertext?: string | null
+          created_at?: string
+          google_account_email?: string | null
+          google_calendar_id?: string | null
+          google_calendar_name?: string | null
+          id?: string
+          last_sync_error?: string | null
+          last_synced_at?: string | null
+          sync_enabled?: boolean
+          team_id: string
+          token_expiry?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          connection_key_ciphertext?: string | null
+          created_at?: string
+          google_account_email?: string | null
+          google_calendar_id?: string | null
+          google_calendar_name?: string | null
+          id?: string
+          last_sync_error?: string | null
+          last_synced_at?: string | null
+          sync_enabled?: boolean
+          team_id?: string
+          token_expiry?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_calendar_connections_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_attachments: {
         Row: {
           attachment_type: string
@@ -1195,6 +1251,10 @@ export type Database = {
           created_by: string | null
           ends_at: string | null
           event_type: string
+          external_calendar_id: string | null
+          external_event_id: string | null
+          external_provider: string | null
+          external_updated_at: string | null
           game_id: string | null
           home_away: string | null
           id: string
@@ -1203,6 +1263,7 @@ export type Database = {
           location: string | null
           notes: string | null
           opponent: string | null
+          source: string
           starts_at: string
           status: string
           team_id: string
@@ -1219,6 +1280,10 @@ export type Database = {
           created_by?: string | null
           ends_at?: string | null
           event_type?: string
+          external_calendar_id?: string | null
+          external_event_id?: string | null
+          external_provider?: string | null
+          external_updated_at?: string | null
           game_id?: string | null
           home_away?: string | null
           id?: string
@@ -1227,6 +1292,7 @@ export type Database = {
           location?: string | null
           notes?: string | null
           opponent?: string | null
+          source?: string
           starts_at: string
           status?: string
           team_id: string
@@ -1243,6 +1309,10 @@ export type Database = {
           created_by?: string | null
           ends_at?: string | null
           event_type?: string
+          external_calendar_id?: string | null
+          external_event_id?: string | null
+          external_provider?: string | null
+          external_updated_at?: string | null
           game_id?: string | null
           home_away?: string | null
           id?: string
@@ -1251,6 +1321,7 @@ export type Database = {
           location?: string | null
           notes?: string | null
           opponent?: string | null
+          source?: string
           starts_at?: string
           status?: string
           team_id?: string
