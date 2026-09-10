@@ -42,7 +42,11 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,svg,woff,woff2}"],
+        // Pin to the client (public) output so the worker ships next to the
+        // static assets nitro serves, and never precaches server bundles.
+        globDirectory: "dist/client",
+        swDest: "dist/client/sw.js",
+        globPatterns: ["assets/**/*.{js,css,woff,woff2}", "favicon.png", "icons/*.png"],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         clientsClaim: true,
