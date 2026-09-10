@@ -39,6 +39,7 @@ export function GoogleCalendarPanel({
   const sync = useServerFn(syncGoogleCalendar);
   const disconnect = useServerFn(disconnectGoogleCalendar);
   const [picking, setPicking] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
   const [choice, setChoice] = useState("");
 
   const q = useQuery({
@@ -70,6 +71,7 @@ export function GoogleCalendarPanel({
       setPicking(true);
       refresh();
     } else {
+      setLastError(reason ?? "unknown");
       toast.error(`Google connection failed${reason ? ` (${reason})` : ""}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -151,6 +153,14 @@ export function GoogleCalendarPanel({
       </div>
 
       {q.isLoading ? <Label>Checking connection…</Label> : null}
+
+      {q.data ? (
+        <div className="flex flex-wrap gap-2 rounded-2xl border border-border bg-surface-2/70 p-3">
+          <Pill tone="muted">Callback address: {q.data.redirectUri}</Pill>
+          <Pill tone="muted">Google app ID ends: {q.data.clientIdHint ?? "not set"}</Pill>
+          {lastError ? <Pill tone="danger">Last Google error: {lastError}</Pill> : null}
+        </div>
+      ) : null}
 
       {q.data && !q.data.configured ? (
         <div className="rounded-2xl border border-border bg-surface-2/70 p-3">

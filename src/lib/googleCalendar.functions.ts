@@ -19,6 +19,10 @@ export type GoogleConnection = {
 export type GoogleStatus = {
   configured: boolean;
   reason: string | null;
+  /** Exact address Google must have registered (safe to show). */
+  redirectUri: string;
+  /** Last 12 characters of the client id in use — never the secret. */
+  clientIdHint: string | null;
   connections: GoogleConnection[];
 };
 
@@ -38,7 +42,10 @@ async function assertCoach(supabase: RpcClient, teamId: string) {
 export const getGoogleCalendarStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<GoogleStatus> => {
-    const { googleConfig } = await import("./googleCalendar.server");
+    const { googleConfig, clientId, PRODUCTION_REDIRECT_URI } = await import(
+      "./googleCalendar.server"
+    );
+    const cid = clientId();
     const cfg = googleConfig();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin
@@ -54,7 +61,13 @@ export const getGoogleCalendarStatus = createServerFn({ method: "GET" })
       ...rest,
       connected: Boolean(refresh_token_ciphertext),
     }));
-    return { configured: cfg.configured, reason: cfg.reason, connections: rows };
+    return {
+      configured: cfg.configured,
+      reason: cfg.reason,
+      redirectUri: PRODUCTION_REDIRECT_URI,
+      clientIdHint: cid ? `…${cid.slice(-12)}` : null,
+      connections: rows,
+    };
   });
 
 /** Step 1: create a one-time state row and return the Google consent URL. */
