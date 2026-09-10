@@ -20,8 +20,12 @@ export const Route = createFileRoute("/")({
         content: "Live stats from the court, season stats and a play designer for basketball coaches.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://coachside.live/" },
+      { property: "og:image", content: "https://coachside.live/og-cover.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "https://coachside.live/og-cover.png" },
     ],
+    links: [{ rel: "canonical", href: "https://coachside.live/" }],
   }),
   component: Landing,
 });

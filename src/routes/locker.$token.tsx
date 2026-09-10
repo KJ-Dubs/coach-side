@@ -33,7 +33,10 @@ export const Route = createFileRoute("/locker/$token")({
         content: "Stats, plays and the team schedule in one shared link.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:image", content: "https://coachside.live/og-cover.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "https://coachside.live/og-cover.png" },
+      { name: "robots", content: "noindex" },
     ],
   }),
   component: LockerRoom,
@@ -100,11 +103,9 @@ function LockerRoom() {
           </span>
         ) : null}
         <div className="flex flex-wrap items-center gap-2">
-          <Pill tone="grape" className="text-sm font-black">
-            {b.team.name}
-          </Pill>
-          <Pill tone="muted">{b.team.season}</Pill>
-          <Pill tone="flame">Locker Room</Pill>
+          <h1 className="inline-flex w-fit rounded-2xl border border-grape/60 bg-grape/20 px-4 py-2 text-xl font-black leading-tight text-foreground sm:text-2xl">
+            {b.team.name} {b.team.season} Locker Room
+          </h1>
         </div>
         <img
           src={wordmark.url}

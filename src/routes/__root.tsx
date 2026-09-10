@@ -82,7 +82,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "CoachSide" },
+      { title: "CoachSide — Basketball Live Stats & Playbook" },
       {
         name: "description",
         content:
@@ -90,6 +90,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "author", content: "CoachSide" },
       { name: "theme-color", content: "#0f0f12" },
+      { property: "og:site_name", content: "CoachSide" },
+      { property: "og:type", content: "website" },
+      { property: "og:title", content: "CoachSide — Basketball Live Stats & Playbook" },
+      {
+        property: "og:description",
+        content:
+          "Fast courtside basketball stat tracking, season stats and a visual play designer for coaches.",
+      },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       {
