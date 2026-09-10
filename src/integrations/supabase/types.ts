@@ -1685,6 +1685,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["coach_role"]
       }
       my_team_role: { Args: { _team: string }; Returns: string }
+      my_verified_email: { Args: never; Returns: string }
       play_visible: { Args: { _play: string }; Returns: boolean }
       queue_team_notification: {
         Args: {
