@@ -5,15 +5,12 @@ import { toast } from "sonner";
 import { BubbleButton, Label, Panel, Pill, SelectInput } from "@/components/Bubbles";
 import {
   disconnectGoogleCalendar,
-  finishGoogleCalendarConnect,
   getGoogleCalendarStatus,
   listGoogleCalendars,
   setGoogleCalendarMapping,
   startGoogleCalendarConnect,
   syncGoogleCalendar,
 } from "@/lib/googleCalendar.functions";
-
-const PENDING_TEAM = "coachside.google.pendingTeam";
 
 function fmt(ts: string | null) {
   if (!ts) return "Never";
@@ -37,7 +34,6 @@ export function GoogleCalendarPanel({
   const qc = useQueryClient();
   const status = useServerFn(getGoogleCalendarStatus);
   const start = useServerFn(startGoogleCalendarConnect);
-  const finish = useServerFn(finishGoogleCalendarConnect);
   const listCals = useServerFn(listGoogleCalendars);
   const setMapping = useServerFn(setGoogleCalendarMapping);
   const sync = useServerFn(syncGoogleCalendar);
@@ -58,28 +54,24 @@ export function GoogleCalendarPanel({
 
   const refresh = () => void qc.invalidateQueries({ queryKey: ["google-calendar-status"] });
 
-  const finishConnect = useMutation({
-    mutationFn: (v: { teamId: string; code: string }) => finish({ data: v }),
-    onSuccess: () => {
-      toast.success("Google account connected");
-      setPicking(true);
-      refresh();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  // The gateway sends the coach back here with a one-time code.
+  // Google sends the coach back here after consent.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
-    const code = url.searchParams.get("google_code") ?? url.searchParams.get("code");
-    const pending = window.sessionStorage.getItem(PENDING_TEAM);
-    if (!code || !pending) return;
-    window.sessionStorage.removeItem(PENDING_TEAM);
-    url.searchParams.delete("google_code");
-    url.searchParams.delete("code");
+    const result = url.searchParams.get("google");
+    if (!result) return;
+    const reason = url.searchParams.get("reason");
+    url.searchParams.delete("google");
+    url.searchParams.delete("reason");
+    url.searchParams.delete("team");
     window.history.replaceState({}, "", url.toString());
-    finishConnect.mutate({ teamId: pending, code });
+    if (result === "connected") {
+      toast.success("Google account connected — now choose a calendar");
+      setPicking(true);
+      refresh();
+    } else {
+      toast.error(`Google connection failed${reason ? ` (${reason})` : ""}`);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -92,30 +84,24 @@ export function GoogleCalendarPanel({
   const beginConnect = useMutation({
     mutationFn: async () => {
       if (!teamId) throw new Error("Choose a team first.");
-      window.sessionStorage.setItem(PENDING_TEAM, teamId);
-      const redirectUri = `${window.location.origin}/calendar`;
-      const { url } = await start({ data: { teamId, redirectUri } });
+      const { url } = await start({ data: { teamId, origin: window.location.origin } });
       window.location.href = url;
     },
-    onError: (e: Error) => {
-      window.sessionStorage.removeItem(PENDING_TEAM);
-      toast.error(e.message);
-    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const saveMapping = useMutation({
     mutationFn: async () => {
       const cal = (cals.data ?? []).find((c) => c.id === choice);
       if (!teamId || !cal) throw new Error("Pick a calendar.");
-      await setMapping({
-        data: { teamId, calendarId: cal.id, calendarName: cal.name },
-      });
+      await setMapping({ data: { teamId, calendarId: cal.id, calendarName: cal.name } });
       return sync({ data: { teamId } });
     },
     onSuccess: (r) => {
       toast.success(`Synced ${r.imported} event${r.imported === 1 ? "" : "s"}`);
       setPicking(false);
       refresh();
+      void qc.invalidateQueries({ queryKey: ["team-events"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -127,7 +113,10 @@ export function GoogleCalendarPanel({
       refresh();
       void qc.invalidateQueries({ queryKey: ["team-events"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      toast.error(e.message);
+      refresh();
+    },
   });
 
   const drop = useMutation({
@@ -142,6 +131,8 @@ export function GoogleCalendarPanel({
 
   if (!canManage) return null;
 
+  const needsReauth = Boolean(connection?.needs_reauth);
+
   return (
     <Panel className="mb-3 flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -150,6 +141,8 @@ export function GoogleCalendarPanel({
         </span>
         {q.data && !q.data.configured ? (
           <Pill tone="danger">Setup needed</Pill>
+        ) : needsReauth ? (
+          <Pill tone="danger">Reconnect needed</Pill>
         ) : connection?.connected && connection.google_calendar_id ? (
           <Pill tone="success">Connected</Pill>
         ) : (
@@ -161,31 +154,29 @@ export function GoogleCalendarPanel({
 
       {q.data && !q.data.configured ? (
         <div className="rounded-2xl border border-border bg-surface-2/70 p-3">
-          <Label>
-            {q.data.reason ??
-              "Google Calendar is not set up for this workspace yet."}{" "}
-            Once it is set up, this button connects your Google account.
-          </Label>
+          <Label>{q.data.reason ?? "Google Calendar is not set up for this app yet."}</Label>
         </div>
       ) : null}
 
-      {q.data?.configured && !connection?.connected ? (
+      {q.data?.configured && (!connection?.connected || needsReauth) ? (
         <div className="flex flex-wrap items-center gap-2">
           <BubbleButton
             tone="flame"
             disabled={!teamId || beginConnect.isPending}
             onClick={() => beginConnect.mutate()}
           >
-            Connect Google Calendar
+            {needsReauth ? "Reconnect Google Calendar" : "Connect Google Calendar"}
           </BubbleButton>
-          <Label>Imports games and practices into {teamName}</Label>
+          <Label>Brings games and practices into {teamName}</Label>
         </div>
       ) : null}
 
       {connection?.connected ? (
         <>
           <div className="flex flex-wrap gap-2">
-            <Pill tone="muted">Account: {connection.google_account_email ?? "Google account"}</Pill>
+            <Pill tone="muted">
+              Account: {connection.google_account_email ?? "Google account"}
+            </Pill>
             <Pill tone="muted">
               Calendar: {connection.google_calendar_name ?? "Not chosen yet"}
             </Pill>

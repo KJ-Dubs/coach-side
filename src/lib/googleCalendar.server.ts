@@ -1,129 +1,125 @@
 /**
- * Server-only helpers for talking to Google Calendar on behalf of a signed-in
- * coach, through the Lovable connector gateway. Google credentials never reach
- * the browser: the gateway holds the tokens and we only store an opaque,
- * encrypted per-user connection key.
+ * Server-only Google Calendar helpers. The OAuth client secret and the coach's
+ * Google tokens never leave the server: the browser only ever sees the Google
+ * consent URL and non-sensitive connection status.
  */
 
-export const GATEWAY_BASE_URL = "https://connector-gateway.lovable.dev";
-export const CONNECTOR_ID = "google_calendar";
+export const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+export const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+export const GOOGLE_API = "https://www.googleapis.com";
+/** Path Google must be configured to redirect back to. */
+export const CALLBACK_PATH = "/api/public/google/calendar/callback";
 
-/** Least-privilege: read-only calendar access plus the account email. */
+/** Least privilege: read calendars/events plus the account email. */
 export const GOOGLE_SCOPES = [
-  "https://www.googleapis.com/auth/userinfo.email",
+  "openid",
+  "email",
   "https://www.googleapis.com/auth/calendar.readonly",
   "https://www.googleapis.com/auth/calendar.events.readonly",
 ];
 
-export function clientApiKey(): string | null {
-  return process.env["GOOGLE_CALENDAR_APP_USER_CONNECTOR_CLIENT_API_KEY"] ?? null;
+export function clientId(): string | null {
+  return process.env["GOOGLE_OAUTH_CLIENT_ID"] ?? null;
 }
-
-export function lovableApiKey(): string | null {
-  return process.env["LOVABLE_API_KEY"] ?? null;
+export function clientSecret(): string | null {
+  return process.env["GOOGLE_OAUTH_CLIENT_SECRET"] ?? null;
 }
 
 export type ConfigState = { configured: boolean; reason: string | null };
 
-export function connectorConfig(): ConfigState {
-  if (!clientApiKey()) {
+export function googleConfig(): ConfigState {
+  const missing: string[] = [];
+  if (!clientId()) missing.push("GOOGLE_OAUTH_CLIENT_ID");
+  if (!clientSecret()) missing.push("GOOGLE_OAUTH_CLIENT_SECRET");
+  if (!process.env["GOOGLE_TOKEN_ENC_KEY"]) missing.push("GOOGLE_TOKEN_ENC_KEY");
+  if (missing.length) {
     return {
       configured: false,
-      reason:
-        "Google Calendar is not set up for this workspace yet. A workspace admin must add the Google Calendar app-user connector client.",
-    };
-  }
-  if (!lovableApiKey()) {
-    return { configured: false, reason: "Server connector credentials are missing." };
-  }
-  if (!process.env["APP_USER_CONNECTION_KEY_SECRET"]) {
-    return {
-      configured: false,
-      reason: "Secure storage for Google connections is not available yet.",
+      reason: `Google Calendar is not set up yet. Missing server settings: ${missing.join(", ")}.`,
     };
   }
   return { configured: true, reason: null };
 }
 
-function baseHeaders(): Record<string, string> {
+export function buildAuthUrl(input: { state: string; redirectUri: string }): string {
+  const p = new URLSearchParams({
+    client_id: clientId() ?? "",
+    redirect_uri: input.redirectUri,
+    response_type: "code",
+    scope: GOOGLE_SCOPES.join(" "),
+    access_type: "offline",
+    include_granted_scopes: "true",
+    prompt: "consent",
+    state: input.state,
+  });
+  return `${GOOGLE_AUTH_URL}?${p.toString()}`;
+}
+
+export type TokenSet = {
+  accessToken: string;
+  refreshToken: string | null;
+  expiresAt: string;
+  scope: string | null;
+};
+
+async function tokenRequest(body: Record<string, string>): Promise<TokenSet> {
+  const res = await fetch(GOOGLE_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(body).toString(),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Google sign-in failed [${res.status}]: ${text}`);
+  const json = JSON.parse(text) as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in?: number;
+    scope?: string;
+  };
   return {
-    Authorization: `Bearer ${lovableApiKey()}`,
-    "X-Connection-Api-Key": clientApiKey() ?? "",
-    "Content-Type": "application/json",
+    accessToken: json.access_token,
+    refreshToken: json.refresh_token ?? null,
+    expiresAt: new Date(Date.now() + (json.expires_in ?? 3500) * 1000).toISOString(),
+    scope: json.scope ?? null,
   };
 }
 
-async function readError(res: Response) {
-  const body = await res.text();
-  return `Google request failed [${res.status}]: ${body}`;
-}
-
-/** Start per-user consent. Returns the URL the coach should be sent to. */
-export async function startAuthorize(input: {
-  appUserId: string;
-  redirectUri: string;
-  connectionKey?: string | null;
-}): Promise<string> {
-  const res = await fetch(`${GATEWAY_BASE_URL}/api/v1/app-users/oauth2/authorize`, {
-    method: "POST",
-    headers: baseHeaders(),
-    body: JSON.stringify({
-      app_user_id: input.appUserId,
-      connector_id: CONNECTOR_ID,
-      redirect_uri: input.redirectUri,
-      ...(input.connectionKey ? { connection_api_key: input.connectionKey } : {}),
-      credentials_configuration: { scopes: GOOGLE_SCOPES },
-    }),
+export function exchangeCode(input: { code: string; redirectUri: string }) {
+  return tokenRequest({
+    code: input.code,
+    client_id: clientId() ?? "",
+    client_secret: clientSecret() ?? "",
+    redirect_uri: input.redirectUri,
+    grant_type: "authorization_code",
   });
-  if (!res.ok) throw new Error(await readError(res));
-  const json = (await res.json()) as {
-    authorization_url?: string;
-    url?: string;
-    redirect_url?: string;
-  };
-  const url = json.authorization_url ?? json.url ?? json.redirect_url;
-  if (!url) throw new Error("Connector gateway did not return a Google sign-in link.");
-  return url;
 }
 
-/** Exchange the one-time code from the callback for the durable connection key. */
-export async function exchangeCode(input: {
-  appUserId: string;
-  code: string;
-}): Promise<string> {
-  const res = await fetch(`${GATEWAY_BASE_URL}/api/v1/app-users/oauth2/exchange`, {
-    method: "POST",
-    headers: baseHeaders(),
-    body: JSON.stringify({
-      app_user_id: input.appUserId,
-      connector_id: CONNECTOR_ID,
-      code: input.code,
-    }),
+export function refreshAccessToken(refreshToken: string) {
+  return tokenRequest({
+    refresh_token: refreshToken,
+    client_id: clientId() ?? "",
+    client_secret: clientSecret() ?? "",
+    grant_type: "refresh_token",
   });
-  if (!res.ok) throw new Error(await readError(res));
-  const json = (await res.json()) as { connection_api_key?: string; connection_key?: string };
-  const key = json.connection_api_key ?? json.connection_key;
-  if (!key) throw new Error("Connector gateway did not return a connection key.");
-  return key;
 }
 
-/** Call a Google Calendar API path as the connected coach. */
-export async function callAsAppUser<T>(input: {
-  connectionKey: string;
+/** Thrown when Google auth is expired/revoked so the UI can offer Reconnect. */
+export class GoogleAuthError extends Error {}
+
+export async function googleGet<T>(input: {
+  accessToken: string;
   path: string;
   query?: Record<string, string | undefined>;
 }): Promise<T> {
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(input.query ?? {})) if (v != null) qs.set(k, v);
-  const url = `${GATEWAY_BASE_URL}/${CONNECTOR_ID}${input.path}${qs.size ? `?${qs}` : ""}`;
-  const res = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${lovableApiKey()}`,
-      "X-Connection-Api-Key": input.connectionKey,
-    },
+  const res = await fetch(`${GOOGLE_API}${input.path}${qs.size ? `?${qs}` : ""}`, {
+    headers: { Authorization: `Bearer ${input.accessToken}` },
   });
-  if (!res.ok) throw new Error(await readError(res));
+  if (res.status === 401 || res.status === 403) {
+    throw new GoogleAuthError(`Google access was refused [${res.status}]. Reconnect required.`);
+  }
+  if (!res.ok) throw new Error(`Google request failed [${res.status}]: ${await res.text()}`);
   return (await res.json()) as T;
 }
 
@@ -145,9 +141,9 @@ export type GoogleEvent = {
   end?: { dateTime?: string; date?: string; timeZone?: string };
 };
 
-export async function listCalendars(connectionKey: string): Promise<GoogleCalendarListItem[]> {
-  const json = await callAsAppUser<{ items?: GoogleCalendarListItem[] }>({
-    connectionKey,
+export async function listCalendars(accessToken: string): Promise<GoogleCalendarListItem[]> {
+  const json = await googleGet<{ items?: GoogleCalendarListItem[] }>({
+    accessToken,
     path: "/calendar/v3/users/me/calendarList",
     query: { maxResults: "100", minAccessRole: "reader" },
   });
@@ -155,7 +151,7 @@ export async function listCalendars(connectionKey: string): Promise<GoogleCalend
 }
 
 export async function listEvents(input: {
-  connectionKey: string;
+  accessToken: string;
   calendarId: string;
   timeMin: string;
   timeMax: string;
@@ -163,8 +159,8 @@ export async function listEvents(input: {
   const out: GoogleEvent[] = [];
   let pageToken: string | undefined;
   for (let i = 0; i < 10; i += 1) {
-    const json = await callAsAppUser<{ items?: GoogleEvent[]; nextPageToken?: string }>({
-      connectionKey: input.connectionKey,
+    const json = await googleGet<{ items?: GoogleEvent[]; nextPageToken?: string }>({
+      accessToken: input.accessToken,
       path: `/calendar/v3/calendars/${encodeURIComponent(input.calendarId)}/events`,
       query: {
         timeMin: input.timeMin,
@@ -183,14 +179,14 @@ export async function listEvents(input: {
   return out;
 }
 
-/** Best-effort read of the connected Google account email. */
-export async function accountEmail(connectionKey: string): Promise<string | null> {
+/** Best-effort read of the signed-in Google account email. */
+export async function accountEmail(accessToken: string): Promise<string | null> {
   try {
-    const json = await callAsAppUser<{ id?: string }>({
-      connectionKey,
-      path: "/calendar/v3/calendars/primary",
+    const json = await googleGet<{ email?: string }>({
+      accessToken,
+      path: "/oauth2/v2/userinfo",
     });
-    return json.id && json.id.includes("@") ? json.id : null;
+    return json.email ?? null;
   } catch {
     return null;
   }

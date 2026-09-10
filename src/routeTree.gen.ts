@@ -34,6 +34,7 @@ import { Route as AuthenticatedStatsTeamRouteImport } from './routes/_authentica
 import { Route as SharePlayTokenRouteImport } from './routes/share.play.$token'
 import { Route as AuthenticatedPlaysPlayIdIndexRouteImport } from './routes/_authenticated/plays.$playId.index'
 import { Route as AuthenticatedPlaysPlayIdViewRouteImport } from './routes/_authenticated/plays.$playId.view'
+import { Route as ApiPublicGoogleCalendarCallbackRouteImport } from './routes/api/public/google.calendar.callback'
 import { Route as ApiPublicLockerTokenCalendarRouteImport } from './routes/api/public/locker.$token.calendar'
 
 const IndexRoute = IndexRouteImport.update({
@@ -164,6 +165,12 @@ const AuthenticatedPlaysPlayIdViewRoute =
     path: '/plays/$playId/view',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicGoogleCalendarCallbackRoute =
+  ApiPublicGoogleCalendarCallbackRouteImport.update({
+    id: '/api/public/google/calendar/callback',
+    path: '/api/public/google/calendar/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicLockerTokenCalendarRoute =
   ApiPublicLockerTokenCalendarRouteImport.update({
     id: '/api/public/locker/$token/calendar',
@@ -196,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/plays/': typeof AuthenticatedPlaysIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
+  '/api/public/google/calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
   '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
 }
 export interface FileRoutesByTo {
@@ -223,6 +231,7 @@ export interface FileRoutesByTo {
   '/plays': typeof AuthenticatedPlaysIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/plays/$playId': typeof AuthenticatedPlaysPlayIdIndexRoute
+  '/api/public/google/calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
   '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
 }
 export interface FileRoutesById {
@@ -252,6 +261,7 @@ export interface FileRoutesById {
   '/_authenticated/plays/': typeof AuthenticatedPlaysIndexRoute
   '/_authenticated/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/_authenticated/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
+  '/api/public/google/calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
   '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
 }
 export interface FileRouteTypes {
@@ -281,6 +291,7 @@ export interface FileRouteTypes {
     | '/plays/'
     | '/plays/$playId/view'
     | '/plays/$playId/'
+    | '/api/public/google/calendar/callback'
     | '/api/public/locker/$token/calendar'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -308,6 +319,7 @@ export interface FileRouteTypes {
     | '/plays'
     | '/plays/$playId/view'
     | '/plays/$playId'
+    | '/api/public/google/calendar/callback'
     | '/api/public/locker/$token/calendar'
   id:
     | '__root__'
@@ -336,6 +348,7 @@ export interface FileRouteTypes {
     | '/_authenticated/plays/'
     | '/_authenticated/plays/$playId/view'
     | '/_authenticated/plays/$playId/'
+    | '/api/public/google/calendar/callback'
     | '/api/public/locker/$token/calendar'
   fileRoutesById: FileRoutesById
 }
@@ -348,6 +361,7 @@ export interface RootRouteChildren {
   LockerTokenRoute: typeof LockerTokenRoute
   ShareTokenRoute: typeof ShareTokenRoute
   SharePlayTokenRoute: typeof SharePlayTokenRoute
+  ApiPublicGoogleCalendarCallbackRoute: typeof ApiPublicGoogleCalendarCallbackRoute
   ApiPublicLockerTokenCalendarRoute: typeof ApiPublicLockerTokenCalendarRoute
 }
 
@@ -528,6 +542,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlaysPlayIdViewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/google/calendar/callback': {
+      id: '/api/public/google/calendar/callback'
+      path: '/api/public/google/calendar/callback'
+      fullPath: '/api/public/google/calendar/callback'
+      preLoaderRoute: typeof ApiPublicGoogleCalendarCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/locker/$token/calendar': {
       id: '/api/public/locker/$token/calendar'
       path: '/api/public/locker/$token/calendar'
@@ -590,6 +611,7 @@ const rootRouteChildren: RootRouteChildren = {
   LockerTokenRoute: LockerTokenRoute,
   ShareTokenRoute: ShareTokenRoute,
   SharePlayTokenRoute: SharePlayTokenRoute,
+  ApiPublicGoogleCalendarCallbackRoute: ApiPublicGoogleCalendarCallbackRoute,
   ApiPublicLockerTokenCalendarRoute: ApiPublicLockerTokenCalendarRoute,
 }
 export const routeTree = rootRouteImport
