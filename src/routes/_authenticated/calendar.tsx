@@ -429,23 +429,29 @@ function CalendarPage() {
                             Start Game
                           </BubbleButton>
                         ) : null}
-                        <BubbleButton
-                          size="sm"
-                          tone="neutral"
-                          onClick={() => {
-                            setEditing(e);
-                            setOpen(true);
-                          }}
-                        >
-                          Edit
-                        </BubbleButton>
-                        <BubbleButton
-                          size="sm"
-                          tone="neutral"
-                          onClick={() => remove.mutate(e.id)}
-                        >
-                          Remove
-                        </BubbleButton>
+                        {e.source === "google" ? (
+                          <Pill tone="flame">Managed by Google Calendar</Pill>
+                        ) : (
+                          <>
+                            <BubbleButton
+                              size="sm"
+                              tone="neutral"
+                              onClick={() => {
+                                setEditing(e);
+                                setOpen(true);
+                              }}
+                            >
+                              Edit
+                            </BubbleButton>
+                            <BubbleButton
+                              size="sm"
+                              tone="neutral"
+                              onClick={() => remove.mutate(e.id)}
+                            >
+                              Remove
+                            </BubbleButton>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
