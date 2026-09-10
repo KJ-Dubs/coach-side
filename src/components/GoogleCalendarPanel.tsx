@@ -149,7 +149,7 @@ export function GoogleCalendarPanel({
           Google Calendar
         </span>
         {q.data && !q.data.configured ? (
-          <Pill tone="warn">Setup needed</Pill>
+          <Pill tone="danger">Setup needed</Pill>
         ) : connection?.connected && connection.google_calendar_id ? (
           <Pill tone="success">Connected</Pill>
         ) : (

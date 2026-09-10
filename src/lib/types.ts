@@ -244,6 +244,12 @@ export type TeamEvent = {
   created_by?: string | null;
   last_modified_at?: string;
   created_at?: string;
+  /** 'coachside' for native events, 'google' for imported ones. */
+  source?: string;
+  external_provider?: string | null;
+  external_event_id?: string | null;
+  external_calendar_id?: string | null;
+  external_updated_at?: string | null;
 };
 
 export type EventReminder = {
