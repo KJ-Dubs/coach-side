@@ -29,12 +29,12 @@ export const Route = createFileRoute("/_authenticated/locker")({
       {
         name: "description",
         content:
-          "Share one link with your team for stats, the playbook and a Google-Calendar-ready schedule of games and practices.",
+          "Share one read-only link with families for team and player stats and a Google-Calendar-ready schedule of games and practices.",
       },
       { property: "og:title", content: "Share Team Locker Room Link — CoachSide" },
       {
         property: "og:description",
-        content: "One shared link for team stats, plays and the schedule.",
+        content: "One read-only link for families: team stats and the schedule.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -120,7 +120,7 @@ function LockerAdmin() {
   };
 
   return (
-    <AppShell title="Locker Room" subtitle="One link for your players and families">
+    <AppShell title="Locker Room" subtitle="Read-only stats and schedule link for families">
       <Panel className="mb-3 flex flex-wrap items-center gap-2">
         <Label>Team</Label>
         <SelectInput value={teamId} onChange={(e) => setTeamId(e.target.value)} className="max-w-xs">
@@ -160,8 +160,8 @@ function LockerAdmin() {
               </BubbleButton>
             </div>
             <Pill tone="muted">
-              Anyone with the link sees team and player stats, the playbook and this schedule. No
-              sign-in and no editing.
+              Anyone with the link sees team and player stats and this schedule only — no playbook
+              and no chat. Read-only, no sign-in. Players use the Locker Room QR code instead.
             </Pill>
           </Panel>
 

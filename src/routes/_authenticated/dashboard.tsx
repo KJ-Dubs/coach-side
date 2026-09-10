@@ -136,7 +136,7 @@ const CARDS: CardDef[] = [
   {
     to: "/locker",
     title: "Public Share Link",
-    blurb: "One read-only link for families: team and player stats, the playbook and the calendar.",
+    blurb: "For parents and families: read-only team and player stats plus the calendar. No playbook, no account.",
     action: "Share the link",
     tone: "teal",
     icon: KeyRound,
