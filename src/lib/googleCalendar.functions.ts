@@ -19,6 +19,10 @@ export type GoogleConnection = {
 export type GoogleStatus = {
   configured: boolean;
   reason: string | null;
+  /** Exact address Google must have registered (safe to show). */
+  redirectUri: string;
+  /** Last 12 characters of the client id in use — never the secret. */
+  clientIdHint: string | null;
   connections: GoogleConnection[];
 };
 
