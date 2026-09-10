@@ -22,16 +22,20 @@ import { useNavigate } from "@tanstack/react-router";
 import { fetchMyMemberships, isCoachRole } from "@/lib/locker";
 import { useMe } from "@/lib/useMe";
 import { cn } from "@/lib/utils";
+import { PlayerQrPanel } from "@/components/PlayerQrPanel";
 
 /** Players and parents land in the Locker Room instead of the coach dashboard. */
 function useRedirectPlayersToLockerRoom() {
   const navigate = useNavigate();
   const memberships = useQuery({ queryKey: ["my-memberships"], queryFn: fetchMyMemberships });
+  const rows = memberships.data ?? [];
   useEffect(() => {
-    const rows = memberships.data ?? [];
     if (!rows.length) return;
     if (rows.every((m) => !isCoachRole(m.role))) navigate({ to: "/lockerroom", replace: true });
-  }, [memberships.data, navigate]);
+  }, [rows, navigate]);
+  /** Coach-only UI (the QR share panel) stays hidden from player-only accounts. */
+  const playerOnly = rows.length > 0 && rows.every((m) => !isCoachRole(m.role));
+  return { isCoach: memberships.isSuccess && !playerOnly };
 }
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -136,7 +140,7 @@ const CARDS: CardDef[] = [
   {
     to: "/locker",
     title: "Public Share Link",
-    blurb: "One read-only link for families: team and player stats, the playbook and the calendar.",
+    blurb: "For parents and families: read-only team and player stats plus the calendar. No playbook, no account.",
     action: "Share the link",
     tone: "teal",
     icon: KeyRound,
@@ -220,7 +224,7 @@ function SchedulePanel() {
 }
 
 function Dashboard() {
-  useRedirectPlayersToLockerRoom();
+  const { isCoach } = useRedirectPlayersToLockerRoom();
   const me = useMe();
   const games = useQuery({ queryKey: ["games"], queryFn: fetchGames });
   const players = useQuery({ queryKey: ["players", "all"], queryFn: fetchAllPlayers });
@@ -285,6 +289,8 @@ function Dashboard() {
           ))}
         </Panel>
       ) : null}
+
+      {isCoach ? <PlayerQrPanel teams={me.teams} /> : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {CARDS.map((c) => {

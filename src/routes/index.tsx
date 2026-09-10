@@ -1,23 +1,22 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { AuthCard } from "@/components/AuthCard";
-import { SignInShowcase } from "@/components/SignInShowcase";
+import { Landing } from "@/components/marketing/Landing";
 import { Panel, Pill } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CoachSide — Basketball Live Stats & Playbook" },
+      { title: "CoachSide — Basketball Coaching Platform: Plan. Track. Coach." },
       {
         name: "description",
         content:
-          "Sign in to CoachSide: tap-the-court live stats, season player and team stats, and a frame-by-frame play designer for your basketball program.",
+          "CoachSide runs your basketball season from one place: tap-the-court live stats, season team and player reporting, animated plays, a player Locker Room and a family stats link.",
       },
-      { property: "og:title", content: "CoachSide — Basketball Live Stats & Playbook" },
+      { property: "og:title", content: "CoachSide — Basketball Coaching Platform" },
       {
         property: "og:description",
-        content: "Live stats from the court, season stats and a play designer for basketball coaches.",
+        content: "Live stats from the court, season reporting, animated plays and a team Locker Room for basketball coaches.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://coachside.live/" },
@@ -27,10 +26,10 @@ export const Route = createFileRoute("/")({
     ],
     links: [{ rel: "canonical", href: "https://coachside.live/" }],
   }),
-  component: Landing,
+  component: HomePage,
 });
 
-function Landing() {
+function HomePage() {
   const { session, ready } = useAuth();
   const navigate = useNavigate();
 
@@ -38,18 +37,15 @@ function Landing() {
     if (ready && session) navigate({ to: "/dashboard", replace: true });
   }, [ready, session, navigate]);
 
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-start gap-4 px-3 py-6">
-      {!ready || session ? (
+  if (!ready || session) {
+    return (
+      <main className="flex min-h-screen items-start justify-center px-3 py-6">
         <Panel className="p-4">
           <Pill tone="muted">Loading CoachSide…</Pill>
         </Panel>
-      ) : (
-        <>
-          <AuthCard onDone={() => navigate({ to: "/dashboard", replace: true })} />
-          <SignInShowcase />
-        </>
-      )}
-    </main>
-  );
+      </main>
+    );
+  }
+
+  return <Landing />;
 }

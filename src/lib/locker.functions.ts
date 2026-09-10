@@ -3,8 +3,6 @@ import { z } from "zod";
 import type {
   Game,
   GameEvent,
-  Play,
-  PlayFrame,
   Player,
   Substitution,
   Team,
@@ -20,8 +18,6 @@ export type LockerBundle = {
   games: Game[];
   events: GameEvent[];
   subs: Substitution[];
-  plays: Play[];
-  frames: PlayFrame[];
   schedule: TeamEvent[];
   /**
    * The current non-final game for this team, with only the records the coach
@@ -50,15 +46,8 @@ export const getLockerBundle = createServerFn({ method: "GET" })
 
     if (!team || !team.locker_enabled) return null;
 
-    const { data: assigned } = await supabaseAdmin
-      .from("play_team_assignments")
-      .select("play_id")
-      .eq("team_id", team.id)
-      .eq("is_visible", true);
-
-    const assignedIds = (assigned ?? []).map((a) => (a as { play_id: string }).play_id);
-
-    const [players, games, plays, schedule] = await Promise.all([
+    // Data minimization: the public parent link never reads plays or play frames.
+    const [players, games, schedule] = await Promise.all([
       supabaseAdmin.from("players").select("*").eq("team_id", team.id).order("jersey"),
       supabaseAdmin
         .from("games")
@@ -66,17 +55,6 @@ export const getLockerBundle = createServerFn({ method: "GET" })
         .eq("team_id", team.id)
         .eq("status", "final")
         .order("game_date", { ascending: false }),
-      assignedIds.length
-        ? supabaseAdmin
-            .from("plays")
-            .select("*")
-            .in("id", assignedIds)
-            .order("created_at", { ascending: false })
-        : supabaseAdmin
-            .from("plays")
-            .select("*")
-            .eq("team_id", team.id)
-            .order("created_at", { ascending: false }),
       // Public parent link: only team/public events, never staff-only ones.
       supabaseAdmin
         .from("team_events")
@@ -88,18 +66,13 @@ export const getLockerBundle = createServerFn({ method: "GET" })
     ]);
 
     const gameIds = (games.data ?? []).map((g) => g.id);
-    const playIds = (plays.data ?? []).map((p) => p.id);
 
-
-    const [events, subs, frames] = await Promise.all([
+    const [events, subs] = await Promise.all([
       gameIds.length
         ? supabaseAdmin.from("game_events").select("*").in("game_id", gameIds).order("created_at")
         : Promise.resolve({ data: [] }),
       gameIds.length
         ? supabaseAdmin.from("substitutions").select("*").in("game_id", gameIds).order("created_at")
-        : Promise.resolve({ data: [] }),
-      playIds.length
-        ? supabaseAdmin.from("play_frames").select("*").in("play_id", playIds).order("idx")
         : Promise.resolve({ data: [] }),
     ]);
 
@@ -163,8 +136,6 @@ export const getLockerBundle = createServerFn({ method: "GET" })
       games: (games.data ?? []) as unknown as Game[],
       events: (events.data ?? []) as unknown as GameEvent[],
       subs: (subs.data ?? []) as unknown as Substitution[],
-      plays: (plays.data ?? []) as unknown as Play[],
-      frames: (frames.data ?? []) as unknown as PlayFrame[],
       schedule: (schedule.data ?? []) as unknown as TeamEvent[],
       live,
     };
