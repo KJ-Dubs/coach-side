@@ -100,6 +100,8 @@ function CalendarPage() {
   }, [me.teams, teamId]);
 
   const team = me.teams.find((t) => t.id === teamId) ?? null;
+  const access = useAccess();
+  const isTeamCoach = resolveRole(access).canCoachTeam(teamId || null);
 
   const events = useQuery({
     queryKey: ["team-events", teamId],
