@@ -20,6 +20,8 @@ export function AuthCard({
   signupTitle,
   banner,
   defaultOrgName,
+  inviteToken,
+  returnTo,
   onDone,
 }: {
   initialMode?: Mode;
@@ -31,6 +33,10 @@ export function AuthCard({
   lockSignup?: boolean;
   banner?: ReactNode;
   defaultOrgName?: string;
+  /** Team invite token, carried through confirmation email and Google sign-in. */
+  inviteToken?: string;
+  /** Full same-origin URL to come back to after email confirmation / Google. */
+  returnTo?: string;
   onDone?: () => void;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
