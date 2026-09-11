@@ -7,6 +7,7 @@ import { BubbleButton, EmptyState, Heading, Note, Panel, Pill } from "@/componen
 import wordmark from "@/assets/coachside-wordmark.png.asset.json";
 import { useAuth } from "@/lib/auth";
 import { acceptTeamInvite, fetchInviteRoster, lookupTeamInvite } from "@/lib/locker";
+import { clearPendingInvite, joinUrl, setPendingInvite } from "@/lib/pendingInvite";
 
 export const Route = createFileRoute("/join/$token")({
   head: () => ({
