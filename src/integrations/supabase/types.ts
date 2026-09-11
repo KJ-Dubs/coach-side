@@ -1025,16 +1025,19 @@ export type Database = {
       }
       organizations: {
         Row: {
+          auto_created: boolean
           created_at: string
           id: string
           name: string
         }
         Insert: {
+          auto_created?: boolean
           created_at?: string
           id?: string
           name: string
         }
         Update: {
+          auto_created?: boolean
           created_at?: string
           id?: string
           name?: string

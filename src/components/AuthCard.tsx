@@ -20,6 +20,8 @@ export function AuthCard({
   signupTitle,
   banner,
   defaultOrgName,
+  inviteToken,
+  returnTo,
   onDone,
 }: {
   initialMode?: Mode;
@@ -31,6 +33,10 @@ export function AuthCard({
   lockSignup?: boolean;
   banner?: ReactNode;
   defaultOrgName?: string;
+  /** Team invite token, carried through confirmation email and Google sign-in. */
+  inviteToken?: string;
+  /** Full same-origin URL to come back to after email confirmation / Google. */
+  returnTo?: string;
   onDone?: () => void;
 }) {
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -50,7 +56,8 @@ export function AuthCard({
     setBusy(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        // Invite flows come back to the join page so the team invite survives.
+        redirect_uri: returnTo ?? window.location.origin,
       });
       if (result.error) throw new Error(result.error.message ?? "Google sign-in failed");
       if (result.redirected) return;
@@ -83,9 +90,13 @@ export function AuthCard({
           email: email.trim(),
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth`,
+            emailRedirectTo: returnTo ?? `${window.location.origin}/auth`,
             data: playerSignup
-              ? { signup_type: "player", full_name: fullName.trim() }
+              ? {
+                  signup_type: "player",
+                  full_name: fullName.trim(),
+                  ...(inviteToken ? { invite_token: inviteToken } : {}),
+                }
               : { org_name: orgName.trim() || "My Program", full_name: fullName.trim() },
           },
         });

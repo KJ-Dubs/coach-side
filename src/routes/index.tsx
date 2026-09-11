@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { Landing } from "@/components/marketing/Landing";
 import { Panel, Pill } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
+import { getPendingInvite } from "@/lib/pendingInvite";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -34,7 +35,13 @@ function HomePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (ready && session) navigate({ to: "/dashboard", replace: true });
+    if (!ready || !session) return;
+    const pending = getPendingInvite();
+    if (pending) {
+      navigate({ to: "/join/$token", params: { token: pending }, replace: true });
+      return;
+    }
+    navigate({ to: "/dashboard", replace: true });
   }, [ready, session, navigate]);
 
   if (!ready || session) {

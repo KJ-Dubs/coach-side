@@ -4,6 +4,7 @@ import { AuthCard } from "@/components/AuthCard";
 import { SignInShowcase } from "@/components/SignInShowcase";
 import { Panel, Pill } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
+import { getPendingInvite } from "@/lib/pendingInvite";
 
 type AuthSearch = { mode?: "signin" | "signup" };
 
@@ -35,7 +36,14 @@ function AuthPage() {
     typeof window !== "undefined" && window.location.hash.includes("type=recovery");
 
   useEffect(() => {
-    if (ready && session && !recovering) navigate({ to: "/dashboard", replace: true });
+    if (!ready || !session || recovering) return;
+    // A player who started from a team invite always resumes that invite.
+    const pending = getPendingInvite();
+    if (pending) {
+      navigate({ to: "/join/$token", params: { token: pending }, replace: true });
+      return;
+    }
+    navigate({ to: "/dashboard", replace: true });
   }, [ready, session, navigate, recovering]);
 
   return (

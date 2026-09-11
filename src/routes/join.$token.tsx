@@ -7,6 +7,7 @@ import { BubbleButton, EmptyState, Heading, Note, Panel, Pill } from "@/componen
 import wordmark from "@/assets/coachside-wordmark.png.asset.json";
 import { useAuth } from "@/lib/auth";
 import { acceptTeamInvite, fetchInviteRoster, lookupTeamInvite } from "@/lib/locker";
+import { clearPendingInvite, joinUrl, setPendingInvite } from "@/lib/pendingInvite";
 
 export const Route = createFileRoute("/join/$token")({
   head: () => ({
@@ -34,6 +35,12 @@ function JoinPage() {
   const signedIn = ready && !!session;
   const [playerId, setPlayerId] = useState<string>("");
 
+  // Remember the invite so confirmation email / Google sign-in come back here.
+  useEffect(() => {
+    setPendingInvite(token);
+  }, [token]);
+
+
   const invite = useQuery({
     queryKey: ["team-invite", token],
     queryFn: () => lookupTeamInvite(token),
@@ -57,9 +64,14 @@ function JoinPage() {
     enabled: signedIn && invite.data?.invite_type === "player",
   });
 
+  const isPlayerInvite = invite.data?.invite_type === "player";
+  const rosterRows = roster.data ?? [];
+  const canJoin = isPlayerInvite ? !!playerId : true;
+
   const join = useMutation({
-    mutationFn: () => acceptTeamInvite(token, invite.data?.invite_type === "player" ? playerId || null : null),
+    mutationFn: () => acceptTeamInvite(token, isPlayerInvite ? playerId || null : null),
     onSuccess: () => {
+      clearPendingInvite();
       toast.success("You're in — welcome to the Locker Room");
       navigate({ to: "/lockerroom", replace: true });
     },
@@ -95,13 +107,16 @@ function JoinPage() {
       ) : !signedIn ? (
         <>
           <Note tone="grape">
-            Create your CoachSide player account or sign in, and you&apos;ll join the team right
-            after.
+            You&apos;re joining {invite.data?.team_name ?? "your team"}. This will not create a new
+            team. Create your CoachSide player account or sign in, and you&apos;ll pick your name on
+            the roster right after.
           </Note>
           <AuthCard
             initialMode="signup"
             hideOrgField
             playerSignup
+            inviteToken={token}
+            returnTo={joinUrl(token)}
             signupTitle="Create your player account"
             onDone={() => undefined}
           />
@@ -126,9 +141,12 @@ function JoinPage() {
         <Panel className="flex w-full flex-col gap-3 p-4">
           {invite.data.invite_type === "player" ? (
             <>
-              <Note tone="grape">Pick your name on the roster so your coach knows who you are.</Note>
+              <Note tone="grape">
+                You&apos;re joining {invite.data.team_name}. This will not create a new team. Pick
+                your name on the roster to finish.
+              </Note>
               <div className="grid gap-2 sm:grid-cols-2">
-                {(roster.data ?? []).map((p) => (
+                {rosterRows.map((p) => (
                   <button
                     key={p.id}
                     type="button"
@@ -149,8 +167,9 @@ function JoinPage() {
                   </button>
                 ))}
               </div>
-              {!roster.data?.length ? (
-                <EmptyState>No roster players yet — you can still join and claim later</EmptyState>
+              {roster.isLoading ? <EmptyState>Loading the roster…</EmptyState> : null}
+              {!roster.isLoading && !rosterRows.length ? (
+                <EmptyState>Ask your coach to add you to the roster first</EmptyState>
               ) : null}
             </>
           ) : (
@@ -163,10 +182,10 @@ function JoinPage() {
           <BubbleButton
             size="lg"
             tone="grape"
-            disabled={join.isPending}
+            disabled={join.isPending || !canJoin}
             onClick={() => join.mutate()}
           >
-            Join the team
+            {isPlayerInvite && !playerId ? "Pick your name to join" : "Join the team"}
           </BubbleButton>
         </Panel>
       )}
