@@ -141,9 +141,12 @@ function JoinPage() {
         <Panel className="flex w-full flex-col gap-3 p-4">
           {invite.data.invite_type === "player" ? (
             <>
-              <Note tone="grape">Pick your name on the roster so your coach knows who you are.</Note>
+              <Note tone="grape">
+                You&apos;re joining {invite.data.team_name}. This will not create a new team. Pick
+                your name on the roster to finish.
+              </Note>
               <div className="grid gap-2 sm:grid-cols-2">
-                {(roster.data ?? []).map((p) => (
+                {rosterRows.map((p) => (
                   <button
                     key={p.id}
                     type="button"
