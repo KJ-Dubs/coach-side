@@ -23,20 +23,32 @@ import { fetchMyMemberships, isCoachRole } from "@/lib/locker";
 import { useMe } from "@/lib/useMe";
 import { cn } from "@/lib/utils";
 import { PlayerQrPanel } from "@/components/PlayerQrPanel";
+import { useAccess, resolveRole } from "@/lib/access";
+import { getPendingInvite } from "@/lib/pendingInvite";
 import { InstallAppCard } from "@/components/InstallApp";
 
-/** Players and parents land in the Locker Room instead of the coach dashboard. */
+/**
+ * Players and parents land in the Locker Room instead of the coach dashboard.
+ * Authority comes from the database memberships only, never device state.
+ */
 function useRedirectPlayersToLockerRoom() {
   const navigate = useNavigate();
+  const { access, loading } = useAccess();
   const memberships = useQuery({ queryKey: ["my-memberships"], queryFn: fetchMyMemberships });
   const rows = memberships.data ?? [];
+  const role = resolveRole(access);
+  const membershipPlayerOnly = rows.length > 0 && rows.every((m) => !isCoachRole(m.role));
+  const playerOnly = !loading && (role.isPlayerOnly || (!role.isCoach && membershipPlayerOnly));
   useEffect(() => {
-    if (!rows.length) return;
-    if (rows.every((m) => !isCoachRole(m.role))) navigate({ to: "/lockerroom", replace: true });
-  }, [rows, navigate]);
-  /** Coach-only UI (the QR share panel) stays hidden from player-only accounts. */
-  const playerOnly = rows.length > 0 && rows.every((m) => !isCoachRole(m.role));
-  return { isCoach: memberships.isSuccess && !playerOnly };
+    // A player still mid-invite finishes that flow first.
+    const pending = getPendingInvite();
+    if (playerOnly && pending) {
+      navigate({ to: "/join/$token", params: { token: pending }, replace: true });
+      return;
+    }
+    if (playerOnly) navigate({ to: "/lockerroom", replace: true });
+  }, [playerOnly, navigate]);
+  return { isCoach: role.isCoach && !playerOnly };
 }
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
