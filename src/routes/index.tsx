@@ -34,7 +34,13 @@ function HomePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (ready && session) navigate({ to: "/dashboard", replace: true });
+    if (!ready || !session) return;
+    const pending = getPendingInvite();
+    if (pending) {
+      navigate({ to: "/join/$token", params: { token: pending }, replace: true });
+      return;
+    }
+    navigate({ to: "/dashboard", replace: true });
   }, [ready, session, navigate]);
 
   if (!ready || session) {
