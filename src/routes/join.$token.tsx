@@ -167,8 +167,9 @@ function JoinPage() {
                   </button>
                 ))}
               </div>
-              {!roster.data?.length ? (
-                <EmptyState>No roster players yet — you can still join and claim later</EmptyState>
+              {roster.isLoading ? <EmptyState>Loading the roster…</EmptyState> : null}
+              {!roster.isLoading && !rosterRows.length ? (
+                <EmptyState>Ask your coach to add you to the roster first</EmptyState>
               ) : null}
             </>
           ) : (
@@ -181,10 +182,10 @@ function JoinPage() {
           <BubbleButton
             size="lg"
             tone="grape"
-            disabled={join.isPending}
+            disabled={join.isPending || !canJoin}
             onClick={() => join.mutate()}
           >
-            Join the team
+            {isPlayerInvite && !playerId ? "Pick your name to join" : "Join the team"}
           </BubbleButton>
         </Panel>
       )}
