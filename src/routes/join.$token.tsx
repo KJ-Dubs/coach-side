@@ -35,6 +35,12 @@ function JoinPage() {
   const signedIn = ready && !!session;
   const [playerId, setPlayerId] = useState<string>("");
 
+  // Remember the invite so confirmation email / Google sign-in come back here.
+  useEffect(() => {
+    setPendingInvite(token);
+  }, [token]);
+
+
   const invite = useQuery({
     queryKey: ["team-invite", token],
     queryFn: () => lookupTeamInvite(token),
@@ -58,9 +64,14 @@ function JoinPage() {
     enabled: signedIn && invite.data?.invite_type === "player",
   });
 
+  const isPlayerInvite = invite.data?.invite_type === "player";
+  const rosterRows = roster.data ?? [];
+  const canJoin = isPlayerInvite ? !!playerId : true;
+
   const join = useMutation({
-    mutationFn: () => acceptTeamInvite(token, invite.data?.invite_type === "player" ? playerId || null : null),
+    mutationFn: () => acceptTeamInvite(token, isPlayerInvite ? playerId || null : null),
     onSuccess: () => {
+      clearPendingInvite();
       toast.success("You're in — welcome to the Locker Room");
       navigate({ to: "/lockerroom", replace: true });
     },
