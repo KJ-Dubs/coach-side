@@ -4,6 +4,7 @@ import { AuthCard } from "@/components/AuthCard";
 import { SignInShowcase } from "@/components/SignInShowcase";
 import { Panel, Pill } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
+import { getPendingInvite } from "@/lib/pendingInvite";
 
 type AuthSearch = { mode?: "signin" | "signup" };
 
