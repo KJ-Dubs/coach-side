@@ -107,13 +107,16 @@ function JoinPage() {
       ) : !signedIn ? (
         <>
           <Note tone="grape">
-            Create your CoachSide player account or sign in, and you&apos;ll join the team right
-            after.
+            You&apos;re joining {invite.data?.team_name ?? "your team"}. This will not create a new
+            team. Create your CoachSide player account or sign in, and you&apos;ll pick your name on
+            the roster right after.
           </Note>
           <AuthCard
             initialMode="signup"
             hideOrgField
             playerSignup
+            inviteToken={token}
+            returnTo={joinUrl(token)}
             signupTitle="Create your player account"
             onDone={() => undefined}
           />
