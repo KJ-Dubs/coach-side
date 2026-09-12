@@ -32,6 +32,7 @@ import { useMe } from "@/lib/useMe";
 const QUICK = [
   { to: "/roster", label: "Rosters", icon: UsersRound, tone: "grape" },
   { to: "/games/new", label: "Live Game", icon: Swords, tone: "flame" },
+  { to: "/board", label: "Coach's Board", icon: PenLine, tone: "flame" },
   { to: "/plays", label: "Playbook", icon: BookOpen, tone: "blue" },
   { to: "/plays/new", label: "Play Maker", icon: ClipboardPenLine, tone: "rose" },
   { to: "/calendar", label: "Calendar", icon: CalendarDays, tone: "teal" },
