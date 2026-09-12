@@ -48,12 +48,17 @@ function segDist(p: BoardPoint, a: BoardPoint, b: BoardPoint) {
   return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
 }
 
+/** Court is 940x500, so normalized y units are ~0.53 as long as x units. */
+const asp = (p: BoardPoint): BoardPoint => ({ x: p.x, y: p.y * 0.532 });
+
 /** Hit test used by the eraser and by marker dragging. */
-export function hitTest(o: BoardObject, p: BoardPoint, tol: number) {
-  if (o.kind === "marker") return Math.hypot(o.x - p.x, (o.y - p.y) * 0.53) < tol * 1.6;
-  if (o.kind === "arrow") return segDist(p, o.from, o.to) < tol;
+export function hitTest(o: BoardObject, point: BoardPoint, tol: number) {
+  const p = asp(point);
+  if (o.kind === "marker") return Math.hypot(o.x - p.x, asp(o).y - p.y) < tol * 1.8;
+  if (o.kind === "arrow") return segDist(p, asp(o.from), asp(o.to)) < tol;
   for (let i = 1; i < o.pts.length; i += 1) {
-    if (segDist(p, o.pts[i - 1]!, o.pts[i]!) < tol) return true;
+    if (segDist(p, asp(o.pts[i - 1]!), asp(o.pts[i]!)) < tol) return true;
   }
-  return o.pts.length === 1 && !!o.pts[0] && Math.hypot(o.pts[0].x - p.x, o.pts[0].y - p.y) < tol;
+  const first = o.pts[0];
+  return o.pts.length === 1 && !!first && Math.hypot(first.x - p.x, asp(first).y - p.y) < tol;
 }
