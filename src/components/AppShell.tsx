@@ -8,6 +8,7 @@ import {
   ClipboardPenLine,
   LogOut,
   MessagesSquare,
+  PenLine,
   Settings,
   Swords,
   UserRound,
@@ -31,6 +32,7 @@ import { useMe } from "@/lib/useMe";
 const QUICK = [
   { to: "/roster", label: "Rosters", icon: UsersRound, tone: "grape" },
   { to: "/games/new", label: "Live Game", icon: Swords, tone: "flame" },
+  { to: "/board", label: "Coach's Board", icon: PenLine, tone: "flame" },
   { to: "/plays", label: "Playbook", icon: BookOpen, tone: "blue" },
   { to: "/plays/new", label: "Play Maker", icon: ClipboardPenLine, tone: "rose" },
   { to: "/calendar", label: "Calendar", icon: CalendarDays, tone: "teal" },
@@ -147,7 +149,7 @@ export function AppShell({
               />
             </Link>
 
-            <nav className="order-3 col-span-2 grid grid-cols-4 gap-1 sm:grid-cols-7 rounded-2xl border border-border/80 bg-background/70 p-1.5 lg:order-none lg:col-span-1" aria-label="Primary navigation">
+            <nav className="order-3 col-span-2 grid grid-cols-4 gap-1 sm:grid-cols-8 rounded-2xl border border-border/80 bg-background/70 p-1.5 lg:order-none lg:col-span-1" aria-label="Primary navigation">
               {QUICK.map((item) => {
                 const Icon = item.icon;
                 return (
