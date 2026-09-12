@@ -149,7 +149,7 @@ export function AppShell({
               />
             </Link>
 
-            <nav className="order-3 col-span-2 grid grid-cols-4 gap-1 sm:grid-cols-7 rounded-2xl border border-border/80 bg-background/70 p-1.5 lg:order-none lg:col-span-1" aria-label="Primary navigation">
+            <nav className="order-3 col-span-2 grid grid-cols-4 gap-1 sm:grid-cols-8 rounded-2xl border border-border/80 bg-background/70 p-1.5 lg:order-none lg:col-span-1" aria-label="Primary navigation">
               {QUICK.map((item) => {
                 const Icon = item.icon;
                 return (
