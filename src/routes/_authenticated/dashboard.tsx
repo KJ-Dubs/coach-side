@@ -4,6 +4,7 @@ import {
   BarChart3,
   BookOpen,
   CircleUserRound,
+  PenLine,
   ClipboardPenLine,
   Clock3,
   Settings,
@@ -93,6 +94,14 @@ const CARDS: CardDef[] = [
     action: "Open Locker Room",
     tone: "grape",
     icon: MessagesSquare,
+  },
+  {
+    to: "/board",
+    title: "Timeout Board",
+    blurb: "Full-screen court whiteboard for timeouts and bench talks. Draw, add players, wipe it clean.",
+    action: "Open board",
+    tone: "flame",
+    icon: PenLine,
   },
   {
     to: "/plays/new",

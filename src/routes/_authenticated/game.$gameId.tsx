@@ -603,6 +603,13 @@ function LiveGamePage() {
             >
               ⌂ Home
             </BubbleButton>
+            <BubbleButton
+              size="sm"
+              tone="flame"
+              onClick={() => navigate({ to: "/board" })}
+            >
+              ✎ Timeout Board
+            </BubbleButton>
             <Pill tone="muted">Court view</Pill>
             <BubbleButton
               size="sm"
