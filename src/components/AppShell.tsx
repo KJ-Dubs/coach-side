@@ -8,6 +8,7 @@ import {
   ClipboardPenLine,
   LogOut,
   MessagesSquare,
+  PenLine,
   Settings,
   Swords,
   UserRound,
