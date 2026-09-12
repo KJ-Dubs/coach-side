@@ -150,6 +150,7 @@ function BoardPage() {
   const [confirmClear, setConfirmClear] = useState(false);
 
   const draft = useRef<BoardObject | null>(null);
+  const down = useRef(false);
   const dragId = useRef<string | null>(null);
   const [, force] = useState(0);
 
@@ -189,6 +190,7 @@ function BoardPage() {
   };
 
   const onDown = (p: BoardPoint) => {
+    down.current = true;
     if (tool === "erase") {
       eraseAt(p);
       return;
@@ -233,6 +235,7 @@ function BoardPage() {
   };
 
   const onUp = () => {
+    down.current = false;
     dragId.current = null;
     const d = draft.current;
     draft.current = null;
@@ -308,7 +311,7 @@ function BoardPage() {
                 : `min(100%, calc((100dvh - ${compact ? 6 : 13}rem) * 0.94))`,
           }}
           onCourtPoint={onDown}
-          onCourtPointerMove={(p) => onMove(p, !!draft.current || !!dragId.current || tool === "erase")}
+          onCourtPointerMove={(p) => onMove(p, down.current)}
           onCourtPointerUp={onUp}
         >
           {objects.map((o) => (
