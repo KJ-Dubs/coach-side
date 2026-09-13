@@ -434,18 +434,26 @@ function PlayCard({
         )}
       </div>
 
+      <Link
+        to="/plays/$playId/view"
+        params={{ playId: play.id }}
+        search={viewSearch}
+        aria-label={`Run play ${play.name}`}
+        className="block"
+      >
+        <BubbleButton tone="flame" size="lg" className="w-full min-h-14">
+          ▶ Run Play
+        </BubbleButton>
+      </Link>
+
       {menu ? (
         <div className="flex flex-wrap gap-1.5 rounded-2xl border border-border bg-surface-2/70 p-2">
-          <Link to="/plays/$playId/view" params={{ playId: play.id }}>
+          <Link to="/plays/$playId/view" params={{ playId: play.id }} search={viewSearch}>
             <BubbleButton size="sm" tone="neutral">
               View
             </BubbleButton>
           </Link>
-          <Link to="/plays/$playId/view" params={{ playId: play.id }}>
-            <BubbleButton size="sm" tone="grape">
-              Present
-            </BubbleButton>
-          </Link>
+
           <Link to="/plays/$playId" params={{ playId: play.id }}>
             <BubbleButton size="sm" tone="flame">
               Edit
