@@ -7,6 +7,7 @@ import { BubbleButton, Panel, Pill } from "@/components/Bubbles";
 import { PlayPresenter } from "@/components/court/PlayPresenter";
 import { fetchFrames, fetchPlay, fetchPlayAssignments, fetchPlays } from "@/lib/data";
 import { normalizeCategory } from "@/lib/types";
+import { useAccess } from "@/lib/access";
 
 const searchSchema = z.object({
   category: z.string().optional(),
