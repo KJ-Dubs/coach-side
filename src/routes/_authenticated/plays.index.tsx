@@ -334,8 +334,13 @@ function PlaybookPage() {
               <PlayCard
                 key={p.id}
                 play={p}
+                viewSearch={{
+                  ...(selected ? { category: selected } : {}),
+                  ...(teamFilter !== "ALL" ? { team: teamFilter } : {}),
+                }}
                 assignedTeams={teamsByPlay.get(p.id) ?? []}
                 allTeams={teams.data ?? []}
+
                 teamName={teamName}
                 busy={share.isPending || duplicate.isPending || remove.isPending}
                 onShareLink={() => share.mutate(p)}
