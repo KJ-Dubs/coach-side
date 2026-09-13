@@ -83,6 +83,7 @@ function PlayViewPage() {
   const { playId } = Route.useParams();
   const search = Route.useSearch();
   const navigate = useNavigate();
+  const { access } = useAccess();
   const sequence = usePlaybookSequence(search.category, search.team);
 
   const index = sequence.findIndex((p) => p.id === playId);
@@ -92,6 +93,8 @@ function PlayViewPage() {
   const goTo = (id: string) =>
     navigate({ to: "/plays/$playId/view", params: { playId: id }, search, replace: true });
 
+  const backTo = access.isCoach ? "/plays" : "/lockerroom";
+
   return (
     <AppShell
       wide
@@ -99,19 +102,22 @@ function PlayViewPage() {
       subtitle="Frame by frame"
       actions={
         <>
-          <Link to="/plays" search={search}>
+          <Link to={backTo} search={access.isCoach ? search : {}}>
             <BubbleButton size="sm" tone="ghost">
-              ← Back to Playbook
+              ← Back to {access.isCoach ? "Playbook" : "Locker Room"}
             </BubbleButton>
           </Link>
-          <Link to="/plays/$playId" params={{ playId }}>
-            <BubbleButton size="sm" tone="grape">
-              Edit Play
-            </BubbleButton>
-          </Link>
+          {access.isCoach ? (
+            <Link to="/plays/$playId" params={{ playId }}>
+              <BubbleButton size="sm" tone="grape">
+                Edit Play
+              </BubbleButton>
+            </Link>
+          ) : null}
         </>
       }
     >
+
       <div className="flex flex-col gap-2">
         {sequence.length > 1 ? (
           <Panel className="flex flex-wrap items-center gap-2">
