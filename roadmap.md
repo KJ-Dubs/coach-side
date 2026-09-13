@@ -45,3 +45,7 @@
 - Team chat, staff chat, coach↔player direct messages, reactions, edit/delete, unread
 - Assignments with player status, resources, plays/schedule tabs
 - Attachment model ready for game video/clips later (no video UI yet)
+
+## Playbook navigation UX
+- [x] One-tap "Run Play" on every playbook card and Locker Room play tile
+- [x] Presenter Prev/Next play within the current category/team context, Exit back to source

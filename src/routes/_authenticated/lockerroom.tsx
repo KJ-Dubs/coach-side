@@ -593,16 +593,27 @@ function LockerRoomPage() {
           {teamPlays.length ? (
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {teamPlays.map((p) => (
-                <Link
+                <div
                   key={p.id}
-                  to="/plays/$playId/view"
-                  params={{ playId: p.id }}
-                  className="flex min-h-14 flex-wrap items-center gap-2 rounded-2xl border border-grape/50 bg-grape/15 px-4 py-3 transition-colors hover:bg-grape/25"
+                  className="flex flex-col gap-2 rounded-2xl border border-grape/50 bg-grape/15 px-4 py-3"
                 >
-                  <span className="text-lg font-black leading-tight text-foreground sm:text-xl">{p.name}</span>
-                  <Pill tone="muted">{p.category}</Pill>
-                </Link>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-lg font-black leading-tight text-foreground sm:text-xl">{p.name}</span>
+                    <Pill tone="muted">{p.category}</Pill>
+                  </div>
+                  <Link
+                    to="/plays/$playId/view"
+                    params={{ playId: p.id }}
+                    aria-label={`Run play ${p.name}`}
+                    className="block"
+                  >
+                    <BubbleButton tone="flame" className="w-full min-h-12">
+                      ▶ Run Play
+                    </BubbleButton>
+                  </Link>
+                </div>
               ))}
+
             </div>
           ) : (
             <EmptyState>No plays saved for this team yet</EmptyState>

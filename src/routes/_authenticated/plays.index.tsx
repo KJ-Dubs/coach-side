@@ -334,8 +334,13 @@ function PlaybookPage() {
               <PlayCard
                 key={p.id}
                 play={p}
+                viewSearch={{
+                  ...(selected ? { category: selected } : {}),
+                  ...(teamFilter !== "ALL" ? { team: teamFilter } : {}),
+                }}
                 assignedTeams={teamsByPlay.get(p.id) ?? []}
                 allTeams={teams.data ?? []}
+
                 teamName={teamName}
                 busy={share.isPending || duplicate.isPending || remove.isPending}
                 onShareLink={() => share.mutate(p)}
@@ -358,9 +363,10 @@ function PlaybookPage() {
   );
 }
 
-/** Menu-driven play card with View / Present / Edit / Share and team access. */
+/** Play card: one-tap Run Play, plus an overflow menu for everything else. */
 function PlayCard({
   play,
+  viewSearch,
   assignedTeams,
   allTeams,
   teamName,
@@ -373,6 +379,7 @@ function PlayCard({
   savingTeams,
 }: {
   play: Play;
+  viewSearch: { category?: string; team?: string };
   assignedTeams: string[];
   allTeams: Team[];
   teamName: (id: string | null) => string;
@@ -384,6 +391,7 @@ function PlayCard({
   onSaveTeams: (ids: string[]) => void;
   savingTeams: boolean;
 }) {
+
   const [menu, setMenu] = useState(false);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [picked, setPicked] = useState<string[]>(assignedTeams);
@@ -426,18 +434,26 @@ function PlayCard({
         )}
       </div>
 
+      <Link
+        to="/plays/$playId/view"
+        params={{ playId: play.id }}
+        search={viewSearch}
+        aria-label={`Run play ${play.name}`}
+        className="block"
+      >
+        <BubbleButton tone="flame" size="lg" className="w-full min-h-14">
+          ▶ Run Play
+        </BubbleButton>
+      </Link>
+
       {menu ? (
         <div className="flex flex-wrap gap-1.5 rounded-2xl border border-border bg-surface-2/70 p-2">
-          <Link to="/plays/$playId/view" params={{ playId: play.id }}>
+          <Link to="/plays/$playId/view" params={{ playId: play.id }} search={viewSearch}>
             <BubbleButton size="sm" tone="neutral">
               View
             </BubbleButton>
           </Link>
-          <Link to="/plays/$playId/view" params={{ playId: play.id }}>
-            <BubbleButton size="sm" tone="grape">
-              Present
-            </BubbleButton>
-          </Link>
+
           <Link to="/plays/$playId" params={{ playId: play.id }}>
             <BubbleButton size="sm" tone="flame">
               Edit
