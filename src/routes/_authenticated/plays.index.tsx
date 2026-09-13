@@ -363,9 +363,10 @@ function PlaybookPage() {
   );
 }
 
-/** Menu-driven play card with View / Present / Edit / Share and team access. */
+/** Play card: one-tap Run Play, plus an overflow menu for everything else. */
 function PlayCard({
   play,
+  viewSearch,
   assignedTeams,
   allTeams,
   teamName,
@@ -378,6 +379,7 @@ function PlayCard({
   savingTeams,
 }: {
   play: Play;
+  viewSearch: { category?: string; team?: string };
   assignedTeams: string[];
   allTeams: Team[];
   teamName: (id: string | null) => string;
@@ -389,6 +391,7 @@ function PlayCard({
   onSaveTeams: (ids: string[]) => void;
   savingTeams: boolean;
 }) {
+
   const [menu, setMenu] = useState(false);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [picked, setPicked] = useState<string[]>(assignedTeams);
