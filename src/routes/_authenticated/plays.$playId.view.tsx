@@ -149,10 +149,13 @@ function PlayViewPage() {
         <PlaySlideshow key={playId} playId={playId} />
 
         <Panel className="flex flex-wrap items-center justify-center gap-2">
-          <Link to="/plays" search={search}>
-            <BubbleButton tone="ghost">✕ Exit to Playbook</BubbleButton>
+          <Link to={backTo} search={access.isCoach ? search : {}}>
+            <BubbleButton tone="ghost">
+              ✕ Exit to {access.isCoach ? "Playbook" : "Locker Room"}
+            </BubbleButton>
           </Link>
         </Panel>
+
       </div>
     </AppShell>
   );
