@@ -143,6 +143,7 @@ export function PlayPresenter({
           </Pill>
           <Pill tone="neutral">{phase === "show" ? "Showing actions" : "Running play"}</Pill>
           {current?.note ? <Pill tone="neutral">{current.note}</Pill> : null}
+          <ExportPlayVideo model={model} size="sm" className="ml-auto" />
         </Panel>
 
         <div className="relative">
