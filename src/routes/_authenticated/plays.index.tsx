@@ -167,6 +167,9 @@ function PlaybookPage() {
       },
     });
 
+  const setTab = (next: "mine" | "library") =>
+    navigate({ to: "/plays", search: next === "library" ? { tab: "library" } : {} });
+
   const teamName = (id: string | null) =>
     id ? (teams.data?.find((t) => t.id === id)?.name ?? "Team") : "All teams";
 
