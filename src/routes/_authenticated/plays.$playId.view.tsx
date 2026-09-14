@@ -98,6 +98,32 @@ function PlayViewPage() {
 
   const backTo = access.isCoach ? "/plays" : "/lockerroom";
 
+  /** Turns on the public link if needed, then copies it. */
+  const sharePlay = async () => {
+    try {
+      const current = sequence.find((p) => p.id === playId) ?? (await fetchPlay(playId));
+      if (!current) return;
+      let token = current.share_token;
+      if (!current.is_shared || !token) {
+        await updatePlay(playId, { is_shared: true });
+        token = (await fetchPlay(playId))?.share_token ?? null;
+      }
+      if (!token) {
+        toast.error("Could not create a share link");
+        return;
+      }
+      const url = `${window.location.origin}/share/${token}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Share link copied");
+      } catch {
+        toast.success(`Share link: ${url}`);
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
   return (
     <AppShell
       wide
