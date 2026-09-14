@@ -92,6 +92,9 @@ function PlaybookPage() {
 
   const selected = isCategory(search.category) ? search.category : null;
   const teamFilter = search.team ?? "ALL";
+  const tab = search.tab ?? "mine";
+  const me = useMe();
+  const myUserId = me.user?.id ?? null;
 
   /** playId -> teamIds it is shared with (legacy team_id counts as an assignment). */
   const teamsByPlay = useMemo(() => {
@@ -105,12 +108,25 @@ function PlaybookPage() {
     return map;
   }, [plays.data, assignments.data]);
 
+  /**
+   * My Playbook is only plays linked to one of my teams (or published by me).
+   * Library plays other coaches published are readable but must not leak in.
+   */
+  const myPlays = useMemo(() => {
+    const mine = new Set((teams.data ?? []).map((t) => t.id));
+    return (plays.data ?? []).filter(
+      (p) =>
+        (teamsByPlay.get(p.id) ?? []).some((t) => mine.has(t)) ||
+        (!!myUserId && p.published_by === myUserId),
+    );
+  }, [plays.data, teams.data, teamsByPlay, myUserId]);
+
   const visiblePlays = useMemo(
     () =>
-      (plays.data ?? []).filter(
+      myPlays.filter(
         (p) => teamFilter === "ALL" || (teamsByPlay.get(p.id) ?? []).includes(teamFilter),
       ),
-    [plays.data, teamFilter, teamsByPlay],
+    [myPlays, teamFilter, teamsByPlay],
   );
 
 
