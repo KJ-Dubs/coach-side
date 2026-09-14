@@ -372,10 +372,11 @@ function paintFrame(
   }
 
   const footerH = Math.round(h * (opts.format === "vertical" ? 0.09 : 0.11));
+  const view = courtView(model);
   const availW = w - pad * 2;
   const availH = h - headerH - footerH - pad;
-  const scale = Math.min(availW / PW, availH / PH);
-  const courtW = PW * scale;
+  const scale = Math.min(availW / view.w, availH / PH);
+  const courtW = view.w * scale;
   const courtH = PH * scale;
   const courtX = (w - courtW) / 2;
   const courtY = headerH + (availH - courtH) / 2;
@@ -385,8 +386,9 @@ function paintFrame(
   ctx.scale(scale, scale);
   ctx.save();
   ctx.beginPath();
-  ctx.roundRect(0, 0, PW, PH, 18);
+  ctx.roundRect(0, 0, view.w, PH, 18);
   ctx.clip();
+  ctx.translate(-view.x, 0);
   drawCourt(ctx, p);
   for (const a of state.actions)
     drawAction(ctx, a, model.flip, p, a.seq !== state.activeSeq, opts.showSequenceNumbers, state.reveal);
