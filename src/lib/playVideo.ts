@@ -4,7 +4,7 @@
 // WebCodecs (mediabunny muxer). No second animation engine: only a second
 // *painter* for the same normalized play data.
 
-import { curlGeom, dribbleD, polyD, resolvePath, PW, PH, type Point } from "./playPath";
+import { curlGeom, dribbleD, polyD, PW, PH, type Point } from "./playPath";
 import { sampleStep, SHOW_MS, DO_MS, type PlayStep } from "./playAnimation";
 import type { PlayAction, PlayFrame, PlayToken } from "./types";
 
