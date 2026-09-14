@@ -25,6 +25,8 @@ export const Route = createFileRoute("/_authenticated/plays/$playId/view")({
       },
       { property: "og:title", content: "Present Play — CoachSide" },
       { property: "og:description", content: "Animated play presentation." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: PlayViewPage,
