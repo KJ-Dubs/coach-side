@@ -28,6 +28,7 @@ import { EVENT_TYPES, EVENT_TYPE_LABEL, type TeamEvent } from "@/lib/types";
 import { useMe } from "@/lib/useMe";
 import { useAccess, resolveRole } from "@/lib/access";
 import { GoogleCalendarPanel } from "@/components/GoogleCalendarPanel";
+import { MonthCalendar, dayKey, type MonthDot } from "@/components/MonthCalendar";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
@@ -90,10 +91,15 @@ function CalendarPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [teamId, setTeamId] = useState("");
-  const [view, setView] = useState<ViewMode>("agenda");
+  const [view, setView] = useState<ViewMode>("month");
   const [filter, setFilter] = useState<Filter>("all");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TeamEvent | null>(null);
+  const [month, setMonth] = useState(() => {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), 1);
+  });
+  const [day, setDay] = useState<string>(() => dayKey(new Date()));
 
   useEffect(() => {
     if (!teamId && me.teams.length) setTeamId(me.teams[0]!.id);
