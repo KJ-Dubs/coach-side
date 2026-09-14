@@ -156,14 +156,9 @@ export function AppShell({
                   <Link
                     key={item.to}
                     to={item.to}
-                    activeOptions={{ exact: item.to === "/plays" }}
+                    activeOptions={{ exact: item.to === "/plays" || item.to === "/stats" }}
                     className={cn(
                       "flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-transparent px-1.5 py-1.5 text-center text-[9px] font-extrabold uppercase text-muted-foreground transition-all hover:border-border hover:bg-surface-2 hover:text-foreground sm:min-h-14 sm:px-2 sm:text-[10px]",
-                      item.tone === "flame" && "hover:text-flame",
-                      item.tone === "grape" && "hover:text-grape-bright",
-                      item.tone === "blue" && "hover:text-blue",
-                      item.tone === "rose" && "hover:text-rose",
-                      item.tone === "gold" && "hover:text-gold",
                     )}
                     activeProps={{
                       className:
