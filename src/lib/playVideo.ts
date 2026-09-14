@@ -562,7 +562,7 @@ function makeCanvas(w: number, h: number, scale: number) {
   const canvas = document.createElement("canvas");
   canvas.width = Math.round((w * scale) / 2) * 2;
   canvas.height = Math.round((h * scale) / 2) * 2;
-  const ctx = canvas.getContext("2d", { alpha: false });
+  const ctx = canvas.getContext("2d", { alpha: false, willReadFrequently: true });
   if (!ctx) throw new Error("Could not prepare the video canvas.");
   ctx.setTransform(canvas.width / w, 0, 0, canvas.height / h, 0, 0);
   return { canvas, ctx };
