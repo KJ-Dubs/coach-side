@@ -421,11 +421,20 @@ function PlaybookPage() {
                 }}
                 onSaveTeams={(ids) => assignTeams.mutate({ playId: p.id, teamIds: ids })}
                 savingTeams={assignTeams.isPending}
+                onPublish={() =>
+                  publish.mutate({
+                    p,
+                    author: me.profile?.full_name ?? null,
+                  })
+                }
+                onUnpublish={() => unpublish.mutate(p)}
               />
             ))}
           </div>
 
         </div>
+      )}
+      </>
       )}
     </AppShell>
   );
