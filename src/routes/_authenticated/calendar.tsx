@@ -281,9 +281,8 @@ function CalendarPage() {
             <Label>View</Label>
             {(
               [
-                ["agenda", "Agenda"],
-                ["week", "Week"],
                 ["month", "Month"],
+                ["list", "List"],
               ] as const
             ).map(([v, label]) => (
               <BubbleButton
@@ -314,6 +313,21 @@ function CalendarPage() {
               </BubbleButton>
             ))}
           </Panel>
+
+          {view === "month" ? (
+            <MonthCalendar
+              month={month}
+              onMonthChange={setMonth}
+              marks={marks}
+              selected={day}
+              onSelect={(key) => {
+                setDay(key);
+                const picked = new Date(`${key}T00:00:00`);
+                setMonth(new Date(picked.getFullYear(), picked.getMonth(), 1));
+              }}
+            />
+          ) : null}
+
 
           <Panel className="mb-3 flex flex-wrap items-center gap-2">
             <Label>Share with players & families</Label>
