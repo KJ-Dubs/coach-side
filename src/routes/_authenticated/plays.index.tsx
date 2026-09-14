@@ -454,6 +454,8 @@ function PlayCard({
   onDelete,
   onSaveTeams,
   savingTeams,
+  onPublish,
+  onUnpublish,
 }: {
   play: Play;
   viewSearch: { category?: string; team?: string };
@@ -467,6 +469,8 @@ function PlayCard({
   onDelete: () => void;
   onSaveTeams: (ids: string[]) => void;
   savingTeams: boolean;
+  onPublish: () => void;
+  onUnpublish: () => void;
 }) {
 
   const [menu, setMenu] = useState(false);
