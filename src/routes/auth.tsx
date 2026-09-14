@@ -6,11 +6,27 @@ import { Panel, Pill } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
 import { getPendingInvite } from "@/lib/pendingInvite";
 
-type AuthSearch = { mode?: "signin" | "signup" };
+type AuthSearch = { mode?: "signin" | "signup"; next?: string };
+
+/** Only same-origin in-app paths may be used as a post-sign-in destination. */
+function safeNext(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  if (!value.startsWith("/") || value.startsWith("//")) return null;
+  return value;
+}
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>): AuthSearch =>
-    search["mode"] === "signup" ? { mode: "signup" } : search["mode"] === "signin" ? { mode: "signin" } : {},
+  validateSearch: (search: Record<string, unknown>): AuthSearch => {
+    const next = safeNext(search["next"]);
+    return {
+      ...(search["mode"] === "signup"
+        ? { mode: "signup" as const }
+        : search["mode"] === "signin"
+          ? { mode: "signin" as const }
+          : {}),
+      ...(next ? { next } : {}),
+    };
+  },
   head: () => ({
     meta: [
       { title: "Sign In — CoachSide" },
@@ -31,9 +47,18 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { session, ready } = useAuth();
   const navigate = useNavigate();
-  const { mode } = Route.useSearch();
+  const { mode, next } = Route.useSearch();
   const recovering =
     typeof window !== "undefined" && window.location.hash.includes("type=recovery");
+
+  /** Returns the visitor to where they started (e.g. a shared play), if safe. */
+  const goHome = () => {
+    if (next) {
+      navigate({ to: next, replace: true } as never);
+      return;
+    }
+    navigate({ to: "/dashboard", replace: true });
+  };
 
   useEffect(() => {
     if (!ready || !session || recovering) return;
@@ -43,8 +68,8 @@ function AuthPage() {
       navigate({ to: "/join/$token", params: { token: pending }, replace: true });
       return;
     }
-    navigate({ to: "/dashboard", replace: true });
-  }, [ready, session, navigate, recovering]);
+    goHome();
+  }, [ready, session, navigate, recovering]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-start gap-4 px-3 py-6">
@@ -56,7 +81,7 @@ function AuthPage() {
         <>
           <AuthCard
             initialMode={recovering ? "reset" : mode === "signup" ? "signup" : "signin"}
-            onDone={() => navigate({ to: "/dashboard", replace: true })}
+            onDone={() => goHome()}
           />
           <SignInShowcase />
         </>

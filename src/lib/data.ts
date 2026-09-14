@@ -265,13 +265,14 @@ export type PlayTeamAssignment = {
   play_id: string;
   team_id: string;
   is_visible: boolean;
+  library_version: number | null;
 };
 
 /** Every play↔team link the signed-in coach can see. Source of truth for team playbooks. */
 export async function fetchPlayAssignments(): Promise<PlayTeamAssignment[]> {
   const { data, error } = await supabase
     .from("play_team_assignments")
-    .select("id,play_id,team_id,is_visible");
+    .select("id,play_id,team_id,is_visible,library_version");
   if (error) throw error;
   return (data ?? []) as unknown as PlayTeamAssignment[];
 }

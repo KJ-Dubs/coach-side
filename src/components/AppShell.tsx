@@ -30,14 +30,14 @@ import { resolveRole, useAccess } from "@/lib/access";
 import { useMe } from "@/lib/useMe";
 
 const QUICK = [
-  { to: "/roster", label: "Rosters", icon: UsersRound, tone: "grape" },
-  { to: "/games/new", label: "Live Game", icon: Swords, tone: "flame" },
-  { to: "/board", label: "Coach's Board", icon: PenLine, tone: "flame" },
-  { to: "/plays", label: "Playbook", icon: BookOpen, tone: "blue" },
-  { to: "/plays/new", label: "Play Maker", icon: ClipboardPenLine, tone: "rose" },
-  { to: "/calendar", label: "Calendar", icon: CalendarDays, tone: "teal" },
-  { to: "/lockerroom", label: "Locker Room", icon: MessagesSquare, tone: "grape" },
-  { to: "/stats/team", label: "Stats", icon: BarChart3, tone: "gold" },
+  { to: "/plays", label: "Playbook", icon: BookOpen },
+  { to: "/plays/new", label: "Playmaker", icon: ClipboardPenLine },
+  { to: "/lockerroom", label: "Locker Room", icon: MessagesSquare },
+  { to: "/games/new", label: "Live Game", icon: Swords },
+  { to: "/stats", label: "Stats", icon: BarChart3 },
+  { to: "/calendar", label: "Calendar", icon: CalendarDays },
+  { to: "/board", label: "Board", icon: PenLine },
+  { to: "/roster", label: "Rosters", icon: UsersRound },
 ] as const;
 
 export function AppShell({
@@ -156,14 +156,9 @@ export function AppShell({
                   <Link
                     key={item.to}
                     to={item.to}
-                    activeOptions={{ exact: item.to === "/plays" }}
+                    activeOptions={{ exact: item.to === "/plays" || item.to === "/stats" }}
                     className={cn(
                       "flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-transparent px-1.5 py-1.5 text-center text-[9px] font-extrabold uppercase text-muted-foreground transition-all hover:border-border hover:bg-surface-2 hover:text-foreground sm:min-h-14 sm:px-2 sm:text-[10px]",
-                      item.tone === "flame" && "hover:text-flame",
-                      item.tone === "grape" && "hover:text-grape-bright",
-                      item.tone === "blue" && "hover:text-blue",
-                      item.tone === "rose" && "hover:text-rose",
-                      item.tone === "gold" && "hover:text-gold",
                     )}
                     activeProps={{
                       className:

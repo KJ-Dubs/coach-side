@@ -5,7 +5,8 @@ import { z } from "zod";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Panel, Pill } from "@/components/Bubbles";
 import { PlayPresenter } from "@/components/court/PlayPresenter";
-import { fetchFrames, fetchPlay, fetchPlayAssignments, fetchPlays } from "@/lib/data";
+import { toast } from "sonner";
+import { fetchFrames, fetchPlay, fetchPlayAssignments, fetchPlays, updatePlay } from "@/lib/data";
 import { normalizeCategory } from "@/lib/types";
 import { useAccess } from "@/lib/access";
 
@@ -98,6 +99,32 @@ function PlayViewPage() {
 
   const backTo = access.isCoach ? "/plays" : "/lockerroom";
 
+  /** Turns on the public link if needed, then copies it. */
+  const sharePlay = async () => {
+    try {
+      const current = sequence.find((p) => p.id === playId) ?? (await fetchPlay(playId));
+      if (!current) return;
+      let token = current.share_token;
+      if (!current.is_shared || !token) {
+        await updatePlay(playId, { is_shared: true });
+        token = (await fetchPlay(playId))?.share_token ?? null;
+      }
+      if (!token) {
+        toast.error("Could not create a share link");
+        return;
+      }
+      const url = `${window.location.origin}/share/${token}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Share link copied");
+      } catch {
+        toast.success(`Share link: ${url}`);
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
   return (
     <AppShell
       wide
@@ -111,11 +138,16 @@ function PlayViewPage() {
             </BubbleButton>
           </Link>
           {access.isCoach ? (
-            <Link to="/plays/$playId" params={{ playId }}>
-              <BubbleButton size="sm" tone="grape">
-                Edit Play
+            <>
+              <BubbleButton size="sm" tone="neutral" onClick={() => void sharePlay()}>
+                Share
               </BubbleButton>
-            </Link>
+              <Link to="/plays/$playId" params={{ playId }}>
+                <BubbleButton size="sm" tone="grape">
+                  Edit Play
+                </BubbleButton>
+              </Link>
+            </>
           ) : null}
         </>
       }

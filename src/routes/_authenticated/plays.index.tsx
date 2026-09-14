@@ -24,6 +24,9 @@ import {
   setPlayTeams,
   updatePlay,
 } from "@/lib/data";
+import { publishPlay, unpublishPlay } from "@/lib/library";
+import { PlayLibrary } from "@/components/PlayLibrary";
+import { useMe } from "@/lib/useMe";
 
 import {
   PLAY_CATEGORIES,
@@ -37,6 +40,7 @@ import { cn } from "@/lib/utils";
 const searchSchema = z.object({
   category: z.string().optional(),
   team: z.string().optional(),
+  tab: z.enum(["mine", "library"]).optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/plays/")({
@@ -88,6 +92,9 @@ function PlaybookPage() {
 
   const selected = isCategory(search.category) ? search.category : null;
   const teamFilter = search.team ?? "ALL";
+  const tab = search.tab ?? "mine";
+  const me = useMe();
+  const myUserId = me.user?.id ?? null;
 
   /** playId -> teamIds it is shared with (legacy team_id counts as an assignment). */
   const teamsByPlay = useMemo(() => {
@@ -101,12 +108,25 @@ function PlaybookPage() {
     return map;
   }, [plays.data, assignments.data]);
 
+  /**
+   * My Playbook is only plays linked to one of my teams (or published by me).
+   * Library plays other coaches published are readable but must not leak in.
+   */
+  const myPlays = useMemo(() => {
+    const mine = new Set((teams.data ?? []).map((t) => t.id));
+    return (plays.data ?? []).filter(
+      (p) =>
+        (teamsByPlay.get(p.id) ?? []).some((t) => mine.has(t)) ||
+        (!!myUserId && p.published_by === myUserId),
+    );
+  }, [plays.data, teams.data, teamsByPlay, myUserId]);
+
   const visiblePlays = useMemo(
     () =>
-      (plays.data ?? []).filter(
+      myPlays.filter(
         (p) => teamFilter === "ALL" || (teamsByPlay.get(p.id) ?? []).includes(teamFilter),
       ),
-    [plays.data, teamFilter, teamsByPlay],
+    [myPlays, teamFilter, teamsByPlay],
   );
 
 
@@ -146,6 +166,9 @@ function PlaybookPage() {
         ...(team !== "ALL" ? { team } : {}),
       },
     });
+
+  const setTab = (next: "mine" | "library") =>
+    navigate({ to: "/plays", search: next === "library" ? { tab: "library" } : {} });
 
   const teamName = (id: string | null) =>
     id ? (teams.data?.find((t) => t.id === id)?.name ?? "Team") : "All teams";
@@ -212,16 +235,38 @@ function PlaybookPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const publish = useMutation({
+    mutationFn: ({ p, author }: { p: Play; author: string | null }) => publishPlay(p, author),
+    onSuccess: () => {
+      void invalidate();
+      void queryClient.invalidateQueries({ queryKey: ["library-plays"] });
+      toast.success("Published to the CoachSide Library");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const unpublish = useMutation({
+    mutationFn: (p: Play) => unpublishPlay(p.id),
+    onSuccess: () => {
+      void invalidate();
+      void queryClient.invalidateQueries({ queryKey: ["library-plays"] });
+      toast.success("Removed from the CoachSide Library");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const [quickOpen, setQuickOpen] = useState(false);
 
 
   return (
     <AppShell
       title="Playbook"
-      subtitle={selected ? `${selected} folder` : "Pick a folder"}
+      subtitle={
+        tab === "library" ? "CoachSide Library" : selected ? `${selected} folder` : "Pick a folder"
+      }
       actions={
         <>
-          {selected ? (
+          {selected && tab === "mine" ? (
             <BubbleButton size="sm" tone="ghost" onClick={() => setCategory(null)}>
               ← All folders
             </BubbleButton>
@@ -234,6 +279,28 @@ function PlaybookPage() {
         </>
       }
     >
+      <Panel className="mb-3 flex flex-wrap items-center gap-2">
+        <Label>Browse</Label>
+        <BubbleButton
+          size="sm"
+          tone={tab === "mine" ? "grape" : "neutral"}
+          onClick={() => setTab("mine")}
+        >
+          My Playbook
+        </BubbleButton>
+        <BubbleButton
+          size="sm"
+          tone={tab === "library" ? "grape" : "neutral"}
+          onClick={() => setTab("library")}
+        >
+          CoachSide Library
+        </BubbleButton>
+      </Panel>
+
+      {tab === "library" ? (
+        <PlayLibrary />
+      ) : (
+      <>
       <Panel className="mb-3 flex flex-wrap items-center gap-2">
         <Label>Team</Label>
         <BubbleButton
@@ -257,6 +324,7 @@ function PlaybookPage() {
           {visiblePlays.length} {visiblePlays.length === 1 ? "play" : "plays"}
         </Pill>
       </Panel>
+
 
       {!selected ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -353,11 +421,20 @@ function PlaybookPage() {
                 }}
                 onSaveTeams={(ids) => assignTeams.mutate({ playId: p.id, teamIds: ids })}
                 savingTeams={assignTeams.isPending}
+                onPublish={() =>
+                  publish.mutate({
+                    p,
+                    author: me.profile?.full_name ?? null,
+                  })
+                }
+                onUnpublish={() => unpublish.mutate(p)}
               />
             ))}
           </div>
 
         </div>
+      )}
+      </>
       )}
     </AppShell>
   );
@@ -377,6 +454,8 @@ function PlayCard({
   onDelete,
   onSaveTeams,
   savingTeams,
+  onPublish,
+  onUnpublish,
 }: {
   play: Play;
   viewSearch: { category?: string; team?: string };
@@ -390,6 +469,8 @@ function PlayCard({
   onDelete: () => void;
   onSaveTeams: (ids: string[]) => void;
   savingTeams: boolean;
+  onPublish: () => void;
+  onUnpublish: () => void;
 }) {
 
   const [menu, setMenu] = useState(false);
@@ -423,6 +504,7 @@ function PlayCard({
         <Pill tone={play.is_shared ? "success" : "muted"}>
           {play.is_shared ? "Shared link on" : "Private"}
         </Pill>
+        {play.published_to_library ? <Pill tone="grape">In CoachSide Library</Pill> : null}
         {assignedTeams.length ? (
           assignedTeams.map((t) => (
             <Pill key={t} tone="muted">
@@ -473,6 +555,15 @@ function PlayCard({
           <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onDuplicate}>
             Duplicate
           </BubbleButton>
+          {play.published_to_library ? (
+            <BubbleButton size="sm" tone="ghost" onClick={onUnpublish}>
+              Remove from Library
+            </BubbleButton>
+          ) : (
+            <BubbleButton size="sm" tone="grape" onClick={onPublish}>
+              Publish to Library
+            </BubbleButton>
+          )}
           <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onDelete}>
             Delete
           </BubbleButton>

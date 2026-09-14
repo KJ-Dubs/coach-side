@@ -28,6 +28,7 @@ import { EVENT_TYPES, EVENT_TYPE_LABEL, type TeamEvent } from "@/lib/types";
 import { useMe } from "@/lib/useMe";
 import { useAccess, resolveRole } from "@/lib/access";
 import { GoogleCalendarPanel } from "@/components/GoogleCalendarPanel";
+import { MonthCalendar, dayKey, type MonthDot } from "@/components/MonthCalendar";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
@@ -51,7 +52,7 @@ export const Route = createFileRoute("/_authenticated/calendar")({
   component: CalendarPage,
 });
 
-type ViewMode = "agenda" | "week" | "month";
+type ViewMode = "month" | "list";
 type Filter = "all" | "practice" | "game" | "event";
 
 const PRACTICE_SPOTS = ["Main Gym", "Auxiliary Gym", "Weight Room", "Track"];
@@ -90,10 +91,15 @@ function CalendarPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [teamId, setTeamId] = useState("");
-  const [view, setView] = useState<ViewMode>("agenda");
+  const [view, setView] = useState<ViewMode>("month");
   const [filter, setFilter] = useState<Filter>("all");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TeamEvent | null>(null);
+  const [month, setMonth] = useState(() => {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), 1);
+  });
+  const [day, setDay] = useState<string>(() => dayKey(new Date()));
 
   useEffect(() => {
     if (!teamId && me.teams.length) setTeamId(me.teams[0]!.id);
@@ -136,18 +142,30 @@ function CalendarPage() {
   });
 
   const all = events.data ?? [];
-  const shown = useMemo(() => {
-    const now = Date.now();
-    let list = all.filter((e) => filter === "all" || bucket(e) === filter);
-    if (view === "week" || view === "month") {
-      const end = now + (view === "week" ? 7 : 31) * 86400000;
-      list = list.filter((e) => {
-        const t = new Date(e.starts_at).getTime();
-        return t >= now - 86400000 && t <= end;
-      });
+  const filtered = useMemo(
+    () =>
+      all
+        .filter((e) => filter === "all" || bucket(e) === filter)
+        .sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
+    [all, filter],
+  );
+
+  /** Dots under each day of the month grid. */
+  const marks = useMemo(() => {
+    const map = new Map<string, MonthDot[]>();
+    for (const e of filtered) {
+      const key = dayKey(e.starts_at);
+      const tone: MonthDot = typeTone(e.event_type);
+      map.set(key, [...(map.get(key) ?? []), tone]);
     }
-    return list.sort((a, b) => a.starts_at.localeCompare(b.starts_at));
-  }, [all, filter, view]);
+    return map;
+  }, [filtered]);
+
+  const shown = useMemo(() => {
+    if (view === "month") return filtered.filter((e) => dayKey(e.starts_at) === day);
+    const from = Date.now() - 86400000;
+    return filtered.filter((e) => new Date(e.starts_at).getTime() >= from);
+  }, [filtered, view, day]);
 
   const nextOf = (kind: Filter) => {
     const now = Date.now();
@@ -263,9 +281,8 @@ function CalendarPage() {
             <Label>View</Label>
             {(
               [
-                ["agenda", "Agenda"],
-                ["week", "Week"],
                 ["month", "Month"],
+                ["list", "List"],
               ] as const
             ).map(([v, label]) => (
               <BubbleButton
@@ -296,6 +313,21 @@ function CalendarPage() {
               </BubbleButton>
             ))}
           </Panel>
+
+          {view === "month" ? (
+            <MonthCalendar
+              month={month}
+              onMonthChange={setMonth}
+              marks={marks}
+              selected={day}
+              onSelect={(key) => {
+                setDay(key);
+                const picked = new Date(`${key}T00:00:00`);
+                setMonth(new Date(picked.getFullYear(), picked.getMonth(), 1));
+              }}
+            />
+          ) : null}
+
 
           <Panel className="mb-3 flex flex-wrap items-center gap-2">
             <Label>Share with players & families</Label>

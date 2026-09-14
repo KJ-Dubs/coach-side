@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { AppShell } from "@/components/AppShell";
+import { StatsTabs } from "@/components/StatsTabs";
 import { BubbleButton, EmptyState, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
 import { ShotChart } from "@/components/court/ShotChart";
 import { fetchAllPlayers, fetchSeasonBundle, fetchTeams } from "@/lib/data";
@@ -154,6 +155,7 @@ function PlayerStatsPage() {
         </Link>
       }
     >
+      <StatsTabs shotCharts="players" />
       <Panel className="mb-3 flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <Label>Team</Label>
