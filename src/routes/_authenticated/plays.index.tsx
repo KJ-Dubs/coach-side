@@ -504,6 +504,7 @@ function PlayCard({
         <Pill tone={play.is_shared ? "success" : "muted"}>
           {play.is_shared ? "Shared link on" : "Private"}
         </Pill>
+        {play.published_to_library ? <Pill tone="grape">In CoachSide Library</Pill> : null}
         {assignedTeams.length ? (
           assignedTeams.map((t) => (
             <Pill key={t} tone="muted">
