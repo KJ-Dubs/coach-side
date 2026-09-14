@@ -332,6 +332,31 @@ type FrameState = {
   note: string | null;
 };
 
+const viewCache = new WeakMap<ExportModel, { x: number; w: number }>();
+
+/**
+ * Show the whole court, or zoom to one half when the entire play lives there,
+ * so the action fills vertical/square social frames.
+ */
+function courtView(model: ExportModel) {
+  const cached = viewCache.get(model);
+  if (cached) return cached;
+  const xs: number[] = [];
+  for (const f of model.frames) {
+    for (const t of f.tokens) xs.push(xf(t, model.flip).x);
+    for (const a of f.actions) for (const q of a.points ?? []) xs.push(xf(q, model.flip).x);
+  }
+  let view = { x: 0, w: PW };
+  if (xs.length) {
+    const min = Math.min(...xs);
+    const max = Math.max(...xs);
+    if (max <= PW * 0.53) view = { x: 0, w: PW / 2 };
+    else if (min >= PW * 0.47) view = { x: PW / 2, w: PW / 2 };
+  }
+  viewCache.set(model, view);
+  return view;
+}
+
 function paintFrame(
   ctx: CanvasRenderingContext2D,
   model: ExportModel,
