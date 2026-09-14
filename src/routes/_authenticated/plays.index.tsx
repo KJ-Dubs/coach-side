@@ -235,16 +235,38 @@ function PlaybookPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const publish = useMutation({
+    mutationFn: ({ p, author }: { p: Play; author: string | null }) => publishPlay(p, author),
+    onSuccess: () => {
+      void invalidate();
+      void queryClient.invalidateQueries({ queryKey: ["library-plays"] });
+      toast.success("Published to the CoachSide Library");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const unpublish = useMutation({
+    mutationFn: (p: Play) => unpublishPlay(p.id),
+    onSuccess: () => {
+      void invalidate();
+      void queryClient.invalidateQueries({ queryKey: ["library-plays"] });
+      toast.success("Removed from the CoachSide Library");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const [quickOpen, setQuickOpen] = useState(false);
 
 
   return (
     <AppShell
       title="Playbook"
-      subtitle={selected ? `${selected} folder` : "Pick a folder"}
+      subtitle={
+        tab === "library" ? "CoachSide Library" : selected ? `${selected} folder` : "Pick a folder"
+      }
       actions={
         <>
-          {selected ? (
+          {selected && tab === "mine" ? (
             <BubbleButton size="sm" tone="ghost" onClick={() => setCategory(null)}>
               ← All folders
             </BubbleButton>
@@ -257,6 +279,28 @@ function PlaybookPage() {
         </>
       }
     >
+      <Panel className="mb-3 flex flex-wrap items-center gap-2">
+        <Label>Browse</Label>
+        <BubbleButton
+          size="sm"
+          tone={tab === "mine" ? "grape" : "neutral"}
+          onClick={() => setTab("mine")}
+        >
+          My Playbook
+        </BubbleButton>
+        <BubbleButton
+          size="sm"
+          tone={tab === "library" ? "grape" : "neutral"}
+          onClick={() => setTab("library")}
+        >
+          CoachSide Library
+        </BubbleButton>
+      </Panel>
+
+      {tab === "library" ? (
+        <PlayLibrary />
+      ) : (
+      <>
       <Panel className="mb-3 flex flex-wrap items-center gap-2">
         <Label>Team</Label>
         <BubbleButton
@@ -280,6 +324,7 @@ function PlaybookPage() {
           {visiblePlays.length} {visiblePlays.length === 1 ? "play" : "plays"}
         </Pill>
       </Panel>
+
 
       {!selected ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
