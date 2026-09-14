@@ -21,7 +21,6 @@ export function ExportPlayVideo({
   className,
 }: {
   model: ExportModel;
-  size?: "sm" | "md";
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
