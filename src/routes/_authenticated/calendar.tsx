@@ -51,7 +51,7 @@ export const Route = createFileRoute("/_authenticated/calendar")({
   component: CalendarPage,
 });
 
-type ViewMode = "agenda" | "week" | "month";
+type ViewMode = "month" | "list";
 type Filter = "all" | "practice" | "game" | "event";
 
 const PRACTICE_SPOTS = ["Main Gym", "Auxiliary Gym", "Weight Room", "Track"];
