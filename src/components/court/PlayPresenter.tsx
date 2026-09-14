@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
 import { PlayCanvas } from "@/components/court/PlayCanvas";
+import { ExportPlayVideo } from "@/components/court/ExportPlayVideo";
 import type { CourtZoom } from "@/components/court/Court";
 import { buildSteps, sampleStep, DO_MS, SHOW_MS, type PlayStep } from "@/lib/playAnimation";
 import type { Play, PlayFrame } from "@/lib/types";
