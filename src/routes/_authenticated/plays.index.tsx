@@ -24,6 +24,9 @@ import {
   setPlayTeams,
   updatePlay,
 } from "@/lib/data";
+import { publishPlay, unpublishPlay } from "@/lib/library";
+import { PlayLibrary } from "@/components/PlayLibrary";
+import { useMe } from "@/lib/useMe";
 
 import {
   PLAY_CATEGORIES,
@@ -37,6 +40,7 @@ import { cn } from "@/lib/utils";
 const searchSchema = z.object({
   category: z.string().optional(),
   team: z.string().optional(),
+  tab: z.enum(["mine", "library"]).optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/plays/")({

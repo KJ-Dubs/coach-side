@@ -372,6 +372,36 @@ export type Database = {
           },
         ]
       }
+      coach_notes: {
+        Row: {
+          body: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          body?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversation_members: {
         Row: {
           conversation_id: string
@@ -1089,6 +1119,7 @@ export type Database = {
           created_at: string
           id: string
           is_visible: boolean
+          library_version: number | null
           notes: string | null
           play_id: string
           team_id: string
@@ -1100,6 +1131,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_visible?: boolean
+          library_version?: number | null
           notes?: string | null
           play_id: string
           team_id: string
@@ -1111,6 +1143,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_visible?: boolean
+          library_version?: number | null
           notes?: string | null
           play_id?: string
           team_id?: string
@@ -1178,7 +1211,12 @@ export type Database = {
           created_at: string
           id: string
           is_shared: boolean
+          library_author_name: string | null
+          library_version: number
           name: string
+          published_at: string | null
+          published_by: string | null
+          published_to_library: boolean
           share_token: string | null
           team_id: string | null
         }
@@ -1188,7 +1226,12 @@ export type Database = {
           created_at?: string
           id?: string
           is_shared?: boolean
+          library_author_name?: string | null
+          library_version?: number
           name: string
+          published_at?: string | null
+          published_by?: string | null
+          published_to_library?: boolean
           share_token?: string | null
           team_id?: string | null
         }
@@ -1198,7 +1241,12 @@ export type Database = {
           created_at?: string
           id?: string
           is_shared?: boolean
+          library_author_name?: string | null
+          library_version?: number
           name?: string
+          published_at?: string | null
+          published_by?: string | null
+          published_to_library?: boolean
           share_token?: string | null
           team_id?: string | null
         }
@@ -1689,6 +1737,7 @@ export type Database = {
       }
       my_team_role: { Args: { _team: string }; Returns: string }
       my_verified_email: { Args: never; Returns: string }
+      play_published: { Args: { _play: string }; Returns: boolean }
       play_visible: { Args: { _play: string }; Returns: boolean }
       queue_team_notification: {
         Args: {

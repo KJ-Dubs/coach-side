@@ -139,6 +139,12 @@ export type Play = {
   is_shared: boolean;
   share_token: string | null;
   created_at?: string;
+  /** CoachSide Library publication state. */
+  published_to_library?: boolean;
+  published_at?: string | null;
+  published_by?: string | null;
+  library_author_name?: string | null;
+  library_version?: number;
 };
 
 export type PlayFrame = {

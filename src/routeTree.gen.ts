@@ -30,6 +30,7 @@ import { Route as AuthenticatedGamesNewRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedPlaysIndexRouteImport } from './routes/_authenticated/plays.index'
 import { Route as AuthenticatedPlaysNewRouteImport } from './routes/_authenticated/plays.new'
 import { Route as AuthenticatedReviewGameIdRouteImport } from './routes/_authenticated/review.$gameId'
+import { Route as AuthenticatedStatsIndexRouteImport } from './routes/_authenticated/stats.index'
 import { Route as AuthenticatedStatsPlayersRouteImport } from './routes/_authenticated/stats.players'
 import { Route as AuthenticatedStatsTeamRouteImport } from './routes/_authenticated/stats.team'
 import { Route as SharePlayTokenRouteImport } from './routes/share.play.$token'
@@ -143,6 +144,11 @@ const AuthenticatedReviewGameIdRoute =
     path: '/review/$gameId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedStatsIndexRoute = AuthenticatedStatsIndexRouteImport.update({
+  id: '/stats/',
+  path: '/stats/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedStatsPlayersRoute =
   AuthenticatedStatsPlayersRouteImport.update({
     id: '/stats/players',
@@ -208,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/share/play/$token': typeof SharePlayTokenRoute
   '/games/': typeof AuthenticatedGamesIndexRoute
   '/plays/': typeof AuthenticatedPlaysIndexRoute
+  '/stats/': typeof AuthenticatedStatsIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
   '/api/public/google/calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/share/play/$token': typeof SharePlayTokenRoute
   '/games': typeof AuthenticatedGamesIndexRoute
   '/plays': typeof AuthenticatedPlaysIndexRoute
+  '/stats': typeof AuthenticatedStatsIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/plays/$playId': typeof AuthenticatedPlaysPlayIdIndexRoute
   '/api/public/google/calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
@@ -268,6 +276,7 @@ export interface FileRoutesById {
   '/share/play/$token': typeof SharePlayTokenRoute
   '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
   '/_authenticated/plays/': typeof AuthenticatedPlaysIndexRoute
+  '/_authenticated/stats/': typeof AuthenticatedStatsIndexRoute
   '/_authenticated/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/_authenticated/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
   '/api/public/google/calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
@@ -299,6 +308,7 @@ export interface FileRouteTypes {
     | '/share/play/$token'
     | '/games/'
     | '/plays/'
+    | '/stats/'
     | '/plays/$playId/view'
     | '/plays/$playId/'
     | '/api/public/google/calendar/callback'
@@ -328,6 +338,7 @@ export interface FileRouteTypes {
     | '/share/play/$token'
     | '/games'
     | '/plays'
+    | '/stats'
     | '/plays/$playId/view'
     | '/plays/$playId'
     | '/api/public/google/calendar/callback'
@@ -358,6 +369,7 @@ export interface FileRouteTypes {
     | '/share/play/$token'
     | '/_authenticated/games/'
     | '/_authenticated/plays/'
+    | '/_authenticated/stats/'
     | '/_authenticated/plays/$playId/view'
     | '/_authenticated/plays/$playId/'
     | '/api/public/google/calendar/callback'
@@ -526,6 +538,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReviewGameIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/stats/': {
+      id: '/_authenticated/stats/'
+      path: '/stats'
+      fullPath: '/stats/'
+      preLoaderRoute: typeof AuthenticatedStatsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/stats/players': {
       id: '/_authenticated/stats/players'
       path: '/stats/players'
@@ -595,6 +614,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStatsTeamRoute: typeof AuthenticatedStatsTeamRoute
   AuthenticatedGamesIndexRoute: typeof AuthenticatedGamesIndexRoute
   AuthenticatedPlaysIndexRoute: typeof AuthenticatedPlaysIndexRoute
+  AuthenticatedStatsIndexRoute: typeof AuthenticatedStatsIndexRoute
   AuthenticatedPlaysPlayIdViewRoute: typeof AuthenticatedPlaysPlayIdViewRoute
   AuthenticatedPlaysPlayIdIndexRoute: typeof AuthenticatedPlaysPlayIdIndexRoute
 }
@@ -616,6 +636,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStatsTeamRoute: AuthenticatedStatsTeamRoute,
   AuthenticatedGamesIndexRoute: AuthenticatedGamesIndexRoute,
   AuthenticatedPlaysIndexRoute: AuthenticatedPlaysIndexRoute,
+  AuthenticatedStatsIndexRoute: AuthenticatedStatsIndexRoute,
   AuthenticatedPlaysPlayIdViewRoute: AuthenticatedPlaysPlayIdViewRoute,
   AuthenticatedPlaysPlayIdIndexRoute: AuthenticatedPlaysPlayIdIndexRoute,
 }
