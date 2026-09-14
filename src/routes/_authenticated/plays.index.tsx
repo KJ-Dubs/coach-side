@@ -555,6 +555,15 @@ function PlayCard({
           <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onDuplicate}>
             Duplicate
           </BubbleButton>
+          {play.published_to_library ? (
+            <BubbleButton size="sm" tone="ghost" onClick={onUnpublish}>
+              Remove from Library
+            </BubbleButton>
+          ) : (
+            <BubbleButton size="sm" tone="grape" onClick={onPublish}>
+              Publish to Library
+            </BubbleButton>
+          )}
           <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onDelete}>
             Delete
           </BubbleButton>
