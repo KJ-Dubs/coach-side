@@ -3,7 +3,6 @@ import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
 import {
   DEFAULT_EXPORT_OPTIONS,
   FORMAT_SIZE,
-  canExportVideo,
   playVideoFileName,
   renderPlayVideo,
   type ExportFormat,
@@ -97,10 +96,6 @@ export function ExportPlayVideo({
             {empty ? (
               <Panel className="flex justify-center">
                 <Label>This play has no actions yet, so there is nothing to animate. Add actions first.</Label>
-              </Panel>
-            ) : !canExportVideo() ? (
-              <Panel className="flex justify-center">
-                <Label>This browser cannot create MP4 files. Try Chrome, Edge, or Safari 17+.</Label>
               </Panel>
             ) : (
               <>
