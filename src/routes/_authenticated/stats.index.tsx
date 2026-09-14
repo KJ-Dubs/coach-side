@@ -78,7 +78,7 @@ function StatsOverview() {
       <Panel className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <StatTile label="Record" value={`${record.w}-${record.l}`} tone="grape" />
         <StatTile label="Games" value={games.length} />
-        <StatTile label="Points / game" value={fmtPer(line.points, games.length)} tone="flame" />
+        <StatTile label="Points / game" value={fmtPer(line.pts, games.length)} tone="flame" />
         <StatTile label="FG" value={fmtSplit(line.fg)} hint={fmtPct(line.fg)} />
       </Panel>
 
