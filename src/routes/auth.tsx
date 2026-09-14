@@ -6,11 +6,27 @@ import { Panel, Pill } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
 import { getPendingInvite } from "@/lib/pendingInvite";
 
-type AuthSearch = { mode?: "signin" | "signup" };
+type AuthSearch = { mode?: "signin" | "signup"; next?: string };
+
+/** Only same-origin in-app paths may be used as a post-sign-in destination. */
+function safeNext(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  if (!value.startsWith("/") || value.startsWith("//")) return null;
+  return value;
+}
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>): AuthSearch =>
-    search["mode"] === "signup" ? { mode: "signup" } : search["mode"] === "signin" ? { mode: "signin" } : {},
+  validateSearch: (search: Record<string, unknown>): AuthSearch => {
+    const next = safeNext(search["next"]);
+    return {
+      ...(search["mode"] === "signup"
+        ? { mode: "signup" as const }
+        : search["mode"] === "signin"
+          ? { mode: "signin" as const }
+          : {}),
+      ...(next ? { next } : {}),
+    };
+  },
   head: () => ({
     meta: [
       { title: "Sign In — CoachSide" },
