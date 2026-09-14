@@ -697,7 +697,14 @@ export async function renderPlayVideo(
   return blob;
 }
 
-export function playVideoFileName(name: string, format: ExportFormat) {
-  const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "play";
-  return `coachside-${slug}-${format}.mp4`;
+/** Confirm the Blob is an ISO Base Media/MP4 file before offering it to users. */
+export async function isMp4Blob(blob: Blob) {
+  if (blob.type !== "video/mp4" || blob.size < 12) return false;
+  const header = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
+  return String.fromCharCode(...header.slice(4, 8)) === "ftyp";
+}
+
+export function playVideoFileName(name: string) {
+  const slug = name.trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "Play";
+  return `CoachSide-${slug}.mp4`;
 }
