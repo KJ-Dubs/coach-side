@@ -430,50 +430,37 @@ function paintFrame(
   }
 }
 
-/* ---------------- encode ---------------- */
+/* ---------------- frame timeline ---------------- */
 
 const FPS = 30;
-const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
-export async function renderPlayVideo(
-  model: ExportModel,
-  opts: ExportOptions,
-  onProgress?: (fraction: number) => void,
-): Promise<Blob> {
-  if (!model.steps.length) throw new Error("This play has no actions to animate yet.");
-  if (!canExportVideo()) throw new Error("This browser cannot create MP4 files. Try Chrome, Edge, or Safari 17+.");
-
-  const { Output, Mp4OutputFormat, BufferTarget, CanvasSource, QUALITY_HIGH } = await import("mediabunny");
-  const { w, h } = FORMAT_SIZE[opts.format];
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d", { alpha: false });
-  if (!ctx) throw new Error("Could not prepare the video canvas.");
-  const p = palette();
-
+function frameCounts(model: ExportModel, opts: ExportOptions) {
   const factor = SPEED_FACTOR[opts.speed];
   const showFrames = Math.max(6, Math.round((SHOW_MS / factor / 1000) * FPS));
   const doFrames = Math.max(8, Math.round((DO_MS / factor / 1000) * FPS));
   const holdFrames = opts.holdEnd ? Math.round(FPS * 1.2) : 0;
-  const totalFrames = model.steps.length * (showFrames + doFrames) + holdFrames;
-
-  const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
-  const source = new CanvasSource(canvas, { codec: "avc", bitrate: QUALITY_HIGH });
-  output.addVideoTrack(source, { frameRate: FPS });
-  await output.start();
-
-  let frameIndex = 0;
-  const emit = async () => {
-    await source.add(frameIndex / FPS, 1 / FPS);
-    frameIndex++;
-    onProgress?.(Math.min(1, frameIndex / totalFrames));
+  return {
+    showFrames,
+    doFrames,
+    holdFrames,
+    total: model.steps.length * (showFrames + doFrames) + holdFrames,
   };
+}
 
-  for (let s = 0; s < model.steps.length; s++) {
+/** Paint every frame of the play in order, awaiting the encoder between frames. */
+async function eachFrame(
+  ctx: CanvasRenderingContext2D,
+  model: ExportModel,
+  opts: ExportOptions,
+  p: Palette,
+  emit: () => Promise<void>,
+) {
+  const { showFrames, doFrames, holdFrames } = frameCounts(model, opts);
+  const totalSteps = model.steps.length;
+
+  for (let s = 0; s < totalSteps; s++) {
     const entry = model.steps[s]!;
     const step = entry.step;
-    const actions = step.actions;
     for (let f = 0; f < showFrames; f++) {
       const sample = sampleStep(step, "show", 0);
       paintFrame(
@@ -483,7 +470,7 @@ export async function renderPlayVideo(
         p,
         {
           tokens: sample.tokens,
-          actions,
+          actions: step.actions,
           ball: sample.ball,
           ballAttached: true,
           activeSeq: step.seq,
@@ -491,13 +478,12 @@ export async function renderPlayVideo(
           reveal: Math.min(1, (f + 1) / Math.max(1, showFrames - 2)),
           note: entry.note,
         },
-        model.steps.length,
+        totalSteps,
       );
       await emit();
     }
     for (let f = 0; f < doFrames; f++) {
-      const progress = (f + 1) / doFrames;
-      const sample = sampleStep(step, "do", progress);
+      const sample = sampleStep(step, "do", (f + 1) / doFrames);
       paintFrame(
         ctx,
         model,
@@ -505,7 +491,7 @@ export async function renderPlayVideo(
         p,
         {
           tokens: sample.tokens,
-          actions,
+          actions: step.actions,
           ball: sample.ball,
           ballAttached: !!sample.ballOwner,
           activeSeq: step.seq,
@@ -513,15 +499,14 @@ export async function renderPlayVideo(
           reveal: 1,
           note: entry.note,
         },
-        model.steps.length,
+        totalSteps,
       );
       await emit();
-      void ease(progress);
     }
   }
 
-  if (holdFrames > 0) {
-    const last = model.steps[model.steps.length - 1]!;
+  if (holdFrames > 0 && totalSteps > 0) {
+    const last = model.steps[totalSteps - 1]!;
     const sample = sampleStep(last.step, "do", 1);
     for (let f = 0; f < holdFrames; f++) {
       paintFrame(
@@ -535,21 +520,154 @@ export async function renderPlayVideo(
           ball: sample.ball,
           ballAttached: !!sample.ballOwner,
           activeSeq: last.step.seq,
-          seqIndex: model.steps.length - 1,
+          seqIndex: totalSteps - 1,
           reveal: 1,
           note: last.note,
         },
-        model.steps.length,
+        totalSteps,
       );
       await emit();
     }
   }
+}
+
+function makeCanvas(w: number, h: number, scale: number) {
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round((w * scale) / 2) * 2;
+  canvas.height = Math.round((h * scale) / 2) * 2;
+  const ctx = canvas.getContext("2d", { alpha: false });
+  if (!ctx) throw new Error("Could not prepare the video canvas.");
+  ctx.setTransform(canvas.width / w, 0, 0, canvas.height / h, 0, 0);
+  return { canvas, ctx };
+}
+
+/* ---------------- encoders ---------------- */
+
+/** Preferred path: hardware/software H.264 through WebCodecs, muxed to MP4. */
+async function encodeWithWebCodecs(
+  model: ExportModel,
+  opts: ExportOptions,
+  p: Palette,
+  onProgress?: (f: number) => void,
+): Promise<Blob> {
+  const { Output, Mp4OutputFormat, BufferTarget, CanvasSource, QUALITY_HIGH } = await import("mediabunny");
+  const { w, h } = FORMAT_SIZE[opts.format];
+  const { canvas, ctx } = makeCanvas(w, h, 1);
+  const total = frameCounts(model, opts).total;
+
+  const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
+  const source = new CanvasSource(canvas, { codec: "avc", bitrate: QUALITY_HIGH });
+  output.addVideoTrack(source, { frameRate: FPS });
+  await output.start();
+
+  let i = 0;
+  await eachFrame(ctx, model, opts, p, async () => {
+    await source.add(i / FPS, 1 / FPS);
+    i++;
+    onProgress?.(Math.min(0.99, i / total));
+  });
 
   await output.finalize();
   const buffer = output.target.buffer;
-  if (!buffer) throw new Error("The video file could not be finished. Please try again.");
-  onProgress?.(1);
+  if (!buffer) throw new Error("empty output");
   return new Blob([buffer], { type: "video/mp4" });
+}
+
+let hmePromise: Promise<{ createH264MP4Encoder: () => Promise<Record<string, never>> }> | null = null;
+
+async function loadWasmEncoder() {
+  if (!hmePromise) {
+    hmePromise = (async () => {
+      const url = (await import("h264-mp4-encoder/embuild/dist/h264-mp4-encoder.web.js?url")).default;
+      const g = window as unknown as Record<string, unknown>;
+      if (!g["HME"]) {
+        await new Promise<void>((resolve, reject) => {
+          const el = document.createElement("script");
+          el.src = url;
+          el.onload = () => resolve();
+          el.onerror = () => reject(new Error("Could not load the video encoder."));
+          document.head.appendChild(el);
+        });
+      }
+      const hme = g["HME"];
+      if (!hme) throw new Error("Could not load the video encoder.");
+      return hme as { createH264MP4Encoder: () => Promise<Record<string, never>> };
+    })();
+  }
+  return hmePromise;
+}
+
+type WasmEncoder = {
+  width: number;
+  height: number;
+  frameRate: number;
+  quantizationParameter: number;
+  speed: number;
+  initialize: () => void;
+  addFrameRgba: (data: Uint8Array) => void;
+  finalize: () => void;
+  FS: { readFile: (name: string) => Uint8Array };
+  outputFilename: string;
+  delete: () => void;
+};
+
+/** Fallback path: pure-WASM H.264 encoder, works where WebCodecs H.264 is unavailable. */
+async function encodeWithWasm(
+  model: ExportModel,
+  opts: ExportOptions,
+  p: Palette,
+  onProgress?: (f: number) => void,
+): Promise<Blob> {
+  const HME = await loadWasmEncoder();
+  const { w, h } = FORMAT_SIZE[opts.format];
+  const scale = 2 / 3; // 720p-class output keeps WASM encoding fast enough
+  const { canvas, ctx } = makeCanvas(w, h, scale);
+  const total = frameCounts(model, opts).total;
+
+  const enc = (await HME.createH264MP4Encoder()) as unknown as WasmEncoder;
+  enc.width = canvas.width;
+  enc.height = canvas.height;
+  enc.frameRate = FPS;
+  enc.quantizationParameter = 24;
+  enc.speed = 6;
+  enc.initialize();
+
+  let i = 0;
+  await eachFrame(ctx, model, opts, p, async () => {
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height, { colorSpace: "srgb" } as ImageDataSettings);
+    enc.addFrameRgba(new Uint8Array(img.data.buffer.slice(0)));
+    i++;
+    onProgress?.(Math.min(0.99, i / total));
+    if (i % 10 === 0) await new Promise((r) => setTimeout(r, 0));
+  });
+
+  enc.finalize();
+  const bytes = enc.FS.readFile(enc.outputFilename);
+  const copy = new Uint8Array(bytes);
+  enc.delete();
+  return new Blob([copy], { type: "video/mp4" });
+}
+
+export async function renderPlayVideo(
+  model: ExportModel,
+  opts: ExportOptions,
+  onProgress?: (fraction: number) => void,
+): Promise<Blob> {
+  if (!model.steps.length) throw new Error("This play has no actions to animate yet.");
+  const p = palette();
+
+  if (canExportVideo()) {
+    try {
+      const blob = await encodeWithWebCodecs(model, opts, p, onProgress);
+      onProgress?.(1);
+      return blob;
+    } catch {
+      // fall through to the WASM encoder
+    }
+  }
+  const blob = await encodeWithWasm(model, opts, p, onProgress);
+  onProgress?.(1);
+  return blob;
 }
 
 export function playVideoFileName(name: string, format: ExportFormat) {
