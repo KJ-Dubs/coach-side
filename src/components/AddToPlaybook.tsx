@@ -30,7 +30,13 @@ export function AddToPlaybook({ play, compact }: { play: Play; compact?: boolean
       const names = ids
         .map((id) => coachTeams.find((t) => t.id === id)?.name ?? "team")
         .join(", ");
-      toast.success(`Added to ${names} Playbook`);
+      // The coach stays exactly where they are — browsing does not get interrupted.
+      toast.success(`Added to ${names} Playbook`, {
+        action: {
+          label: "View in My Playbook",
+          onClick: () => void router.navigate({ to: "/plays", search: { tab: "mine" } }),
+        },
+      });
       setOpen(false);
     },
     onError: (e: Error) => toast.error(e.message),
