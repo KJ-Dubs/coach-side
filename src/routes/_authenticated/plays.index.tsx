@@ -24,8 +24,8 @@ import {
   setPlayTeams,
   updatePlay,
 } from "@/lib/data";
-import { publishPlay, unpublishPlay } from "@/lib/library";
-import { PlayLibrary } from "@/components/PlayLibrary";
+import { publishPlay, setPlayAnonymous, unpublishPlay } from "@/lib/library";
+import { LibraryFeed } from "@/components/community/LibraryFeed";
 import { useMe } from "@/lib/useMe";
 
 import {
