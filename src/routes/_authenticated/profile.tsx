@@ -172,6 +172,8 @@ function ProfilePage() {
           </Panel>
         )}
 
+        {isPlayer ? null : <PublicProfilePanel />}
+
         <div className="lg:col-span-2">
           <NotificationPrefsPanel />
         </div>
