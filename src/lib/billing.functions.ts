@@ -33,10 +33,9 @@ async function assertAdmin(supabase: RpcClient) {
   if (error || data !== true) throw new Error("CoachSide owners only.");
 }
 
-function hashCode(code: string): string {
-  const { createHash } = require("node:crypto") as typeof import("node:crypto");
-  const pepper = process.env["ACCESS_CODE_PEPPER"] ?? "";
-  return createHash("sha256").update(`${pepper}:${code.trim().toUpperCase()}`).digest("hex");
+async function hashCode(code: string): Promise<string> {
+  const { hashAccessCode } = await import("./billing.server");
+  return hashAccessCode(code);
 }
 
 function mask(value: string | null): string | null {
@@ -245,7 +244,7 @@ export const redeemAccessCode = createServerFn({ method: "POST" })
     const { data: code } = await supabaseAdmin
       .from("access_codes")
       .select("*")
-      .eq("code_hash", hashCode(data.code))
+      .eq("code_hash", await hashCode(data.code))
       .maybeSingle();
     if (!code || code.active !== true) return { ok: false, message: "That code is not valid." };
     if (code.expires_at && new Date(code.expires_at as string).getTime() < Date.now())
@@ -346,7 +345,7 @@ export const createAccessCode = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const clean = data.code.trim().toUpperCase();
     const { error } = await supabaseAdmin.from("access_codes").insert({
-      code_hash: hashCode(clean),
+      code_hash: await hashCode(clean),
       code_hint: `${clean.slice(0, 3)}••••${clean.slice(-2)}`,
       label: data.label ?? null,
       modules: data.modules,
