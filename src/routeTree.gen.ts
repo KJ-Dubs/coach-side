@@ -23,6 +23,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as LibraryIndexRouteImport } from './routes/library.index'
+import { Route as LibraryPlayIdRouteImport } from './routes/library.$playId'
 import { Route as LockerTokenRouteImport } from './routes/locker.$token'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedGameGameIdRouteImport } from './routes/_authenticated/game.$gameId'
@@ -107,6 +108,11 @@ const JoinTokenRoute = JoinTokenRouteImport.update({
 const LibraryIndexRoute = LibraryIndexRouteImport.update({
   id: '/library/',
   path: '/library/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryPlayIdRoute = LibraryPlayIdRouteImport.update({
+  id: '/library/$playId',
+  path: '/library/$playId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LockerTokenRoute = LockerTokenRouteImport.update({
@@ -209,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
+  '/library/$playId': typeof LibraryPlayIdRoute
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
@@ -240,6 +247,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
+  '/library/$playId': typeof LibraryPlayIdRoute
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library': typeof LibraryIndexRoute
@@ -273,6 +281,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
+  '/library/$playId': typeof LibraryPlayIdRoute
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
@@ -306,6 +315,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/invite/$token'
     | '/join/$token'
+    | '/library/$playId'
     | '/locker/$token'
     | '/share/$token'
     | '/library/'
@@ -337,6 +347,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/invite/$token'
     | '/join/$token'
+    | '/library/$playId'
     | '/locker/$token'
     | '/share/$token'
     | '/library'
@@ -369,6 +380,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/invite/$token'
     | '/join/$token'
+    | '/library/$playId'
     | '/locker/$token'
     | '/share/$token'
     | '/library/'
@@ -394,6 +406,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   InviteTokenRoute: typeof InviteTokenRoute
   JoinTokenRoute: typeof JoinTokenRoute
+  LibraryPlayIdRoute: typeof LibraryPlayIdRoute
   LockerTokenRoute: typeof LockerTokenRoute
   ShareTokenRoute: typeof ShareTokenRoute
   LibraryIndexRoute: typeof LibraryIndexRoute
@@ -500,6 +513,13 @@ declare module '@tanstack/react-router' {
       path: '/library'
       fullPath: '/library/'
       preLoaderRoute: typeof LibraryIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library/$playId': {
+      id: '/library/$playId'
+      path: '/library/$playId'
+      fullPath: '/library/$playId'
+      preLoaderRoute: typeof LibraryPlayIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/locker/$token': {
@@ -670,6 +690,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   InviteTokenRoute: InviteTokenRoute,
   JoinTokenRoute: JoinTokenRoute,
+  LibraryPlayIdRoute: LibraryPlayIdRoute,
   LockerTokenRoute: LockerTokenRoute,
   ShareTokenRoute: ShareTokenRoute,
   LibraryIndexRoute: LibraryIndexRoute,
