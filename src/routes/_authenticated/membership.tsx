@@ -298,9 +298,7 @@ function MembershipPage() {
               {MODULES[m].name}
             </Pill>
           ))
-        ) : (
-          <Pill tone="muted">Free Core</Pill>
-        )}
+        ) : null}
         {billing.data?.currentPeriodEnd ? (
           <Pill tone="muted">Renews {new Date(billing.data.currentPeriodEnd).toLocaleDateString()}</Pill>
         ) : null}
