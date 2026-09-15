@@ -320,7 +320,7 @@ function Dashboard() {
 
       <div className="mb-3 grid gap-3 lg:grid-cols-2">
         <CoachNotes />
-        <MembershipCard />
+        <MembershipCard teamId={teamId} />
       </div>
 
       <FollowedCreators />
