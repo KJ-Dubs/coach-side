@@ -265,7 +265,7 @@ function PlaybookPage() {
     mutationFn: (p: Play) => unpublishPlay(p.id),
     onSuccess: () => {
       void invalidate();
-      void queryClient.invalidateQueries({ queryKey: ["library-plays"] });
+      void queryClient.invalidateQueries({ queryKey: ["library-feed"] });
       toast.success("Removed from the CoachSide Library");
     },
     onError: (e: Error) => toast.error(e.message),
