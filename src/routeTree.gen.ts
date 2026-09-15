@@ -20,6 +20,7 @@ import { Route as AuthenticatedLockerroomRouteImport } from './routes/_authentic
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRosterRouteImport } from './routes/_authenticated/roster'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as CoachUsernameRouteImport } from './routes/coach.$username'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as LibraryIndexRouteImport } from './routes/library.index'
@@ -94,6 +95,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const CoachUsernameRoute = CoachUsernameRouteImport.update({
+  id: '/coach/$username',
+  path: '/coach/$username',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
@@ -213,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRoute
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/coach/$username': typeof CoachUsernameRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/library/$playId': typeof LibraryPlayIdRoute
@@ -245,6 +252,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRoute
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/coach/$username': typeof CoachUsernameRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/library/$playId': typeof LibraryPlayIdRoute
@@ -279,6 +287,7 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/roster': typeof AuthenticatedRosterRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/coach/$username': typeof CoachUsernameRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/library/$playId': typeof LibraryPlayIdRoute
@@ -313,6 +322,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/roster'
     | '/settings'
+    | '/coach/$username'
     | '/invite/$token'
     | '/join/$token'
     | '/library/$playId'
@@ -345,6 +355,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/roster'
     | '/settings'
+    | '/coach/$username'
     | '/invite/$token'
     | '/join/$token'
     | '/library/$playId'
@@ -378,6 +389,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/roster'
     | '/_authenticated/settings'
+    | '/coach/$username'
     | '/invite/$token'
     | '/join/$token'
     | '/library/$playId'
@@ -404,6 +416,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  CoachUsernameRoute: typeof CoachUsernameRoute
   InviteTokenRoute: typeof InviteTokenRoute
   JoinTokenRoute: typeof JoinTokenRoute
   LibraryPlayIdRoute: typeof LibraryPlayIdRoute
@@ -493,6 +506,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/coach/$username': {
+      id: '/coach/$username'
+      path: '/coach/$username'
+      fullPath: '/coach/$username'
+      preLoaderRoute: typeof CoachUsernameRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/invite/$token': {
       id: '/invite/$token'
@@ -688,6 +708,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  CoachUsernameRoute: CoachUsernameRoute,
   InviteTokenRoute: InviteTokenRoute,
   JoinTokenRoute: JoinTokenRoute,
   LibraryPlayIdRoute: LibraryPlayIdRoute,
