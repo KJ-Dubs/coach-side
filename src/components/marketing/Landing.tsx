@@ -15,9 +15,9 @@ import { DemoPlay } from "@/components/marketing/DemoPlay";
 import { InstallAppPill } from "@/components/InstallApp";
 import wordmark from "@/assets/coachside-wordmark.png.asset.json";
 import mark from "@/assets/coachside-mark.jpg.asset.json";
-import shotChart from "@/assets/snapshot-shot-chart.jpg.asset.json";
-import teamStats from "@/assets/snapshot-team-stats.jpg.asset.json";
-import leaders from "@/assets/snapshot-leaders.jpg.asset.json";
+import shotChart from "@/assets/snapshot-shot-chart.jpg";
+import teamStats from "@/assets/snapshot-team-stats.jpg";
+import leaders from "@/assets/snapshot-leaders.jpg";
 
 function SignUpButton({ size = "lg" }: { size?: "sm" | "md" | "lg" }) {
   return (
