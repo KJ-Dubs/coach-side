@@ -72,6 +72,30 @@ function Money({ amount }: { amount: number }) {
   );
 }
 
+/** One grouped, left-aligned feature list inside a single bubble. */
+function FeatureList({
+  items,
+  tone = "neutral",
+}: {
+  items: string[];
+  tone?: "neutral" | "flame";
+}) {
+  return (
+    <ul
+      className={`w-full rounded-2xl border p-4 text-left ${
+        tone === "flame" ? "border-flame/50 bg-flame/10" : "border-border/70 bg-surface-2/60"
+      }`}
+    >
+      {items.map((item) => (
+        <li key={item} className="flex items-start gap-2.5 py-1.5">
+          <Check className="mt-0.5 h-4 w-4 shrink-0 text-flame" aria-hidden="true" />
+          <span className="text-sm font-semibold leading-snug text-foreground">{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function AdminCodes() {
   const qc = useQueryClient();
   const list = useServerFn(listAccessCodes);
