@@ -488,8 +488,9 @@ function PlayCard({
   onDelete: () => void;
   onSaveTeams: (ids: string[]) => void;
   savingTeams: boolean;
-  onPublish: () => void;
+  onPublish: (anonymous: boolean) => void;
   onUnpublish: () => void;
+  onAnonymous: (anonymous: boolean) => void;
 }) {
 
   const [menu, setMenu] = useState(false);
