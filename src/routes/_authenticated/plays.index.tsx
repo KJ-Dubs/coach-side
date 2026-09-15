@@ -314,7 +314,7 @@ function PlaybookPage() {
       </Panel>
 
       {tab === "library" ? (
-        <PlayLibrary />
+        <LibraryFeed variant="app" />
       ) : (
       <>
       <Panel className="mb-3 flex flex-wrap items-center gap-2">
