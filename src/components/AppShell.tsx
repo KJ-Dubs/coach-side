@@ -13,7 +13,6 @@ import {
   Sparkles,
   Swords,
   UserRound,
-  UsersRound,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -38,7 +37,6 @@ const QUICK = [
   { to: "/stats", label: "Stats", icon: BarChart3 },
   { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/board", label: "Board", icon: PenLine },
-  { to: "/roster", label: "Rosters", icon: UsersRound },
   { to: "/library", label: "Library", icon: Sparkles },
 ] as const;
 

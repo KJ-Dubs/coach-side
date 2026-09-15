@@ -7,6 +7,7 @@ const TABS = [
   { to: "/games", label: "Games", exact: false },
   { to: "/stats/players", label: "Players", exact: false },
   { to: "/stats/team", label: "Team", exact: false },
+  { to: "/roster", label: "Roster", exact: false },
 ] as const;
 
 const base =
