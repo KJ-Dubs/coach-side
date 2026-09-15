@@ -25,6 +25,9 @@ import { useAccess, resolveRole } from "@/lib/access";
 import { consumePendingInvite } from "@/lib/pendingInvite";
 import { InstallAppCard } from "@/components/InstallApp";
 import { useCurrentTeam } from "@/lib/teamContext";
+import { PlayOfTheDayCard } from "@/components/community/PlayOfTheDayCard";
+import { FollowedCreators } from "@/components/community/FollowedCreators";
+import { MODULES, PAID_MODULES, useEntitlement } from "@/lib/entitlements";
 
 /**
  * Players and parents land in the Locker Room instead of the coach dashboard.
