@@ -133,6 +133,47 @@ function UpNext({ teamId }: { teamId: string | null }) {
   );
 }
 
+/**
+ * Game day gets its own card. It only points at the existing Live Game entry,
+ * so the start flow (Live Game → Starting 5 → court) is untouched.
+ */
+function TodayStrip({ teamId }: { teamId: string | null }) {
+  const events = useQuery({
+    queryKey: ["team-events", teamId],
+    queryFn: () => fetchTeamEvents(teamId!),
+    enabled: !!teamId,
+  });
+  const today = new Date().toDateString();
+  const game = (events.data ?? []).find(
+    (e) =>
+      (e.event_type === "game" || e.kind === "game") &&
+      new Date(e.starts_at).toDateString() === today,
+  );
+
+  if (!game) return <UpNext teamId={teamId} />;
+
+  return (
+    <Panel className="mb-3 flex flex-wrap items-center gap-2 border-flame/60 bg-flame/10">
+      <Label>Game today</Label>
+      <span className="rounded-2xl border border-flame/60 bg-flame/20 px-3 py-2 text-lg font-black leading-tight text-foreground">
+        {game.opponent ? `vs ${game.opponent}` : game.title}
+      </span>
+      <Pill tone="muted">
+        {new Date(game.starts_at).toLocaleTimeString(undefined, {
+          hour: "numeric",
+          minute: "2-digit",
+        })}
+      </Pill>
+      {game.location ? <Pill tone="muted">{game.location}</Pill> : null}
+      <Link to="/games/new" className="ml-auto">
+        <BubbleButton tone="flame" size="lg" className="min-h-14">
+          ▶ Start Live Game
+        </BubbleButton>
+      </Link>
+    </Panel>
+  );
+}
+
 function Dashboard() {
   const { isCoach } = useRedirectPlayersToLockerRoom();
   const me = useMe();
