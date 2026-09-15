@@ -17,6 +17,7 @@ import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedLockerRouteImport } from './routes/_authenticated/locker'
 import { Route as AuthenticatedLockerroomRouteImport } from './routes/_authenticated/lockerroom'
+import { Route as AuthenticatedMembershipRouteImport } from './routes/_authenticated/membership'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRosterRouteImport } from './routes/_authenticated/roster'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -80,6 +81,11 @@ const AuthenticatedLockerRoute = AuthenticatedLockerRouteImport.update({
 const AuthenticatedLockerroomRoute = AuthenticatedLockerroomRouteImport.update({
   id: '/lockerroom',
   path: '/lockerroom',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMembershipRoute = AuthenticatedMembershipRouteImport.update({
+  id: '/membership',
+  path: '/membership',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -222,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/locker': typeof AuthenticatedLockerRoute
   '/lockerroom': typeof AuthenticatedLockerroomRoute
+  '/membership': typeof AuthenticatedMembershipRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -256,6 +263,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/locker': typeof AuthenticatedLockerRoute
   '/lockerroom': typeof AuthenticatedLockerroomRoute
+  '/membership': typeof AuthenticatedMembershipRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -292,6 +300,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/locker': typeof AuthenticatedLockerRoute
   '/_authenticated/lockerroom': typeof AuthenticatedLockerroomRoute
+  '/_authenticated/membership': typeof AuthenticatedMembershipRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/roster': typeof AuthenticatedRosterRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -328,6 +337,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/locker'
     | '/lockerroom'
+    | '/membership'
     | '/profile'
     | '/roster'
     | '/settings'
@@ -362,6 +372,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/locker'
     | '/lockerroom'
+    | '/membership'
     | '/profile'
     | '/roster'
     | '/settings'
@@ -397,6 +408,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/locker'
     | '/_authenticated/lockerroom'
+    | '/_authenticated/membership'
     | '/_authenticated/profile'
     | '/_authenticated/roster'
     | '/_authenticated/settings'
@@ -497,6 +509,13 @@ declare module '@tanstack/react-router' {
       path: '/lockerroom'
       fullPath: '/lockerroom'
       preLoaderRoute: typeof AuthenticatedLockerroomRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/membership': {
+      id: '/_authenticated/membership'
+      path: '/membership'
+      fullPath: '/membership'
+      preLoaderRoute: typeof AuthenticatedMembershipRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/profile': {
@@ -683,6 +702,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedLockerRoute: typeof AuthenticatedLockerRoute
   AuthenticatedLockerroomRoute: typeof AuthenticatedLockerroomRoute
+  AuthenticatedMembershipRoute: typeof AuthenticatedMembershipRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRosterRoute: typeof AuthenticatedRosterRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -705,6 +725,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedLockerRoute: AuthenticatedLockerRoute,
   AuthenticatedLockerroomRoute: AuthenticatedLockerroomRoute,
+  AuthenticatedMembershipRoute: AuthenticatedMembershipRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRosterRoute: AuthenticatedRosterRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
