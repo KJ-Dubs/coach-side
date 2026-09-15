@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -199,10 +199,9 @@ function MembershipPage() {
   const [codeInput, setCodeInput] = useState("");
 
   // Players and parents never see membership.
-  if (!accessLoading && !role.isCoach) {
-    navigate({ to: "/lockerroom", replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (!accessLoading && role.isPlayerOnly) navigate({ to: "/lockerroom", replace: true });
+  }, [accessLoading, role.isPlayerOnly, navigate]);
 
   const redeem = useMutation({
     mutationFn: () => redeemFn({ data: { teamId: teamId!, code: codeInput } }),
