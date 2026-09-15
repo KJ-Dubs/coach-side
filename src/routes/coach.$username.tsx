@@ -45,13 +45,13 @@ function CreatorPage() {
 
       {profile.data ? (
         <>
-          <Panel className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2">
+          <Panel className="flex flex-col items-center gap-3 text-center">
+            <div className="flex flex-col items-center gap-2">
               <Heading tone="grape">
                 <h1>{profile.data.display_name}</h1>
               </Heading>
               <Note>@{profile.data.username}</Note>
-              <div className="ml-auto">
+              <div>
                 <FollowButton username={profile.data.username} size="md" />
               </div>
             </div>

@@ -12,7 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { BubbleButton, EmptyState, Label, Note, Panel, Pill } from "@/components/Bubbles";
+import { BubbleButton, EmptyState, InfoList, InfoPanel, Label, Panel, Pill, PrimaryCTA } from "@/components/Bubbles";
 import { fetchTeamEvents, fetchGames, logoSignedUrl } from "@/lib/data";
 import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -109,14 +109,14 @@ function UpNext({ teamId }: { teamId: string | null }) {
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
 
   return (
-    <Panel className="mb-3 flex flex-wrap items-center gap-2">
+    <Panel className="mb-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
       <Label>Up next</Label>
       {next ? (
-        <>
-          <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-2 text-lg font-black leading-tight text-foreground">
+        <div className="min-w-0 text-left">
+          <span className="block truncate text-lg font-black leading-tight text-foreground">
             {next.title}
           </span>
-          <Pill tone="muted">
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">
             {new Date(next.starts_at).toLocaleString(undefined, {
               weekday: "short",
               month: "short",
@@ -124,13 +124,13 @@ function UpNext({ teamId }: { teamId: string | null }) {
               hour: "numeric",
               minute: "2-digit",
             })}
-          </Pill>
-          {next.location ? <Pill tone="muted">{next.location}</Pill> : null}
-        </>
+          </p>
+          {next.location ? <p className="text-sm font-semibold text-muted-foreground">{next.location}</p> : null}
+        </div>
       ) : (
         <Pill tone="muted">Nothing scheduled</Pill>
       )}
-      <Link to="/calendar" className="ml-auto">
+      <Link to="/calendar" className="justify-self-center sm:justify-self-end">
         <BubbleButton size="sm" tone="neutral">
           Calendar
         </BubbleButton>
@@ -185,27 +185,17 @@ function MembershipCard({ teamId }: { teamId: string | null }) {
   const entitlement = useEntitlement(teamId);
   if (entitlement.complete) return null;
   return (
-    <Panel className="flex flex-col gap-2">
-      <Label>{COMPLETE_NAME}</Label>
-      <span className="rounded-2xl border border-flame/50 bg-flame/15 px-3 py-2 text-lg font-black leading-tight text-foreground">
+    <Panel className="flex flex-col items-center gap-3 text-center">
+      <h2 className="text-xl font-black text-foreground">{COMPLETE_NAME}</h2>
+      <span className="text-2xl font-black leading-tight text-flame">
         ${COMPLETE_PRICE}/month · all three modules
       </span>
-      <div className="flex flex-wrap gap-2">
-        {MODULE_LIST.map((m) => (
-          <Pill key={m.key} tone="muted">
-            {m.name} ${m.price}
-          </Pill>
-        ))}
-      </div>
-      <Note>
-        {COMPLETE_BLURB}{" "}
-        {entitlement.enforced
-          ? "One monthly charge for this team."
-          : "Memberships are not switched on yet — everything stays open."}
-      </Note>
-      <Link to="/membership" className="w-fit">
-        <BubbleButton tone="flame">See membership options</BubbleButton>
-      </Link>
+      <InfoList items={[
+        ...MODULE_LIST.map((m) => `${m.name} — $${m.price}/month`),
+        COMPLETE_BLURB,
+        entitlement.enforced ? "One monthly charge for this team." : "Memberships are not switched on yet — everything stays open.",
+      ]} tone="flame" />
+      <PrimaryCTA><Link to="/membership"><BubbleButton tone="flame">See membership options</BubbleButton></Link></PrimaryCTA>
     </Panel>
   );
 }
@@ -297,7 +287,7 @@ function Dashboard() {
                   <Icon className="h-5 w-5 transition-transform group-hover:scale-110" />
                 </span>
               </div>
-              {c.blurb ? <Note className="mt-3">{c.blurb}</Note> : null}
+              {c.blurb ? <InfoPanel className="mt-3">{c.blurb}</InfoPanel> : null}
             </Link>
           );
         })}
@@ -329,7 +319,7 @@ function Dashboard() {
 
       <Panel className="mb-3 flex flex-wrap items-center gap-2">
         <Label>Parents & families</Label>
-        <Note>Read-only stats and schedule link. No playbook, no account needed.</Note>
+        <InfoPanel className="sm:flex-1">Read-only stats and schedule link. No playbook, no account needed.</InfoPanel>
         <Link to="/locker" className="ml-auto">
           <BubbleButton size="sm" tone="neutral">
             <KeyRound className="h-4 w-4" aria-hidden />

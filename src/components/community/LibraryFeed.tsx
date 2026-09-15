@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { BubbleButton, EmptyState, Label, Note, Panel, Pill } from "@/components/Bubbles";
+import { BubbleButton, EmptyState, InfoPanel, Label, Panel, Pill } from "@/components/Bubbles";
 import { AddToPlaybook } from "@/components/AddToPlaybook";
 import { HeartButton } from "@/components/community/HeartButton";
 import { PlayThumb } from "@/components/community/PlayThumb";
@@ -69,7 +69,7 @@ export function LibraryFeed({
             {shown.length} {shown.length === 1 ? "play" : "plays"}
           </Pill>
         </div>
-        <Note>{LIBRARY_SORTS.find((s) => s.key === sort)?.hint}</Note>
+        <InfoPanel>{LIBRARY_SORTS.find((s) => s.key === sort)?.hint}</InfoPanel>
         <div className="flex flex-wrap items-center gap-2">
           <Label>Category</Label>
           {["All", ...PLAY_CATEGORIES].map((c) => (
@@ -164,9 +164,9 @@ function LibraryCard({
         <PlayThumb playId={play.id} attackBasket={play.attack_basket} />
       </Link>
 
-      <span className="rounded-2xl border border-grape/60 bg-grape/20 px-3 py-2 text-xl font-black leading-tight text-foreground">
+      <h3 className="text-center text-xl font-black leading-tight text-foreground">
         {play.name}
-      </span>
+      </h3>
 
       <div className="flex flex-wrap items-center gap-2">
         <Pill tone="neutral">{normalizeCategory(play.category)}</Pill>

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BubbleButton, EmptyState, Label, Note, Panel, Pill } from "@/components/Bubbles";
+import { BubbleButton, EmptyState, InfoPanel, Label, Panel, Pill, PrimaryCTA } from "@/components/Bubbles";
 import { PlayPresenter } from "@/components/court/PlayPresenter";
 import { AddToPlaybook } from "@/components/AddToPlaybook";
 import { HeartButton } from "@/components/community/HeartButton";
@@ -88,11 +88,11 @@ function PublicPlayPage() {
             ) : null}
           </Panel>
           {!session ? (
-            <Panel className="flex flex-wrap items-center gap-2">
-              <Note>Create a free coach account to heart plays and save them to your playbook.</Note>
-              <Link to="/auth" search={{ mode: "signup" }} className="ml-auto">
+            <Panel className="flex flex-col items-center gap-3">
+              <InfoPanel>Create a free coach account to heart plays and save them to your playbook.</InfoPanel>
+              <PrimaryCTA><Link to="/auth" search={{ mode: "signup" }}>
                 <BubbleButton tone="grape">Create Coach Account</BubbleButton>
-              </Link>
+              </Link></PrimaryCTA>
             </Panel>
           ) : null}
         </>

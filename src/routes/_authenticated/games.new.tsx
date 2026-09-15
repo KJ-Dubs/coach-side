@@ -66,7 +66,7 @@ function StepCard({
 }) {
   return (
     <Panel className={cn("flex flex-col gap-3", done && "border-grape/50", className)}>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col items-center gap-2 text-center">
         <span
           className={cn(
             "inline-flex h-9 w-9 items-center justify-center rounded-full border text-sm font-black",
@@ -77,7 +77,7 @@ function StepCard({
         >
           {step}
         </span>
-        <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-2 text-xl font-black leading-tight text-foreground sm:text-2xl">
+        <span className="text-xl font-black leading-tight text-foreground sm:text-2xl">
           {title}
         </span>
         {done ? <Pill tone="grape">✓ Set</Pill> : null}
@@ -344,7 +344,7 @@ function NewGamePage() {
               {periods} × {minutes} min · OT {ot}
             </Pill>
           </div>
-          <BubbleButton
+          <div className="flex justify-center"><BubbleButton
             tone="flame"
             size="lg"
             className="w-full sm:w-auto"
@@ -352,7 +352,7 @@ function NewGamePage() {
             onClick={() => create.mutate()}
           >
             {create.isPending ? "Starting…" : "START GAME ▶"}
-          </BubbleButton>
+          </BubbleButton></div>
           {!ready ? <Note>Finish steps A–D to enable the start button.</Note> : null}
         </StepCard>
       </div>

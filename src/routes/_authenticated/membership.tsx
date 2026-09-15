@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import {
@@ -10,6 +9,7 @@ import {
   EmptyState,
   Field,
   Heading,
+  InfoList,
   Label,
   Note,
   Panel,
@@ -69,30 +69,6 @@ function Money({ amount }: { amount: number }) {
       ${amount}
       <span className="text-sm font-bold text-muted-foreground">/month</span>
     </span>
-  );
-}
-
-/** One grouped, left-aligned feature list inside a single bubble. */
-function FeatureList({
-  items,
-  tone = "neutral",
-}: {
-  items: string[];
-  tone?: "neutral" | "flame";
-}) {
-  return (
-    <ul
-      className={`w-full rounded-2xl border p-4 text-left ${
-        tone === "flame" ? "border-flame/50 bg-flame/10" : "border-border/70 bg-surface-2/60"
-      }`}
-    >
-      {items.map((item) => (
-        <li key={item} className="flex items-start gap-2.5 py-1.5">
-          <Check className="mt-0.5 h-4 w-4 shrink-0 text-flame" aria-hidden="true" />
-          <span className="text-sm font-semibold leading-snug text-foreground">{item}</span>
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -316,7 +292,7 @@ function MembershipPage() {
         <div className="flex justify-center">
           <Note className="text-center">Every team starts here — free forever.</Note>
         </div>
-        <FeatureList items={FREE_CORE} />
+        <InfoList items={FREE_CORE} />
       </Panel>
 
       <div className="mb-3 grid gap-3 sm:grid-cols-3">
@@ -340,7 +316,7 @@ function MembershipPage() {
               <div className="flex justify-center">
                 <Note className="text-center">{m.blurb}</Note>
               </div>
-              <FeatureList items={m.benefits} />
+              <InfoList items={m.benefits} />
               <div className="flex justify-center">
                 <BubbleButton
                   tone={on ? "grape" : "flame"}
@@ -369,7 +345,7 @@ function MembershipPage() {
         <div className="flex justify-center">
           <Note className="text-center">{COMPLETE_BLURB}</Note>
         </div>
-        <FeatureList items={MODULE_LIST.flatMap((m) => m.benefits)} tone="flame" />
+        <InfoList items={MODULE_LIST.flatMap((m) => m.benefits)} tone="flame" />
         <div className="flex justify-center">
           <BubbleButton tone="grape" size="lg" onClick={() => setSelected([...ALL_MODULES])}>
             Choose Complete

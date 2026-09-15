@@ -243,11 +243,11 @@ function CalendarPage() {
                   <Pill tone={typeTone(k)}>{label}</Pill>
                   {e ? (
                     <>
-                      <span className="rounded-2xl border border-border bg-surface px-3 py-2 text-lg font-black leading-tight text-foreground">{e.title}</span>
-                      <Pill tone="muted">
+                       <span className="text-lg font-black leading-tight text-foreground">{e.title}</span>
+                       <p className="text-sm font-semibold text-muted-foreground">
                         {fmtDay(e.starts_at)} · {fmtTime(e.starts_at)}
-                      </Pill>
-                      {e.location ? <Pill tone="muted">{e.location}</Pill> : null}
+                       </p>
+                       {e.location ? <p className="text-sm font-semibold text-muted-foreground">{e.location}</p> : null}
                     </>
                   ) : (
                     <Pill tone="muted">Nothing scheduled</Pill>
@@ -390,7 +390,7 @@ function CalendarPage() {
                       <Pill tone={typeTone(e.event_type)}>
                         {(EVENT_TYPE_LABEL[e.event_type] ?? "Event").toUpperCase()}
                       </Pill>
-                      <span className="rounded-2xl border border-border bg-surface px-3 py-2 text-lg font-black leading-tight text-foreground">
+                       <span className="text-lg font-black leading-tight text-foreground">
                         {e.event_type === "game" && e.opponent
                           ? `${e.home_away === "away" ? "@" : "vs"} ${e.opponent}`
                           : e.title}
@@ -413,7 +413,7 @@ function CalendarPage() {
                       {e.location ? <Pill tone="muted">{e.location}</Pill> : null}
                       {e.uniform ? <Pill tone="muted">{e.uniform} uniforms</Pill> : null}
                       {rem.length ? <Pill tone="muted">{rem.length} reminders</Pill> : null}
-                      {e.notes ? <Pill tone="muted">{e.notes}</Pill> : null}
+                       {e.notes ? <p className="w-full text-left text-sm font-semibold leading-relaxed text-muted-foreground">{e.notes}</p> : null}
 
                       <div className="ml-auto flex flex-wrap gap-2">
                         {e.event_type === "game" && game && game.status === "final" ? (
