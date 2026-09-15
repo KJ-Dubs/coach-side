@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { BubbleButton, Label, Panel, Pill, SelectInput } from "@/components/Bubbles";
+import { BubbleButton, InfoPanel, Label, Panel, Pill, SelectInput } from "@/components/Bubbles";
 import {
   disconnectGoogleCalendar,
   getGoogleCalendarStatus,
@@ -137,8 +137,8 @@ export function GoogleCalendarPanel({
 
   return (
     <Panel className="mb-3 flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-2xl border border-flame/50 bg-flame/10 px-3 py-2 text-xl font-black leading-tight text-foreground">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <span className="text-xl font-black leading-tight text-foreground">
           Google Calendar
         </span>
         {q.data && !q.data.configured ? (
@@ -155,11 +155,9 @@ export function GoogleCalendarPanel({
       {q.isLoading ? <Label>Checking connection…</Label> : null}
 
       {q.data ? (
-        <div className="flex flex-wrap gap-2 rounded-2xl border border-border bg-surface-2/70 p-3">
-          <Pill tone="muted">Callback address: {q.data.redirectUri}</Pill>
-          <Pill tone="muted">Google app ID ends: {q.data.clientIdHint ?? "not set"}</Pill>
-          {lastError ? <Pill tone="danger">Last Google error: {lastError}</Pill> : null}
-        </div>
+        <InfoPanel>
+          <ul className="space-y-2"><li><strong>Callback address:</strong> {q.data.redirectUri}</li><li><strong>Google app ID ends:</strong> {q.data.clientIdHint ?? "not set"}</li>{lastError ? <li className="text-destructive"><strong>Last Google error:</strong> {lastError}</li> : null}</ul>
+        </InfoPanel>
       ) : null}
 
       {q.data && !q.data.configured ? (
@@ -183,16 +181,7 @@ export function GoogleCalendarPanel({
 
       {connection?.connected ? (
         <>
-          <div className="flex flex-wrap gap-2">
-            <Pill tone="muted">
-              Account: {connection.google_account_email ?? "Google account"}
-            </Pill>
-            <Pill tone="muted">
-              Calendar: {connection.google_calendar_name ?? "Not chosen yet"}
-            </Pill>
-            <Pill tone="grape">Team: {teamName}</Pill>
-            <Pill tone="muted">Last synced: {fmt(connection.last_synced_at)}</Pill>
-          </div>
+          <InfoPanel><ul className="space-y-2"><li><strong>Account:</strong> {connection.google_account_email ?? "Google account"}</li><li><strong>Calendar:</strong> {connection.google_calendar_name ?? "Not chosen yet"}</li><li><strong>Team:</strong> {teamName}</li><li><strong>Last synced:</strong> {fmt(connection.last_synced_at)}</li></ul></InfoPanel>
           {connection.last_sync_error ? (
             <div className="rounded-2xl border border-flame/50 bg-flame/10 p-3">
               <Label>Last sync problem: {connection.last_sync_error}</Label>

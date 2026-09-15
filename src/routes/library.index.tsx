@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BubbleButton, Heading, Note, Panel } from "@/components/Bubbles";
+import { BubbleButton, SectionHeader } from "@/components/Bubbles";
 import { LibraryFeed } from "@/components/community/LibraryFeed";
 import { useAuth } from "@/lib/auth";
 
@@ -31,17 +31,13 @@ function LibraryPage() {
   const { session } = useAuth();
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-3 p-2 sm:p-4">
-      <Panel className="flex flex-wrap items-center gap-2">
-        <Heading tone="grape">
-          <h1>CoachSide Play Library</h1>
-        </Heading>
-        <Note>Animated plays published by coaches. Watch free — sign in to heart and save.</Note>
-        <Link to={session ? "/dashboard" : "/"} className="ml-auto">
+      <SectionHeader as="h1" title="CoachSide Play Library" subtitle="Animated plays published by coaches. Watch free — sign in to heart and save.">
+        <Link to={session ? "/dashboard" : "/"}>
           <BubbleButton tone="neutral" size="sm">
             {session ? "Go to CoachSide" : "Back to CoachSide"}
           </BubbleButton>
         </Link>
-      </Panel>
+      </SectionHeader>
       <LibraryFeed variant="public" />
     </main>
   );

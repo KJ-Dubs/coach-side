@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
+import { BubbleButton, InfoPanel, Label, Panel, Pill, SectionHeader } from "@/components/Bubbles";
 import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { ExportPlayVideo } from "@/components/court/ExportPlayVideo";
 import type { CourtZoom } from "@/components/court/Court";
@@ -134,17 +134,13 @@ export function PlayPresenter({
   return (
     <div className={className}>
       <div className="flex flex-col gap-2">
-        <Panel className="flex flex-wrap items-center gap-2">
-          <h1 className="inline-flex w-fit rounded-2xl border border-grape/60 bg-grape/20 px-4 py-2 text-xl font-black leading-tight text-foreground sm:text-2xl">
-            {model.name}
-          </h1>
-          {model.category ? <Pill tone="muted">{model.category}</Pill> : null}
-          <Pill tone="flame">
-            Sequence {total ? idx + 1 : 0} of {total}
-          </Pill>
-          <Pill tone="neutral">{phase === "show" ? "Showing actions" : "Running play"}</Pill>
-          {current?.note ? <Pill tone="neutral">{current.note}</Pill> : null}
-        </Panel>
+        <SectionHeader as="h1" title={model.name} subtitle={model.category || undefined}>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Pill tone="flame">Sequence {total ? idx + 1 : 0} of {total}</Pill>
+            <Pill tone="neutral">{phase === "show" ? "Showing actions" : "Running play"}</Pill>
+          </div>
+          {current?.note ? <InfoPanel className="max-w-2xl">{current.note}</InfoPanel> : null}
+        </SectionHeader>
 
         <div className="relative">
           <PlayCanvas

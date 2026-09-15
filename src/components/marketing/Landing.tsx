@@ -10,7 +10,7 @@ import {
   WifiOff,
   type LucideIcon,
 } from "lucide-react";
-import { BubbleButton, Panel, Pill } from "@/components/Bubbles";
+import { BubbleButton, InfoList, InfoPanel, Panel, Pill } from "@/components/Bubbles";
 import { DemoPlay } from "@/components/marketing/DemoPlay";
 import { InstallAppPill } from "@/components/InstallApp";
 import wordmark from "@/assets/coachside-wordmark.png.asset.json";
@@ -43,8 +43,8 @@ function SectionTitle({ children, tone = "grape" }: { children: string; tone?: "
   return (
     <h2
       className={
-        "inline-flex w-fit rounded-2xl border px-4 py-2 text-2xl font-black leading-tight text-foreground sm:text-3xl " +
-        (tone === "flame" ? "border-flame/60 bg-flame/20" : "border-grape/60 bg-grape/20")
+        "text-center text-2xl font-black leading-tight text-foreground sm:text-3xl " +
+        (tone === "flame" ? "text-flame" : "text-grape-bright")
       }
     >
       {children}
@@ -54,7 +54,7 @@ function SectionTitle({ children, tone = "grape" }: { children: string; tone?: "
 
 function Body({ children }: { children: string }) {
   return (
-    <p className="rounded-2xl border border-border/60 bg-surface-2/70 px-4 py-3 text-sm font-semibold leading-relaxed text-muted-foreground sm:text-base">
+    <p className="w-full rounded-2xl border border-border/60 bg-surface-2/70 px-4 py-3 text-left text-sm font-semibold leading-relaxed text-muted-foreground sm:text-base">
       {children}
     </p>
   );
@@ -142,9 +142,9 @@ export function Landing() {
 
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-3 py-4">
         <Panel className="flex flex-col gap-4 border-2 border-grape/60 bg-grape/10 p-4 sm:p-6 lg:flex-row lg:items-center">
-          <div className="flex min-w-0 flex-1 flex-col items-start gap-3">
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-3 text-center">
             <Pill tone="flame">Plan. Track. Coach.</Pill>
-            <h1 className="inline-flex w-fit rounded-3xl border border-grape/60 bg-grape/25 px-5 py-3 text-3xl font-black leading-tight text-foreground sm:text-5xl">
+            <h1 className="text-3xl font-black leading-tight text-foreground sm:text-5xl">
               The basketball coaching operating system
             </h1>
             <Body>
@@ -152,7 +152,7 @@ export function Landing() {
               an animated play designer, a team Locker Room, the schedule and a read-only view for
               families.
             </Body>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap justify-center gap-2">
               <SignUpButton />
               <SignInButton />
               <Link to="/library">
@@ -162,12 +162,7 @@ export function Landing() {
               </Link>
             </div>
             <InstallAppPill />
-            <div className="flex flex-wrap gap-2">
-              <Pill tone="muted">Live stat tracking</Pill>
-              <Pill tone="muted">Play designer</Pill>
-              <Pill tone="muted">Locker Room</Pill>
-              <Pill tone="muted">Family stats link</Pill>
-            </div>
+            <InfoList items={["Live stat tracking", "Play designer", "Locker Room", "Family stats link"]} className="max-w-xl" />
           </div>
           <Panel className="w-full flex-1 bg-surface/80">
             <Pill tone="grape">Play Maker</Pill>
@@ -176,7 +171,7 @@ export function Landing() {
         </Panel>
 
         <Panel className="flex flex-col gap-3">
-          <SectionTitle>One system for the season</SectionTitle>
+          <div className="flex justify-center"><SectionTitle>One system for the season</SectionTitle></div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {FEATURES.map((f) => {
               const Icon = f.icon;
@@ -201,7 +196,7 @@ export function Landing() {
                   >
                     <Icon className="h-5 w-5" />
                   </span>
-                  <span className="inline-flex w-fit rounded-2xl border border-border bg-surface-2/80 px-3 py-1.5 text-base font-black leading-tight text-foreground">
+                  <span className="text-center text-base font-black leading-tight text-foreground">
                     {f.title}
                   </span>
                   <Body>{f.body}</Body>
@@ -212,50 +207,30 @@ export function Landing() {
         </Panel>
 
         <Panel className="flex flex-col gap-3 border-2 border-flame/50 bg-flame/5">
-          <SectionTitle tone="flame">Run the game from the court</SectionTitle>
+          <div className="flex justify-center"><SectionTitle tone="flame">Run the game from the court</SectionTitle></div>
           <Body>
             The court stays on screen the whole game. Tap where it happened, tap the player, tap the
             stat — rebounds, assists, fouls and free throws come back as quick bubbles on the same
             court.
           </Body>
-          <div className="grid gap-2 sm:grid-cols-4">
-            {[
+           <InfoList items={[
               "Tap the shot location",
               "Tap the player",
               "Tap MADE or MISS",
               "Follow-up bubble, then next play",
-            ].map((step, i) => (
-              <div
-                key={step}
-                className="flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-surface-2/70 p-3"
-              >
-                <Pill tone="flame">Step {i + 1}</Pill>
-                <Pill tone="neutral">{step}</Pill>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Pill tone="muted">Substitutions on the same screen</Pill>
-            <Pill tone="muted">Undo and recent events</Pill>
-            <Pill tone="muted">Overtime and auto end-of-game save</Pill>
-            <Pill tone="muted">Offline-friendly sync</Pill>
-          </div>
+             ]} tone="flame" />
+           <InfoPanel>Substitutions stay on the same screen. Undo, recent events, overtime, automatic final saving, and offline-friendly sync remain close at hand.</InfoPanel>
         </Panel>
 
         <Panel className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="flex min-w-0 flex-1 flex-col items-start gap-3">
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-3">
             <SectionTitle>Teach the play, not just the picture</SectionTitle>
             <Body>
               Draw cuts, curls, screens, passes, bumpy dribbles and handoffs, sequence them, then play
               the whole thing back frame by frame. Offense, defense and full-court press concepts with
               both teams on the floor.
             </Body>
-            <div className="flex flex-wrap gap-2">
-              <Pill tone="muted">Offense · BLOB · SLOB</Pill>
-              <Pill tone="muted">Defense · Press Break · Presses</Pill>
-              <Pill tone="muted">Half court zoom</Pill>
-              <Pill tone="muted">Share a play link</Pill>
-            </div>
+            <InfoList items={["Offense, BLOB, and SLOB", "Defense, Press Break, and Presses", "Half-court zoom", "Shareable play links"]} />
           </div>
           <Panel className="w-full flex-1 bg-surface/80">
             <Pill tone="flame">Animated playback</Pill>
@@ -264,7 +239,7 @@ export function Landing() {
         </Panel>
 
         <Panel className="flex flex-col gap-3">
-          <SectionTitle>See CoachSide in action</SectionTitle>
+          <div className="flex justify-center"><SectionTitle>See CoachSide in action</SectionTitle></div>
           <Body>
             Real screens from the app: team season stats, statistical leaders and the colour-coded shot
             chart built from tapped court locations.
@@ -277,7 +252,7 @@ export function Landing() {
         </Panel>
 
         <Panel className="flex flex-col gap-3 border-2 border-grape/50 bg-grape/5">
-          <SectionTitle>Locker Room, calendar and family access</SectionTitle>
+          <div className="flex justify-center"><SectionTitle>Locker Room, calendar and family access</SectionTitle></div>
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-2 rounded-3xl border border-grape/70 bg-grape/10 p-3">
               <Pill tone="grape">Players</Pill>
@@ -303,10 +278,10 @@ export function Landing() {
           </div>
         </Panel>
 
-        <Panel className="flex flex-col items-start gap-3 border-2 border-flame/60 bg-flame/10 p-5">
+        <Panel className="flex flex-col items-center gap-3 border-2 border-flame/60 bg-flame/10 p-5 text-center">
           <SectionTitle tone="flame">Start coaching from one place</SectionTitle>
           <Body>Create your coach account, add a roster and run your next game from the court.</Body>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             <SignUpButton />
             <SignInButton />
           </div>

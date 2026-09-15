@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Check } from "lucide-react";
 import type {
   ButtonHTMLAttributes,
   HTMLAttributes,
@@ -28,6 +29,82 @@ export function Panel({
       {children}
     </div>
   );
+}
+
+export function SectionHeader({
+  title,
+  subtitle,
+  tone = "grape",
+  as = "h2",
+  className,
+  children,
+}: {
+  title: ReactNode;
+  subtitle?: ReactNode;
+  tone?: "grape" | "flame" | "neutral";
+  as?: "h1" | "h2" | "h3";
+  className?: string;
+  children?: ReactNode;
+}) {
+  const Title = as;
+  const tones = {
+    grape: "border-grape/50 bg-grape/15",
+    flame: "border-flame/50 bg-flame/15",
+    neutral: "border-border/70 bg-surface/80",
+  } as const;
+  return (
+    <div className={cn("flex w-full flex-col items-center gap-2 rounded-3xl border px-4 py-4 text-center", tones[tone], className)}>
+      <Title className="text-2xl font-black leading-tight text-foreground sm:text-3xl">{title}</Title>
+      {subtitle ? <p className="max-w-2xl text-sm font-semibold leading-relaxed text-muted-foreground sm:text-base">{subtitle}</p> : null}
+      {children}
+    </div>
+  );
+}
+
+export function InfoPanel({
+  children,
+  tone = "neutral",
+  className,
+  ...rest
+}: HTMLAttributes<HTMLDivElement> & { tone?: "neutral" | "grape" | "flame" | "danger" }) {
+  const tones = {
+    neutral: "border-border/70 bg-surface-2/60",
+    grape: "border-grape/45 bg-grape/10",
+    flame: "border-flame/45 bg-flame/10",
+    danger: "border-destructive/50 bg-destructive/10",
+  } as const;
+  return (
+    <div className={cn("w-full rounded-2xl border p-4 text-left text-sm font-semibold leading-relaxed text-foreground", tones[tone], className)} {...rest}>
+      {children}
+    </div>
+  );
+}
+
+export function InfoList({
+  items,
+  tone = "neutral",
+  className,
+}: {
+  items: ReactNode[];
+  tone?: "neutral" | "grape" | "flame";
+  className?: string;
+}) {
+  return (
+    <InfoPanel tone={tone} className={className}>
+      <ul className="space-y-2.5">
+        {items.map((item, index) => (
+          <li key={index} className="flex items-start gap-2.5">
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-flame" aria-hidden />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </InfoPanel>
+  );
+}
+
+export function PrimaryCTA({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn("flex w-full flex-wrap items-center justify-center gap-2 text-center", className)}>{children}</div>;
 }
 
 /**
@@ -99,7 +176,7 @@ export function BubbleButton({
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-full border font-bold tracking-wide shadow-lg shadow-black/20 transition-all active:scale-95 disabled:opacity-40",
+        "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border text-center font-bold tracking-wide shadow-lg shadow-black/20 transition-all active:scale-95 disabled:opacity-40",
         tones[tone],
         sizes[size],
         active && "ring-2 ring-flame ring-offset-2 ring-offset-background",
@@ -259,7 +336,7 @@ export function EmptyState({ children, className }: { children: ReactNode; class
         className,
       )}
     >
-      <Pill tone="muted">{children}</Pill>
+      <p className="text-center text-sm font-semibold leading-relaxed text-muted-foreground">{children}</p>
     </div>
   );
 }

@@ -90,7 +90,7 @@ function ProfilePage() {
               {initialsOf(me.profile?.full_name, email)}
             </div>
             <div className="flex flex-col gap-2">
-              <Heading>{me.profile?.full_name || "Coach"}</Heading>
+            <Heading className="text-center">{me.profile?.full_name || "Coach"}</Heading>
               <div className="flex flex-wrap gap-2">
                 {me.role ? (
                   <Pill tone={me.role === "head_coach" ? "flame" : "grape"}>{ROLE_LABEL[me.role]}</Pill>
@@ -112,9 +112,9 @@ function ProfilePage() {
             <TextInput value={email} disabled readOnly />
           </Field>
           <Note>Email is your sign-in and cannot be changed here.</Note>
-          <BubbleButton tone="grape" disabled={save.isPending} onClick={() => save.mutate()}>
+          <div className="flex justify-center"><BubbleButton tone="grape" disabled={save.isPending} onClick={() => save.mutate()}>
             {save.isPending ? "Saving…" : "Save profile"}
-          </BubbleButton>
+          </BubbleButton></div>
         </Panel>
 
         {isPlayer ? (
@@ -133,7 +133,7 @@ function ProfilePage() {
           </Panel>
         ) : (
           <Panel className="flex flex-col gap-3">
-            <Heading tone="flame">Assigned teams</Heading>
+            <div className="flex justify-center"><Heading tone="flame" className="text-center">Assigned teams</Heading></div>
             {me.loading ? <EmptyState>Loading teams…</EmptyState> : null}
             {!me.loading && !me.teams.length ? (
               <EmptyState>No teams yet — add one in Rosters</EmptyState>
@@ -144,7 +144,7 @@ function ProfilePage() {
                   key={t.id}
                   className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-2/70 px-3 py-2"
                 >
-                  <Pill tone="grape">{t.name}</Pill>
+                  <span className="text-base font-black text-foreground">{t.name}</span>
                   <Pill tone="muted">{t.season}</Pill>
                   {t.head_coach_name ? <Pill tone="neutral">HC {t.head_coach_name}</Pill> : null}
                   <div className="ml-auto flex gap-1.5">
@@ -162,8 +162,8 @@ function ProfilePage() {
                 </div>
               ))}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Label>Access</Label>
+              <div className="flex flex-col items-start gap-2">
+               <Label>Access</Label>
               <Note>
                 {me.isHeadCoach
                   ? "Full access: rosters, settings, invitations, games, stats and plays."

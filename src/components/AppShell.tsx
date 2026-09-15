@@ -114,12 +114,12 @@ export function AppShell({
             </nav>
           </header>
 
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <h1 className="rounded-2xl border border-border bg-surface/80 px-4 py-2 text-2xl font-black leading-none text-foreground sm:text-3xl">
+          <div className="mb-4 flex flex-col items-center gap-2 rounded-3xl border border-border/70 bg-surface/80 px-4 py-4 text-center">
+            <h1 className="text-2xl font-black leading-tight text-foreground sm:text-3xl">
               {title}
             </h1>
             {subtitle ? (
-              <p className="rounded-2xl border border-border/60 bg-surface-2/70 px-3 py-2 text-sm font-semibold text-muted-foreground">
+              <p className="max-w-2xl text-sm font-semibold leading-relaxed text-muted-foreground">
                 {subtitle}
               </p>
             ) : null}
@@ -211,20 +211,16 @@ export function AppShell({
           </div>
         </header>
 
-        <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-3xl border border-border/70 bg-surface/80 px-4 py-4 sm:flex sm:flex-wrap sm:justify-center sm:text-center">
           {logoUrl ? (
             <span className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-flame/50 bg-surface-2/80 p-1 shadow-lg shadow-black/30">
               <img src={logoUrl} alt="Team logo" className="h-full w-full object-contain" />
             </span>
           ) : null}
-          <h1 className="rounded-2xl border border-border bg-surface/80 px-4 py-2 text-2xl font-black leading-none text-foreground sm:text-3xl">
-            {title}
-          </h1>
-          {subtitle ? (
-            <p className="rounded-2xl border border-border/60 bg-surface-2/70 px-3 py-2 text-sm font-semibold text-muted-foreground">
-              {subtitle}
-            </p>
-          ) : null}
+          <div className="min-w-0 text-center sm:min-w-[280px]">
+            <h1 className="text-2xl font-black leading-tight text-foreground sm:text-3xl">{title}</h1>
+            {subtitle ? <p className="mt-1 text-sm font-semibold leading-relaxed text-muted-foreground">{subtitle}</p> : null}
+          </div>
         </div>
 
         {children}

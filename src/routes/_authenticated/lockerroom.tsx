@@ -279,7 +279,7 @@ function LockerRoomPage() {
       {tab === "today" ? (
         <div className="grid gap-3 lg:grid-cols-2">
           <Panel className="flex flex-col gap-3">
-            <Heading tone="flame">Today</Heading>
+            <div className="flex justify-center"><Heading tone="flame" className="text-center">Today</Heading></div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <StatTile
                 label="Unread news"
@@ -320,7 +320,7 @@ function LockerRoomPage() {
           </Panel>
 
           <Panel className="flex flex-col gap-3">
-            <Heading>Pinned</Heading>
+            <div className="flex justify-center"><Heading className="text-center">Pinned</Heading></div>
             {(announcements.data ?? []).filter((a) => a.pinned).length ? (
               (announcements.data ?? [])
                 .filter((a) => a.pinned)
@@ -342,16 +342,12 @@ function LockerRoomPage() {
               <EmptyState>Nothing pinned right now</EmptyState>
             )}
             <Label>Team</Label>
-            <div className="flex flex-wrap gap-2">
+            <div className="divide-y divide-border/70 rounded-2xl border border-border/70 bg-surface-2/50 px-3">
               {(directory.data ?? []).map((d) => (
-                <Pill key={d.user_id} tone={d.role === "player" ? "grape" : "neutral"}>
-                  {d.jersey ? `#${d.jersey} ` : ""}
-                  {d.full_name ?? d.player_name ?? d.email ?? "Member"} ·{" "}
-                  {TEAM_ROLE_LABEL[d.role]}
-                </Pill>
+                <div key={d.user_id} className="flex min-h-11 items-center justify-between gap-3 py-2 text-sm font-semibold text-foreground"><span className="min-w-0 truncate">{d.jersey ? `#${d.jersey} ` : ""}{d.full_name ?? d.player_name ?? d.email ?? "Member"}</span><Pill tone={d.role === "player" ? "grape" : "neutral"}>{TEAM_ROLE_LABEL[d.role]}</Pill></div>
               ))}
               {!(directory.data ?? []).length ? (
-                <Pill tone="muted">No players have joined with the invite link yet</Pill>
+                <p className="py-3 text-sm font-semibold text-muted-foreground">No players have joined with the invite link yet</p>
               ) : null}
             </div>
           </Panel>

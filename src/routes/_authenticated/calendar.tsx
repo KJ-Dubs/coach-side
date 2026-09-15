@@ -243,11 +243,11 @@ function CalendarPage() {
                   <Pill tone={typeTone(k)}>{label}</Pill>
                   {e ? (
                     <>
-                      <span className="rounded-2xl border border-border bg-surface px-3 py-2 text-lg font-black leading-tight text-foreground">{e.title}</span>
-                      <Pill tone="muted">
+                       <span className="text-lg font-black leading-tight text-foreground">{e.title}</span>
+                       <p className="text-sm font-semibold text-muted-foreground">
                         {fmtDay(e.starts_at)} · {fmtTime(e.starts_at)}
-                      </Pill>
-                      {e.location ? <Pill tone="muted">{e.location}</Pill> : null}
+                       </p>
+                       {e.location ? <p className="text-sm font-semibold text-muted-foreground">{e.location}</p> : null}
                     </>
                   ) : (
                     <Pill tone="muted">Nothing scheduled</Pill>
@@ -329,11 +329,12 @@ function CalendarPage() {
           ) : null}
 
 
-          <Panel className="mb-3 flex flex-wrap items-center gap-2">
-            <Label>Share with players & families</Label>
+          <Panel className="mb-3 flex flex-col items-center gap-3 text-center">
+            <h2 className="text-xl font-black text-foreground">Share with players &amp; families</h2>
             {team.locker_enabled ? (
               <>
                 <Pill tone="success">Subscription link is live</Pill>
+                <div className="flex flex-wrap justify-center gap-2">
                 <BubbleButton
                   size="sm"
                   tone="grape"
@@ -355,6 +356,7 @@ function CalendarPage() {
                     Add to Calendar
                   </BubbleButton>
                 </a>
+                </div>
               </>
             ) : (
               <BubbleButton
@@ -379,7 +381,7 @@ function CalendarPage() {
                     <div
                       key={e.id}
                       className={cn(
-                        "flex flex-wrap items-center gap-2 rounded-2xl border p-3",
+                        "grid gap-2 rounded-2xl border p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center",
                         bucket(e) === "game"
                           ? "border-flame/50 bg-flame/10"
                           : bucket(e) === "practice"
@@ -387,10 +389,10 @@ function CalendarPage() {
                             : "border-border/70 bg-surface-2/70",
                       )}
                     >
-                      <Pill tone={typeTone(e.event_type)}>
+                      <div className="flex min-w-0 flex-wrap items-center gap-2 text-left"><Pill tone={typeTone(e.event_type)}>
                         {(EVENT_TYPE_LABEL[e.event_type] ?? "Event").toUpperCase()}
                       </Pill>
-                      <span className="rounded-2xl border border-border bg-surface px-3 py-2 text-lg font-black leading-tight text-foreground">
+                       <span className="text-lg font-black leading-tight text-foreground">
                         {e.event_type === "game" && e.opponent
                           ? `${e.home_away === "away" ? "@" : "vs"} ${e.opponent}`
                           : e.title}
@@ -413,9 +415,9 @@ function CalendarPage() {
                       {e.location ? <Pill tone="muted">{e.location}</Pill> : null}
                       {e.uniform ? <Pill tone="muted">{e.uniform} uniforms</Pill> : null}
                       {rem.length ? <Pill tone="muted">{rem.length} reminders</Pill> : null}
-                      {e.notes ? <Pill tone="muted">{e.notes}</Pill> : null}
+                       {e.notes ? <p className="w-full text-left text-sm font-semibold leading-relaxed text-muted-foreground">{e.notes}</p> : null}</div>
 
-                      <div className="ml-auto flex flex-wrap gap-2">
+                      <div className="flex flex-wrap justify-center gap-2 sm:justify-end">
                         {e.event_type === "game" && game && game.status === "final" ? (
                           <>
                             <Pill tone="grape">

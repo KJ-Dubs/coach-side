@@ -180,10 +180,7 @@ function RosterPage() {
       <StatsTabs />
       {openForm === "team" ? (
         <Panel className="mb-3 flex flex-col gap-3 border-grape/50">
-          <div className="flex items-center gap-2">
-            <Pill tone="grape">New team</Pill>
-            <Label>Teams share your program's coaches and plays</Label>
-          </div>
+           <div className="text-center"><h2 className="text-xl font-black text-foreground">New team</h2><p className="mt-1 text-sm font-semibold text-muted-foreground">Teams share your program&apos;s coaches and plays</p></div>
           <div className="grid gap-3 sm:grid-cols-3">
             <Field label="Team name">
               <TextInput
@@ -213,9 +210,7 @@ function RosterPage() {
 
       {openForm === "player" ? (
         <Panel className="mb-3 flex flex-col gap-3 border-flame/50">
-          <div className="flex items-center gap-2">
-            <Pill tone="flame">New player</Pill>
-          </div>
+           <h2 className="text-center text-xl font-black text-foreground">New player</h2>
           {teams.data?.length ? (
             <div className="grid gap-3 sm:grid-cols-5">
               <Field label="Team">
@@ -320,10 +315,7 @@ function RosterPage() {
       </Panel>
 
       <Panel className="mb-3 flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Pill tone="grape">Teams &amp; seasons</Pill>
-          <Label>Rename a team or change its season</Label>
-        </div>
+          <div className="text-center"><h2 className="text-xl font-black text-foreground">Teams &amp; seasons</h2><p className="mt-1 text-sm font-semibold text-muted-foreground">Rename a team or change its season</p></div>
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {(teams.data ?? []).map((t) => (
             <div

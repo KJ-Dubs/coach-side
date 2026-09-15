@@ -5,9 +5,11 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { AppShell } from "@/components/AppShell";
 import {
+  actionCardCls,
   BubbleButton,
   EmptyState,
   Field,
+  InfoPanel,
   Label,
   Note,
   Panel,
@@ -353,22 +355,21 @@ function PlaybookPage() {
                 type="button"
                 onClick={() => setCategory(c)}
                 className={cn(
-                  "flex min-h-[150px] flex-col justify-between rounded-3xl border p-4 text-left shadow-lg shadow-black/30 transition-all active:scale-[0.98]",
+                  actionCardCls,
+                  "flex min-h-[150px] flex-col justify-between p-4",
                   meta.tone === "grape" && "border-grape/60 bg-grape/15 hover:bg-grape/25",
                   meta.tone === "flame" && "border-flame/60 bg-flame/15 hover:bg-flame/25",
                   meta.tone === "neutral" && "border-border bg-surface/80 hover:border-grape/60",
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="rounded-2xl border border-border/70 bg-surface-2/80 px-3 py-2 text-xl font-black leading-tight text-foreground sm:text-2xl">
+                  <span className="text-xl font-black leading-tight text-foreground sm:text-2xl">
                     {c}
                   </span>
                   <Pill tone={n ? "flame" : "muted"}>{n}</Pill>
                 </div>
-                <Note className="mt-3">{meta.blurb}</Note>
-                <div className="mt-3 flex items-center gap-2">
-                  <Pill tone="neutral">Open folder</Pill>
-                </div>
+                <InfoPanel className="mt-3">{meta.blurb}</InfoPanel>
+                <div className="mt-3 text-center text-sm font-black text-grape-bright">Open folder →</div>
               </button>
             );
           })}
@@ -505,10 +506,10 @@ function PlayCard({
 
   return (
     <Panel className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-2xl border border-grape/60 bg-grape/20 px-3 py-2 text-xl font-black leading-tight text-foreground">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+        <h3 className="min-w-0 truncate text-center text-xl font-black leading-tight text-foreground">
           {play.name}
-        </span>
+        </h3>
         <BubbleButton
           size="sm"
           tone={menu ? "grape" : "neutral"}
@@ -519,7 +520,7 @@ function PlayCard({
         </BubbleButton>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2">
         <Pill tone="neutral">Attack {play.attack_basket === "left" ? "left" : "right"}</Pill>
         <Pill tone={play.is_shared ? "success" : "muted"}>
           {play.is_shared ? "Shared link on" : "Private"}
@@ -549,7 +550,7 @@ function PlayCard({
       </Link>
 
       {menu ? (
-        <div className="flex flex-wrap gap-1.5 rounded-2xl border border-border bg-surface-2/70 p-2">
+        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-surface-2/70 p-2 sm:grid-cols-3">
           <Link to="/plays/$playId/view" params={{ playId: play.id }} search={viewSearch}>
             <BubbleButton size="sm" tone="neutral">
               View
@@ -727,13 +728,9 @@ function QuickCreate({
           </BubbleButton>
         </div>
       </Field>
-      <BubbleButton
-        tone="flame"
-        disabled={!name.trim() || !teamIds.length || create.isPending}
-        onClick={() => create.mutate()}
-      >
+      <div className="flex justify-center"><BubbleButton tone="flame" disabled={!name.trim() || !teamIds.length || create.isPending} onClick={() => create.mutate()}>
         {create.isPending ? "Creating…" : "Create & design"}
-      </BubbleButton>
+      </BubbleButton></div>
     </Panel>
   );
 }

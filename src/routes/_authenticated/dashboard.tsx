@@ -12,7 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { BubbleButton, EmptyState, Label, Note, Panel, Pill } from "@/components/Bubbles";
+import { BubbleButton, EmptyState, InfoList, InfoPanel, Label, Panel, Pill, PrimaryCTA } from "@/components/Bubbles";
 import { fetchTeamEvents, fetchGames, logoSignedUrl } from "@/lib/data";
 import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -109,14 +109,15 @@ function UpNext({ teamId }: { teamId: string | null }) {
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
 
   return (
-    <Panel className="mb-3 flex flex-wrap items-center gap-2">
-      <Label>Up next</Label>
-      {next ? (
-        <>
-          <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-2 text-lg font-black leading-tight text-foreground">
+    <Panel className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+      <div className="min-w-0 text-left">
+        <Label>Up next</Label>
+        {next ? (
+          <div className="mt-2 min-w-0">
+          <span className="block truncate text-lg font-black leading-tight text-foreground">
             {next.title}
           </span>
-          <Pill tone="muted">
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">
             {new Date(next.starts_at).toLocaleString(undefined, {
               weekday: "short",
               month: "short",
@@ -124,13 +125,12 @@ function UpNext({ teamId }: { teamId: string | null }) {
               hour: "numeric",
               minute: "2-digit",
             })}
-          </Pill>
-          {next.location ? <Pill tone="muted">{next.location}</Pill> : null}
-        </>
-      ) : (
-        <Pill tone="muted">Nothing scheduled</Pill>
-      )}
-      <Link to="/calendar" className="ml-auto">
+          </p>
+          {next.location ? <p className="text-sm font-semibold text-muted-foreground">{next.location}</p> : null}
+          </div>
+        ) : <p className="mt-2 text-sm font-semibold text-muted-foreground">Nothing scheduled</p>}
+      </div>
+      <Link to="/calendar" className="justify-self-center sm:justify-self-end">
         <BubbleButton size="sm" tone="neutral">
           Calendar
         </BubbleButton>
@@ -159,19 +159,13 @@ function TodayStrip({ teamId }: { teamId: string | null }) {
   if (!game) return <UpNext teamId={teamId} />;
 
   return (
-    <Panel className="mb-3 flex flex-wrap items-center gap-2 border-flame/60 bg-flame/10">
-      <Label>Game today</Label>
-      <span className="rounded-2xl border border-flame/60 bg-flame/20 px-3 py-2 text-lg font-black leading-tight text-foreground">
-        {game.opponent ? `vs ${game.opponent}` : game.title}
-      </span>
-      <Pill tone="muted">
-        {new Date(game.starts_at).toLocaleTimeString(undefined, {
-          hour: "numeric",
-          minute: "2-digit",
-        })}
-      </Pill>
-      {game.location ? <Pill tone="muted">{game.location}</Pill> : null}
-      <Link to="/games/new" className="ml-auto">
+    <Panel className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-flame/60 bg-flame/10">
+      <div className="min-w-0 text-left">
+        <Label>Game today</Label>
+        <h2 className="mt-2 truncate text-xl font-black leading-tight text-foreground">{game.opponent ? `vs ${game.opponent}` : game.title}</h2>
+        <p className="mt-1 text-sm font-semibold text-muted-foreground">{new Date(game.starts_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}{game.location ? ` · ${game.location}` : ""}</p>
+      </div>
+      <Link to="/games/new">
         <BubbleButton tone="flame" size="lg" className="min-h-14">
           ▶ Start Live Game
         </BubbleButton>
@@ -185,27 +179,17 @@ function MembershipCard({ teamId }: { teamId: string | null }) {
   const entitlement = useEntitlement(teamId);
   if (entitlement.complete) return null;
   return (
-    <Panel className="flex flex-col gap-2">
-      <Label>{COMPLETE_NAME}</Label>
-      <span className="rounded-2xl border border-flame/50 bg-flame/15 px-3 py-2 text-lg font-black leading-tight text-foreground">
+    <Panel className="flex flex-col items-center gap-3 text-center">
+      <h2 className="text-xl font-black text-foreground">{COMPLETE_NAME}</h2>
+      <span className="text-2xl font-black leading-tight text-flame">
         ${COMPLETE_PRICE}/month · all three modules
       </span>
-      <div className="flex flex-wrap gap-2">
-        {MODULE_LIST.map((m) => (
-          <Pill key={m.key} tone="muted">
-            {m.name} ${m.price}
-          </Pill>
-        ))}
-      </div>
-      <Note>
-        {COMPLETE_BLURB}{" "}
-        {entitlement.enforced
-          ? "One monthly charge for this team."
-          : "Memberships are not switched on yet — everything stays open."}
-      </Note>
-      <Link to="/membership" className="w-fit">
-        <BubbleButton tone="flame">See membership options</BubbleButton>
-      </Link>
+      <InfoList items={[
+        ...MODULE_LIST.map((m) => `${m.name} — $${m.price}/month`),
+        COMPLETE_BLURB,
+        entitlement.enforced ? "One monthly charge for this team." : "Memberships are not switched on yet — everything stays open.",
+      ]} tone="flame" />
+      <PrimaryCTA><Link to="/membership"><BubbleButton tone="flame">See membership options</BubbleButton></Link></PrimaryCTA>
     </Panel>
   );
 }
@@ -230,12 +214,12 @@ function Dashboard() {
       subtitle={team ? `${team.name} · ${team.season}` : (me.org?.name ?? "Your basketball program")}
       logoUrl={teamLogo.data ?? null}
     >
-      <Panel className="mb-3 flex flex-wrap items-center gap-2">
-        <Label>Current team</Label>
-        <span className="rounded-2xl border border-grape/60 bg-grape/20 px-4 py-2 text-lg font-black leading-tight text-foreground">
-          {team ? team.name : "No team yet"}
-        </span>
-        {team ? <Pill tone="muted">{team.season}</Pill> : null}
+      <Panel className="mb-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+        <div className="min-w-0 text-center sm:text-left">
+          <Label>Current team</Label>
+          <h2 className="mt-2 truncate text-xl font-black text-foreground">{team ? team.name : "No team yet"}</h2>
+          {team ? <p className="text-sm font-semibold text-muted-foreground">{team.season}</p> : null}
+        </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {teams.length > 1 ? (
             teams
@@ -297,13 +281,13 @@ function Dashboard() {
                   <Icon className="h-5 w-5 transition-transform group-hover:scale-110" />
                 </span>
               </div>
-              {c.blurb ? <Note className="mt-3">{c.blurb}</Note> : null}
+              {c.blurb ? <InfoPanel className="mt-3">{c.blurb}</InfoPanel> : null}
             </Link>
           );
         })}
       </div>
 
-      <Panel className="mb-3 flex flex-wrap items-center gap-2">
+      <Panel className="mb-3 flex flex-wrap items-center justify-center gap-2">
         <Label>More tools</Label>
         {SECONDARY.map((c) => {
           const Icon = c.icon;
@@ -329,8 +313,8 @@ function Dashboard() {
 
       <Panel className="mb-3 flex flex-wrap items-center gap-2">
         <Label>Parents & families</Label>
-        <Note>Read-only stats and schedule link. No playbook, no account needed.</Note>
-        <Link to="/locker" className="ml-auto">
+        <InfoPanel className="sm:flex-1">Read-only stats and schedule link. No playbook, no account needed.</InfoPanel>
+        <Link to="/locker">
           <BubbleButton size="sm" tone="neutral">
             <KeyRound className="h-4 w-4" aria-hidden />
             Share link
