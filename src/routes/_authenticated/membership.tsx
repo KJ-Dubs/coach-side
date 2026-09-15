@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import {
@@ -68,6 +69,30 @@ function Money({ amount }: { amount: number }) {
       ${amount}
       <span className="text-sm font-bold text-muted-foreground">/month</span>
     </span>
+  );
+}
+
+/** One grouped, left-aligned feature list inside a single bubble. */
+function FeatureList({
+  items,
+  tone = "neutral",
+}: {
+  items: string[];
+  tone?: "neutral" | "flame";
+}) {
+  return (
+    <ul
+      className={`w-full rounded-2xl border p-4 text-left ${
+        tone === "flame" ? "border-flame/50 bg-flame/10" : "border-border/70 bg-surface-2/60"
+      }`}
+    >
+      {items.map((item) => (
+        <li key={item} className="flex items-start gap-2.5 py-1.5">
+          <Check className="mt-0.5 h-4 w-4 shrink-0 text-flame" aria-hidden="true" />
+          <span className="text-sm font-semibold leading-snug text-foreground">{item}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -273,9 +298,7 @@ function MembershipPage() {
               {MODULES[m].name}
             </Pill>
           ))
-        ) : (
-          <Pill tone="muted">Free Core</Pill>
-        )}
+        ) : null}
         {billing.data?.currentPeriodEnd ? (
           <Pill tone="muted">Renews {new Date(billing.data.currentPeriodEnd).toLocaleDateString()}</Pill>
         ) : null}
@@ -286,59 +309,72 @@ function MembershipPage() {
         ) : null}
       </Panel>
 
-      <Panel className="mb-3 flex flex-col gap-2">
-        <Heading>Free Core — $0</Heading>
-        <div className="flex flex-wrap gap-2">
-          {FREE_CORE.map((f) => (
-            <Pill key={f} tone="muted">
-              {f}
-            </Pill>
-          ))}
+      <Panel className="mb-3 flex flex-col gap-3">
+        <div className="flex justify-center">
+          <Heading tone="neutral">Free Core — $0</Heading>
         </div>
+        <div className="flex justify-center">
+          <Note className="text-center">Every team starts here — free forever.</Note>
+        </div>
+        <FeatureList items={FREE_CORE} />
       </Panel>
 
       <div className="mb-3 grid gap-3 sm:grid-cols-3">
         {MODULE_LIST.map((m) => {
           const on = picked.includes(m.key);
           return (
-            <button
+            <div
               key={m.key}
-              type="button"
-              onClick={() =>
-                setSelected(on ? picked.filter((k) => k !== m.key) : [...picked, m.key])
-              }
-              className={`flex flex-col gap-2 rounded-3xl border p-3 text-left shadow-lg shadow-black/30 transition-all active:scale-[0.99] ${
-                on ? "border-grape/70 bg-grape/15" : "border-border/70 bg-surface/80 hover:border-grape/60"
+              className={`flex flex-col gap-3 rounded-3xl border p-4 shadow-lg shadow-black/30 transition-all ${
+                on ? "border-grape/70 bg-grape/15" : "border-border/70 bg-surface/80"
               }`}
             >
-              <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-2 text-xl font-black leading-tight text-foreground">
-                {m.name}
-              </span>
-              <Money amount={m.price} />
-              <Note>{m.blurb}</Note>
-              <div className="flex flex-wrap gap-1.5">
-                {m.benefits.map((b) => (
-                  <Pill key={b} tone="muted">
-                    {b}
-                  </Pill>
-                ))}
+              <div className="flex justify-center">
+                <span className="rounded-2xl border border-border bg-surface-2/80 px-4 py-2 text-center text-xl font-black leading-tight text-foreground">
+                  {m.name}
+                </span>
               </div>
-              <Pill tone={on ? "grape" : "neutral"}>{on ? "Selected" : "Add to plan"}</Pill>
-            </button>
+              <div className="flex justify-center">
+                <Money amount={m.price} />
+              </div>
+              <div className="flex justify-center">
+                <Note className="text-center">{m.blurb}</Note>
+              </div>
+              <FeatureList items={m.benefits} />
+              <div className="flex justify-center">
+                <BubbleButton
+                  tone={on ? "grape" : "flame"}
+                  onClick={() =>
+                    setSelected(on ? picked.filter((k) => k !== m.key) : [...picked, m.key])
+                  }
+                >
+                  {on ? "✓ Selected" : "Add to plan"}
+                </BubbleButton>
+              </div>
+            </div>
           );
         })}
       </div>
 
-      <Panel className="mb-3 flex flex-col gap-2 border-flame/60 bg-flame/10">
-        <div className="flex flex-wrap items-center gap-2">
+      <Panel className="mb-3 flex flex-col gap-3 border-flame/60 bg-flame/10">
+        <div className="flex justify-center">
           <Label>Best value</Label>
-          <Pill tone="flame">{COMPLETE_NAME}</Pill>
+        </div>
+        <div className="flex justify-center">
+          <Heading tone="flame">{COMPLETE_NAME}</Heading>
+        </div>
+        <div className="flex justify-center">
           <Money amount={COMPLETE_PRICE} />
         </div>
-        <Note>{COMPLETE_BLURB}</Note>
-        <BubbleButton tone="grape" className="w-fit" onClick={() => setSelected([...ALL_MODULES])}>
-          Choose Complete
-        </BubbleButton>
+        <div className="flex justify-center">
+          <Note className="text-center">{COMPLETE_BLURB}</Note>
+        </div>
+        <FeatureList items={MODULE_LIST.flatMap((m) => m.benefits)} tone="flame" />
+        <div className="flex justify-center">
+          <BubbleButton tone="grape" size="lg" onClick={() => setSelected([...ALL_MODULES])}>
+            Choose Complete
+          </BubbleButton>
+        </div>
       </Panel>
 
       <Panel className="mb-3 flex flex-wrap items-center gap-2">
@@ -360,24 +396,26 @@ function MembershipPage() {
             meantime.
           </Note>
         ) : null}
-        <BubbleButton
-          tone="flame"
-          size="lg"
-          disabled={!teamId || !picked.length || !config.data?.checkoutConfigured || checkout.isPending}
-          onClick={() => checkout.mutate()}
-        >
-          {checkout.isPending ? "Opening checkout…" : `Continue — $${total}/month`}
-        </BubbleButton>
-        {billing.data?.subscriptionRef ? (
-          <BubbleButton tone="neutral" onClick={() => cancel.mutate()}>
-            Cancel at period end
+        <div className="flex w-full flex-wrap items-center justify-center gap-2">
+          <BubbleButton
+            tone="flame"
+            size="lg"
+            disabled={!teamId || !picked.length || !config.data?.checkoutConfigured || checkout.isPending}
+            onClick={() => checkout.mutate()}
+          >
+            {checkout.isPending ? "Opening checkout…" : `Continue — $${total}/month`}
           </BubbleButton>
-        ) : null}
+          {billing.data?.subscriptionRef ? (
+            <BubbleButton tone="neutral" onClick={() => cancel.mutate()}>
+              Cancel at period end
+            </BubbleButton>
+          ) : null}
+        </div>
       </Panel>
 
       <Panel className="mb-3 flex flex-col gap-2">
         <Label>Have an access code?</Label>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <TextInput
             value={codeInput}
             onChange={(e) => setCodeInput(e.target.value)}
