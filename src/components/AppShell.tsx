@@ -38,6 +38,7 @@ const QUICK = [
   { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/board", label: "Board", icon: PenLine },
   { to: "/roster", label: "Rosters", icon: UsersRound },
+  { to: "/library", label: "Library", icon: Sparkles },
 ] as const;
 
 export function AppShell({
