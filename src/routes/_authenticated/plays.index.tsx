@@ -474,6 +474,7 @@ function PlayCard({
   savingTeams,
   onPublish,
   onUnpublish,
+  onAnonymous,
 }: {
   play: Play;
   viewSearch: { category?: string; team?: string };
