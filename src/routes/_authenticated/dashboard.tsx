@@ -284,21 +284,10 @@ function Dashboard() {
 
       <div className="mb-3 grid gap-3 lg:grid-cols-2">
         <CoachNotes />
-
-        <Panel className="flex flex-col gap-2">
-          <Label>CoachSide Complete</Label>
-          <span className="rounded-2xl border border-flame/50 bg-flame/15 px-3 py-2 text-lg font-black leading-tight text-foreground">
-            Get more from CoachSide
-          </span>
-          <Note>
-            Playmaker, GameDay and Team Hub together — memberships are being finalised and are not
-            available yet.
-          </Note>
-          <BubbleButton tone="flame" disabled className="w-fit">
-            Coming soon
-          </BubbleButton>
-        </Panel>
+        <MembershipCard />
       </div>
+
+      <FollowedCreators />
 
       {isCoach ? <PlayerQrPanel teams={teams} /> : null}
 
