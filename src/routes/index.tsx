@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { Landing } from "@/components/marketing/Landing";
 import { Panel, Pill } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
-import { getPendingInvite } from "@/lib/pendingInvite";
+import { consumePendingInvite } from "@/lib/pendingInvite";
 
 export const Route = createFileRoute("/")({
   head: () => ({
