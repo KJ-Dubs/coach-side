@@ -41,7 +41,7 @@ export function HeartButton({ play, size = "sm" }: { play: LibraryPlay; size?: "
       aria-label={hearted ? "Remove heart" : "Heart this play"}
       onClick={() => toggle.mutate()}
     >
-      {hearted ? "♥" : "♡"} {play.hearts + (hearted !== (hearts.data ?? []).includes(play.id) ? 1 : 0)}
+      {hearted ? "♥" : "♡"} {play.hearts}
     </BubbleButton>
   );
 }
