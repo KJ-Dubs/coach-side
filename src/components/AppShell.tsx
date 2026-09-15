@@ -10,6 +10,7 @@ import {
   MessagesSquare,
   PenLine,
   Settings,
+  Sparkles,
   Swords,
   UserRound,
   UsersRound,
