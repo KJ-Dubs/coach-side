@@ -4,7 +4,7 @@
 - [x] Add shared centered header, grouped information, checklist, and CTA primitives
 - [x] Apply the hierarchy across coach, player, and public screens without behavior changes
 - [x] Verify representative mobile and desktop layouts, type safety, and preview build
-- [ ] Align the Playmaker setup and guidance with the grouped visual system
+- [x] Align the Playmaker setup and guidance with the grouped visual system
 
 ## Current interface refinement
 - [x] Apply a consistent page, section, entity, stat, body and metadata hierarchy
