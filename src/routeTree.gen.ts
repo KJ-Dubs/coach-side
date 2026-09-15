@@ -22,6 +22,7 @@ import { Route as AuthenticatedRosterRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
+import { Route as LibraryIndexRouteImport } from './routes/library.index'
 import { Route as LockerTokenRouteImport } from './routes/locker.$token'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedGameGameIdRouteImport } from './routes/_authenticated/game.$gameId'
@@ -101,6 +102,11 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
 const JoinTokenRoute = JoinTokenRouteImport.update({
   id: '/join/$token',
   path: '/join/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryIndexRoute = LibraryIndexRouteImport.update({
+  id: '/library/',
+  path: '/library/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LockerTokenRoute = LockerTokenRouteImport.update({
@@ -205,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/join/$token': typeof JoinTokenRoute
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
+  '/library/': typeof LibraryIndexRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
   '/plays/new': typeof AuthenticatedPlaysNewRoute
@@ -235,6 +242,7 @@ export interface FileRoutesByTo {
   '/join/$token': typeof JoinTokenRoute
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
+  '/library': typeof LibraryIndexRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
   '/plays/new': typeof AuthenticatedPlaysNewRoute
@@ -267,6 +275,7 @@ export interface FileRoutesById {
   '/join/$token': typeof JoinTokenRoute
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
+  '/library/': typeof LibraryIndexRoute
   '/_authenticated/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/_authenticated/games/new': typeof AuthenticatedGamesNewRoute
   '/_authenticated/plays/new': typeof AuthenticatedPlaysNewRoute
@@ -299,6 +308,7 @@ export interface FileRouteTypes {
     | '/join/$token'
     | '/locker/$token'
     | '/share/$token'
+    | '/library/'
     | '/game/$gameId'
     | '/games/new'
     | '/plays/new'
@@ -329,6 +339,7 @@ export interface FileRouteTypes {
     | '/join/$token'
     | '/locker/$token'
     | '/share/$token'
+    | '/library'
     | '/game/$gameId'
     | '/games/new'
     | '/plays/new'
@@ -360,6 +371,7 @@ export interface FileRouteTypes {
     | '/join/$token'
     | '/locker/$token'
     | '/share/$token'
+    | '/library/'
     | '/_authenticated/game/$gameId'
     | '/_authenticated/games/new'
     | '/_authenticated/plays/new'
@@ -384,6 +396,7 @@ export interface RootRouteChildren {
   JoinTokenRoute: typeof JoinTokenRoute
   LockerTokenRoute: typeof LockerTokenRoute
   ShareTokenRoute: typeof ShareTokenRoute
+  LibraryIndexRoute: typeof LibraryIndexRoute
   SharePlayTokenRoute: typeof SharePlayTokenRoute
   ApiPublicGoogleCalendarCallbackRoute: typeof ApiPublicGoogleCalendarCallbackRoute
   ApiPublicLockerTokenCalendarRoute: typeof ApiPublicLockerTokenCalendarRoute
@@ -480,6 +493,13 @@ declare module '@tanstack/react-router' {
       path: '/join/$token'
       fullPath: '/join/$token'
       preLoaderRoute: typeof JoinTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library/': {
+      id: '/library/'
+      path: '/library'
+      fullPath: '/library/'
+      preLoaderRoute: typeof LibraryIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/locker/$token': {
@@ -652,6 +672,7 @@ const rootRouteChildren: RootRouteChildren = {
   JoinTokenRoute: JoinTokenRoute,
   LockerTokenRoute: LockerTokenRoute,
   ShareTokenRoute: ShareTokenRoute,
+  LibraryIndexRoute: LibraryIndexRoute,
   SharePlayTokenRoute: SharePlayTokenRoute,
   ApiPublicGoogleCalendarCallbackRoute: ApiPublicGoogleCalendarCallbackRoute,
   ApiPublicLockerTokenCalendarRoute: ApiPublicLockerTokenCalendarRoute,
