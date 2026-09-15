@@ -1763,6 +1763,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      team_member_stored_role: {
+        Args: { _id: string }
+        Returns: Database["public"]["Enums"]["team_role"]
+      }
       team_visible: { Args: { _team: string }; Returns: boolean }
     }
     Enums: {
