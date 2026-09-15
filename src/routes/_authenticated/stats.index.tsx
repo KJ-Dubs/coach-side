@@ -98,7 +98,7 @@ function StatsOverview() {
                 <Pill tone={gameResult(g, evs) === "W" ? "success" : "muted"}>
                   {gameResult(g, evs) ?? "—"}
                 </Pill>
-                <span className="rounded-2xl border border-border bg-surface px-3 py-2 text-base font-black text-foreground">
+                <span className="text-base font-black text-foreground">
                   {g.home_away === "away" ? "@" : "vs"} {g.opponent}
                 </span>
                 <Pill tone="muted">
@@ -120,9 +120,9 @@ function StatsOverview() {
         )}
       </Panel>
 
-      <Panel className="flex flex-wrap items-center gap-2">
-        <Note>Game history, player reporting and shot charts all live in these tabs.</Note>
-        <Link to="/games" className="ml-auto">
+      <Panel className="flex flex-col items-center gap-3">
+        <Note className="w-full text-left">Game history, player reporting and shot charts all live in these tabs.</Note>
+        <div className="flex flex-wrap justify-center gap-2"><Link to="/games">
           <BubbleButton size="sm" tone="neutral">
             All games
           </BubbleButton>
@@ -136,7 +136,7 @@ function StatsOverview() {
           <BubbleButton size="sm" tone="neutral">
             Team stats
           </BubbleButton>
-        </Link>
+        </Link></div>
       </Panel>
     </AppShell>
   );

@@ -10,7 +10,7 @@ import {
   WifiOff,
   type LucideIcon,
 } from "lucide-react";
-import { BubbleButton, InfoList, InfoPanel, Panel, Pill, SectionHeader } from "@/components/Bubbles";
+import { BubbleButton, InfoList, InfoPanel, Panel, Pill } from "@/components/Bubbles";
 import { DemoPlay } from "@/components/marketing/DemoPlay";
 import { InstallAppPill } from "@/components/InstallApp";
 import wordmark from "@/assets/coachside-wordmark.png.asset.json";
@@ -44,7 +44,7 @@ function SectionTitle({ children, tone = "grape" }: { children: string; tone?: "
     <h2
       className={
         "text-center text-2xl font-black leading-tight text-foreground sm:text-3xl " +
-        (tone === "flame" ? "border-flame/60 bg-flame/20" : "border-grape/60 bg-grape/20")
+        (tone === "flame" ? "text-flame" : "text-grape-bright")
       }
     >
       {children}
@@ -207,7 +207,7 @@ export function Landing() {
         </Panel>
 
         <Panel className="flex flex-col gap-3 border-2 border-flame/50 bg-flame/5">
-          <SectionTitle tone="flame">Run the game from the court</SectionTitle>
+          <div className="flex justify-center"><SectionTitle tone="flame">Run the game from the court</SectionTitle></div>
           <Body>
             The court stays on screen the whole game. Tap where it happened, tap the player, tap the
             stat — rebounds, assists, fouls and free throws come back as quick bubbles on the same
@@ -223,7 +223,7 @@ export function Landing() {
         </Panel>
 
         <Panel className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="flex min-w-0 flex-1 flex-col items-start gap-3">
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-3">
             <SectionTitle>Teach the play, not just the picture</SectionTitle>
             <Body>
               Draw cuts, curls, screens, passes, bumpy dribbles and handoffs, sequence them, then play
@@ -239,7 +239,7 @@ export function Landing() {
         </Panel>
 
         <Panel className="flex flex-col gap-3">
-          <SectionTitle>See CoachSide in action</SectionTitle>
+          <div className="flex justify-center"><SectionTitle>See CoachSide in action</SectionTitle></div>
           <Body>
             Real screens from the app: team season stats, statistical leaders and the colour-coded shot
             chart built from tapped court locations.
@@ -252,7 +252,7 @@ export function Landing() {
         </Panel>
 
         <Panel className="flex flex-col gap-3 border-2 border-grape/50 bg-grape/5">
-          <SectionTitle>Locker Room, calendar and family access</SectionTitle>
+          <div className="flex justify-center"><SectionTitle>Locker Room, calendar and family access</SectionTitle></div>
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-2 rounded-3xl border border-grape/70 bg-grape/10 p-3">
               <Pill tone="grape">Players</Pill>

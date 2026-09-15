@@ -90,7 +90,7 @@ function ProfilePage() {
               {initialsOf(me.profile?.full_name, email)}
             </div>
             <div className="flex flex-col gap-2">
-              <Heading>{me.profile?.full_name || "Coach"}</Heading>
+            <Heading className="text-center">{me.profile?.full_name || "Coach"}</Heading>
               <div className="flex flex-wrap gap-2">
                 {me.role ? (
                   <Pill tone={me.role === "head_coach" ? "flame" : "grape"}>{ROLE_LABEL[me.role]}</Pill>
@@ -144,7 +144,7 @@ function ProfilePage() {
                   key={t.id}
                   className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-2/70 px-3 py-2"
                 >
-                  <Pill tone="grape">{t.name}</Pill>
+                  <span className="text-base font-black text-foreground">{t.name}</span>
                   <Pill tone="muted">{t.season}</Pill>
                   {t.head_coach_name ? <Pill tone="neutral">HC {t.head_coach_name}</Pill> : null}
                   <div className="ml-auto flex gap-1.5">
