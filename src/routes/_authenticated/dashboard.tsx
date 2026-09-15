@@ -27,7 +27,13 @@ import { InstallAppCard } from "@/components/InstallApp";
 import { useCurrentTeam } from "@/lib/teamContext";
 import { PlayOfTheDayCard } from "@/components/community/PlayOfTheDayCard";
 import { FollowedCreators } from "@/components/community/FollowedCreators";
-import { MODULES, PAID_MODULES, useEntitlement } from "@/lib/entitlements";
+import {
+  COMPLETE_BLURB,
+  COMPLETE_NAME,
+  COMPLETE_PRICE,
+  MODULE_LIST,
+  useEntitlement,
+} from "@/lib/entitlements";
 
 /**
  * Players and parents land in the Locker Room instead of the coach dashboard.
@@ -174,27 +180,32 @@ function TodayStrip({ teamId }: { teamId: string | null }) {
   );
 }
 
-/** Membership shape only — nothing is for sale yet, so nothing is locked. */
-function MembershipCard() {
-  const entitlement = useEntitlement();
+/** Membership prompt. Hidden once a team holds all three modules. */
+function MembershipCard({ teamId }: { teamId: string | null }) {
+  const entitlement = useEntitlement(teamId);
   if (entitlement.complete) return null;
   return (
     <Panel className="flex flex-col gap-2">
-      <Label>CoachSide Complete</Label>
+      <Label>{COMPLETE_NAME}</Label>
       <span className="rounded-2xl border border-flame/50 bg-flame/15 px-3 py-2 text-lg font-black leading-tight text-foreground">
-        ${MODULES.complete.price}/month · all three modules
+        ${COMPLETE_PRICE}/month · all three modules
       </span>
       <div className="flex flex-wrap gap-2">
-        {PAID_MODULES.map((m) => (
+        {MODULE_LIST.map((m) => (
           <Pill key={m.key} tone="muted">
             {m.name} ${m.price}
           </Pill>
         ))}
       </div>
-      <Note>{MODULES.complete.blurb} Memberships are not available yet — everything stays open.</Note>
-      <BubbleButton tone="flame" disabled className="w-fit">
-        Coming soon
-      </BubbleButton>
+      <Note>
+        {COMPLETE_BLURB}{" "}
+        {entitlement.enforced
+          ? "One monthly charge for this team."
+          : "Memberships are not switched on yet — everything stays open."}
+      </Note>
+      <Link to="/membership" className="w-fit">
+        <BubbleButton tone="flame">See membership options</BubbleButton>
+      </Link>
     </Panel>
   );
 }
@@ -309,7 +320,7 @@ function Dashboard() {
 
       <div className="mb-3 grid gap-3 lg:grid-cols-2">
         <CoachNotes />
-        <MembershipCard />
+        <MembershipCard teamId={teamId} />
       </div>
 
       <FollowedCreators />

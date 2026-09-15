@@ -14,6 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_code_redemptions: {
+        Row: {
+          access_code_id: string
+          created_at: string
+          id: string
+          modules: string[]
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          access_code_id: string
+          created_at?: string
+          id?: string
+          modules?: string[]
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          access_code_id?: string
+          created_at?: string
+          id?: string
+          modules?: string[]
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_code_redemptions_access_code_id_fkey"
+            columns: ["access_code_id"]
+            isOneToOne: false
+            referencedRelation: "access_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_code_redemptions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      access_codes: {
+        Row: {
+          active: boolean
+          code_hash: string
+          code_hint: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          grant_days: number | null
+          id: string
+          label: string | null
+          max_uses: number | null
+          modules: string[]
+          per_team_limit: number
+          updated_at: string
+          uses: number
+        }
+        Insert: {
+          active?: boolean
+          code_hash: string
+          code_hint: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          grant_days?: number | null
+          id?: string
+          label?: string | null
+          max_uses?: number | null
+          modules?: string[]
+          per_team_limit?: number
+          updated_at?: string
+          uses?: number
+        }
+        Update: {
+          active?: boolean
+          code_hash?: string
+          code_hint?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          grant_days?: number | null
+          id?: string
+          label?: string | null
+          max_uses?: number | null
+          modules?: string[]
+          per_team_limit?: number
+          updated_at?: string
+          uses?: number
+        }
+        Relationships: []
+      }
       announcement_attachments: {
         Row: {
           announcement_id: string
@@ -437,6 +530,73 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      complimentary_grants: {
+        Row: {
+          access_code_id: string | null
+          active: boolean
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          modules: string[]
+          org_id: string | null
+          reason: string | null
+          source: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_code_id?: string | null
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          modules?: string[]
+          org_id?: string | null
+          reason?: string | null
+          source?: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_code_id?: string | null
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          modules?: string[]
+          org_id?: string | null
+          reason?: string | null
+          source?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complimentary_grants_access_code_fk"
+            columns: ["access_code_id"]
+            isOneToOne: false
+            referencedRelation: "access_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complimentary_grants_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complimentary_grants_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conversation_members: {
         Row: {
@@ -1456,6 +1616,65 @@ export type Database = {
           },
         ]
       }
+      team_billing: {
+        Row: {
+          billing_owner: string | null
+          created_at: string
+          current_period_end: string | null
+          last_webhook_at: string | null
+          last_webhook_error: string | null
+          modules: string[]
+          pending_effective_at: string | null
+          pending_modules: string[] | null
+          square_customer_id: string | null
+          square_plan_variation_id: string | null
+          square_subscription_id: string | null
+          status: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          billing_owner?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          last_webhook_at?: string | null
+          last_webhook_error?: string | null
+          modules?: string[]
+          pending_effective_at?: string | null
+          pending_modules?: string[] | null
+          square_customer_id?: string | null
+          square_plan_variation_id?: string | null
+          square_subscription_id?: string | null
+          status?: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          billing_owner?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          last_webhook_at?: string | null
+          last_webhook_error?: string | null
+          modules?: string[]
+          pending_effective_at?: string | null
+          pending_modules?: string[] | null
+          square_customer_id?: string | null
+          square_plan_variation_id?: string | null
+          square_subscription_id?: string | null
+          status?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_billing_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_events: {
         Row: {
           arrival_at: string | null
@@ -1882,6 +2101,7 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["coach_role"]
       }
+      my_team_entitlement: { Args: { _team: string }; Returns: Json }
       my_team_role: { Args: { _team: string }; Returns: string }
       my_verified_email: { Args: never; Returns: string }
       play_published: { Args: { _play: string }; Returns: boolean }
@@ -1936,6 +2156,7 @@ export type Database = {
       }
       team_member_stored_team: { Args: { _id: string }; Returns: string }
       team_member_stored_user: { Args: { _id: string }; Returns: string }
+      team_modules: { Args: { _team: string }; Returns: string[] }
       team_visible: { Args: { _team: string }; Returns: boolean }
       toggle_play_heart: { Args: { _play: string }; Returns: boolean }
     }
