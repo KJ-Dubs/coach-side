@@ -576,13 +576,27 @@ function PlayCard({
             Duplicate
           </BubbleButton>
           {play.published_to_library ? (
-            <BubbleButton size="sm" tone="ghost" onClick={onUnpublish}>
-              Remove from Library
-            </BubbleButton>
+            <>
+              <BubbleButton
+                size="sm"
+                tone="neutral"
+                onClick={() => onAnonymous(!play.publish_anonymous)}
+              >
+                {play.publish_anonymous ? "Credit my handle" : "Credit Anonymous Coach"}
+              </BubbleButton>
+              <BubbleButton size="sm" tone="ghost" onClick={onUnpublish}>
+                Remove from Library
+              </BubbleButton>
+            </>
           ) : (
-            <BubbleButton size="sm" tone="grape" onClick={onPublish}>
-              Publish to Library
-            </BubbleButton>
+            <>
+              <BubbleButton size="sm" tone="grape" onClick={() => onPublish(false)}>
+                Publish to Library
+              </BubbleButton>
+              <BubbleButton size="sm" tone="neutral" onClick={() => onPublish(true)}>
+                Publish anonymously
+              </BubbleButton>
+            </>
           )}
           <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onDelete}>
             Delete
