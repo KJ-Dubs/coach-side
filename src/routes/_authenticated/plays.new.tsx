@@ -9,7 +9,6 @@ import {
   Field,
   InfoList,
   InfoPanel,
-  Note,
   Panel,
   Pill,
   PrimaryCTA,
