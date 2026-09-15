@@ -35,15 +35,18 @@ export function SectionHeader({
   title,
   subtitle,
   tone = "grape",
+  as = "h2",
   className,
   children,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
   tone?: "grape" | "flame" | "neutral";
+  as?: "h1" | "h2" | "h3";
   className?: string;
   children?: ReactNode;
 }) {
+  const Title = as;
   const tones = {
     grape: "border-grape/50 bg-grape/15",
     flame: "border-flame/50 bg-flame/15",
@@ -51,7 +54,7 @@ export function SectionHeader({
   } as const;
   return (
     <div className={cn("flex w-full flex-col items-center gap-2 rounded-3xl border px-4 py-4 text-center", tones[tone], className)}>
-      <h2 className="text-2xl font-black leading-tight text-foreground sm:text-3xl">{title}</h2>
+      <Title className="text-2xl font-black leading-tight text-foreground sm:text-3xl">{title}</Title>
       {subtitle ? <p className="max-w-2xl text-sm font-semibold leading-relaxed text-muted-foreground sm:text-base">{subtitle}</p> : null}
       {children}
     </div>

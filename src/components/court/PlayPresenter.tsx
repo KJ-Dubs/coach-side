@@ -134,7 +134,7 @@ export function PlayPresenter({
   return (
     <div className={className}>
       <div className="flex flex-col gap-2">
-        <SectionHeader title={model.name} subtitle={model.category || undefined}>
+        <SectionHeader as="h1" title={model.name} subtitle={model.category || undefined}>
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Pill tone="flame">Sequence {total ? idx + 1 : 0} of {total}</Pill>
             <Pill tone="neutral">{phase === "show" ? "Showing actions" : "Running play"}</Pill>

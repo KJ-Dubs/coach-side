@@ -296,9 +296,9 @@ function TeamCard({ team, onSaved }: { team: Team; onSaved: () => void }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-2xl border border-grape/60 bg-grape/20 px-3 py-2 text-xl font-black leading-tight text-foreground sm:text-2xl">{team.name}</span>
-        <Pill tone="muted">{team.season}</Pill>
+      <div className="text-center">
+        <h3 className="text-xl font-black leading-tight text-foreground sm:text-2xl">{team.name}</h3>
+        <p className="mt-1 text-sm font-semibold text-muted-foreground">{team.season}</p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface-2/80">
@@ -513,8 +513,8 @@ function GameDefaultsCard({ team, onSaved }: { team: Team; onSaved: () => void }
 
   return (
     <Panel className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <Heading tone="neutral">Basketball game defaults</Heading>
+      <div className="flex flex-col items-center gap-2 text-center">
+        <Heading tone="neutral" className="text-center">Basketball game defaults</Heading>
         <Pill tone="muted" className="text-sm font-black">{team.name}</Pill>
       </div>
       <Note>These pre-fill the Start a Game setup. You can still change them per game.</Note>

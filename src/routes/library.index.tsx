@@ -31,7 +31,7 @@ function LibraryPage() {
   const { session } = useAuth();
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-3 p-2 sm:p-4">
-      <SectionHeader title={<h1>CoachSide Play Library</h1>} subtitle="Animated plays published by coaches. Watch free — sign in to heart and save.">
+      <SectionHeader as="h1" title="CoachSide Play Library" subtitle="Animated plays published by coaches. Watch free — sign in to heart and save.">
         <Link to={session ? "/dashboard" : "/"}>
           <BubbleButton tone="neutral" size="sm">
             {session ? "Go to CoachSide" : "Back to CoachSide"}

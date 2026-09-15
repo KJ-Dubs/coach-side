@@ -1,9 +1,9 @@
 # CourtSide Coach — production pass roadmap
 
 ## Site-wide visual system cleanup
-- [ ] Add shared centered header, grouped information, checklist, and CTA primitives
-- [ ] Apply the hierarchy across coach, player, and public screens without behavior changes
-- [ ] Verify representative mobile and desktop layouts, type safety, and preview build
+- [x] Add shared centered header, grouped information, checklist, and CTA primitives
+- [x] Apply the hierarchy across coach, player, and public screens without behavior changes
+- [x] Verify representative mobile and desktop layouts, type safety, and preview build
 
 ## Current interface refinement
 - [x] Apply a consistent page, section, entity, stat, body and metadata hierarchy
