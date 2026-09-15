@@ -233,7 +233,11 @@ function Dashboard() {
         </Panel>
       ) : null}
 
-      <UpNext teamId={teamId} />
+      <TodayStrip teamId={teamId} />
+
+      <div className="mb-3">
+        <PlayOfTheDayCard canAdd={isCoach} />
+      </div>
 
       <div className="mb-3 grid gap-3 sm:grid-cols-2">
         {PRIMARY.map((c) => {
