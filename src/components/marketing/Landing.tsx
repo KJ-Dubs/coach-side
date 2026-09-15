@@ -15,9 +15,9 @@ import { DemoPlay } from "@/components/marketing/DemoPlay";
 import { InstallAppPill } from "@/components/InstallApp";
 import wordmark from "@/assets/coachside-wordmark.png.asset.json";
 import mark from "@/assets/coachside-mark.jpg.asset.json";
-import shotChart from "@/assets/snapshot-shot-chart.jpg.asset.json";
-import teamStats from "@/assets/snapshot-team-stats.jpg.asset.json";
-import leaders from "@/assets/snapshot-leaders.jpg.asset.json";
+import shotChart from "@/assets/snapshot-shot-chart.jpg";
+import teamStats from "@/assets/snapshot-team-stats.jpg";
+import leaders from "@/assets/snapshot-leaders.jpg";
 
 function SignUpButton({ size = "lg" }: { size?: "sm" | "md" | "lg" }) {
   return (
@@ -245,9 +245,9 @@ export function Landing() {
             chart built from tapped court locations.
           </Body>
           <div className="grid gap-3 lg:grid-cols-3">
-            <Shot src={teamStats.url} alt="CoachSide team season stats screen" caption="Team stats" />
-            <Shot src={leaders.url} alt="CoachSide statistical leaders screen" caption="Leaders" />
-            <Shot src={shotChart.url} alt="CoachSide shot chart screen" caption="Shot chart" />
+            <Shot src={teamStats} alt="CoachSide team season stats screen" caption="Team stats" />
+            <Shot src={leaders} alt="CoachSide statistical leaders screen" caption="Leaders" />
+            <Shot src={shotChart} alt="CoachSide shot chart screen" caption="Shot chart" />
           </div>
         </Panel>
 
