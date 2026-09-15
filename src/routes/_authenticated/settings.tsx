@@ -203,7 +203,7 @@ function AccountCard({
       </Field>
       <Field label="Program / school">
         <TextInput
-          placeholder="e.g. Aliso Niguel Basketball"
+          placeholder="e.g. Home School Basketball"
           value={program}
           disabled={!isHeadCoach || !orgId}
           onChange={(e) => setProgram(e.target.value)}
@@ -418,7 +418,7 @@ function CalendarDefaultsCard({ team, onSaved }: { team: Team; onSaved: () => vo
       </div>
       <Note>These pre-fill new practices and games on the team calendar.</Note>
       <Field label="Home gym">
-        <TextInput value={homeGym} placeholder="Aliso Niguel Main Gym" onChange={(e) => setHomeGym(e.target.value)} />
+        <TextInput value={homeGym} placeholder="School Main Gym" onChange={(e) => setHomeGym(e.target.value)} />
       </Field>
       <Field label="Default practice location">
         <TextInput value={practiceSpot} placeholder="Main Gym" onChange={(e) => setPracticeSpot(e.target.value)} />
