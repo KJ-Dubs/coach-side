@@ -25,6 +25,9 @@ import { useAccess, resolveRole } from "@/lib/access";
 import { consumePendingInvite } from "@/lib/pendingInvite";
 import { InstallAppCard } from "@/components/InstallApp";
 import { useCurrentTeam } from "@/lib/teamContext";
+import { PlayOfTheDayCard } from "@/components/community/PlayOfTheDayCard";
+import { FollowedCreators } from "@/components/community/FollowedCreators";
+import { MODULES, PAID_MODULES, useEntitlement } from "@/lib/entitlements";
 
 /**
  * Players and parents land in the Locker Room instead of the coach dashboard.
@@ -130,6 +133,72 @@ function UpNext({ teamId }: { teamId: string | null }) {
   );
 }
 
+/**
+ * Game day gets its own card. It only points at the existing Live Game entry,
+ * so the start flow (Live Game → Starting 5 → court) is untouched.
+ */
+function TodayStrip({ teamId }: { teamId: string | null }) {
+  const events = useQuery({
+    queryKey: ["team-events", teamId],
+    queryFn: () => fetchTeamEvents(teamId!),
+    enabled: !!teamId,
+  });
+  const today = new Date().toDateString();
+  const game = (events.data ?? []).find(
+    (e) =>
+      (e.event_type === "game" || e.kind === "game") &&
+      new Date(e.starts_at).toDateString() === today,
+  );
+
+  if (!game) return <UpNext teamId={teamId} />;
+
+  return (
+    <Panel className="mb-3 flex flex-wrap items-center gap-2 border-flame/60 bg-flame/10">
+      <Label>Game today</Label>
+      <span className="rounded-2xl border border-flame/60 bg-flame/20 px-3 py-2 text-lg font-black leading-tight text-foreground">
+        {game.opponent ? `vs ${game.opponent}` : game.title}
+      </span>
+      <Pill tone="muted">
+        {new Date(game.starts_at).toLocaleTimeString(undefined, {
+          hour: "numeric",
+          minute: "2-digit",
+        })}
+      </Pill>
+      {game.location ? <Pill tone="muted">{game.location}</Pill> : null}
+      <Link to="/games/new" className="ml-auto">
+        <BubbleButton tone="flame" size="lg" className="min-h-14">
+          ▶ Start Live Game
+        </BubbleButton>
+      </Link>
+    </Panel>
+  );
+}
+
+/** Membership shape only — nothing is for sale yet, so nothing is locked. */
+function MembershipCard() {
+  const entitlement = useEntitlement();
+  if (entitlement.complete) return null;
+  return (
+    <Panel className="flex flex-col gap-2">
+      <Label>CoachSide Complete</Label>
+      <span className="rounded-2xl border border-flame/50 bg-flame/15 px-3 py-2 text-lg font-black leading-tight text-foreground">
+        ${MODULES.complete.price}/month · all three modules
+      </span>
+      <div className="flex flex-wrap gap-2">
+        {PAID_MODULES.map((m) => (
+          <Pill key={m.key} tone="muted">
+            {m.name} ${m.price}
+          </Pill>
+        ))}
+      </div>
+      <Note>{MODULES.complete.blurb} Memberships are not available yet — everything stays open.</Note>
+      <BubbleButton tone="flame" disabled className="w-fit">
+        Coming soon
+      </BubbleButton>
+    </Panel>
+  );
+}
+
 function Dashboard() {
   const { isCoach } = useRedirectPlayersToLockerRoom();
   const me = useMe();
@@ -189,7 +258,11 @@ function Dashboard() {
         </Panel>
       ) : null}
 
-      <UpNext teamId={teamId} />
+      <TodayStrip teamId={teamId} />
+
+      <div className="mb-3">
+        <PlayOfTheDayCard canAdd={isCoach} />
+      </div>
 
       <div className="mb-3 grid gap-3 sm:grid-cols-2">
         {PRIMARY.map((c) => {
@@ -236,21 +309,10 @@ function Dashboard() {
 
       <div className="mb-3 grid gap-3 lg:grid-cols-2">
         <CoachNotes />
-
-        <Panel className="flex flex-col gap-2">
-          <Label>CoachSide Complete</Label>
-          <span className="rounded-2xl border border-flame/50 bg-flame/15 px-3 py-2 text-lg font-black leading-tight text-foreground">
-            Get more from CoachSide
-          </span>
-          <Note>
-            Playmaker, GameDay and Team Hub together — memberships are being finalised and are not
-            available yet.
-          </Note>
-          <BubbleButton tone="flame" disabled className="w-fit">
-            Coming soon
-          </BubbleButton>
-        </Panel>
+        <MembershipCard />
       </div>
+
+      <FollowedCreators />
 
       {isCoach ? <PlayerQrPanel teams={teams} /> : null}
 

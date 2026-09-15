@@ -155,6 +155,11 @@ export function Landing() {
             <div className="flex flex-wrap gap-2">
               <SignUpButton />
               <SignInButton />
+              <Link to="/library">
+                <BubbleButton size="lg" tone="neutral" className="min-h-12">
+                  Browse the Play Library
+                </BubbleButton>
+              </Link>
             </div>
             <InstallAppPill />
             <div className="flex flex-wrap gap-2">

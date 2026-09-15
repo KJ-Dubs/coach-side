@@ -134,6 +134,21 @@ export type Database = {
           },
         ]
       }
+      app_admins: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       assignment_targets: {
         Row: {
           assignment_id: string
@@ -314,6 +329,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      coach_follows: {
+        Row: {
+          created_at: string
+          creator_id: string
+          follower_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          follower_id?: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          follower_id?: string
+          id?: string
+        }
+        Relationships: []
       }
       coach_invites: {
         Row: {
@@ -565,6 +601,35 @@ export type Database = {
             columns: ["team_event_id"]
             isOneToOne: false
             referencedRelation: "team_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      featured_play: {
+        Row: {
+          id: boolean
+          play_id: string | null
+          set_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          play_id?: string | null
+          set_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          play_id?: string | null
+          set_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_play_play_id_fkey"
+            columns: ["play_id"]
+            isOneToOne: false
+            referencedRelation: "plays"
             referencedColumns: ["id"]
           },
         ]
@@ -1112,6 +1177,35 @@ export type Database = {
           },
         ]
       }
+      play_hearts: {
+        Row: {
+          created_at: string
+          id: string
+          play_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          play_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          play_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "play_hearts_play_id_fkey"
+            columns: ["play_id"]
+            isOneToOne: false
+            referencedRelation: "plays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       play_team_assignments: {
         Row: {
           assigned_by: string | null
@@ -1214,6 +1308,7 @@ export type Database = {
           library_author_name: string | null
           library_version: number
           name: string
+          publish_anonymous: boolean
           published_at: string | null
           published_by: string | null
           published_to_library: boolean
@@ -1229,6 +1324,7 @@ export type Database = {
           library_author_name?: string | null
           library_version?: number
           name: string
+          publish_anonymous?: boolean
           published_at?: string | null
           published_by?: string | null
           published_to_library?: boolean
@@ -1244,6 +1340,7 @@ export type Database = {
           library_author_name?: string | null
           library_version?: number
           name?: string
+          publish_anonymous?: boolean
           published_at?: string | null
           published_by?: string | null
           published_to_library?: boolean
@@ -1262,25 +1359,37 @@ export type Database = {
       }
       profiles: {
         Row: {
+          bio: string | null
           created_at: string
           email: string | null
           full_name: string | null
           id: string
           org_id: string | null
+          public_display_name: string | null
+          publish_anonymous_default: boolean
+          username: string | null
         }
         Insert: {
+          bio?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id: string
           org_id?: string | null
+          public_display_name?: string | null
+          publish_anonymous_default?: boolean
+          username?: string | null
         }
         Update: {
+          bio?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
           org_id?: string | null
+          public_display_name?: string | null
+          publish_anonymous_default?: boolean
+          username?: string | null
         }
         Relationships: [
           {
@@ -1683,6 +1792,17 @@ export type Database = {
       }
       can_post_conversation: { Args: { _conv: string }; Returns: boolean }
       can_read_conversation: { Args: { _conv: string }; Returns: boolean }
+      creator_profile: {
+        Args: { _username: string }
+        Returns: {
+          bio: string
+          display_name: string
+          followers: number
+          published_plays: number
+          total_hearts: number
+          username: string
+        }[]
+      }
       ensure_direct_conversation: {
         Args: { _other: string; _team: string }
         Returns: string
@@ -1723,13 +1843,40 @@ export type Database = {
           taken: boolean
         }[]
       }
+      is_app_admin: { Args: never; Returns: boolean }
       is_game_coach: { Args: { _game: string }; Returns: boolean }
       is_head_coach: { Args: never; Returns: boolean }
       is_team_coach: { Args: { _team: string }; Returns: boolean }
       is_team_head_coach: { Args: { _team: string }; Returns: boolean }
       is_team_member: { Args: { _team: string }; Returns: boolean }
       is_team_staff_or_player: { Args: { _team: string }; Returns: boolean }
+      library_feed: {
+        Args: { _creator?: string }
+        Returns: {
+          attack_basket: string
+          author_label: string
+          category: string
+          creator_username: string
+          featured: boolean
+          hearts: number
+          hearts_recent: number
+          id: string
+          library_version: number
+          name: string
+          published_at: string
+          share_token: string
+        }[]
+      }
       my_access: { Args: never; Returns: Json }
+      my_followed_creators: {
+        Args: never
+        Returns: {
+          display_name: string
+          published_plays: number
+          username: string
+        }[]
+      }
+      my_hearted_plays: { Args: never; Returns: string[] }
       my_org_id: { Args: never; Returns: string }
       my_role: {
         Args: never
@@ -1739,6 +1886,17 @@ export type Database = {
       my_verified_email: { Args: never; Returns: string }
       play_published: { Args: { _play: string }; Returns: boolean }
       play_visible: { Args: { _play: string }; Returns: boolean }
+      public_play_frames: {
+        Args: { _play: string }
+        Returns: {
+          actions: Json
+          id: string
+          idx: number
+          note: string
+          play_id: string
+          tokens: Json
+        }[]
+      }
       queue_team_notification: {
         Args: {
           _body: string
@@ -1751,6 +1909,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_follow_creator: {
+        Args: { _follow: boolean; _username: string }
+        Returns: undefined
+      }
+      set_my_username: {
+        Args: { _bio: string; _display_name: string; _username: string }
+        Returns: undefined
+      }
+      set_play_of_the_day: { Args: { _play: string }; Returns: undefined }
       team_directory: {
         Args: { _team: string }
         Returns: {
@@ -1770,6 +1937,7 @@ export type Database = {
       team_member_stored_team: { Args: { _id: string }; Returns: string }
       team_member_stored_user: { Args: { _id: string }; Returns: string }
       team_visible: { Args: { _team: string }; Returns: boolean }
+      toggle_play_heart: { Args: { _play: string }; Returns: boolean }
     }
     Enums: {
       coach_role: "head_coach" | "assistant_coach"

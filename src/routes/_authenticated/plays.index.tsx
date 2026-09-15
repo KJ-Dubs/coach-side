@@ -24,8 +24,8 @@ import {
   setPlayTeams,
   updatePlay,
 } from "@/lib/data";
-import { publishPlay, unpublishPlay } from "@/lib/library";
-import { PlayLibrary } from "@/components/PlayLibrary";
+import { publishPlay, setPlayAnonymous, unpublishPlay } from "@/lib/library";
+import { LibraryFeed } from "@/components/community/LibraryFeed";
 import { useMe } from "@/lib/useMe";
 
 import {
@@ -236,11 +236,27 @@ function PlaybookPage() {
   });
 
   const publish = useMutation({
-    mutationFn: ({ p, author }: { p: Play; author: string | null }) => publishPlay(p, author),
-    onSuccess: () => {
+    mutationFn: ({ p, author, anonymous }: { p: Play; author: string | null; anonymous: boolean }) =>
+      publishPlay(p, author, anonymous),
+    onSuccess: (_r, v) => {
       void invalidate();
-      void queryClient.invalidateQueries({ queryKey: ["library-plays"] });
-      toast.success("Published to the CoachSide Library");
+      void queryClient.invalidateQueries({ queryKey: ["library-feed"] });
+      toast.success(
+        v.anonymous
+          ? "Published to the CoachSide Library as Anonymous Coach"
+          : "Published to the CoachSide Library",
+      );
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const anonymize = useMutation({
+    mutationFn: ({ p, anonymous }: { p: Play; anonymous: boolean }) =>
+      setPlayAnonymous(p.id, anonymous),
+    onSuccess: (_r, v) => {
+      void invalidate();
+      void queryClient.invalidateQueries({ queryKey: ["library-feed"] });
+      toast.success(v.anonymous ? "Now credited to Anonymous Coach" : "Now credited to your handle");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -249,7 +265,7 @@ function PlaybookPage() {
     mutationFn: (p: Play) => unpublishPlay(p.id),
     onSuccess: () => {
       void invalidate();
-      void queryClient.invalidateQueries({ queryKey: ["library-plays"] });
+      void queryClient.invalidateQueries({ queryKey: ["library-feed"] });
       toast.success("Removed from the CoachSide Library");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -298,7 +314,7 @@ function PlaybookPage() {
       </Panel>
 
       {tab === "library" ? (
-        <PlayLibrary />
+        <LibraryFeed variant="app" />
       ) : (
       <>
       <Panel className="mb-3 flex flex-wrap items-center gap-2">
@@ -421,13 +437,15 @@ function PlaybookPage() {
                 }}
                 onSaveTeams={(ids) => assignTeams.mutate({ playId: p.id, teamIds: ids })}
                 savingTeams={assignTeams.isPending}
-                onPublish={() =>
+                onPublish={(anonymous) =>
                   publish.mutate({
                     p,
                     author: me.profile?.full_name ?? null,
+                    anonymous,
                   })
                 }
                 onUnpublish={() => unpublish.mutate(p)}
+                onAnonymous={(anonymous) => anonymize.mutate({ p, anonymous })}
               />
             ))}
           </div>
@@ -456,6 +474,7 @@ function PlayCard({
   savingTeams,
   onPublish,
   onUnpublish,
+  onAnonymous,
 }: {
   play: Play;
   viewSearch: { category?: string; team?: string };
@@ -469,8 +488,9 @@ function PlayCard({
   onDelete: () => void;
   onSaveTeams: (ids: string[]) => void;
   savingTeams: boolean;
-  onPublish: () => void;
+  onPublish: (anonymous: boolean) => void;
   onUnpublish: () => void;
+  onAnonymous: (anonymous: boolean) => void;
 }) {
 
   const [menu, setMenu] = useState(false);
@@ -556,13 +576,27 @@ function PlayCard({
             Duplicate
           </BubbleButton>
           {play.published_to_library ? (
-            <BubbleButton size="sm" tone="ghost" onClick={onUnpublish}>
-              Remove from Library
-            </BubbleButton>
+            <>
+              <BubbleButton
+                size="sm"
+                tone="neutral"
+                onClick={() => onAnonymous(!play.publish_anonymous)}
+              >
+                {play.publish_anonymous ? "Credit my handle" : "Credit Anonymous Coach"}
+              </BubbleButton>
+              <BubbleButton size="sm" tone="ghost" onClick={onUnpublish}>
+                Remove from Library
+              </BubbleButton>
+            </>
           ) : (
-            <BubbleButton size="sm" tone="grape" onClick={onPublish}>
-              Publish to Library
-            </BubbleButton>
+            <>
+              <BubbleButton size="sm" tone="grape" onClick={() => onPublish(false)}>
+                Publish to Library
+              </BubbleButton>
+              <BubbleButton size="sm" tone="neutral" onClick={() => onPublish(true)}>
+                Publish anonymously
+              </BubbleButton>
+            </>
           )}
           <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onDelete}>
             Delete
