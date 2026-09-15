@@ -148,6 +148,25 @@ export async function setFollowCreator(username: string, follow: boolean) {
   if (error) throw error;
 }
 
+export type MyPublicProfile = {
+  username: string | null;
+  public_display_name: string | null;
+  bio: string | null;
+};
+
+/** The coach's own public fields. Private email and teams are never public. */
+export async function fetchMyPublicProfile(): Promise<MyPublicProfile | null> {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return null;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("username, public_display_name, bio")
+    .eq("id", auth.user.id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data ?? null) as MyPublicProfile | null;
+}
+
 export async function setMyPublicProfile(input: {
   username: string;
   displayName: string;
