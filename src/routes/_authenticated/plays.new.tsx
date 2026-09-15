@@ -7,11 +7,12 @@ import { AppShell } from "@/components/AppShell";
 import {
   BubbleButton,
   Field,
-  Heading,
-  Label,
+  InfoList,
+  InfoPanel,
   Note,
   Panel,
   Pill,
+  PrimaryCTA,
   TextInput,
 } from "@/components/Bubbles";
 import { createPlay, fetchTeams } from "@/lib/data";
@@ -34,6 +35,8 @@ export const Route = createFileRoute("/_authenticated/plays/new")({
         property: "og:description",
         content: "Quick new-play flow that drops you straight into the play designer.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: CreatePlayPage,
@@ -107,7 +110,12 @@ function CreatePlayPage() {
     >
       <div className="grid gap-3 lg:grid-cols-[1.2fr_1fr]">
         <Panel className="flex flex-col gap-4">
-          <Heading>New play</Heading>
+          <div className="text-center">
+            <h2 className="text-2xl font-black leading-tight text-foreground">New play</h2>
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">
+              Set the essentials, then start drawing.
+            </p>
+          </div>
           <Field label="Play name">
             <TextInput
               autoFocus
@@ -121,7 +129,7 @@ function CreatePlayPage() {
           </Field>
 
           <Field label="Folder">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap justify-center gap-2">
               {PLAY_CATEGORIES.map((c) => (
                 <BubbleButton
                   key={c}
@@ -133,11 +141,11 @@ function CreatePlayPage() {
                 </BubbleButton>
               ))}
             </div>
-            <Note>{CATEGORY_HINT[category]}</Note>
+            <InfoPanel>{CATEGORY_HINT[category]}</InfoPanel>
           </Field>
 
           <Field label="Available to">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap justify-center gap-2">
               {teams.data?.map((t) => (
                 <BubbleButton
                   key={t.id}
@@ -158,12 +166,12 @@ function CreatePlayPage() {
               </BubbleButton>
               {teams.isLoading ? <Pill tone="muted">Loading teams…</Pill> : null}
             </div>
-            <Note>The same play can live in more than one team playbook.</Note>
+            <InfoPanel>The same play can live in more than one team playbook.</InfoPanel>
           </Field>
 
 
           <Field label="Attack basket">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap justify-center gap-2">
               <BubbleButton
                 size="sm"
                 tone={basket === "right" ? "flame" : "neutral"}
@@ -181,31 +189,41 @@ function CreatePlayPage() {
             </div>
           </Field>
 
-          <BubbleButton
-            tone="flame"
-            size="lg"
-            disabled={!ready || create.isPending}
-            onClick={() => create.mutate()}
-          >
-            {create.isPending ? "Creating…" : "Create & open designer"}
-          </BubbleButton>
+          <PrimaryCTA>
+            <BubbleButton
+              tone="flame"
+              size="lg"
+              className="w-full sm:w-auto"
+              disabled={!ready || create.isPending}
+              onClick={() => create.mutate()}
+            >
+              {create.isPending ? "Creating…" : "Create & open designer"}
+            </BubbleButton>
+          </PrimaryCTA>
         </Panel>
 
-        <Panel className="flex flex-col gap-3">
-          <Label>What happens next</Label>
-          <Note tone="grape">
-            The designer opens with five offensive players placed. Drag players, then drag
-            to draw actions frame by frame.
-          </Note>
-          <div className="flex flex-col gap-2">
-            <Pill tone="neutral">Dotted arrow = pass</Pill>
-            <Pill tone="neutral">Solid arrow = cut / movement</Pill>
-            <Pill tone="neutral">Curved arrow = curl cut</Pill>
-            <Pill tone="neutral">Bumpy line = dribble</Pill>
-            <Pill tone="neutral">Bar end = screen</Pill>
-            <Pill tone="flame">Presses: add the defense (X1–X5) from the Press Maker panel</Pill>
+        <Panel className="flex flex-col items-center gap-3">
+          <div className="text-center">
+            <h2 className="text-2xl font-black leading-tight text-foreground">What happens next</h2>
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">
+              The designer opens with five offensive players ready to move.
+            </p>
           </div>
-          <Note>You can flip the attack basket at any time inside the designer.</Note>
+          <InfoPanel tone="grape">
+            Drag players into position, then draw actions frame by frame.
+          </InfoPanel>
+          <InfoList
+            items={[
+              "Dotted arrow = pass",
+              "Solid arrow = cut / movement",
+              "Curved arrow = curl cut",
+              "Bumpy line = dribble",
+              "Bar end = screen",
+              "Presses: add defense (X1–X5) from the Press Maker panel",
+            ]}
+            tone="flame"
+          />
+          <InfoPanel>You can flip the attack basket at any time inside the designer.</InfoPanel>
         </Panel>
       </div>
     </AppShell>
