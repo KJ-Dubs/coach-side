@@ -36,7 +36,7 @@ function HomePage() {
 
   useEffect(() => {
     if (!ready || !session) return;
-    const pending = getPendingInvite();
+    const pending = consumePendingInvite();
     if (pending) {
       navigate({ to: "/join/$token", params: { token: pending }, replace: true });
       return;

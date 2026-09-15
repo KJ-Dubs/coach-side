@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { PlayerQrPanel } from "@/components/PlayerQrPanel";
 import { CoachNotes } from "@/components/CoachNotes";
 import { useAccess, resolveRole } from "@/lib/access";
-import { getPendingInvite } from "@/lib/pendingInvite";
+import { consumePendingInvite } from "@/lib/pendingInvite";
 import { InstallAppCard } from "@/components/InstallApp";
 import { useCurrentTeam } from "@/lib/teamContext";
 
@@ -40,8 +40,9 @@ function useRedirectPlayersToLockerRoom() {
   const playerOnly = !loading && (role.isPlayerOnly || (!role.isCoach && membershipPlayerOnly));
   useEffect(() => {
     // A player still mid-invite finishes that flow first.
-    const pending = getPendingInvite();
-    if (playerOnly && pending) {
+    if (!playerOnly) return;
+    const pending = consumePendingInvite();
+    if (pending) {
       navigate({ to: "/join/$token", params: { token: pending }, replace: true });
       return;
     }

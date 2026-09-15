@@ -4,7 +4,7 @@ import { AuthCard } from "@/components/AuthCard";
 import { SignInShowcase } from "@/components/SignInShowcase";
 import { Panel, Pill } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
-import { getPendingInvite } from "@/lib/pendingInvite";
+import { consumePendingInvite } from "@/lib/pendingInvite";
 
 type AuthSearch = { mode?: "signin" | "signup"; next?: string };
 
@@ -63,7 +63,7 @@ function AuthPage() {
   useEffect(() => {
     if (!ready || !session || recovering) return;
     // A player who started from a team invite always resumes that invite.
-    const pending = getPendingInvite();
+    const pending = consumePendingInvite();
     if (pending) {
       navigate({ to: "/join/$token", params: { token: pending }, replace: true });
       return;
