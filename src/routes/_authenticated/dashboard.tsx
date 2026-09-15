@@ -174,6 +174,31 @@ function TodayStrip({ teamId }: { teamId: string | null }) {
   );
 }
 
+/** Membership shape only — nothing is for sale yet, so nothing is locked. */
+function MembershipCard() {
+  const entitlement = useEntitlement();
+  if (entitlement.complete) return null;
+  return (
+    <Panel className="flex flex-col gap-2">
+      <Label>CoachSide Complete</Label>
+      <span className="rounded-2xl border border-flame/50 bg-flame/15 px-3 py-2 text-lg font-black leading-tight text-foreground">
+        ${MODULES.complete.price}/month · all three modules
+      </span>
+      <div className="flex flex-wrap gap-2">
+        {PAID_MODULES.map((m) => (
+          <Pill key={m.key} tone="muted">
+            {m.name} ${m.price}
+          </Pill>
+        ))}
+      </div>
+      <Note>{MODULES.complete.blurb} Memberships are not available yet — everything stays open.</Note>
+      <BubbleButton tone="flame" disabled className="w-fit">
+        Coming soon
+      </BubbleButton>
+    </Panel>
+  );
+}
+
 function Dashboard() {
   const { isCoach } = useRedirectPlayersToLockerRoom();
   const me = useMe();
