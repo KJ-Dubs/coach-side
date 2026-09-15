@@ -236,11 +236,27 @@ function PlaybookPage() {
   });
 
   const publish = useMutation({
-    mutationFn: ({ p, author }: { p: Play; author: string | null }) => publishPlay(p, author),
-    onSuccess: () => {
+    mutationFn: ({ p, author, anonymous }: { p: Play; author: string | null; anonymous: boolean }) =>
+      publishPlay(p, author, anonymous),
+    onSuccess: (_r, v) => {
       void invalidate();
-      void queryClient.invalidateQueries({ queryKey: ["library-plays"] });
-      toast.success("Published to the CoachSide Library");
+      void queryClient.invalidateQueries({ queryKey: ["library-feed"] });
+      toast.success(
+        v.anonymous
+          ? "Published to the CoachSide Library as Anonymous Coach"
+          : "Published to the CoachSide Library",
+      );
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const anonymize = useMutation({
+    mutationFn: ({ p, anonymous }: { p: Play; anonymous: boolean }) =>
+      setPlayAnonymous(p.id, anonymous),
+    onSuccess: (_r, v) => {
+      void invalidate();
+      void queryClient.invalidateQueries({ queryKey: ["library-feed"] });
+      toast.success(v.anonymous ? "Now credited to Anonymous Coach" : "Now credited to your handle");
     },
     onError: (e: Error) => toast.error(e.message),
   });
