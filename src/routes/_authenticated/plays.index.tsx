@@ -437,13 +437,15 @@ function PlaybookPage() {
                 }}
                 onSaveTeams={(ids) => assignTeams.mutate({ playId: p.id, teamIds: ids })}
                 savingTeams={assignTeams.isPending}
-                onPublish={() =>
+                onPublish={(anonymous) =>
                   publish.mutate({
                     p,
                     author: me.profile?.full_name ?? null,
+                    anonymous,
                   })
                 }
                 onUnpublish={() => unpublish.mutate(p)}
+                onAnonymous={(anonymous) => anonymize.mutate({ p, anonymous })}
               />
             ))}
           </div>
