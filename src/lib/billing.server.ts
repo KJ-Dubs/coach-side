@@ -207,3 +207,11 @@ export function mapSquareStatus(status: string | undefined): string {
       return "free";
   }
 }
+
+import { createHash } from "node:crypto";
+
+/** Access codes are stored hashed; the plain code is never persisted. */
+export function hashAccessCode(code: string): string {
+  const pepper = process.env["ACCESS_CODE_PEPPER"] ?? "";
+  return createHash("sha256").update(`${pepper}:${code.trim().toUpperCase()}`).digest("hex");
+}
