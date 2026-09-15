@@ -145,6 +145,8 @@ export type Play = {
   published_by?: string | null;
   library_author_name?: string | null;
   library_version?: number;
+  /** Published under "Anonymous Coach" instead of the coach's public handle. */
+  publish_anonymous?: boolean;
 };
 
 export type PlayFrame = {
