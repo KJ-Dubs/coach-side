@@ -17,7 +17,7 @@ export async function fetchLibraryPlays(): Promise<Play[]> {
   return (data ?? []) as unknown as Play[];
 }
 
-export async function publishPlay(play: Play, authorName: string | null) {
+export async function publishPlay(play: Play, authorName: string | null, anonymous = false) {
   const { data: auth } = await supabase.auth.getUser();
   const { error } = await supabase
     .from("plays")
@@ -26,9 +26,19 @@ export async function publishPlay(play: Play, authorName: string | null) {
       published_at: new Date().toISOString(),
       published_by: auth.user?.id ?? null,
       library_author_name: authorName,
+      publish_anonymous: anonymous,
       library_version: (play.library_version ?? 1) + (play.published_to_library ? 1 : 0),
     } as never)
     .eq("id", play.id);
+  if (error) throw error;
+}
+
+/** Flip attribution between the coach's public handle and Anonymous Coach. */
+export async function setPlayAnonymous(playId: string, anonymous: boolean) {
+  const { error } = await supabase
+    .from("plays")
+    .update({ publish_anonymous: anonymous } as never)
+    .eq("id", playId);
   if (error) throw error;
 }
 
