@@ -30,6 +30,14 @@ export function Panel({
   );
 }
 
+/**
+ * Class for a card whose WHOLE area is one action (wrap a Link or button with
+ * it). Informational surfaces use `Panel` and must never carry hover states,
+ * so a coach can tell at a glance what is tappable.
+ */
+export const actionCardCls =
+  "block w-full rounded-3xl border border-border/70 bg-surface/80 p-3 text-left shadow-lg shadow-black/30 transition-all hover:border-grape/70 hover:bg-surface-2/70 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grape";
+
 export function Pill({
   className,
   tone = "neutral",
