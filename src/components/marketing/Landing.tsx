@@ -245,9 +245,9 @@ export function Landing() {
             chart built from tapped court locations.
           </Body>
           <div className="grid gap-3 lg:grid-cols-3">
-            <Shot src={teamStats.url} alt="CoachSide team season stats screen" caption="Team stats" />
-            <Shot src={leaders.url} alt="CoachSide statistical leaders screen" caption="Leaders" />
-            <Shot src={shotChart.url} alt="CoachSide shot chart screen" caption="Shot chart" />
+            <Shot src={teamStats} alt="CoachSide team season stats screen" caption="Team stats" />
+            <Shot src={leaders} alt="CoachSide statistical leaders screen" caption="Leaders" />
+            <Shot src={shotChart} alt="CoachSide shot chart screen" caption="Shot chart" />
           </div>
         </Panel>
 

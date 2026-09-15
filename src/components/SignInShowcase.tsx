@@ -52,9 +52,9 @@ const FEATURES: { title: string; body: string; tone: "grape" | "flame" | "neutra
 ];
 
 const SNAPSHOTS = [
-  { src: teamStats.url, caption: "Team season dashboard" },
-  { src: leaders.url, caption: "Season leaders & results" },
-  { src: shotChart.url, caption: "Colour-coded shot chart" },
+  { src: teamStats, caption: "Team season dashboard" },
+  { src: leaders, caption: "Season leaders & results" },
+  { src: shotChart, caption: "Colour-coded shot chart" },
 ];
 
 export function SignInShowcase() {
