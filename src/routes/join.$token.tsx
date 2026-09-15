@@ -58,6 +58,14 @@ function JoinPage() {
     if (parentLink) navigate({ to: "/locker/$token", params: { token: parentLink }, replace: true });
   }, [parentLink, navigate]);
 
+  // A dead, turned-off or parent invite must never follow the visitor around.
+  useEffect(() => {
+    if (invite.isLoading) return;
+    if (!invite.data || invite.data.status !== "active" || invite.data.invite_type !== "player") {
+      clearPendingInvite();
+    }
+  }, [invite.isLoading, invite.data]);
+
   const roster = useQuery({
     queryKey: ["invite-roster", token],
     queryFn: () => fetchInviteRoster(token),
