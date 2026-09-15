@@ -1767,6 +1767,8 @@ export type Database = {
         Args: { _id: string }
         Returns: Database["public"]["Enums"]["team_role"]
       }
+      team_member_stored_team: { Args: { _id: string }; Returns: string }
+      team_member_stored_user: { Args: { _id: string }; Returns: string }
       team_visible: { Args: { _team: string }; Returns: boolean }
     }
     Enums: {
