@@ -55,3 +55,13 @@
 - [x] Use a direct user-click download with stable object URL and CoachSide MP4 filename
 - [x] Validate MIME type and MP4 file signature before enabling download
 - [x] Verify 320–430px layout, genuine MP4 output, TypeScript, and production build
+
+## Membership / billing foundation (built, enforcement OFF)
+- [x] team_billing, complimentary_grants, access_codes, access_code_redemptions + RLS
+- [x] team_modules / my_team_entitlement resolvers
+- [x] /membership page: team switcher, module picker ($6/$12/$15), access code, owner diagnostics
+- [x] Server-only Square boundary + signed webhook at /api/public/square/webhook
+- [ ] BLOCKED on user: Square secrets (SQUARE_ACCESS_TOKEN, SQUARE_ENVIRONMENT, SQUARE_LOCATION_ID,
+      SQUARE_WEBHOOK_SIGNATURE_KEY, SQUARE_PLAN_VARIATION_SINGLE/DUO/COMPLETE) + catalog plan variations
+- [ ] Turn on BILLING_ENFORCEMENT_ENABLED only after checkout is verified
+- [ ] Wire UpgradePrompt into gated actions (Add Library play, court stat tracking, Calendar sync)
