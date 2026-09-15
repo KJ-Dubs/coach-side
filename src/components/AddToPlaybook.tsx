@@ -14,6 +14,7 @@ import type { Play } from "@/lib/types";
  */
 export function AddToPlaybook({ play, compact }: { play: Play; compact?: boolean }) {
   const qc = useQueryClient();
+  const router = useRouter();
   const { teams, teamId } = useCurrentTeam();
   const { access } = useAccess();
   const role = resolveRole(access);
