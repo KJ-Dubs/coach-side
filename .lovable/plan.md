@@ -1,14 +1,18 @@
-# Fix mobile MP4 export
+# CoachSide visual system cleanup
 
-## What will change
-- Replace the fixed export overlay with one dedicated Export Video section inside the play presenter’s normal page flow.
-- Keep play-to-play navigation, the court, playback controls, and export controls as separate stacked sections at 320–430px widths.
-- Show explicit Ready, Generating, and Ready to Download states, with a format-matched responsive preview and Regenerate action.
-- Replace the nested link/button download with one direct user-click download action and a stable CoachSide play filename.
-- Keep the generated object URL alive until regeneration, play change, or presenter unmount.
+## Scope
+Standardize presentation across existing CoachSide screens without changing routes, permissions, data, pricing, or feature behavior.
+
+## Build
+- Expand the shared CoachSide UI primitives with centered section headers, grouped information/checklist panels, metadata-only pills, and centered primary-action layouts.
+- Update the global page heading treatment so major titles and summaries have a consistent centered hierarchy on coach and player screens.
+- Apply the shared patterns to the highest-use coach screens: Dashboard, Playbook/Library, presenter, Locker Room, Calendar, Stats/Roster, Settings, Profile, game setup, and Membership.
+- Apply the same hierarchy to public marketing, Library, and shared-play surfaces where appropriate.
+- Keep tables, forms, event details, stats, messages, and instructional copy left aligned; retain compact pills only for status, filters, categories, dates, roles, and other metadata.
+- Ensure primary actions are centered, high contrast, at least 44px tall, and clickable across their entire visible area.
 
 ## Technical details
-- Preserve the existing genuine H.264 MP4 paths: WebCodecs plus MP4 muxing when supported, and the current WASM H.264 MP4 fallback on Android.
-- Validate the returned Blob MIME and MP4 signature before exposing a download.
-- Trigger a temporary native anchor from the Download button’s click handler, then remove the anchor without revoking the Blob URL.
-- Verify mobile layout and downloaded bytes with browser checks, then run TypeScript and production build checks.
+- Presentation-only React and Tailwind changes; no backend, schema, security, billing, or entitlement changes.
+- Refactor existing `Bubbles` primitives rather than introducing a parallel design system.
+- Preserve dense workflows and the persistent-court live game experience.
+- Verify representative 390px mobile and desktop screens, then check type safety and the preview build log.
