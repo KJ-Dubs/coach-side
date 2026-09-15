@@ -176,6 +176,7 @@ function RosterPage() {
         </>
       }
     >
+      <StatsTabs />
       {openForm === "team" ? (
         <Panel className="mb-3 flex flex-col gap-3 border-grape/50">
           <div className="flex items-center gap-2">
