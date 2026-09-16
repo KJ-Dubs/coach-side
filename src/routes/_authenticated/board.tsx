@@ -155,7 +155,7 @@ function BoardPage() {
   const [, force] = useState(0);
 
   useEffect(() => {
-    writeBoard({ objects, redo, zoom: zoom === "right" ? "full" : zoom });
+    writeBoard({ objects, redo, zoom: zoom === "left" ? "left" : "full" });
   }, [objects, redo, zoom]);
 
   const commit = useCallback((o: BoardObject) => {

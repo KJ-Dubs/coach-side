@@ -27,7 +27,7 @@ const ACTION_COLOR: Record<string, string> = {
   screen: "var(--court-line)",
 };
 
-function ActionShape({ a, flip, dim }: { a: PlayAction; flip: boolean; dim?: boolean }) {
+function ActionShape({ a, flip, dim, vertical }: { a: PlayAction; flip: boolean; dim?: boolean; vertical?: boolean }) {
   const raw = a.points ?? [];
   if (raw.length < 2) return null;
   const freehand = raw.length > 2;
@@ -92,6 +92,7 @@ function ActionShape({ a, flip, dim }: { a: PlayAction; flip: boolean; dim?: boo
       <text
         x={mid.x}
         y={mid.y + 5}
+        transform={vertical ? `rotate(-90 ${mid.x} ${mid.y})` : undefined}
         textAnchor="middle"
         fontSize={16}
         fontWeight={900}
@@ -116,11 +117,11 @@ function BallMark({ p }: { p: { x: number; y: number } }) {
   );
 }
 
-function TokenShape({ t, flip, dim }: { t: PlayToken; flip: boolean; dim?: boolean }) {
+function TokenShape({ t, flip, dim, vertical }: { t: PlayToken; flip: boolean; dim?: boolean; vertical?: boolean }) {
   const p = xf(t, flip);
   const defense = t.team === "defense";
   return (
-    <g opacity={dim ? 0.35 : 1}>
+    <g opacity={dim ? 0.35 : 1} transform={vertical ? `rotate(-90 ${p.x} ${p.y})` : undefined}>
       {defense ? (
         <rect
           x={p.x - 19}
@@ -216,6 +217,7 @@ export function PlayCanvas({
     : ghost
       ? [ghost.from, ghost.to]
       : null;
+  const vertical = zoom === "top" || zoom === "bottom";
 
   return (
     <Court
@@ -231,6 +233,7 @@ export function PlayCanvas({
           key={a.id}
           a={a}
           flip={flip}
+          vertical={vertical}
           dim={
             (dimOtherActions && activeSeq !== undefined && a.seq !== activeSeq) ||
             (!!focusTokenId && a.actor !== focusTokenId && a.target !== focusTokenId)
@@ -238,7 +241,7 @@ export function PlayCanvas({
         />
       ))}
       {shownTokens.map((t) => (
-        <TokenShape key={t.id} t={t} flip={flip} dim={!!focusTokenId && t.id !== focusTokenId} />
+        <TokenShape key={t.id} t={t} flip={flip} vertical={vertical} dim={!!focusTokenId && t.id !== focusTokenId} />
       ))}
 
       {ballPx ? (
@@ -254,7 +257,7 @@ export function PlayCanvas({
         />
       ) : null}
       {selectedLabel ? (
-        <g>
+        <g transform={vertical ? "rotate(-90 16 16)" : undefined}>
           <rect
             x={16}
             y={16}

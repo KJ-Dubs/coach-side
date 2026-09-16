@@ -393,7 +393,8 @@ function PlayDesignerPage() {
 
   const defenseForView = () => {
     if (zoom === "full") return PRESS_DEFENSE;
-    const rightSide = zoom === "right" || zoom === "bottom";
+    const displayRightSide = zoom === "right" || zoom === "bottom";
+    const rightSide = flip ? !displayRightSide : displayRightSide;
     const spots = [
       { x: 0.22, y: 0.5 },
       { x: 0.4, y: 0.24 },
