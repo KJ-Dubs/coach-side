@@ -428,6 +428,8 @@ function PlaybookPage() {
                   ...(teamFilter !== "ALL" ? { team: teamFilter } : {}),
                 }}
                 assignedTeams={teamsByPlay.get(p.id) ?? []}
+                canEdit={isPlayOwner(p, myUserId)}
+
                 allTeams={teams.data ?? []}
 
                 teamName={teamName}
@@ -473,7 +475,9 @@ function PlayCard({
   busy,
   onShareLink,
   onUnshare,
+  canEdit,
   onDuplicate,
+
   onDelete,
   onSaveTeams,
   savingTeams,
@@ -482,6 +486,8 @@ function PlayCard({
   onAnonymous,
 }: {
   play: Play;
+  canEdit: boolean;
+
   viewSearch: { category?: string; team?: string };
   assignedTeams: string[];
   allTeams: Team[];
