@@ -1,4 +1,5 @@
 import { Court, type CourtZoom } from "./Court";
+import { withVisualOffsets } from "@/lib/playAnimation";
 import type { PlayAction, PlayFrame, PlayToken } from "@/lib/types";
 import {
   PW as W,
@@ -150,6 +151,17 @@ function TokenShape({ t, flip, dim }: { t: PlayToken; flip: boolean; dim?: boole
 }
 
 
+const ACTION_NAME: Record<string, string> = {
+  pass: "Pass",
+  handoff: "Handoff",
+  shot: "Shot",
+  cut: "Cut",
+  move: "Move",
+  curl: "Curl",
+  dribble: "Dribble",
+  screen: "Screen",
+};
+
 export function PlayCanvas({
   frame,
   flip = false,
@@ -165,6 +177,7 @@ export function PlayCanvas({
   dimOtherActions = false,
   activeSeq,
   focusTokenId,
+  selectedActionId,
 }: {
   frame: PlayFrame | undefined;
   flip?: boolean | undefined;
@@ -182,14 +195,22 @@ export function PlayCanvas({
   activeSeq?: number | undefined;
   /** Emphasize one player and their actions (read-only presenter view). */
   focusTokenId?: string | undefined;
+  /** Editor identity chip: shows "5 • Cut • Seq 6" for the selected action. */
+  selectedActionId?: string | undefined;
 }) {
-  const shownTokens = tokens ?? frame?.tokens ?? [];
+  const shownTokens = withVisualOffsets(tokens ?? frame?.tokens ?? []);
   const shownActions = actions ?? frame?.actions ?? [];
   const ballToken = shownTokens.find((t) => t.ball);
   const ballPoint =
-    ball ?? (ballToken ? { x: ballToken.x, y: ballToken.y } : null);
+    ballToken ? { x: ballToken.x, y: ballToken.y } : (ball ?? null);
   const ballPx = ballPoint ? xf(ballPoint, flip) : null;
-  const attached = !ball && ballToken;
+  const attached = !!ballToken;
+  const selected = selectedActionId
+    ? shownActions.find((a) => a.id === selectedActionId)
+    : undefined;
+  const selectedLabel = selected
+    ? `${shownTokens.find((t) => t.id === selected.actor)?.label ?? "?"} • ${ACTION_NAME[selected.type] ?? selected.type} • Seq ${selected.seq}`
+    : null;
   const ghostPts = Array.isArray(ghost)
     ? ghost
     : ghost
@@ -231,6 +252,23 @@ export function PlayCanvas({
           strokeWidth={4}
           strokeDasharray="10 8"
         />
+      ) : null}
+      {selectedLabel ? (
+        <g>
+          <rect
+            x={16}
+            y={16}
+            width={selectedLabel.length * 12 + 34}
+            height={44}
+            rx={22}
+            fill="var(--surface-2)"
+            stroke="var(--flame)"
+            strokeWidth={3}
+          />
+          <text x={34} y={45} fontSize={20} fontWeight={800} fill="var(--foreground)">
+            {selectedLabel}
+          </text>
+        </g>
       ) : null}
     </Court>
   );
