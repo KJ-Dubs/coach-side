@@ -252,6 +252,23 @@ export function PlayCanvas({
           strokeDasharray="10 8"
         />
       ) : null}
+      {selectedLabel ? (
+        <g>
+          <rect
+            x={16}
+            y={16}
+            width={selectedLabel.length * 12 + 34}
+            height={44}
+            rx={22}
+            fill="var(--surface-2)"
+            stroke="var(--flame)"
+            strokeWidth={3}
+          />
+          <text x={34} y={45} fontSize={20} fontWeight={800} fill="var(--foreground)">
+            {selectedLabel}
+          </text>
+        </g>
+      ) : null}
     </Court>
   );
 }
