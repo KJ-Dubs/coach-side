@@ -130,7 +130,7 @@ function KpiPage() {
   }, [adminQ.isLoading, adminQ.isFetched, isAdmin, navigate]);
 
   const reportQ = useQuery({
-    queryKey: ["kpi-report", range],
+    queryKey: ["kpi-report", user?.id ?? "signed-out", range],
     queryFn: () => fetchReport({ data: { range } }) as Promise<KpiReport>,
     enabled: isAdmin,
     staleTime: 60_000,
