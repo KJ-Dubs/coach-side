@@ -5,10 +5,14 @@ import { buildTimeline, sampleTimeline } from "@/lib/playAnimation";
 import { simplifyPath, type Point } from "@/lib/playPath";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
-import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
+import { BubbleButton, Label, Note, Panel, Pill } from "@/components/Bubbles";
 import { PlayCanvas } from "@/components/court/PlayCanvas";
+import { CreateMyVersion } from "@/components/CreateMyVersion";
 import type { CourtZoom } from "@/components/court/Court";
 import { fetchFrames, fetchPlay, saveFrames, updatePlay } from "@/lib/data";
+import { useMe } from "@/lib/useMe";
+import { fetchCoachLabel, isPlayOwner } from "@/lib/playOwnership";
+
 import {
   PLAY_CATEGORIES,
   normalizeCategory,
