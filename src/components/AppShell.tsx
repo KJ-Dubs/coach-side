@@ -6,6 +6,7 @@ import {
   BookOpen,
   ChevronDown,
   ClipboardPenLine,
+  Gauge,
   LogOut,
   MessagesSquare,
   PenLine,
