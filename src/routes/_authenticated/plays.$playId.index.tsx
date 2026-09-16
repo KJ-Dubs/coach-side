@@ -54,6 +54,10 @@ export const Route = createFileRoute("/_authenticated/plays/$playId/")({
 
 type Tool = "move" | "ball" | PlayActionType;
 
+type AnimMode = "idle" | "preview" | "replay";
+
+const STEP_MS = SHOW_MS + DO_MS;
+
 const DEFAULT_TOKENS: PlayToken[] = [
   { id: "p1", label: "1", x: 0.5, y: 0.5, ball: true, team: "offense" },
   { id: "p2", label: "2", x: 0.62, y: 0.14, ball: false, team: "offense" },
