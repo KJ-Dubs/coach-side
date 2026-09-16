@@ -83,6 +83,14 @@ function PlayDesignerPage() {
   const { playId } = Route.useParams();
   const play = useQuery({ queryKey: ["play", playId], queryFn: () => fetchPlay(playId) });
   const framesQ = useQuery({ queryKey: ["frames", playId], queryFn: () => fetchFrames(playId) });
+  const me = useMe();
+  const canEdit = play.data ? isPlayOwner(play.data, me.user?.id ?? null) : false;
+  const authorLabel = useQuery({
+    queryKey: ["coach-label", play.data?.created_by],
+    queryFn: () => fetchCoachLabel(play.data?.created_by),
+    enabled: !!play.data?.created_by && !canEdit,
+  });
+
 
   const [frames, setFrames] = useState<PlayFrame[]>([]);
   const [current, setCurrent] = useState(0);
@@ -309,13 +317,25 @@ function PlayDesignerPage() {
               Slideshow
             </BubbleButton>
           </Link>
-          <BubbleButton size="sm" tone="flame" onClick={() => void save()} disabled={saving}>
-            {saving ? "Saving…" : "Save Play"}
-          </BubbleButton>
+          {canEdit ? (
+            <BubbleButton size="sm" tone="flame" onClick={() => void save()} disabled={saving}>
+              {saving ? "Saving…" : "Save Play"}
+            </BubbleButton>
+          ) : play.data ? (
+            <CreateMyVersion play={play.data} label="Edit as My Version" />
+          ) : null}
         </div>
       }
     >
+      {!canEdit && play.data ? (
+        <Note>
+          {authorLabel.data
+            ? `This play was created by ${authorLabel.data}. To edit it, CoachSide will create your own version. The original will stay unchanged.`
+            : "This play is read-only. Create your own version to make changes."}
+        </Note>
+      ) : null}
       <div className="grid gap-3 xl:grid-cols-[1fr_340px]">
+
         <div className="flex flex-col gap-3">
           <PlayCanvas
             frame={frame}
