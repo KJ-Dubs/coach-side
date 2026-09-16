@@ -150,6 +150,17 @@ function TokenShape({ t, flip, dim }: { t: PlayToken; flip: boolean; dim?: boole
 }
 
 
+const ACTION_NAME: Record<string, string> = {
+  pass: "Pass",
+  handoff: "Handoff",
+  shot: "Shot",
+  cut: "Cut",
+  move: "Move",
+  curl: "Curl",
+  dribble: "Dribble",
+  screen: "Screen",
+};
+
 export function PlayCanvas({
   frame,
   flip = false,
@@ -165,6 +176,7 @@ export function PlayCanvas({
   dimOtherActions = false,
   activeSeq,
   focusTokenId,
+  selectedActionId,
 }: {
   frame: PlayFrame | undefined;
   flip?: boolean | undefined;
@@ -182,6 +194,8 @@ export function PlayCanvas({
   activeSeq?: number | undefined;
   /** Emphasize one player and their actions (read-only presenter view). */
   focusTokenId?: string | undefined;
+  /** Editor identity chip: shows "5 • Cut • Seq 6" for the selected action. */
+  selectedActionId?: string | undefined;
 }) {
   const shownTokens = withVisualOffsets(tokens ?? frame?.tokens ?? []);
   const shownActions = actions ?? frame?.actions ?? [];
