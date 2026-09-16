@@ -540,19 +540,37 @@ function PlayDesignerPage() {
             <div className="flex flex-wrap gap-2">
               <BubbleButton
                 size="sm"
-                tone={sameSeq ? "flame" : "ghost"}
-                onClick={() => setSameSeq((s) => !s)}
-              >
-                {sameSeq ? "Same number (simultaneous)" : "New number each action"}
-              </BubbleButton>
-              <BubbleButton
-                size="sm"
                 tone="neutral"
-                onClick={() => patchFrame((f) => ({ ...f, actions: f.actions.slice(0, -1) }))}
+                onClick={() => {
+                  setSelectedActionId(null);
+                  patchFrame((f) => {
+                    const mine = f.actions.filter((a) => a.seq === seqNumber);
+                    const drop = mine[mine.length - 1];
+                    return drop ? { ...f, actions: f.actions.filter((a) => a.id !== drop.id) } : f;
+                  });
+                }}
               >
-                Undo action
+                Undo last action
               </BubbleButton>
             </div>
+            <Pill tone="muted">
+              Everything you draw joins sequence {activeIdx + 1}, so those players move together.
+              Pick “+ New” to start the next sequence.
+            </Pill>
+            {activeStep?.actions.length ? (
+              <div className="flex flex-wrap gap-2">
+                {activeStep.actions.map((a) => (
+                  <BubbleButton
+                    key={a.id}
+                    size="sm"
+                    tone={selectedActionId === a.id ? "flame" : "ghost"}
+                    onClick={() => setSelectedActionId(selectedActionId === a.id ? null : a.id)}
+                  >
+                    {`#${liveTokens.find((t) => t.id === a.actorId)?.label ?? "?"} ${a.type}`}
+                  </BubbleButton>
+                ))}
+              </div>
+            ) : null}
           </Panel>
 
           <Panel className="flex flex-col gap-2">
