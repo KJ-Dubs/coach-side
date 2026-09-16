@@ -8,19 +8,55 @@ import { useRef } from "react";
  * Half court: basket on the LEFT.
  */
 
-export type CourtZoom = "full" | "left" | "right";
+export type CourtZoom = "full" | "left" | "right" | "top" | "bottom";
+
+type CourtCamera = {
+  viewBox: { x: number; y: number; w: number; h: number };
+  transform?: string | undefined;
+};
+
+/** Camera-only projection over the unchanged 940x500 full-court coordinates. */
+export function courtCamera(zoom: CourtZoom): CourtCamera {
+  if (zoom === "left") return { viewBox: { x: 0, y: 0, w: 470, h: 500 } };
+  if (zoom === "right") return { viewBox: { x: 470, y: 0, w: 470, h: 500 } };
+  if (zoom === "top") {
+    return {
+      viewBox: { x: 0, y: 0, w: 500, h: 470 },
+      transform: "translate(500 0) rotate(90)",
+    };
+  }
+  if (zoom === "bottom") {
+    return {
+      viewBox: { x: 0, y: 0, w: 500, h: 470 },
+      transform: "translate(500 -470) rotate(90)",
+    };
+  }
+  return { viewBox: { x: 0, y: 0, w: 940, h: 500 } };
+}
 
 /** Visible slice of the full court, in normalized full-court units. */
 export function zoomBox(zoom: CourtZoom) {
   if (zoom === "left") return { x: 0, w: 0.5 };
   if (zoom === "right") return { x: 0.5, w: 0.5 };
+  if (zoom === "top") return { x: 0, w: 0.5 };
+  if (zoom === "bottom") return { x: 0.5, w: 0.5 };
   return { x: 0, w: 1 };
 }
 
 /** Full-court normalized point -> position inside the visible court box (0..1). */
 export function toLocal(zoom: CourtZoom, p: { x: number; y: number }) {
+  if (zoom === "top") return { x: 1 - p.y, y: p.x * 2 };
+  if (zoom === "bottom") return { x: 1 - p.y, y: (p.x - 0.5) * 2 };
   const b = zoomBox(zoom);
   return { x: (p.x - b.x) / b.w, y: p.y };
+}
+
+/** Position inside the visible camera (0..1) -> normalized full-court point. */
+export function fromLocal(zoom: CourtZoom, p: { x: number; y: number }) {
+  if (zoom === "top") return { x: p.y * 0.5, y: 1 - p.x };
+  if (zoom === "bottom") return { x: 0.5 + p.y * 0.5, y: 1 - p.x };
+  const b = zoomBox(zoom);
+  return { x: b.x + p.x * b.w, y: p.y };
 }
 
 type CourtProps = {
@@ -83,8 +119,8 @@ export function Court({
   style,
 }: CourtProps) {
   const view = COURT_VIEW[variant];
-  const box = variant === "full" ? zoomBox(zoom) : { x: 0, w: 1 };
-  const vb = { x: box.x * view.w, w: box.w * view.w };
+  const camera = variant === "full" ? courtCamera(zoom) : { viewBox: { x: 0, y: 0, w: view.w, h: view.h } };
+  const vb = camera.viewBox;
   const ref = useRef<HTMLDivElement>(null);
 
   const pointFrom = (e: ReactPointerEvent) => {
@@ -92,8 +128,8 @@ export function Court({
     if (!el) return null;
     const r = el.getBoundingClientRect();
     const lx = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
-    const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
-    return { x: box.x + lx * box.w, y };
+    const ly = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    return variant === "full" ? fromLocal(zoom, { x: lx, y: ly }) : { x: lx, y: ly };
   };
 
   return (
@@ -103,7 +139,7 @@ export function Court({
         "relative w-full select-none overflow-hidden rounded-3xl border-2 border-border bg-court shadow-2xl shadow-black/40 transition-all duration-300",
         className,
       )}
-      style={{ aspectRatio: `${vb.w} / ${view.h}`, cursor, touchAction: "none", ...style }}
+      style={{ aspectRatio: `${vb.w} / ${vb.h}`, cursor, touchAction: "none", ...style }}
       onPointerDown={(e) => {
         const p = pointFrom(e);
         if (p && onCourtPoint) onCourtPoint(p);
@@ -118,33 +154,35 @@ export function Court({
       }}
     >
       <svg
-        viewBox={`${vb.x} 0 ${vb.w} ${view.h}`}
+        viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
         className="absolute inset-0 h-full w-full"
       >
-        <rect x={0} y={0} width={view.w} height={view.h} fill="var(--court)" />
-        <g fill="none" stroke="var(--court-line)" strokeWidth={3}>
-          <rect x={2} y={2} width={view.w - 4} height={view.h - 4} rx={6} />
-        </g>
+        <g transform={camera.transform}>
+          <rect x={0} y={0} width={view.w} height={view.h} fill="var(--court)" />
+          <g fill="none" stroke="var(--court-line)" strokeWidth={3}>
+            <rect x={2} y={2} width={view.w - 4} height={view.h - 4} rx={6} />
+          </g>
 
-        {variant === "half" ? (
-          <>
-            <HalfLines />
-            <g fill="none" stroke="var(--court-line)" strokeWidth={3}>
-              <line x1={468} y1={0} x2={468} y2={500} />
-              <path d={`M 468 190 A 60 60 0 0 0 468 310`} />
-            </g>
-          </>
-        ) : (
-          <>
-            <HalfLines />
-            <HalfLines mirrored />
-            <g fill="none" stroke="var(--court-line)" strokeWidth={3}>
-              <line x1={470} y1={0} x2={470} y2={500} />
-              <circle cx={470} cy={250} r={60} />
-            </g>
-          </>
-        )}
-        {children}
+          {variant === "half" ? (
+            <>
+              <HalfLines />
+              <g fill="none" stroke="var(--court-line)" strokeWidth={3}>
+                <line x1={468} y1={0} x2={468} y2={500} />
+                <path d={`M 468 190 A 60 60 0 0 0 468 310`} />
+              </g>
+            </>
+          ) : (
+            <>
+              <HalfLines />
+              <HalfLines mirrored />
+              <g fill="none" stroke="var(--court-line)" strokeWidth={3}>
+                <line x1={470} y1={0} x2={470} y2={500} />
+                <circle cx={470} cy={250} r={60} />
+              </g>
+            </>
+          )}
+          {children}
+        </g>
       </svg>
       {overlay}
     </div>
