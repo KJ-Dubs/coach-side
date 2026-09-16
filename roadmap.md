@@ -57,9 +57,9 @@
 - [x] Presenter Prev/Next play within the current category/team context, Exit back to source
 
 ## Playmaker mobile workflow and court views
-- [ ] Put Tools and next-sequence creation directly below the court
-- [ ] Add Right, Left, Top, Bottom, and Full camera views without changing play geometry
-- [ ] Seed all five defenders inside the active view and verify the mobile workflow
+- [x] Put Tools and next-sequence creation directly below the court
+- [x] Add Right, Left, Top, Bottom, and Full camera views without changing play geometry
+- [x] Seed all five defenders inside the active view and verify the mobile workflow
 
 ## MP4 export mobile fix
 - [x] Move export progress and preview into a dedicated normal-flow presenter section

@@ -527,7 +527,7 @@ function PlayDesignerPage() {
               >
                 Undo last action
               </BubbleButton>
-              <BubbleButton size="sm" tone={hasDefense ? "neutral" : "grape"} onClick={addDefense}>
+              <BubbleButton size="sm" tone="grape" disabled={hasDefense} onClick={addDefense}>
                 Add Defense
               </BubbleButton>
               <BubbleButton size="sm" tone="ghost" disabled={!hasDefense} onClick={removeDefense}>
