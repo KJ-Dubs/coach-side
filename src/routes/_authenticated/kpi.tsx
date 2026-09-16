@@ -5,7 +5,7 @@
  * number comes from a server function that re-checks ownership before it
  * touches the database. Nothing here is customer facing.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -29,6 +29,7 @@ import {
   type KpiReport,
   type RangeKey,
 } from "@/lib/kpi.functions";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/kpi")({
   head: () => ({
@@ -110,8 +111,23 @@ function KpiPage() {
   const [range, setRange] = useState<RangeKey>("30d");
   const [sort, setSort] = useState<SortKey>("newest");
 
-  const adminQ = useQuery({ queryKey: ["am-i-app-admin"], queryFn: () => checkAdmin(), staleTime: 300_000 });
+  // Owner check is per signed-in person and answered by the server, so one
+  // account can never inherit another account's access on the same device.
+  const { user } = useAuth();
+  const adminQ = useQuery({
+    queryKey: ["am-i-app-admin", user?.id ?? "signed-out"],
+    queryFn: () => checkAdmin(),
+    enabled: !!user,
+    staleTime: 300_000,
+  });
   const isAdmin = adminQ.data === true;
+
+  // Anyone who is not an owner is sent away before any numbers are requested.
+  useEffect(() => {
+    if (!adminQ.isLoading && adminQ.isFetched && !isAdmin) {
+      void navigate({ to: "/dashboard", replace: true });
+    }
+  }, [adminQ.isLoading, adminQ.isFetched, isAdmin, navigate]);
 
   const reportQ = useQuery({
     queryKey: ["kpi-report", range],
@@ -120,7 +136,7 @@ function KpiPage() {
     staleTime: 60_000,
   });
 
-  if (adminQ.isLoading) {
+  if (!user || adminQ.isLoading) {
     return (
       <AppShell title="My KPI" subtitle="Checking access…">
         <Panel>
