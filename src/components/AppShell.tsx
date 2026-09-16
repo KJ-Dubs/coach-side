@@ -6,6 +6,7 @@ import {
   BookOpen,
   ChevronDown,
   ClipboardPenLine,
+  Gauge,
   LogOut,
   MessagesSquare,
   PenLine,
@@ -28,6 +29,8 @@ import {
 import { initialsOf, signOut } from "@/lib/auth";
 import { resolveRole, useAccess } from "@/lib/access";
 import { useMe } from "@/lib/useMe";
+import { useQuery } from "@tanstack/react-query";
+import { fetchIsAppAdmin } from "@/lib/community";
 
 const QUICK = [
   { to: "/plays", label: "Playbook", icon: BookOpen },
@@ -60,6 +63,14 @@ export function AppShell({
   const role = resolveRole(access);
   const qc = useQueryClient();
   const navigate = useNavigate();
+  // Owner-only "My KPI" entry. The database decides; the page re-checks too.
+  const ownerQ = useQuery({
+    queryKey: ["is-app-admin"],
+    queryFn: fetchIsAppAdmin,
+    enabled: !!me.user && !role.isPlayerOnly,
+    staleTime: 300_000,
+  });
+  const isOwner = ownerQ.data === true;
 
   const doSignOut = async () => {
     await signOut(qc);
@@ -198,6 +209,11 @@ export function AppShell({
                   <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 font-bold focus:bg-grape/20">
                     <Link to="/settings"><Settings /> Settings</Link>
                   </DropdownMenuItem>
+                  {isOwner ? (
+                    <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 font-bold text-flame focus:bg-flame/15">
+                      <Link to="/kpi"><Gauge /> My KPI</Link>
+                    </DropdownMenuItem>
+                  ) : null}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="cursor-pointer rounded-xl px-3 py-2.5 font-bold text-flame focus:bg-flame/15 focus:text-flame"

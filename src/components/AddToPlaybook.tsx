@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { BubbleButton, Label, Note, Pill } from "@/components/Bubbles";
 import { addLibraryPlayToTeams } from "@/lib/library";
+import { trackActivity } from "@/lib/activity";
 import { useCurrentTeam } from "@/lib/teamContext";
 import { resolveRole, useAccess } from "@/lib/access";
 import type { Play } from "@/lib/types";
@@ -25,6 +26,8 @@ export function AddToPlaybook({ play, compact }: { play: Play; compact?: boolean
   const add = useMutation({
     mutationFn: (ids: string[]) => addLibraryPlayToTeams(play, ids),
     onSuccess: (_r, ids) => {
+      // Owner analytics only: which team gained which Library play, nothing else.
+      for (const id of ids) void trackActivity("library_play_added_to_playbook", { teamId: id, entityId: play.id });
       void qc.invalidateQueries({ queryKey: ["play-assignments"] });
       void qc.invalidateQueries({ queryKey: ["plays"] });
       const names = ids

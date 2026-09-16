@@ -5,6 +5,7 @@ import { SignInShowcase } from "@/components/SignInShowcase";
 import { Panel, Pill } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
 import { consumePendingInvite } from "@/lib/pendingInvite";
+import { trackActivity } from "@/lib/activity";
 
 type AuthSearch = { mode?: "signin" | "signup"; next?: string };
 
@@ -62,6 +63,8 @@ function AuthPage() {
 
   useEffect(() => {
     if (!ready || !session || recovering) return;
+    // Owner analytics only: a sign-in happened. No device or content details.
+    void trackActivity("signed_in");
     // A player who started from a team invite always resumes that invite.
     const pending = consumePendingInvite();
     if (pending) {
