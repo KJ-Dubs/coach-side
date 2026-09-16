@@ -264,6 +264,22 @@ export const getKpiReport = createServerFn({ method: "POST" })
         coachOfTeam.set(m.team_id, m.user_id);
       }
     }
+    // Older teams predate staff rows, so fall back to the program owner and
+    // count them as that coach's team for activity purposes.
+    const headOfOrg = new Map<string, string>();
+    for (const m of orgMembers) {
+      if (m.role === "head_coach" || !headOfOrg.has(m.org_id)) headOfOrg.set(m.org_id, m.user_id);
+    }
+    for (const t of teams) {
+      if (coachOfTeam.has(t.id)) continue;
+      const owner = t.org_id ? headOfOrg.get(t.org_id) : undefined;
+      if (!owner) continue;
+      coachOfTeam.set(t.id, owner);
+      const set = teamsOfCoach.get(owner) ?? new Set<string>();
+      set.add(t.id);
+      teamsOfCoach.set(owner, set);
+    }
+
 
     // ---- activity timestamps per coach ---------------------------------
     // "Active" = a real product action in the period: play, game, team,
