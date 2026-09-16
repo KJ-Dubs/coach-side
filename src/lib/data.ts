@@ -347,7 +347,7 @@ export async function duplicatePlay(play: Play, name?: string): Promise<Play> {
   const { data, error } = await supabase.rpc("copy_play_for_me", {
     _play: play.id,
     _name: name ?? `${play.name} (copy)`,
-    _team_ids: teams.length ? teams : null,
+    ...(teams.length ? { _team_ids: teams } : {}),
   });
   if (error) throw error;
   return await fetchPlay(data as string);

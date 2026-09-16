@@ -74,7 +74,7 @@ export async function copyPlayForMe(input: {
   const { data, error } = await supabase.rpc("copy_play_for_me", {
     _play: input.playId,
     _name: input.name,
-    _team_ids: input.teamIds?.length ? input.teamIds : null,
+    ...(input.teamIds?.length ? { _team_ids: input.teamIds } : {}),
   });
   if (error) throw error;
   if (!data) throw new Error("Could not create your version");
