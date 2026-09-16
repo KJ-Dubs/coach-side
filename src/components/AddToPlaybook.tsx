@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { BubbleButton, Label, Note, Pill } from "@/components/Bubbles";
 import { addLibraryPlayToTeams } from "@/lib/library";
+import { trackActivity } from "@/lib/activity";
 import { useCurrentTeam } from "@/lib/teamContext";
 import { resolveRole, useAccess } from "@/lib/access";
 import type { Play } from "@/lib/types";
