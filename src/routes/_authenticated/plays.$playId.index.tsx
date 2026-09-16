@@ -101,10 +101,11 @@ function PlayDesignerPage() {
   const [tool, setTool] = useState<Tool>("move");
   const [flip, setFlip] = useState(false);
   const [zoom, setZoom] = useState<CourtZoom>("full");
-  const [sameSeq, setSameSeq] = useState(false);
+  const [seqIdx, setSeqIdx] = useState(0);
+  const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [stroke, setStroke] = useState<Point[] | null>(null);
-  const [playing, setPlaying] = useState(false);
+  const [mode, setMode] = useState<AnimMode>("idle");
   const [timeMs, setTimeMs] = useState(0);
   const rafRef = useRef<number | null>(null);
   const [name, setName] = useState("");
@@ -113,7 +114,11 @@ function PlayDesignerPage() {
 
   useEffect(() => {
     if (framesQ.data) {
-      setFrames(framesQ.data.length ? framesQ.data : [blankFrame(playId, 0)]);
+      setFrames(
+        (framesQ.data.length ? framesQ.data : [blankFrame(playId, 0)]).map((f) =>
+          resolveLegacyActors(f),
+        ),
+      );
     }
   }, [framesQ.data, playId]);
 
@@ -131,30 +136,41 @@ function PlayDesignerPage() {
   const patchFrame = (fn: (f: PlayFrame) => PlayFrame) =>
     setFrames((prev) => prev.map((f, i) => (i === current ? fn(f) : f)));
 
-  const nearestToken = (p: { x: number; y: number }) => {
-    if (!frame) return null;
-    let best: { id: string; d: number } | null = null;
-    for (const t of frame.tokens) {
-      const d = Math.hypot(t.x - p.x, t.y - p.y);
-      if (!best || d < best.d) best = { id: t.id, d };
-    }
-    return best && best.d < 0.06 ? best.id : null;
-  };
+  /* ---- deterministic engine state ---- */
 
-  const timeline = useMemo(() => buildTimeline(frame), [frame]);
-  const live = playing || timeMs > 0 ? sampleTimeline(timeline, timeMs) : null;
+  const steps = useMemo(() => buildSteps(frame), [frame]);
+  const seqCount = steps.length;
+  const activeIdx = Math.min(seqIdx, seqCount);
+  const activeStep = steps[activeIdx];
+  const seqNumber = activeStep ? activeStep.seq : (steps[seqCount - 1]?.seq ?? 0) + 1;
+
+  /** Exact court state this sequence begins from. */
+  const projected = useMemo(
+    () => stateAtSequenceStart(frame, activeIdx),
+    [frame, activeIdx],
+  );
+
+  const timeline = useMemo(() => ({ steps, totalMs: steps.length * STEP_MS }), [steps]);
+  const rangeStart = mode === "preview" ? activeIdx * STEP_MS : 0;
+  const rangeEnd = mode === "preview" ? (activeIdx + 1) * STEP_MS : timeline.totalMs;
+  const live = mode === "idle" ? null : sampleTimeline(timeline, timeMs);
 
   useEffect(() => {
-    if (!playing) return;
+    setSeqIdx((i) => Math.min(i, seqCount));
+  }, [seqCount]);
+
+  useEffect(() => {
+    if (mode === "idle") return;
     let last = performance.now();
     const tick = (now: number) => {
       const dt = now - last;
       last = now;
       setTimeMs((prev) => {
         const next = prev + dt;
-        if (next >= timeline.totalMs) {
-          setPlaying(false);
-          return Math.max(0, timeline.totalMs - 1);
+        if (next >= rangeEnd) {
+          setMode("idle");
+          if (mode === "preview") setSeqIdx((i) => Math.min(seqCount, i + 1));
+          return rangeEnd - 1;
         }
         return next;
       });
@@ -164,23 +180,83 @@ function PlayDesignerPage() {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [playing, timeline.totalMs]);
+  }, [mode, rangeEnd, seqCount]);
 
-  const stopAnimation = () => {
-    setPlaying(false);
+  const previewSequence = () => {
+    if (!activeStep) return;
+    setTimeMs(rangeStart);
+    setMode("preview");
+  };
+  const replayPlay = () => {
+    if (seqCount === 0) return;
+    setSeqIdx(0);
     setTimeMs(0);
+    setMode("replay");
+  };
+  const resetPlay = () => {
+    setMode("idle");
+    setTimeMs(0);
+    setSeqIdx(0);
+  };
+
+  /** Tokens the coach can actually see and drag right now. */
+  const liveTokens = live ? live.sample.tokens : projected.tokens;
+
+  const bindToken = (p: { x: number; y: number }) => nearestTokenAt(liveTokens, p);
+
+  /* ---- action authoring ---- */
+
+  const addAction = (action: PlayAction, seq: number) => {
+    const conflict = (frame?.actions ?? []).some(
+      (a) =>
+        a.seq === seq &&
+        BALL_ACTIONS.has(a.type) &&
+        BALL_ACTIONS.has(action.type) &&
+        (a.target === action.actor || a.actor === action.target),
+    );
+    if (!conflict) {
+      patchFrame((f) => ({ ...f, actions: [...f.actions, action] }));
+      setSelectedActionId(action.id);
+      return;
+    }
+    const label = liveTokens.find((t) => t.id === action.actor)?.label ?? "that player";
+    toast.warning(`#${label} has to receive the ball before this can happen.`, {
+      duration: 12000,
+      action: {
+        label: "Move to next sequence",
+        onClick: () => {
+          patchFrame((f) => ({
+            ...f,
+            actions: [
+              ...f.actions.map((a) => (a.seq > seq ? { ...a, seq: a.seq + 1 } : a)),
+              { ...action, seq: seq + 1 },
+            ],
+          }));
+          setSelectedActionId(action.id);
+          setSeqIdx((i) => i + 1);
+        },
+      },
+    });
   };
 
   const onDown = (raw: { x: number; y: number }) => {
     const p = toCoords(raw);
     if (!frame) return;
-    stopAnimation();
+    if (mode !== "idle") setMode("idle");
     if (tool === "move") {
-      setDragId(nearestToken(p));
+      if (activeIdx > 0) {
+        toast.info("Go to Sequence 1 to move players into their starting spots.");
+        return;
+      }
+      setDragId(bindToken(p));
       return;
     }
     if (tool === "ball") {
-      const id = nearestToken(p);
+      if (activeIdx > 0) {
+        toast.info("Set the starting ball handler on Sequence 1.");
+        return;
+      }
+      const id = bindToken(p);
       if (id) patchFrame((f) => ({ ...f, tokens: f.tokens.map((t) => ({ ...t, ball: t.id === id })) }));
       return;
     }
@@ -209,31 +285,36 @@ function PlayDesignerPage() {
       const pts = simplifyPath([...stroke, p]);
       const first = pts[0]!;
       const dist = Math.hypot(p.x - first.x, p.y - first.y);
-      if (dist > 0.03 && frame) {
-        const maxSeq = frame.actions.reduce((m, a) => Math.max(m, a.seq), 0);
-        const seq = sameSeq && maxSeq > 0 ? maxSeq : maxSeq + 1;
-        const actorId = nearestToken(first);
-        const targetId = tool === "pass" || tool === "handoff" ? nearestToken(p) : null;
-        const action: PlayAction = {
-          id: uuid(),
-          type: tool,
-          seq,
-          points: pts,
-          ...(actorId ? { actor: actorId } : {}),
-          ...(targetId ? { target: targetId, transfersBall: true } : {}),
-        };
-        patchFrame((f) => ({ ...f, actions: [...f.actions, action] }));
-      }
       setStroke(null);
+      if (dist <= 0.03 || !frame) return;
+      const actorId = bindToken(first);
+      if (!actorId) {
+        toast.info("Start the line on a player so CoachSide knows who is doing it.");
+        return;
+      }
+      const targetId = tool === "pass" || tool === "handoff" ? bindToken(p) : null;
+      if ((tool === "pass" || tool === "handoff") && !targetId) {
+        toast.info("End a pass or handoff on the player who receives the ball.");
+        return;
+      }
+      const action: PlayAction = {
+        id: uuid(),
+        type: tool,
+        seq: seqNumber,
+        points: pts,
+        actor: actorId,
+        ...(targetId ? { target: targetId, transfersBall: true } : {}),
+      };
+      addAction(action, seqNumber);
     }
   };
 
-  /** Commit the animated end state as the frame's new starting positions. */
+  /** Commit the play's end state as the frame's new starting positions. */
   const applyEndState = () => {
-    const last = timeline.steps[timeline.steps.length - 1];
+    const last = steps[steps.length - 1];
     if (!last) return;
     patchFrame((f) => ({ ...f, tokens: last.endTokens.map((t) => ({ ...t })), actions: [] }));
-    stopAnimation();
+    resetPlay();
     toast.success("Ending positions saved as the new setup");
   };
 
