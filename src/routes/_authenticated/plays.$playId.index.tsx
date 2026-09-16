@@ -445,51 +445,79 @@ function PlayDesignerPage() {
             flip={flip}
             zoom={zoom}
             ghost={stroke}
-            {...(live
-              ? {
-                  tokens: live.sample.tokens,
-                  ball: live.sample.ball,
-                  actions: live.step.actions,
-                  activeSeq: live.step.seq,
-                  dimOtherActions: true,
-                }
-              : {})}
+            tokens={live ? live.sample.tokens : projected.tokens}
+            ball={live ? live.sample.ball : projected.ball}
+            actions={live ? live.step.actions : (activeStep?.actions ?? [])}
+            activeSeq={live ? live.step.seq : seqNumber}
+            dimOtherActions
+            {...(selectedActionId ? { selectedActionId } : {})}
             onCourtPoint={onDown}
             onCourtPointerMove={onMove}
             onCourtPointerUp={onUp}
           />
           <Panel className="flex flex-wrap items-center gap-2">
+            <Label>Sequences</Label>
+            {steps.map((s, i) => (
+              <BubbleButton
+                key={s.seq}
+                size="sm"
+                tone={i === activeIdx && mode === "idle" ? "grape" : "neutral"}
+                onClick={() => {
+                  setMode("idle");
+                  setTimeMs(0);
+                  setSeqIdx(i);
+                  setSelectedActionId(null);
+                }}
+              >
+                {i + 1}
+              </BubbleButton>
+            ))}
+            <BubbleButton
+              size="sm"
+              tone={activeIdx === seqCount ? "flame" : "ghost"}
+              onClick={() => {
+                setMode("idle");
+                setTimeMs(0);
+                setSeqIdx(seqCount);
+                setSelectedActionId(null);
+              }}
+            >
+              + New
+            </BubbleButton>
+            <Pill tone="muted">
+              {activeIdx === seqCount
+                ? "Drawing a new sequence from the end of the play"
+                : `Court shows the start of sequence ${activeIdx + 1}`}
+            </Pill>
+          </Panel>
+          <Panel className="flex flex-wrap items-center gap-2">
             <Label>Animate</Label>
             <BubbleButton
               size="sm"
               tone="flame"
-              disabled={timeline.steps.length === 0}
-              onClick={() => {
-                if (playing) {
-                  setPlaying(false);
-                } else {
-                  if (timeMs >= timeline.totalMs - 1) setTimeMs(0);
-                  setPlaying(true);
-                }
-              }}
+              disabled={!activeStep}
+              onClick={() => (mode === "preview" ? setMode("idle") : previewSequence())}
             >
-              {playing ? "❚❚ Pause" : "▶ Play"}
-            </BubbleButton>
-            <BubbleButton size="sm" tone="neutral" onClick={stopAnimation}>
-              ↺ Reset
+              {mode === "preview" ? "❚❚ Pause" : "▶ Preview Sequence"}
             </BubbleButton>
             <BubbleButton
               size="sm"
               tone="grape"
-              disabled={timeline.steps.length === 0}
-              onClick={applyEndState}
+              disabled={seqCount === 0}
+              onClick={() => (mode === "replay" ? setMode("idle") : replayPlay())}
             >
+              {mode === "replay" ? "❚❚ Pause" : "↻ Replay Play"}
+            </BubbleButton>
+            <BubbleButton size="sm" tone="neutral" onClick={resetPlay}>
+              ⟲ Reset Play
+            </BubbleButton>
+            <BubbleButton size="sm" tone="ghost" disabled={seqCount === 0} onClick={applyEndState}>
               Use End Positions
             </BubbleButton>
             <Pill tone={live ? "grape" : "muted"}>
               {live
-                ? `Sequence ${live.step.seq} · ${live.phase === "show" ? "Showing paths" : "Running"}`
-                : `${timeline.steps.length} sequence${timeline.steps.length === 1 ? "" : "s"} ready`}
+                ? `Sequence ${live.index + 1} · ${live.phase === "show" ? "Showing paths" : "Running"}`
+                : `${seqCount} sequence${seqCount === 1 ? "" : "s"} ready`}
             </Pill>
           </Panel>
         </div>
