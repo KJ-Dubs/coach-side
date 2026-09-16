@@ -257,8 +257,13 @@ function PlayDesignerPage() {
   };
 
   const save = async () => {
+    if (!canEdit) {
+      toast.error("Only the coach who created this play can change it");
+      return;
+    }
     setSaving(true);
     try {
+
       await saveFrames(playId, frames);
       await updatePlay(playId, { name, category, attack_basket: flip ? "left" : "right" });
       toast.success("Play saved");
