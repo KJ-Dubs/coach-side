@@ -28,7 +28,10 @@ import {
 } from "@/lib/data";
 import { publishPlay, setPlayAnonymous, unpublishPlay } from "@/lib/library";
 import { LibraryFeed } from "@/components/community/LibraryFeed";
+import { CreateMyVersion } from "@/components/CreateMyVersion";
+import { isPlayOwner } from "@/lib/playOwnership";
 import { useMe } from "@/lib/useMe";
+
 
 import {
   PLAY_CATEGORIES,
@@ -119,9 +122,10 @@ function PlaybookPage() {
     return (plays.data ?? []).filter(
       (p) =>
         (teamsByPlay.get(p.id) ?? []).some((t) => mine.has(t)) ||
-        (!!myUserId && p.published_by === myUserId),
+        (!!myUserId && (p.published_by === myUserId || p.created_by === myUserId)),
     );
   }, [plays.data, teams.data, teamsByPlay, myUserId]);
+
 
   const visiblePlays = useMemo(
     () =>
