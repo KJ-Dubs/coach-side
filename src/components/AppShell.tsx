@@ -63,6 +63,14 @@ export function AppShell({
   const role = resolveRole(access);
   const qc = useQueryClient();
   const navigate = useNavigate();
+  // Owner-only "My KPI" entry. The database decides; the page re-checks too.
+  const ownerQ = useQuery({
+    queryKey: ["is-app-admin"],
+    queryFn: fetchIsAppAdmin,
+    enabled: !!me.user && !role.isPlayerOnly,
+    staleTime: 300_000,
+  });
+  const isOwner = ownerQ.data === true;
 
   const doSignOut = async () => {
     await signOut(qc);
