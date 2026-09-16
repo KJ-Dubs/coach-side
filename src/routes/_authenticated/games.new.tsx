@@ -13,7 +13,7 @@ import {
   Pill,
   TextInput,
 } from "@/components/Bubbles";
-import { createGame, fetchPlayers, fetchTeams, updateTeamEvent } from "@/lib/data";
+import { createGame, fetchGames, fetchPlayers, fetchTeams, updateTeamEvent } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 type NewGameSearch = {
@@ -104,6 +104,28 @@ function NewGamePage() {
     if (teams.data?.length === 1) setTeamId(teams.data[0]!.id);
   }, [teams.data, teamId, prefill.team]);
 
+  // An unfinished game must be resumed, never silently duplicated.
+  const games = useQuery({ queryKey: ["games"], queryFn: fetchGames });
+  const liveGames = useMemo(
+    () => (games.data ?? []).filter((g) => g.status !== "final"),
+    [games.data],
+  );
+  const liveForTeam = useMemo(
+    () => liveGames.filter((g) => !teamId || g.team_id === teamId),
+    [liveGames, teamId],
+  );
+  const resumeGame = liveForTeam[0] ?? null;
+  // A scheduled calendar game that already has a live game resumes that one.
+  const scheduledLive = useMemo(() => {
+    if (!prefill.opponent) return null;
+    const want = prefill.opponent.trim().toLowerCase();
+    return (
+      liveForTeam.find(
+        (g) => g.opponent.trim().toLowerCase() === want && (!prefill.date || g.game_date === prefill.date),
+      ) ?? null
+    );
+  }, [liveForTeam, prefill.opponent, prefill.date]);
+
   const players = useQuery({
     queryKey: ["players", teamId],
     queryFn: () => fetchPlayers(teamId),
@@ -174,6 +196,39 @@ function NewGamePage() {
 
   return (
     <AppShell title="Start a Game" subtitle="Five quick steps, then the live court">
+      {resumeGame ? (
+        <Panel className="mb-3 flex flex-col items-center gap-3 border-flame/60">
+          <span className="text-xl font-black leading-tight text-foreground">
+            Game already in progress
+          </span>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Pill tone="grape">{teams.data?.find((t) => t.id === resumeGame.team_id)?.name ?? "Team"}</Pill>
+            <Pill tone="flame">vs {resumeGame.opponent}</Pill>
+            <Pill tone="muted">
+              {resumeGame.team_score} – {resumeGame.opp_score}
+            </Pill>
+            <Pill tone="muted">
+              {resumeGame.periods === 2 ? "Half" : "Quarter"} {resumeGame.quarter}
+            </Pill>
+            <Pill tone="muted">{resumeGame.game_date}</Pill>
+          </div>
+          <BubbleButton
+            tone="flame"
+            size="lg"
+            className="w-full sm:w-auto"
+            onClick={() =>
+              navigate({
+                to: "/game/$gameId",
+                params: { gameId: (scheduledLive ?? resumeGame).id },
+              })
+            }
+          >
+            ▶ Continue Current Game
+          </BubbleButton>
+          <Note>Or set up a brand-new game below.</Note>
+        </Panel>
+      ) : null}
+
       <div className="grid gap-3 lg:grid-cols-2">
         <StepCard step="A" title="Which team?" done={stepA}>
           {teams.isLoading ? (

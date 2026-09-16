@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { AppShell } from "@/components/AppShell";
 import { StatsTabs } from "@/components/StatsTabs";
+import { resolveRole, useAccess } from "@/lib/access";
 import { BubbleButton, EmptyState, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
 import { ShotChart } from "@/components/court/ShotChart";
 import { fetchAllPlayers, fetchSeasonBundle, fetchTeams } from "@/lib/data";
@@ -49,6 +50,7 @@ export const Route = createFileRoute("/_authenticated/stats/players")({
 function PlayerStatsPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const isCoach = !resolveRole(useAccess().access).isPlayerOnly;
   const teams = useQuery({ queryKey: ["teams"], queryFn: fetchTeams });
   const players = useQuery({ queryKey: ["players", "all"], queryFn: fetchAllPlayers });
   const bundle = useQuery({
@@ -208,6 +210,13 @@ function PlayerStatsPage() {
           ))}
           {!players.isLoading && teamPlayers.length === 0 ? (
             <Pill tone="muted">No players on this team</Pill>
+          ) : null}
+          {isCoach ? (
+            <Link to="/roster">
+              <BubbleButton size="sm" tone="flame">
+                {teamsInSeason.length ? "+ Add Player" : "+ Add Team"}
+              </BubbleButton>
+            </Link>
           ) : null}
           <Pill tone="grape">Tap more than one player to compare a combination</Pill>
           {multi ? (

@@ -9,7 +9,6 @@ import { PlayThumb } from "@/components/community/PlayThumb";
 import { useAuth } from "@/lib/auth";
 import { resolveRole, useAccess } from "@/lib/access";
 import {
-  fetchIsAppAdmin,
   fetchLibraryFeed,
   libraryPlayAsPlay,
   LIBRARY_SORTS,
@@ -18,6 +17,7 @@ import {
   type LibraryPlay,
   type LibrarySort,
 } from "@/lib/community";
+import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
 import { PLAY_CATEGORIES, normalizeCategory } from "@/lib/types";
 
 /**
@@ -41,7 +41,7 @@ export function LibraryFeed({
     queryKey: ["library-feed", creator ?? null],
     queryFn: () => fetchLibraryFeed(creator ?? null),
   });
-  const admin = useQuery({ queryKey: ["is-app-admin"], queryFn: fetchIsAppAdmin, enabled: isCoach });
+  const { isAdmin } = useIsAppAdmin();
 
   const shown = useMemo(() => {
     const list = (feed.data ?? []).filter(
@@ -97,7 +97,7 @@ export function LibraryFeed({
             play={p}
             variant={variant}
             isCoach={isCoach}
-            isAdmin={!!admin.data}
+            isAdmin={isAdmin}
           />
         ))}
       </div>

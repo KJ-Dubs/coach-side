@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { StatsTabs } from "@/components/StatsTabs";
+import { resolveRole, useAccess } from "@/lib/access";
 import { BubbleButton, EmptyState, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
 import { ShotChart } from "@/components/court/ShotChart";
 import { fetchAllPlayers, fetchSeasonBundle, fetchTeams } from "@/lib/data";
@@ -46,6 +47,7 @@ export const Route = createFileRoute("/_authenticated/stats/team")({
 function TeamStatsPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const isCoach = !resolveRole(useAccess().access).isPlayerOnly;
   const teams = useQuery({ queryKey: ["teams"], queryFn: fetchTeams });
   const players = useQuery({ queryKey: ["players", "all"], queryFn: fetchAllPlayers });
   const bundle = useQuery({
@@ -162,10 +164,26 @@ function TeamStatsPage() {
           </>
         ) : null}
         {bundle.isLoading ? <Pill tone="muted">Loading…</Pill> : null}
+        {isCoach ? (
+          <Link to="/roster" className="ml-auto">
+            <BubbleButton size="sm" tone="flame">
+              {teamsInSeason.length ? "Manage Team / Roster" : "+ Add Team"}
+            </BubbleButton>
+          </Link>
+        ) : null}
       </Panel>
 
       {!team ? (
-        <EmptyState>No team selected</EmptyState>
+        <Panel className="flex flex-col items-center gap-3">
+          <EmptyState>
+            {teams.isLoading ? "Loading your teams…" : "No team yet — add your team to see stats"}
+          </EmptyState>
+          {isCoach && !teams.isLoading ? (
+            <Link to="/roster">
+              <BubbleButton tone="flame" size="lg">+ Add Team</BubbleButton>
+            </Link>
+          ) : null}
+        </Panel>
       ) : (
         <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
           <div className="flex flex-col gap-3">
