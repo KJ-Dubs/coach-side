@@ -323,9 +323,12 @@ export async function createPlay(input: {
   team_ids?: string[];
 }): Promise<Play> {
   const { team_ids, ...row } = input;
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error("Sign in first");
   const { data, error } = await supabase
     .from("plays")
-    .insert(row as never)
+    // The creator owns the play for good: only they can edit this record.
+    .insert({ ...row, created_by: auth.user.id } as never)
     .select("*")
     .single();
   if (error) throw error;
@@ -335,29 +338,21 @@ export async function createPlay(input: {
   return play;
 }
 
-export async function duplicatePlay(play: Play): Promise<Play> {
+/**
+ * Server-side atomic copy (metadata + every frame) into a play owned by the
+ * signed-in coach. Hearts, share token and Library publication are not copied.
+ */
+export async function duplicatePlay(play: Play, name?: string): Promise<Play> {
   const teams = await fetchTeamsForPlay(play.id);
-  const copy = await createPlay({
-    team_id: play.team_id,
-    name: `${play.name} (copy)`,
-    category: play.category,
-    attack_basket: play.attack_basket === "left" ? "left" : "right",
-    team_ids: teams,
+  const { data, error } = await supabase.rpc("copy_play_for_me", {
+    _play: play.id,
+    _name: name ?? `${play.name} (copy)`,
+    _team_ids: teams.length ? teams : null,
   });
-  const frames = await fetchFrames(play.id);
-  if (frames.length) {
-    const rows = frames.map((f, i) => ({
-      play_id: copy.id,
-      idx: i,
-      tokens: f.tokens as never,
-      actions: f.actions as never,
-      note: f.note,
-    }));
-    const { error } = await supabase.from("play_frames").insert(rows as never);
-    if (error) throw error;
-  }
-  return copy;
+  if (error) throw error;
+  return await fetchPlay(data as string);
 }
+
 
 
 export async function deletePlay(id: string) {
