@@ -29,8 +29,7 @@ import {
 import { initialsOf, signOut } from "@/lib/auth";
 import { resolveRole, useAccess } from "@/lib/access";
 import { useMe } from "@/lib/useMe";
-import { useQuery } from "@tanstack/react-query";
-import { fetchIsAppAdmin } from "@/lib/community";
+import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
 
 const QUICK = [
   { to: "/plays", label: "Playbook", icon: BookOpen },
@@ -64,13 +63,8 @@ export function AppShell({
   const qc = useQueryClient();
   const navigate = useNavigate();
   // Owner-only "My KPI" entry. The database decides; the page re-checks too.
-  const ownerQ = useQuery({
-    queryKey: ["is-app-admin"],
-    queryFn: fetchIsAppAdmin,
-    enabled: !!me.user && !role.isPlayerOnly,
-    staleTime: 300_000,
-  });
-  const isOwner = ownerQ.data === true;
+  const { isAdmin } = useIsAppAdmin();
+  const isOwner = isAdmin && !role.isPlayerOnly;
 
   const doSignOut = async () => {
     await signOut(qc);
