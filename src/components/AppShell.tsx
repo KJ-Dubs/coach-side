@@ -29,6 +29,8 @@ import {
 import { initialsOf, signOut } from "@/lib/auth";
 import { resolveRole, useAccess } from "@/lib/access";
 import { useMe } from "@/lib/useMe";
+import { useQuery } from "@tanstack/react-query";
+import { fetchIsAppAdmin } from "@/lib/community";
 
 const QUICK = [
   { to: "/plays", label: "Playbook", icon: BookOpen },
