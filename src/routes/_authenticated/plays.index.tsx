@@ -567,18 +567,24 @@ function PlayCard({
             </BubbleButton>
           </Link>
 
-          <Link to="/plays/$playId" params={{ playId: play.id }}>
-            <BubbleButton size="sm" tone="flame">
-              Edit
+          {canEdit ? (
+            <Link to="/plays/$playId" params={{ playId: play.id }}>
+              <BubbleButton size="sm" tone="flame">
+                Edit
+              </BubbleButton>
+            </Link>
+          ) : (
+            <CreateMyVersion play={play} teamIds={assignedTeams} label="Edit as My Version" />
+          )}
+          {canEdit ? (
+            <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onShareLink}>
+              {play.is_shared ? "Copy link" : "Share"}
             </BubbleButton>
-          </Link>
-          <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onShareLink}>
-            {play.is_shared ? "Copy link" : "Share"}
-          </BubbleButton>
+          ) : null}
           <BubbleButton size="sm" tone="neutral" onClick={openTeams}>
             Teams
           </BubbleButton>
-          {play.is_shared ? (
+          {canEdit && play.is_shared ? (
             <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onUnshare}>
               Stop sharing
             </BubbleButton>
@@ -586,33 +592,38 @@ function PlayCard({
           <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onDuplicate}>
             Duplicate
           </BubbleButton>
-          {play.published_to_library ? (
-            <>
-              <BubbleButton
-                size="sm"
-                tone="neutral"
-                onClick={() => onAnonymous(!play.publish_anonymous)}
-              >
-                {play.publish_anonymous ? "Credit my handle" : "Credit Anonymous Coach"}
-              </BubbleButton>
-              <BubbleButton size="sm" tone="ghost" onClick={onUnpublish}>
-                Remove from Library
-              </BubbleButton>
-            </>
-          ) : (
-            <>
-              <BubbleButton size="sm" tone="grape" onClick={() => onPublish(false)}>
-                Publish to Library
-              </BubbleButton>
-              <BubbleButton size="sm" tone="neutral" onClick={() => onPublish(true)}>
-                Publish anonymously
-              </BubbleButton>
-            </>
-          )}
-          <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onDelete}>
-            Delete
-          </BubbleButton>
+          {canEdit ? (
+            play.published_to_library ? (
+              <>
+                <BubbleButton
+                  size="sm"
+                  tone="neutral"
+                  onClick={() => onAnonymous(!play.publish_anonymous)}
+                >
+                  {play.publish_anonymous ? "Credit my handle" : "Credit Anonymous Coach"}
+                </BubbleButton>
+                <BubbleButton size="sm" tone="ghost" onClick={onUnpublish}>
+                  Remove from Library
+                </BubbleButton>
+              </>
+            ) : (
+              <>
+                <BubbleButton size="sm" tone="grape" onClick={() => onPublish(false)}>
+                  Publish to Library
+                </BubbleButton>
+                <BubbleButton size="sm" tone="neutral" onClick={() => onPublish(true)}>
+                  Publish anonymously
+                </BubbleButton>
+              </>
+            )
+          ) : null}
+          {canEdit ? (
+            <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onDelete}>
+              Delete
+            </BubbleButton>
+          ) : null}
         </div>
+
       ) : null}
 
       {teamsOpen ? (
