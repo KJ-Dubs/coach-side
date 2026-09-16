@@ -5,6 +5,7 @@ import { SignInShowcase } from "@/components/SignInShowcase";
 import { Panel, Pill } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
 import { consumePendingInvite } from "@/lib/pendingInvite";
+import { trackActivity } from "@/lib/activity";
 
 type AuthSearch = { mode?: "signin" | "signup"; next?: string };
 
