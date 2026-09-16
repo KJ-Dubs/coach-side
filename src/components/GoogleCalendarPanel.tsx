@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { BubbleButton, InfoPanel, Label, Panel, Pill, SelectInput } from "@/components/Bubbles";
+import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
 import {
   disconnectGoogleCalendar,
   getGoogleCalendarStatus,
@@ -32,6 +33,7 @@ export function GoogleCalendarPanel({
   canManage: boolean;
 }) {
   const qc = useQueryClient();
+  const { isAdmin } = useIsAppAdmin();
   const status = useServerFn(getGoogleCalendarStatus);
   const start = useServerFn(startGoogleCalendarConnect);
   const listCals = useServerFn(listGoogleCalendars);
@@ -154,10 +156,23 @@ export function GoogleCalendarPanel({
 
       {q.isLoading ? <Label>Checking connection…</Label> : null}
 
-      {q.data ? (
-        <InfoPanel>
-          <ul className="space-y-2"><li><strong>Callback address:</strong> {q.data.redirectUri}</li><li><strong>Google app ID ends:</strong> {q.data.clientIdHint ?? "not set"}</li>{lastError ? <li className="text-destructive"><strong>Last Google error:</strong> {lastError}</li> : null}</ul>
+      {lastError ? (
+        <InfoPanel tone="danger">
+          Google could not finish connecting ({lastError}). Try connecting again.
         </InfoPanel>
+      ) : null}
+
+      {/* Setup details are only useful to the CoachSide owner. */}
+      {isAdmin && q.data ? (
+        <details className="rounded-2xl border border-border bg-surface-2/70 p-3">
+          <summary className="cursor-pointer text-xs font-black uppercase text-muted-foreground">
+            Owner diagnostics
+          </summary>
+          <ul className="mt-2 space-y-2 text-sm font-semibold text-muted-foreground">
+            <li><strong>Callback address:</strong> {q.data.redirectUri}</li>
+            <li><strong>Google app ID ends:</strong> {q.data.clientIdHint ?? "not set"}</li>
+          </ul>
+        </details>
       ) : null}
 
       {q.data && !q.data.configured ? (
