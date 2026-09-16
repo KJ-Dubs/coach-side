@@ -147,7 +147,15 @@ export type Play = {
   library_version?: number;
   /** Published under "Anonymous Coach" instead of the coach's public handle. */
   publish_anonymous?: boolean;
+  /** Durable authorship: only this coach may edit this exact record. */
+  created_by?: string | null;
+  /** Lineage for coach-made versions of someone else's play. */
+  source_play_id?: string | null;
+  root_play_id?: string | null;
+  source_creator_id?: string | null;
+  copied_at?: string | null;
 };
+
 
 export type PlayFrame = {
   id: string;
