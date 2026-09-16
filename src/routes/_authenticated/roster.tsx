@@ -184,7 +184,7 @@ function RosterPage() {
           <div className="grid gap-3 sm:grid-cols-3">
             <Field label="Team name">
               <TextInput
-                placeholder="Aliso Niguel JV"
+                placeholder="East High Varsity"
                 value={teamNameInput}
                 onChange={(e) => setTeamNameInput(e.target.value)}
               />
