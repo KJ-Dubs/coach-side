@@ -197,7 +197,7 @@ export function AuthCard({
             {hideOrgField ? null : (
               <Field label="Program / school">
                 <TextInput
-                  placeholder="Aliso Niguel Basketball"
+                  placeholder="East High Basketball"
                   value={orgName}
                   disabled={!!lockSignup}
                   onChange={(e) => setOrgName(e.target.value)}

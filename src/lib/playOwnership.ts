@@ -59,7 +59,7 @@ export async function fetchCoachLabel(userId: string | null | undefined): Promis
   return /^coach\b/i.test(raw) ? raw : `Coach ${raw}`;
 }
 
-/** "Wheel — Coach Kory Version" edited by Bob becomes "Wheel — Coach Bob Version". */
+/** "Wheel — Coach A Version" edited by Coach B becomes "Wheel — Coach Bob Version". */
 export function versionTitle(sourceName: string, coachLabel: string | null) {
   const root = sourceName.replace(/\s*[—–-]\s*.+?\s+Version\s*$/i, "").trim() || sourceName.trim();
   return coachLabel ? `${root} — ${coachLabel} Version` : `${root} — My Version`;

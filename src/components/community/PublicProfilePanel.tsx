@@ -56,21 +56,21 @@ export function PublicProfilePanel() {
       ) : null}
       <Field label="Handle">
         <TextInput
-          placeholder="coachkory"
+          placeholder="coachbolton"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
       </Field>
       <Field label="Public display name">
         <TextInput
-          placeholder="Coach Kory"
+          placeholder="Coach Bolton"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
         />
       </Field>
       <Field label="Short bio">
         <TextInput
-          placeholder="Sophomore boys, Aliso Niguel"
+          placeholder="East High Varsity Basketball"
           value={bio}
           onChange={(e) => setBio(e.target.value)}
         />
