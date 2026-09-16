@@ -183,13 +183,19 @@ export function PlayCanvas({
   /** Emphasize one player and their actions (read-only presenter view). */
   focusTokenId?: string | undefined;
 }) {
-  const shownTokens = tokens ?? frame?.tokens ?? [];
+  const shownTokens = withVisualOffsets(tokens ?? frame?.tokens ?? []);
   const shownActions = actions ?? frame?.actions ?? [];
   const ballToken = shownTokens.find((t) => t.ball);
   const ballPoint =
-    ball ?? (ballToken ? { x: ballToken.x, y: ballToken.y } : null);
+    ballToken ? { x: ballToken.x, y: ballToken.y } : (ball ?? null);
   const ballPx = ballPoint ? xf(ballPoint, flip) : null;
-  const attached = !ball && ballToken;
+  const attached = !!ballToken;
+  const selected = selectedActionId
+    ? shownActions.find((a) => a.id === selectedActionId)
+    : undefined;
+  const selectedLabel = selected
+    ? `${shownTokens.find((t) => t.id === selected.actor)?.label ?? "?"} • ${ACTION_NAME[selected.type] ?? selected.type} • Seq ${selected.seq}`
+    : null;
   const ghostPts = Array.isArray(ghost)
     ? ghost
     : ghost
