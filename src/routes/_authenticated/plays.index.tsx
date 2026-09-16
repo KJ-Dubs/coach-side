@@ -28,7 +28,10 @@ import {
 } from "@/lib/data";
 import { publishPlay, setPlayAnonymous, unpublishPlay } from "@/lib/library";
 import { LibraryFeed } from "@/components/community/LibraryFeed";
+import { CreateMyVersion } from "@/components/CreateMyVersion";
+import { isPlayOwner } from "@/lib/playOwnership";
 import { useMe } from "@/lib/useMe";
+
 
 import {
   PLAY_CATEGORIES,
@@ -119,9 +122,10 @@ function PlaybookPage() {
     return (plays.data ?? []).filter(
       (p) =>
         (teamsByPlay.get(p.id) ?? []).some((t) => mine.has(t)) ||
-        (!!myUserId && p.published_by === myUserId),
+        (!!myUserId && (p.published_by === myUserId || p.created_by === myUserId)),
     );
   }, [plays.data, teams.data, teamsByPlay, myUserId]);
+
 
   const visiblePlays = useMemo(
     () =>
@@ -424,6 +428,8 @@ function PlaybookPage() {
                   ...(teamFilter !== "ALL" ? { team: teamFilter } : {}),
                 }}
                 assignedTeams={teamsByPlay.get(p.id) ?? []}
+                canEdit={isPlayOwner(p, myUserId)}
+
                 allTeams={teams.data ?? []}
 
                 teamName={teamName}
@@ -469,7 +475,9 @@ function PlayCard({
   busy,
   onShareLink,
   onUnshare,
+  canEdit,
   onDuplicate,
+
   onDelete,
   onSaveTeams,
   savingTeams,
@@ -478,6 +486,8 @@ function PlayCard({
   onAnonymous,
 }: {
   play: Play;
+  canEdit: boolean;
+
   viewSearch: { category?: string; team?: string };
   assignedTeams: string[];
   allTeams: Team[];
@@ -557,18 +567,24 @@ function PlayCard({
             </BubbleButton>
           </Link>
 
-          <Link to="/plays/$playId" params={{ playId: play.id }}>
-            <BubbleButton size="sm" tone="flame">
-              Edit
+          {canEdit ? (
+            <Link to="/plays/$playId" params={{ playId: play.id }}>
+              <BubbleButton size="sm" tone="flame">
+                Edit
+              </BubbleButton>
+            </Link>
+          ) : (
+            <CreateMyVersion play={play} teamIds={assignedTeams} label="Edit as My Version" />
+          )}
+          {canEdit ? (
+            <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onShareLink}>
+              {play.is_shared ? "Copy link" : "Share"}
             </BubbleButton>
-          </Link>
-          <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onShareLink}>
-            {play.is_shared ? "Copy link" : "Share"}
-          </BubbleButton>
+          ) : null}
           <BubbleButton size="sm" tone="neutral" onClick={openTeams}>
             Teams
           </BubbleButton>
-          {play.is_shared ? (
+          {canEdit && play.is_shared ? (
             <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onUnshare}>
               Stop sharing
             </BubbleButton>
@@ -576,33 +592,38 @@ function PlayCard({
           <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onDuplicate}>
             Duplicate
           </BubbleButton>
-          {play.published_to_library ? (
-            <>
-              <BubbleButton
-                size="sm"
-                tone="neutral"
-                onClick={() => onAnonymous(!play.publish_anonymous)}
-              >
-                {play.publish_anonymous ? "Credit my handle" : "Credit Anonymous Coach"}
-              </BubbleButton>
-              <BubbleButton size="sm" tone="ghost" onClick={onUnpublish}>
-                Remove from Library
-              </BubbleButton>
-            </>
-          ) : (
-            <>
-              <BubbleButton size="sm" tone="grape" onClick={() => onPublish(false)}>
-                Publish to Library
-              </BubbleButton>
-              <BubbleButton size="sm" tone="neutral" onClick={() => onPublish(true)}>
-                Publish anonymously
-              </BubbleButton>
-            </>
-          )}
-          <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onDelete}>
-            Delete
-          </BubbleButton>
+          {canEdit ? (
+            play.published_to_library ? (
+              <>
+                <BubbleButton
+                  size="sm"
+                  tone="neutral"
+                  onClick={() => onAnonymous(!play.publish_anonymous)}
+                >
+                  {play.publish_anonymous ? "Credit my handle" : "Credit Anonymous Coach"}
+                </BubbleButton>
+                <BubbleButton size="sm" tone="ghost" onClick={onUnpublish}>
+                  Remove from Library
+                </BubbleButton>
+              </>
+            ) : (
+              <>
+                <BubbleButton size="sm" tone="grape" onClick={() => onPublish(false)}>
+                  Publish to Library
+                </BubbleButton>
+                <BubbleButton size="sm" tone="neutral" onClick={() => onPublish(true)}>
+                  Publish anonymously
+                </BubbleButton>
+              </>
+            )
+          ) : null}
+          {canEdit ? (
+            <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onDelete}>
+              Delete
+            </BubbleButton>
+          ) : null}
         </div>
+
       ) : null}
 
       {teamsOpen ? (

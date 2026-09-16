@@ -3,12 +3,16 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { AppShell } from "@/components/AppShell";
-import { BubbleButton, Panel, Pill } from "@/components/Bubbles";
+import { BubbleButton, Note, Panel, Pill } from "@/components/Bubbles";
 import { PlayPresenter } from "@/components/court/PlayPresenter";
+import { CreateMyVersion } from "@/components/CreateMyVersion";
 import { toast } from "sonner";
 import { fetchFrames, fetchPlay, fetchPlayAssignments, fetchPlays, updatePlay } from "@/lib/data";
 import { normalizeCategory } from "@/lib/types";
 import { useAccess } from "@/lib/access";
+import { useMe } from "@/lib/useMe";
+import { fetchCoachLabel, isPlayOwner } from "@/lib/playOwnership";
+
 
 const searchSchema = z.object({
   category: z.string().optional(),
@@ -88,7 +92,16 @@ function PlayViewPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const { access } = useAccess();
+  const me = useMe();
   const sequence = usePlaybookSequence(search.category, search.team);
+  const playQ = useQuery({ queryKey: ["play", playId], queryFn: () => fetchPlay(playId) });
+  const currentPlay = playQ.data ?? null;
+  const canEdit = currentPlay ? isPlayOwner(currentPlay, me.user?.id ?? null) : false;
+  const author = useQuery({
+    queryKey: ["coach-label", currentPlay?.created_by],
+    queryFn: () => fetchCoachLabel(currentPlay?.created_by),
+    enabled: !!currentPlay?.created_by && !canEdit && access.isCoach,
+  });
 
   const index = sequence.findIndex((p) => p.id === playId);
   const prev = index > 0 ? sequence[index - 1] : undefined;
@@ -98,6 +111,7 @@ function PlayViewPage() {
     navigate({ to: "/plays/$playId/view", params: { playId: id }, search, replace: true });
 
   const backTo = access.isCoach ? "/plays" : "/lockerroom";
+
 
   /** Turns on the public link if needed, then copies it. */
   const sharePlay = async () => {
@@ -139,21 +153,37 @@ function PlayViewPage() {
           </Link>
           {access.isCoach ? (
             <>
-              <BubbleButton size="sm" tone="neutral" onClick={() => void sharePlay()}>
-                Share
-              </BubbleButton>
-              <Link to="/plays/$playId" params={{ playId }}>
-                <BubbleButton size="sm" tone="grape">
-                  Edit Play
+              {canEdit || currentPlay?.is_shared ? (
+                <BubbleButton size="sm" tone="neutral" onClick={() => void sharePlay()}>
+                  Share
                 </BubbleButton>
-              </Link>
+              ) : null}
+
+              {canEdit ? (
+                <Link to="/plays/$playId" params={{ playId }}>
+                  <BubbleButton size="sm" tone="grape">
+                    Edit Play
+                  </BubbleButton>
+                </Link>
+              ) : currentPlay ? (
+                <CreateMyVersion play={currentPlay} label="Edit as My Version" />
+              ) : null}
             </>
           ) : null}
+
         </>
       }
     >
 
       <div className="flex flex-col gap-2">
+        {access.isCoach && !canEdit && currentPlay ? (
+          <Note>
+            {author.data
+              ? `Original by ${author.data} — read-only. Create your own version to make changes.`
+              : "This original is read-only. Create your own version to make changes."}
+          </Note>
+        ) : null}
+
         {sequence.length > 1 ? (
           <Panel className="flex flex-wrap items-center gap-2">
             <BubbleButton
