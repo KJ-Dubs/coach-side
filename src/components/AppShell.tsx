@@ -198,6 +198,11 @@ export function AppShell({
                   <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 font-bold focus:bg-grape/20">
                     <Link to="/settings"><Settings /> Settings</Link>
                   </DropdownMenuItem>
+                  {isOwner ? (
+                    <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 font-bold text-flame focus:bg-flame/15">
+                      <Link to="/kpi"><Gauge /> My KPI</Link>
+                    </DropdownMenuItem>
+                  ) : null}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="cursor-pointer rounded-xl px-3 py-2.5 font-bold text-flame focus:bg-flame/15 focus:text-flame"
