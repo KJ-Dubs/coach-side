@@ -6,6 +6,7 @@ import {
   DO_MS,
   SHOW_MS,
   buildSteps,
+  findChainConflicts,
   nearestTokenAt,
   resolveLegacyActors,
   sampleTimeline,
@@ -57,6 +58,7 @@ type Tool = "move" | "ball" | PlayActionType;
 type AnimMode = "idle" | "preview" | "replay";
 
 const STEP_MS = SHOW_MS + DO_MS;
+const PLAYMAKER_VIEW_KEY = "coachside.playmaker-view";
 
 const DEFAULT_TOKENS: PlayToken[] = [
   { id: "p1", label: "1", x: 0.5, y: 0.5, ball: true, team: "offense" },
@@ -113,7 +115,7 @@ function PlayDesignerPage() {
   const [current, setCurrent] = useState(0);
   const [tool, setTool] = useState<Tool>("move");
   const [flip, setFlip] = useState(false);
-  const [zoom, setZoom] = useState<CourtZoom>("full");
+  const [zoom, setZoom] = useState<CourtZoom>("right");
   const [seqIdx, setSeqIdx] = useState(0);
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -142,6 +144,18 @@ function PlayDesignerPage() {
       setFlip(play.data.attack_basket === "left");
     }
   }, [play.data]);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(PLAYMAKER_VIEW_KEY);
+    if (saved === "right" || saved === "left" || saved === "top" || saved === "bottom" || saved === "full") {
+      setZoom(saved);
+    }
+  }, []);
+
+  const chooseZoom = (next: CourtZoom) => {
+    setZoom(next);
+    window.localStorage.setItem(PLAYMAKER_VIEW_KEY, next);
+  };
 
   const frame = frames[current];
   const toCoords = (p: { x: number; y: number }) => (flip ? { x: 1 - p.x, y: 1 - p.y } : p);
@@ -369,15 +383,41 @@ function PlayDesignerPage() {
   };
 
   const hasDefense = (frame?.tokens ?? []).some((t) => t.team === "defense");
+  const activeActions = frame?.actions.filter((a) => a.seq === seqNumber) ?? [];
+  const sequenceInvalid =
+    activeActions.some(
+      (a) => !a.actor || ((a.type === "pass" || a.type === "handoff") && !a.target),
+    ) || findChainConflicts(frame).some((c) => c.seq === seqNumber);
 
   const setTokens = (tokens: PlayToken[]) => patchFrame((f) => ({ ...f, tokens }));
+
+  const defenseForView = () => {
+    if (zoom === "full") return PRESS_DEFENSE;
+    const displayRightSide = zoom === "right" || zoom === "bottom";
+    const rightSide = flip ? !displayRightSide : displayRightSide;
+    const spots = [
+      { x: 0.22, y: 0.5 },
+      { x: 0.4, y: 0.24 },
+      { x: 0.4, y: 0.76 },
+      { x: 0.66, y: 0.36 },
+      { x: 0.66, y: 0.64 },
+    ];
+    return spots.map((spot, i) => ({
+      id: `d${i + 1}`,
+      label: String(i + 1),
+      x: rightSide ? 0.5 + spot.x * 0.5 : spot.x * 0.5,
+      y: spot.y,
+      ball: false,
+      team: "defense" as const,
+    }));
+  };
 
   const addDefense = () =>
     patchFrame((f) => ({
       ...f,
       tokens: [
         ...f.tokens.filter((t) => t.team !== "defense"),
-        ...PRESS_DEFENSE.map((t) => ({ ...t, id: uuid() })),
+        ...defenseForView().map((t) => ({ ...t, id: uuid() })),
       ],
     }));
 
@@ -455,6 +495,91 @@ function PlayDesignerPage() {
             onCourtPointerMove={onMove}
             onCourtPointerUp={onUp}
           />
+          <Panel className="flex flex-col gap-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+              <Label>Tools</Label>
+              <Pill tone="grape">Sequence {activeIdx + 1}</Pill>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {tools.map((t) => (
+                <BubbleButton
+                  key={t.key}
+                  size="sm"
+                  tone={tool === t.key ? "grape" : "neutral"}
+                  onClick={() => setTool(t.key)}
+                >
+                  {t.label}
+                </BubbleButton>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+              <BubbleButton
+                size="sm"
+                tone="neutral"
+                onClick={() => {
+                  setSelectedActionId(null);
+                  patchFrame((f) => {
+                    const mine = f.actions.filter((a) => a.seq === seqNumber);
+                    const drop = mine[mine.length - 1];
+                    return drop ? { ...f, actions: f.actions.filter((a) => a.id !== drop.id) } : f;
+                  });
+                }}
+              >
+                Undo last action
+              </BubbleButton>
+              <BubbleButton size="sm" tone="grape" disabled={hasDefense} onClick={addDefense}>
+                Add Defense
+              </BubbleButton>
+              <BubbleButton size="sm" tone="ghost" disabled={!hasDefense} onClick={removeDefense}>
+                Remove Defense
+              </BubbleButton>
+            </div>
+            <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+              <Label>Court view</Label>
+              {([
+                ["right", "Right"],
+                ["left", "Left"],
+                ["top", "Top"],
+                ["bottom", "Bottom"],
+                ["full", "Full"],
+              ] as const).map(([key, label]) => (
+                <BubbleButton key={key} size="sm" tone={zoom === key ? "flame" : "neutral"} onClick={() => chooseZoom(key)}>
+                  {label}
+                </BubbleButton>
+              ))}
+            </div>
+            <BubbleButton
+              tone="flame"
+              disabled={sequenceInvalid}
+              onClick={() => {
+                setMode("idle");
+                setTimeMs(0);
+                setSeqIdx(seqCount);
+                setSelectedActionId(null);
+              }}
+            >
+              + New Sequence
+            </BubbleButton>
+            <Pill tone={sequenceInvalid ? "flame" : "muted"}>
+              {sequenceInvalid
+                ? "Finish or repair this sequence before starting the next one."
+                : `Draw together in sequence ${activeIdx + 1}, then start the next sequence.`}
+            </Pill>
+            {activeStep?.actions.length ? (
+              <div className="flex flex-wrap gap-2">
+                {activeStep.actions.map((a) => (
+                  <BubbleButton
+                    key={a.id}
+                    size="sm"
+                    tone={selectedActionId === a.id ? "flame" : "ghost"}
+                    onClick={() => setSelectedActionId(selectedActionId === a.id ? null : a.id)}
+                  >
+                    {`#${liveTokens.find((t) => t.id === a.actorId)?.label ?? "?"} ${a.type}`}
+                  </BubbleButton>
+                ))}
+              </div>
+            ) : null}
+          </Panel>
           <Panel className="flex flex-wrap items-center gap-2">
             <Label>Sequences</Label>
             {steps.map((s, i) => (
@@ -472,18 +597,6 @@ function PlayDesignerPage() {
                 {i + 1}
               </BubbleButton>
             ))}
-            <BubbleButton
-              size="sm"
-              tone={activeIdx === seqCount ? "flame" : "ghost"}
-              onClick={() => {
-                setMode("idle");
-                setTimeMs(0);
-                setSeqIdx(seqCount);
-                setSelectedActionId(null);
-              }}
-            >
-              + New
-            </BubbleButton>
             <Pill tone="muted">
               {activeIdx === seqCount
                 ? "Drawing a new sequence from the end of the play"
@@ -524,87 +637,15 @@ function PlayDesignerPage() {
 
         <div className="flex flex-col gap-3">
           <Panel className="flex flex-col gap-2">
-            <Label>Tools</Label>
-            <div className="flex flex-wrap gap-2">
-              {tools.map((t) => (
-                <BubbleButton
-                  key={t.key}
-                  size="sm"
-                  tone={tool === t.key ? "grape" : "neutral"}
-                  onClick={() => setTool(t.key)}
-                >
-                  {t.label}
-                </BubbleButton>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <BubbleButton
-                size="sm"
-                tone="neutral"
-                onClick={() => {
-                  setSelectedActionId(null);
-                  patchFrame((f) => {
-                    const mine = f.actions.filter((a) => a.seq === seqNumber);
-                    const drop = mine[mine.length - 1];
-                    return drop ? { ...f, actions: f.actions.filter((a) => a.id !== drop.id) } : f;
-                  });
-                }}
-              >
-                Undo last action
-              </BubbleButton>
-            </div>
-            <Pill tone="muted">
-              Everything you draw joins sequence {activeIdx + 1}, so those players move together.
-              Pick “+ New” to start the next sequence.
-            </Pill>
-            {activeStep?.actions.length ? (
-              <div className="flex flex-wrap gap-2">
-                {activeStep.actions.map((a) => (
-                  <BubbleButton
-                    key={a.id}
-                    size="sm"
-                    tone={selectedActionId === a.id ? "flame" : "ghost"}
-                    onClick={() => setSelectedActionId(selectedActionId === a.id ? null : a.id)}
-                  >
-                    {`#${liveTokens.find((t) => t.id === a.actorId)?.label ?? "?"} ${a.type}`}
-                  </BubbleButton>
-                ))}
-              </div>
-            ) : null}
-          </Panel>
-
-          <Panel className="flex flex-col gap-2">
             <Label>Press Maker · Two Teams</Label>
             <div className="flex flex-wrap gap-2">
               <BubbleButton size="sm" tone="flame" onClick={pressSetup}>
                 Full Court Press Setup
               </BubbleButton>
-              <BubbleButton size="sm" tone={hasDefense ? "neutral" : "grape"} onClick={addDefense}>
-                Add Defense (X1–X5)
-              </BubbleButton>
-              <BubbleButton size="sm" tone="ghost" disabled={!hasDefense} onClick={removeDefense}>
-                Remove Defense
-              </BubbleButton>
             </div>
             <Pill tone="muted">
               Purple circles = offense · dashed orange squares X1–X5 = defense
             </Pill>
-          </Panel>
-
-          <Panel className="flex flex-col gap-2">
-            <Label>Court view</Label>
-            <div className="flex flex-wrap gap-2">
-              <BubbleButton size="sm" tone={zoom === "full" ? "grape" : "neutral"} onClick={() => setZoom("full")}>
-                Full Court
-              </BubbleButton>
-              <BubbleButton size="sm" tone={zoom === "left" ? "grape" : "neutral"} onClick={() => setZoom("left")}>
-                Zoom Left Half
-              </BubbleButton>
-              <BubbleButton size="sm" tone={zoom === "right" ? "grape" : "neutral"} onClick={() => setZoom("right")}>
-                Zoom Right Half
-              </BubbleButton>
-            </div>
-            <Pill tone="muted">Same play, same court — zoom in for half-court detail.</Pill>
           </Panel>
 
           <Panel className="flex flex-col gap-2">
