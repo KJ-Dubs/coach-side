@@ -173,6 +173,14 @@ function PlayViewPage() {
     >
 
       <div className="flex flex-col gap-2">
+        {access.isCoach && !canEdit && currentPlay ? (
+          <Note>
+            {author.data
+              ? `Original by ${author.data} — read-only. Create your own version to make changes.`
+              : "This original is read-only. Create your own version to make changes."}
+          </Note>
+        ) : null}
+
         {sequence.length > 1 ? (
           <Panel className="flex flex-wrap items-center gap-2">
             <BubbleButton
