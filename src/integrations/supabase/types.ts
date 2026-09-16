@@ -1462,7 +1462,9 @@ export type Database = {
         Row: {
           attack_basket: string
           category: string
+          copied_at: string | null
           created_at: string
+          created_by: string | null
           id: string
           is_shared: boolean
           library_author_name: string | null
@@ -1472,13 +1474,18 @@ export type Database = {
           published_at: string | null
           published_by: string | null
           published_to_library: boolean
+          root_play_id: string | null
           share_token: string | null
+          source_creator_id: string | null
+          source_play_id: string | null
           team_id: string | null
         }
         Insert: {
           attack_basket?: string
           category?: string
+          copied_at?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           is_shared?: boolean
           library_author_name?: string | null
@@ -1488,13 +1495,18 @@ export type Database = {
           published_at?: string | null
           published_by?: string | null
           published_to_library?: boolean
+          root_play_id?: string | null
           share_token?: string | null
+          source_creator_id?: string | null
+          source_play_id?: string | null
           team_id?: string | null
         }
         Update: {
           attack_basket?: string
           category?: string
+          copied_at?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           is_shared?: boolean
           library_author_name?: string | null
@@ -1504,10 +1516,27 @@ export type Database = {
           published_at?: string | null
           published_by?: string | null
           published_to_library?: boolean
+          root_play_id?: string | null
           share_token?: string | null
+          source_creator_id?: string | null
+          source_play_id?: string | null
           team_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "plays_root_play_id_fkey"
+            columns: ["root_play_id"]
+            isOneToOne: false
+            referencedRelation: "plays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plays_source_play_id_fkey"
+            columns: ["source_play_id"]
+            isOneToOne: false
+            referencedRelation: "plays"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "plays_team_id_fkey"
             columns: ["team_id"]
@@ -2049,6 +2078,10 @@ export type Database = {
       }
       can_post_conversation: { Args: { _conv: string }; Returns: boolean }
       can_read_conversation: { Args: { _conv: string }; Returns: boolean }
+      copy_play_for_me: {
+        Args: { _name?: string; _play: string; _team_ids?: string[] }
+        Returns: string
+      }
       creator_profile: {
         Args: { _username: string }
         Returns: {
@@ -2142,6 +2175,8 @@ export type Database = {
       my_team_entitlement: { Args: { _team: string }; Returns: Json }
       my_team_role: { Args: { _team: string }; Returns: string }
       my_verified_email: { Args: never; Returns: string }
+      play_author_label: { Args: { _user: string }; Returns: string }
+      play_owned: { Args: { _play: string }; Returns: boolean }
       play_published: { Args: { _play: string }; Returns: boolean }
       play_visible: { Args: { _play: string }; Returns: boolean }
       public_play_frames: {
