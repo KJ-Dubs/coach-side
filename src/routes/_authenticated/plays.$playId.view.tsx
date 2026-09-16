@@ -153,9 +153,12 @@ function PlayViewPage() {
           </Link>
           {access.isCoach ? (
             <>
-              <BubbleButton size="sm" tone="neutral" onClick={() => void sharePlay()}>
-                Share
-              </BubbleButton>
+              {canEdit || currentPlay?.is_shared ? (
+                <BubbleButton size="sm" tone="neutral" onClick={() => void sharePlay()}>
+                  Share
+                </BubbleButton>
+              ) : null}
+
               {canEdit ? (
                 <Link to="/plays/$playId" params={{ playId }}>
                   <BubbleButton size="sm" tone="grape">
