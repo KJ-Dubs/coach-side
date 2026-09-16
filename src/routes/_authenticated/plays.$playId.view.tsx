@@ -142,13 +142,18 @@ function PlayViewPage() {
               <BubbleButton size="sm" tone="neutral" onClick={() => void sharePlay()}>
                 Share
               </BubbleButton>
-              <Link to="/plays/$playId" params={{ playId }}>
-                <BubbleButton size="sm" tone="grape">
-                  Edit Play
-                </BubbleButton>
-              </Link>
+              {canEdit ? (
+                <Link to="/plays/$playId" params={{ playId }}>
+                  <BubbleButton size="sm" tone="grape">
+                    Edit Play
+                  </BubbleButton>
+                </Link>
+              ) : currentPlay ? (
+                <CreateMyVersion play={currentPlay} label="Edit as My Version" />
+              ) : null}
             </>
           ) : null}
+
         </>
       }
     >
