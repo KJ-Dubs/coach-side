@@ -132,7 +132,7 @@ function LibraryCard({
       <Link
         to="/plays/$playId/view"
         params={{ playId: play.id }}
-        search={{}}
+        search={{ from: "library" }}
         className="block w-full"
         aria-label={`Run play ${play.name}`}
       >

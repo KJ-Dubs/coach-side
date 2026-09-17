@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { BubbleButton, EmptyState, InfoPanel, Label, Panel, Pill, PrimaryCTA } from "@/components/Bubbles";
 import { PlayPresenter } from "@/components/court/PlayPresenter";
+import { PresenterNav } from "@/components/court/PresenterNav";
 import { AddToPlaybook } from "@/components/AddToPlaybook";
 import { HeartButton } from "@/components/community/HeartButton";
 import { FollowButton } from "@/components/community/FollowButton";
@@ -49,6 +50,7 @@ function PublicPlayPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-2 p-2 sm:p-3">
+      <PresenterNav source="library" />
       {feed.isLoading ? <EmptyState>Loading play…</EmptyState> : null}
       {!feed.isLoading && !play ? (
         <Panel className="flex flex-col items-start gap-2">

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { BubbleButton, Label, Note, Panel, Pill } from "@/components/Bubbles";
 import { PlayPresenter } from "@/components/court/PlayPresenter";
+import { PresenterNav } from "@/components/court/PresenterNav";
 import { AddToPlaybook } from "@/components/AddToPlaybook";
 import { getSharedPlay, type SharedPlayBundle } from "@/lib/share.functions";
 import { useAuth } from "@/lib/auth";
@@ -42,6 +43,7 @@ export function SharedPlayView({ token }: { token: string }) {
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-2 p-2 sm:p-3">
+      <PresenterNav source="share" />
       <PlayPresenter play={play} frames={bundle.data.frames} />
 
       <Panel className="flex flex-wrap items-center gap-2">

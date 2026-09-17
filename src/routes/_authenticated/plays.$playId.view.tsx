@@ -5,6 +5,7 @@ import { z } from "zod";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Note, Panel, Pill } from "@/components/Bubbles";
 import { PlayPresenter } from "@/components/court/PlayPresenter";
+import { PresenterNav } from "@/components/court/PresenterNav";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
 import { toast } from "sonner";
 import { fetchFrames, fetchPlay, fetchPlayAssignments, fetchPlays, updatePlay } from "@/lib/data";
@@ -17,6 +18,7 @@ import { fetchCoachLabel, isPlayOwner } from "@/lib/playOwnership";
 const searchSchema = z.object({
   category: z.string().optional(),
   team: z.string().optional(),
+  from: z.enum(["library", "playbook", "lockerroom", "home", "share"]).optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/plays/$playId/view")({
@@ -146,11 +148,6 @@ function PlayViewPage() {
       subtitle="Frame by frame"
       actions={
         <>
-          <Link to={backTo} search={access.isCoach ? search : {}}>
-            <BubbleButton size="sm" tone="ghost">
-              ← Back to {access.isCoach ? "Playbook" : "Locker Room"}
-            </BubbleButton>
-          </Link>
           {access.isCoach ? (
             <>
               {canEdit || currentPlay?.is_shared ? (
@@ -176,6 +173,7 @@ function PlayViewPage() {
     >
 
       <div className="flex flex-col gap-2">
+        <PresenterNav source={search.from ?? (access.isCoach ? "playbook" : "lockerroom")} />
         {access.isCoach && !canEdit && currentPlay ? (
           <Note>
             {author.data
@@ -213,12 +211,13 @@ function PlayViewPage() {
         <PlaySlideshow key={playId} playId={playId} />
 
         <Panel className="flex flex-wrap items-center justify-center gap-2">
-          <Link to={backTo} search={access.isCoach ? search : {}}>
+          <Link to={backTo} search={access.isCoach ? { ...(search.category ? { category: search.category } : {}), ...(search.team ? { team: search.team } : {}) } : {}} className="inline-flex">
             <BubbleButton tone="ghost">
               ✕ Exit to {access.isCoach ? "Playbook" : "Locker Room"}
             </BubbleButton>
           </Link>
         </Panel>
+
 
       </div>
     </AppShell>

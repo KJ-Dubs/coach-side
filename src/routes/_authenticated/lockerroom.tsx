@@ -600,6 +600,7 @@ function LockerRoomPage() {
                   <Link
                     to="/plays/$playId/view"
                     params={{ playId: p.id }}
+                    search={{ from: "lockerroom" }}
                     aria-label={`Run play ${p.name}`}
                     className="block"
                   >

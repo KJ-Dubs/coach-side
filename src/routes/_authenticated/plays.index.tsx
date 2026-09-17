@@ -424,6 +424,7 @@ function PlaybookPage() {
                 key={p.id}
                 play={p}
                 viewSearch={{
+                  from: "playbook",
                   ...(selected ? { category: selected } : {}),
                   ...(teamFilter !== "ALL" ? { team: teamFilter } : {}),
                 }}
@@ -488,7 +489,7 @@ function PlayCard({
   play: Play;
   canEdit: boolean;
 
-  viewSearch: { category?: string; team?: string };
+  viewSearch: { category?: string; team?: string; from?: "playbook" };
   assignedTeams: string[];
   allTeams: Team[];
   teamName: (id: string | null) => string;
