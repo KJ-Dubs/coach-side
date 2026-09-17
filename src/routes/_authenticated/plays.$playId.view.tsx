@@ -147,11 +147,6 @@ function PlayViewPage() {
       subtitle="Frame by frame"
       actions={
         <>
-          <Link to={backTo} search={access.isCoach ? search : {}}>
-            <BubbleButton size="sm" tone="ghost">
-              ← Back to {access.isCoach ? "Playbook" : "Locker Room"}
-            </BubbleButton>
-          </Link>
           {access.isCoach ? (
             <>
               {canEdit || currentPlay?.is_shared ? (
