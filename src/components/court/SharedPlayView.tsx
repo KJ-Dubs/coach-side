@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { BubbleButton, Label, Note, Panel, Pill } from "@/components/Bubbles";
 import { PlayPresenter } from "@/components/court/PlayPresenter";
+import { PresenterNav } from "@/components/court/PresenterNav";
 import { AddToPlaybook } from "@/components/AddToPlaybook";
 import { getSharedPlay, type SharedPlayBundle } from "@/lib/share.functions";
 import { useAuth } from "@/lib/auth";
