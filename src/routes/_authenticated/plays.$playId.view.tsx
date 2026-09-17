@@ -172,6 +172,7 @@ function PlayViewPage() {
     >
 
       <div className="flex flex-col gap-2">
+        <PresenterNav source={search.from ?? (access.isCoach ? "playbook" : "lockerroom")} />
         {access.isCoach && !canEdit && currentPlay ? (
           <Note>
             {author.data
