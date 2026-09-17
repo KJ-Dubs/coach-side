@@ -49,6 +49,7 @@ function PublicPlayPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-2 p-2 sm:p-3">
+      <PresenterNav source="library" />
       {feed.isLoading ? <EmptyState>Loading play…</EmptyState> : null}
       {!feed.isLoading && !play ? (
         <Panel className="flex flex-col items-start gap-2">
