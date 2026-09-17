@@ -42,6 +42,7 @@ export function SharedPlayView({ token }: { token: string }) {
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-2 p-2 sm:p-3">
+      <PresenterNav source="share" />
       <PlayPresenter play={play} frames={bundle.data.frames} />
 
       <Panel className="flex flex-wrap items-center gap-2">
