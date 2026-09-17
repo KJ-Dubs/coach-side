@@ -5,6 +5,7 @@ import { z } from "zod";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Note, Panel, Pill } from "@/components/Bubbles";
 import { PlayPresenter } from "@/components/court/PlayPresenter";
+import { PresenterNav } from "@/components/court/PresenterNav";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
 import { toast } from "sonner";
 import { fetchFrames, fetchPlay, fetchPlayAssignments, fetchPlays, updatePlay } from "@/lib/data";
@@ -210,7 +211,7 @@ function PlayViewPage() {
         <PlaySlideshow key={playId} playId={playId} />
 
         <Panel className="flex flex-wrap items-center justify-center gap-2">
-          <Link to={backTo} search={access.isCoach ? search : {}} className="inline-flex">
+          <Link to={backTo} search={access.isCoach ? { ...(search.category ? { category: search.category } : {}), ...(search.team ? { team: search.team } : {}) } : {}} className="inline-flex">
             <BubbleButton tone="ghost">
               ✕ Exit to {access.isCoach ? "Playbook" : "Locker Room"}
             </BubbleButton>

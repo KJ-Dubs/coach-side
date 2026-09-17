@@ -40,7 +40,7 @@ export function PlayOfTheDayCard({ canAdd = true }: { canAdd?: boolean }) {
         <Link
           to="/plays/$playId/view"
           params={{ playId: play.id }}
-          search={{}}
+          search={{ from: "home" }}
           className="block w-full"
         >
           <BubbleButton tone="flame" size="lg" className="min-h-14 w-full">
