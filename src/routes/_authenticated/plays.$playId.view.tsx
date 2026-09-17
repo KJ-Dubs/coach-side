@@ -17,6 +17,7 @@ import { fetchCoachLabel, isPlayOwner } from "@/lib/playOwnership";
 const searchSchema = z.object({
   category: z.string().optional(),
   team: z.string().optional(),
+  from: z.enum(["library", "playbook", "lockerroom", "home", "share"]).optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/plays/$playId/view")({
