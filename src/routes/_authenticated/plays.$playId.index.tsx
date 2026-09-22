@@ -369,22 +369,114 @@ function PlayDesignerPage() {
         toast.info("Start the line on a player so CoachSide knows who is doing it.");
         return;
       }
-      const targetId = tool === "pass" || tool === "handoff" ? bindToken(p) : null;
-      if ((tool === "pass" || tool === "handoff") && !targetId) {
-        toast.info("End a pass or handoff on the player who receives the ball.");
+      if (tool === "handoff") {
+        const targetId = bindToken(p);
+        if (!targetId) {
+          toast.info("End a handoff on the player who takes the ball.");
+          return;
+        }
+        addAction(
+          {
+            id: uuid(),
+            type: tool,
+            seq: seqNumber,
+            points: pts,
+            actor: actorId,
+            target: targetId,
+            transfersBall: true,
+          },
+          seqNumber,
+        );
         return;
       }
-      const action: PlayAction = {
-        id: uuid(),
-        type: tool,
-        seq: seqNumber,
-        points: pts,
-        actor: actorId,
-        ...(targetId ? { target: targetId, transfersBall: true } : {}),
-      };
-      addAction(action, seqNumber);
+      if (tool === "pass") {
+        // A pass can be thrown to a player OR to the spot a cutter is running to.
+        // The coach says who receives it; CoachSide never guesses from geometry.
+        setPendingPass({
+          action: { id: uuid(), type: tool, seq: seqNumber, points: pts, actor: actorId },
+          seq: seqNumber,
+        });
+        return;
+      }
+      addAction(
+        { id: uuid(), type: tool, seq: seqNumber, points: pts, actor: actorId },
+        seqNumber,
+      );
     }
   };
+
+  /** Where each offense player ends up in the sequence being drawn. */
+  const receiverChoices = useMemo(() => {
+    const pass = pendingPass;
+    if (!pass) return [];
+    const end = pass.action.points[pass.action.points.length - 1];
+    if (!end) return [];
+    const ends = new Map<string, { x: number; y: number }>();
+    for (const t of projected.tokens) ends.set(t.id, { x: t.x, y: t.y });
+    for (const a of frame?.actions ?? []) {
+      if (a.seq !== pass.seq || BALL_ACTIONS.has(a.type) || !a.actor) continue;
+      const last = a.points[a.points.length - 1];
+      if (last) ends.set(a.actor, { x: last.x, y: last.y });
+    }
+    return projected.tokens
+      .filter((t) => (t.team ?? "offense") === "offense" && t.id !== pass.action.actor)
+      .map((t) => {
+        const e = ends.get(t.id) ?? { x: t.x, y: t.y };
+        return { id: t.id, label: t.label, dist: Math.hypot(e.x - end.x, e.y - end.y) };
+      })
+      .sort((a, b) => a.dist - b.dist);
+  }, [pendingPass, projected.tokens, frame?.actions]);
+
+  const commitPass = (receiverId: string | null) => {
+    const pass = pendingPass;
+    if (!pass) return;
+    setPendingPass(null);
+    const action: PlayAction = receiverId
+      ? { ...pass.action, target: receiverId, transfersBall: true, passTo: "receiver" }
+      : { ...pass.action, passTo: "space" };
+    addAction(action, pass.seq);
+  };
+
+  /** Keep both outcomes as labelled options from the same shared state. */
+  const commitAsOption = () => {
+    const pending = pendingOption;
+    if (!pending) return;
+    setPendingOption(null);
+    patchFrame((f) => {
+      const rival = f.actions.find((a) => a.id === pending.rivalId);
+      const group = rival?.option?.group ?? uuid();
+      const used = f.actions.filter((a) => a.option?.group === group).length;
+      const rivalPatched = f.actions.map((a) =>
+        a.id === pending.rivalId && !a.option
+          ? { ...a, option: { group, key: "a", label: OPTION_LABELS[0]! } }
+          : a,
+      );
+      const keyIdx = rival?.option ? used : 1;
+      const next: PlayAction = {
+        ...pending.action,
+        option: {
+          group,
+          key: String.fromCharCode(97 + keyIdx),
+          label: OPTION_LABELS[keyIdx] ?? `Option ${keyIdx + 1}`,
+        },
+      };
+      setBranch((b) => ({ ...b, [group]: next.option!.key }));
+      return { ...f, actions: [...rivalPatched, next] };
+    });
+    setSelectedActionId(pending.action.id);
+  };
+
+  const commitAsReplacement = () => {
+    const pending = pendingOption;
+    if (!pending) return;
+    setPendingOption(null);
+    patchFrame((f) => ({
+      ...f,
+      actions: [...f.actions.filter((a) => a.id !== pending.rivalId), pending.action],
+    }));
+    setSelectedActionId(pending.action.id);
+  };
+
 
   /** Commit the play's end state as the frame's new starting positions. */
   const applyEndState = () => {
