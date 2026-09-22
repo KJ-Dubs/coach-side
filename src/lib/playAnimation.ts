@@ -224,10 +224,76 @@ function intrinsicDuration(type: string, len: number) {
   return Math.min(MAX_MOVE_MS, Math.max(MIN_MOVE_MS, ms));
 }
 
+/* ------------------------------------------------------------------ */
+/* option branches                                                     */
+/* ------------------------------------------------------------------ */
+
+export type OptionBranch = { key: string; label: string; actionIds: string[] };
+export type OptionGroup = { group: string; seq: number; branches: OptionBranch[] };
+export type BranchSelection = Record<string, string>;
+
+/** Decision points in a frame, in sequence order. */
+export function listOptionGroups(frame: PlayFrame | undefined): OptionGroup[] {
+  if (!frame) return [];
+  const map = new Map<string, OptionGroup>();
+  for (const a of frame.actions) {
+    const opt = a.option;
+    if (!opt) continue;
+    let g = map.get(opt.group);
+    if (!g) {
+      g = { group: opt.group, seq: a.seq, branches: [] };
+      map.set(opt.group, g);
+    }
+    g.seq = Math.min(g.seq, a.seq);
+    let b = g.branches.find((x) => x.key === opt.key);
+    if (!b) {
+      b = { key: opt.key, label: opt.label || opt.key, actionIds: [] };
+      g.branches.push(b);
+    }
+    b.actionIds.push(a.id);
+  }
+  const out = [...map.values()];
+  for (const g of out) g.branches.sort((a, b) => a.key.localeCompare(b.key));
+  return out.sort((a, b) => a.seq - b.seq || a.group.localeCompare(b.group));
+}
+
+/** First branch of every group, used when the viewer has not chosen one. */
+export function defaultBranchSelection(frame: PlayFrame | undefined): BranchSelection {
+  const out: BranchSelection = {};
+  for (const g of listOptionGroups(frame)) {
+    const first = g.branches[0];
+    if (first) out[g.group] = first.key;
+  }
+  return out;
+}
+
+/**
+ * Collapse branching outcomes to exactly one branch per decision point so the
+ * canonical state stays single-valued. Mutually exclusive options never run
+ * together.
+ */
+export function selectBranches(frame: PlayFrame, selection?: BranchSelection): PlayFrame {
+  const groups = listOptionGroups(frame);
+  if (groups.length === 0) return frame;
+  const chosen: BranchSelection = { ...defaultBranchSelection(frame) };
+  for (const g of groups) {
+    const want = selection?.[g.group];
+    if (want && g.branches.some((b) => b.key === want)) chosen[g.group] = want;
+  }
+  return {
+    ...frame,
+    actions: frame.actions.filter((a) => !a.option || chosen[a.option.group] === a.option.key),
+  };
+}
+
 /** Build the ordered, fully deterministic sequence timeline for a frame. */
-export function buildSteps(frameIn: PlayFrame | undefined): PlayStep[] {
+export function buildSteps(
+  frameIn: PlayFrame | undefined,
+  selection?: BranchSelection,
+): PlayStep[] {
   if (!frameIn) return [];
-  const frame = resolveLegacyActors(frameIn);
+  const frame = selectBranches(resolveLegacyActors(frameIn), selection);
+
   const seqs = [...new Set(frame.actions.map((a) => a.seq))].sort((a, b) => a - b);
   let tokens = frame.tokens.map((t) => ({ ...t }));
   let ball = frame.tokens.find((t) => t.ball)?.id ?? null;
