@@ -153,6 +153,7 @@ function DrillMakerPage() {
     if (tool === "player" && !actor && distance < 0.03) { addPlayer(p); return; }
     if (!actor) { toast.info("Start on a player, or tap empty court to add one."); return; }
     if (distance < 0.03) return;
+    if (tool === "equipment" || tool === "erase") return;
     const type: PlayActionType = tool === "player" ? "move" : tool;
     const base: PlayAction = { id: uid(), type, seq: seqNumber, points: drawn, actor };
     if (type === "pass") {
