@@ -566,7 +566,7 @@ export async function createAssignment(input: {
   alertTeam({
     teamId: input.team_id,
     kind: "assignment",
-    title: `New ${input.assignment_type === "challenge" ? "challenge" : "assignment"}: ${input.title}`,
+    title: `New assignment: ${input.title}`,
     body: input.instructions?.slice(0, 200) || "Open CoachSide to see what your coach assigned.",
     link: "/lockerroom",
     relatedId: id,
