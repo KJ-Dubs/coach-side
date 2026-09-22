@@ -37,6 +37,8 @@ import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedGamesNewRouteImport } from './routes/_authenticated/games.new'
 import { Route as AuthenticatedPlaysIndexRouteImport } from './routes/_authenticated/plays.index'
 import { Route as AuthenticatedPlaysNewRouteImport } from './routes/_authenticated/plays.new'
+import { Route as AuthenticatedPracticeIndexRouteImport } from './routes/_authenticated/practice.index'
+import { Route as AuthenticatedPracticePlanIdRouteImport } from './routes/_authenticated/practice.$planId'
 import { Route as AuthenticatedReviewGameIdRouteImport } from './routes/_authenticated/review.$gameId'
 import { Route as AuthenticatedStatsIndexRouteImport } from './routes/_authenticated/stats.index'
 import { Route as AuthenticatedStatsPlayersRouteImport } from './routes/_authenticated/stats.players'
@@ -188,6 +190,18 @@ const AuthenticatedPlaysNewRoute = AuthenticatedPlaysNewRouteImport.update({
   path: '/plays/new',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPracticeIndexRoute =
+  AuthenticatedPracticeIndexRouteImport.update({
+    id: '/practice/',
+    path: '/practice/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPracticePlanIdRoute =
+  AuthenticatedPracticePlanIdRouteImport.update({
+    id: '/practice/$planId',
+    path: '/practice/$planId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedReviewGameIdRoute =
   AuthenticatedReviewGameIdRouteImport.update({
     id: '/review/$gameId',
@@ -270,6 +284,7 @@ export interface FileRoutesByFullPath {
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
   '/plays/new': typeof AuthenticatedPlaysNewRoute
+  '/practice/$planId': typeof AuthenticatedPracticePlanIdRoute
   '/review/$gameId': typeof AuthenticatedReviewGameIdRoute
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
@@ -277,6 +292,7 @@ export interface FileRoutesByFullPath {
   '/drills/': typeof AuthenticatedDrillsIndexRoute
   '/games/': typeof AuthenticatedGamesIndexRoute
   '/plays/': typeof AuthenticatedPlaysIndexRoute
+  '/practice/': typeof AuthenticatedPracticeIndexRoute
   '/stats/': typeof AuthenticatedStatsIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
@@ -309,6 +325,7 @@ export interface FileRoutesByTo {
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
   '/plays/new': typeof AuthenticatedPlaysNewRoute
+  '/practice/$planId': typeof AuthenticatedPracticePlanIdRoute
   '/review/$gameId': typeof AuthenticatedReviewGameIdRoute
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
@@ -316,6 +333,7 @@ export interface FileRoutesByTo {
   '/drills': typeof AuthenticatedDrillsIndexRoute
   '/games': typeof AuthenticatedGamesIndexRoute
   '/plays': typeof AuthenticatedPlaysIndexRoute
+  '/practice': typeof AuthenticatedPracticeIndexRoute
   '/stats': typeof AuthenticatedStatsIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
@@ -350,6 +368,7 @@ export interface FileRoutesById {
   '/_authenticated/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/_authenticated/games/new': typeof AuthenticatedGamesNewRoute
   '/_authenticated/plays/new': typeof AuthenticatedPlaysNewRoute
+  '/_authenticated/practice/$planId': typeof AuthenticatedPracticePlanIdRoute
   '/_authenticated/review/$gameId': typeof AuthenticatedReviewGameIdRoute
   '/_authenticated/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/_authenticated/stats/team': typeof AuthenticatedStatsTeamRoute
@@ -357,6 +376,7 @@ export interface FileRoutesById {
   '/_authenticated/drills/': typeof AuthenticatedDrillsIndexRoute
   '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
   '/_authenticated/plays/': typeof AuthenticatedPlaysIndexRoute
+  '/_authenticated/practice/': typeof AuthenticatedPracticeIndexRoute
   '/_authenticated/stats/': typeof AuthenticatedStatsIndexRoute
   '/_authenticated/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
@@ -391,6 +411,7 @@ export interface FileRouteTypes {
     | '/game/$gameId'
     | '/games/new'
     | '/plays/new'
+    | '/practice/$planId'
     | '/review/$gameId'
     | '/stats/players'
     | '/stats/team'
@@ -398,6 +419,7 @@ export interface FileRouteTypes {
     | '/drills/'
     | '/games/'
     | '/plays/'
+    | '/practice/'
     | '/stats/'
     | '/plays/$playId/view'
     | '/api/public/square/webhook'
@@ -430,6 +452,7 @@ export interface FileRouteTypes {
     | '/game/$gameId'
     | '/games/new'
     | '/plays/new'
+    | '/practice/$planId'
     | '/review/$gameId'
     | '/stats/players'
     | '/stats/team'
@@ -437,6 +460,7 @@ export interface FileRouteTypes {
     | '/drills'
     | '/games'
     | '/plays'
+    | '/practice'
     | '/stats'
     | '/plays/$playId/view'
     | '/api/public/square/webhook'
@@ -470,6 +494,7 @@ export interface FileRouteTypes {
     | '/_authenticated/game/$gameId'
     | '/_authenticated/games/new'
     | '/_authenticated/plays/new'
+    | '/_authenticated/practice/$planId'
     | '/_authenticated/review/$gameId'
     | '/_authenticated/stats/players'
     | '/_authenticated/stats/team'
@@ -477,6 +502,7 @@ export interface FileRouteTypes {
     | '/_authenticated/drills/'
     | '/_authenticated/games/'
     | '/_authenticated/plays/'
+    | '/_authenticated/practice/'
     | '/_authenticated/stats/'
     | '/_authenticated/plays/$playId/view'
     | '/api/public/square/webhook'
@@ -701,6 +727,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlaysNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/practice/': {
+      id: '/_authenticated/practice/'
+      path: '/practice'
+      fullPath: '/practice/'
+      preLoaderRoute: typeof AuthenticatedPracticeIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/practice/$planId': {
+      id: '/_authenticated/practice/$planId'
+      path: '/practice/$planId'
+      fullPath: '/practice/$planId'
+      preLoaderRoute: typeof AuthenticatedPracticePlanIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/review/$gameId': {
       id: '/_authenticated/review/$gameId'
       path: '/review/$gameId'
@@ -789,12 +829,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedGameGameIdRoute: typeof AuthenticatedGameGameIdRoute
   AuthenticatedGamesNewRoute: typeof AuthenticatedGamesNewRoute
   AuthenticatedPlaysNewRoute: typeof AuthenticatedPlaysNewRoute
+  AuthenticatedPracticePlanIdRoute: typeof AuthenticatedPracticePlanIdRoute
   AuthenticatedReviewGameIdRoute: typeof AuthenticatedReviewGameIdRoute
   AuthenticatedStatsPlayersRoute: typeof AuthenticatedStatsPlayersRoute
   AuthenticatedStatsTeamRoute: typeof AuthenticatedStatsTeamRoute
   AuthenticatedDrillsIndexRoute: typeof AuthenticatedDrillsIndexRoute
   AuthenticatedGamesIndexRoute: typeof AuthenticatedGamesIndexRoute
   AuthenticatedPlaysIndexRoute: typeof AuthenticatedPlaysIndexRoute
+  AuthenticatedPracticeIndexRoute: typeof AuthenticatedPracticeIndexRoute
   AuthenticatedStatsIndexRoute: typeof AuthenticatedStatsIndexRoute
   AuthenticatedPlaysPlayIdViewRoute: typeof AuthenticatedPlaysPlayIdViewRoute
   AuthenticatedPlaysPlayIdIndexRoute: typeof AuthenticatedPlaysPlayIdIndexRoute
@@ -815,12 +857,14 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedGameGameIdRoute: AuthenticatedGameGameIdRoute,
   AuthenticatedGamesNewRoute: AuthenticatedGamesNewRoute,
   AuthenticatedPlaysNewRoute: AuthenticatedPlaysNewRoute,
+  AuthenticatedPracticePlanIdRoute: AuthenticatedPracticePlanIdRoute,
   AuthenticatedReviewGameIdRoute: AuthenticatedReviewGameIdRoute,
   AuthenticatedStatsPlayersRoute: AuthenticatedStatsPlayersRoute,
   AuthenticatedStatsTeamRoute: AuthenticatedStatsTeamRoute,
   AuthenticatedDrillsIndexRoute: AuthenticatedDrillsIndexRoute,
   AuthenticatedGamesIndexRoute: AuthenticatedGamesIndexRoute,
   AuthenticatedPlaysIndexRoute: AuthenticatedPlaysIndexRoute,
+  AuthenticatedPracticeIndexRoute: AuthenticatedPracticeIndexRoute,
   AuthenticatedStatsIndexRoute: AuthenticatedStatsIndexRoute,
   AuthenticatedPlaysPlayIdViewRoute: AuthenticatedPlaysPlayIdViewRoute,
   AuthenticatedPlaysPlayIdIndexRoute: AuthenticatedPlaysPlayIdIndexRoute,
