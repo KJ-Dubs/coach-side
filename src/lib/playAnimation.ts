@@ -445,11 +445,14 @@ export function sampleStep(step: PlayStep, phase: PlayPhase, progress: number): 
   }
 
   // Possession: only a completed transfer by the CURRENT owner changes it.
-  let owner: string | null = step.startBall;
-  let ball: Point | null = tokenPoint(tokens, owner);
-
+  // A pass drawn to open space is a teaching option: the ball never leaves.
   const transfer = step.actions.find(
-    (a) => BALL_ACTIONS.has(a.type) && a.actorId && a.actorId === step.startBall,
+    (a) =>
+      BALL_ACTIONS.has(a.type) &&
+      a.actorId &&
+      a.actorId === step.startBall &&
+      a.passTo !== "space" &&
+      (a.type === "shot" || a.targetId),
   );
   if (transfer) {
     const local = localOf(transfer);
@@ -460,14 +463,18 @@ export function sampleStep(step: PlayStep, phase: PlayPhase, progress: number): 
       owner = step.endBall;
       ball = owner ? tokenPoint(tokens, owner) : getPointAlongPath(transfer.points, 1);
     } else {
-      // In flight: nobody owns it.
+      // In flight: nobody owns it. Lead passes fly to their absolute endpoint;
+      // legacy passes keep chasing the receiver they were drawn onto.
       owner = null;
       const from = tokenPoint(tokens, transfer.actorId);
-      const to = transfer.targetId ? tokenPoint(tokens, transfer.targetId) : null;
+      const chase =
+        transfer.type === "handoff" || (transfer.type === "pass" && !transfer.passTo);
+      const to = chase && transfer.targetId ? tokenPoint(tokens, transfer.targetId) : null;
       const live = rebasePath(transfer.points, from, to);
       ball = getPointAlongPath(live, ease(local));
     }
   }
+
 
   return { tokens: tokens.map((t) => ({ ...t, ball: t.id === owner })), ball, ballOwner: owner };
 }
