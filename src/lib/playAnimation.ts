@@ -107,13 +107,14 @@ export function resolveLegacyActors(frame: PlayFrame): PlayFrame {
             ? nearestTokenId(startTokens, start)
             : null;
       const target =
-        a.type === "pass" || a.type === "handoff"
+        (a.type === "pass" || a.type === "handoff") && a.passTo !== "space"
           ? a.target && startTokens.some((t) => t.id === a.target)
             ? a.target
             : end
               ? nearestTokenId(startTokens, end, "offense")
               : null
           : null;
+
       patched.set(a.id, {
         ...a,
         ...(actor ? { actor } : {}),
