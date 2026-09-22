@@ -252,7 +252,7 @@ export function buildSteps(frameIn: PlayFrame | undefined): PlayStep[] {
       if (BALL_ACTIONS.has(a.type)) {
         if (a.type === "shot") {
           if (endBall === actorId) endBall = null;
-        } else {
+        } else if (a.passTo !== "space") {
           const targetId = a.target && startTokens.some((t) => t.id === a.target) ? a.target : null;
           // Possession only moves when the current owner actually passes it.
           if (targetId && startBall === actorId) endBall = targetId;
@@ -268,15 +268,21 @@ export function buildSteps(frameIn: PlayFrame | undefined): PlayStep[] {
       const actorId = a.actor && startTokens.some((t) => t.id === a.actor) ? a.actor : null;
       const targetId =
         (a.type === "pass" || a.type === "handoff") &&
+        a.passTo !== "space" &&
         a.target &&
         startTokens.some((t) => t.id === a.target)
           ? a.target
           : null;
       const base = resolvePath(a);
       const from = tokenPoint(startTokens, actorId);
+      // A pass drawn with an explicit endpoint (lead pass / pass to space) keeps
+      // that absolute destination. Legacy passes still retarget to the receiver.
       const to =
-        a.type === "pass" || a.type === "handoff" ? tokenPoint(endTokens, targetId) : null;
+        a.type === "handoff" || (a.type === "pass" && !a.passTo)
+          ? tokenPoint(endTokens, targetId)
+          : null;
       const points = rebasePath(base, from, to);
+
       const len = pathLength(points);
       return {
         ...a,
