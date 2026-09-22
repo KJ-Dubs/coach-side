@@ -134,6 +134,17 @@ function PlayDesignerPage() {
   const [category, setCategory] = useState("Offense");
   const [saving, setSaving] = useState(false);
   const [index, setIndex] = useState<PlayIndex>(EMPTY_INDEX);
+  /** Which option branch is shown for each decision point. */
+  const [branch, setBranch] = useState<BranchSelection>({});
+  /** A drawn pass waiting for the coach to say who receives it. */
+  const [pendingPass, setPendingPass] = useState<{ action: PlayAction; seq: number } | null>(null);
+  /** A new outcome that clashes with an outcome already in this sequence. */
+  const [pendingOption, setPendingOption] = useState<{
+    action: PlayAction;
+    seq: number;
+    rivalId: string;
+  } | null>(null);
+
 
   useEffect(() => {
     if (framesQ.data) {
