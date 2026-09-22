@@ -458,6 +458,14 @@ export async function createAnnouncement(input: {
     );
     if (aErr) throw aErr;
   }
+  alertTeam({
+    teamId: input.team_id,
+    kind: "announcement",
+    title: input.title,
+    body: input.body.slice(0, 200),
+    link: "/lockerroom",
+    relatedId: id,
+  });
   return id;
 }
 
@@ -555,6 +563,14 @@ export async function createAssignment(input: {
       .insert(input.player_ids.map((p) => ({ assignment_id: id, player_id: p })));
     if (tErr) throw tErr;
   }
+  alertTeam({
+    teamId: input.team_id,
+    kind: "assignment",
+    title: `New ${input.assignment_type === "challenge" ? "challenge" : "assignment"}: ${input.title}`,
+    body: input.instructions?.slice(0, 200) || "Open CoachSide to see what your coach assigned.",
+    link: "/lockerroom",
+    relatedId: id,
+  });
   return id;
 }
 
