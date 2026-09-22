@@ -181,7 +181,13 @@ function PlayDesignerPage() {
 
   /* ---- deterministic engine state ---- */
 
-  const steps = useMemo(() => buildSteps(frame), [frame]);
+  const optionGroups = useMemo(() => listOptionGroups(frame), [frame]);
+  const activeBranch = useMemo<BranchSelection>(
+    () => ({ ...defaultBranchSelection(frame), ...branch }),
+    [frame, branch],
+  );
+  const steps = useMemo(() => buildSteps(frame, activeBranch), [frame, activeBranch]);
+  const passWarnings = useMemo(() => findPassWarnings(frame, activeBranch), [frame, activeBranch]);
   const seqCount = steps.length;
   const activeIdx = Math.min(seqIdx, seqCount);
   const activeStep = steps[activeIdx];
@@ -189,9 +195,10 @@ function PlayDesignerPage() {
 
   /** Exact court state this sequence begins from. */
   const projected = useMemo(
-    () => stateAtSequenceStart(frame, activeIdx),
-    [frame, activeIdx],
+    () => stateAtSequenceStart(frame, activeIdx, activeBranch),
+    [frame, activeIdx, activeBranch],
   );
+
 
   const timeline = useMemo(() => ({ steps, totalMs: steps.length * STEP_MS }), [steps]);
   const rangeStart = mode === "preview" ? activeIdx * STEP_MS : 0;
