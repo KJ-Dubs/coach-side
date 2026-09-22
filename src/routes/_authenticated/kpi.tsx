@@ -109,6 +109,7 @@ function KpiPage() {
   const checkAdmin = useServerFn(amIAppAdmin);
   const fetchReport = useServerFn(getKpiReport);
   const [range, setRange] = useState<RangeKey>("30d");
+
   const [sort, setSort] = useState<SortKey>("newest");
 
   // Owner check is per signed-in person and answered by the server, so one
@@ -443,6 +444,8 @@ function KpiPage() {
             </Panel>
           </>
         )}
+
+        <SendNotificationPanel />
       </div>
     </AppShell>
   );
