@@ -76,3 +76,11 @@
       SQUARE_WEBHOOK_SIGNATURE_KEY, SQUARE_PLAN_VARIATION_SINGLE/DUO/COMPLETE) + catalog plan variations
 - [ ] Turn on BILLING_ENFORCEMENT_ENABLED only after checkout is verified
 - [ ] Wire UpgradePrompt into gated actions (Add Library play, court stat tracking, Calendar sync)
+
+## Library indexing, Drills, Practice Planner, social (this pass)
+- [x] Play index fields + PlayIndexSheet on create and edit, saved with the play
+- [x] Library search/filter/recommendations + Plays / Drills tabs on /library
+- [x] Drill model, 16 seeded starter drills, Drill Maker and drill detail pages
+- [x] Practice Planner: /practice list + /practice/$planId timed block builder with Locker Room sharing
+- [x] Non-destructive camera fit: "off this view" warning + Fit players in Playmaker
+- [ ] BLOCKED on user: real Instagram / Facebook URLs before social buttons show
