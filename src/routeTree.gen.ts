@@ -31,6 +31,7 @@ import { Route as LibraryPlayIdRouteImport } from './routes/library.$playId'
 import { Route as LockerTokenRouteImport } from './routes/locker.$token'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedDrillsIndexRouteImport } from './routes/_authenticated/drills.index'
+import { Route as AuthenticatedDrillsNewRouteImport } from './routes/_authenticated/drills.new'
 import { Route as AuthenticatedGameGameIdRouteImport } from './routes/_authenticated/game.$gameId'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games.index'
 import { Route as AuthenticatedGamesNewRouteImport } from './routes/_authenticated/games.new'
@@ -157,6 +158,11 @@ const AuthenticatedDrillsIndexRoute =
     path: '/drills/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDrillsNewRoute = AuthenticatedDrillsNewRouteImport.update({
+  id: '/drills/new',
+  path: '/drills/new',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedGameGameIdRoute = AuthenticatedGameGameIdRouteImport.update({
   id: '/game/$gameId',
   path: '/game/$gameId',
@@ -260,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
+  '/drills/new': typeof AuthenticatedDrillsNewRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
   '/plays/new': typeof AuthenticatedPlaysNewRoute
@@ -298,6 +305,7 @@ export interface FileRoutesByTo {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library': typeof LibraryIndexRoute
+  '/drills/new': typeof AuthenticatedDrillsNewRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
   '/plays/new': typeof AuthenticatedPlaysNewRoute
@@ -338,6 +346,7 @@ export interface FileRoutesById {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
+  '/_authenticated/drills/new': typeof AuthenticatedDrillsNewRoute
   '/_authenticated/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/_authenticated/games/new': typeof AuthenticatedGamesNewRoute
   '/_authenticated/plays/new': typeof AuthenticatedPlaysNewRoute
@@ -378,6 +387,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library/'
+    | '/drills/new'
     | '/game/$gameId'
     | '/games/new'
     | '/plays/new'
@@ -416,6 +426,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library'
+    | '/drills/new'
     | '/game/$gameId'
     | '/games/new'
     | '/plays/new'
@@ -455,6 +466,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library/'
+    | '/_authenticated/drills/new'
     | '/_authenticated/game/$gameId'
     | '/_authenticated/games/new'
     | '/_authenticated/plays/new'
@@ -647,6 +659,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDrillsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/drills/new': {
+      id: '/_authenticated/drills/new'
+      path: '/drills/new'
+      fullPath: '/drills/new'
+      preLoaderRoute: typeof AuthenticatedDrillsNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/game/$gameId': {
       id: '/_authenticated/game/$gameId'
       path: '/game/$gameId'
@@ -766,6 +785,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRosterRoute: typeof AuthenticatedRosterRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedDrillsNewRoute: typeof AuthenticatedDrillsNewRoute
   AuthenticatedGameGameIdRoute: typeof AuthenticatedGameGameIdRoute
   AuthenticatedGamesNewRoute: typeof AuthenticatedGamesNewRoute
   AuthenticatedPlaysNewRoute: typeof AuthenticatedPlaysNewRoute
@@ -791,6 +811,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRosterRoute: AuthenticatedRosterRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedDrillsNewRoute: AuthenticatedDrillsNewRoute,
   AuthenticatedGameGameIdRoute: AuthenticatedGameGameIdRoute,
   AuthenticatedGamesNewRoute: AuthenticatedGamesNewRoute,
   AuthenticatedPlaysNewRoute: AuthenticatedPlaysNewRoute,
