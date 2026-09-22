@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CircleDot, Cone, Eraser, Move, PackageOpen, Play, Save, Shield, Target, UserPlus } from "lucide-react";
+import { CircleDot, PackageOpen, Play, Save, Shield, TrafficCone, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Field, InfoPanel, Label, Panel, Pill, PrimaryCTA, SelectInput, TextInput } from "@/components/Bubbles";
@@ -193,7 +193,7 @@ function DrillMakerPage() {
         <div className="flex items-center justify-between gap-2"><Label>Build tools</Label><Pill tone="grape">Step {activeIdx + 1}</Pill></div>
         <div className="flex gap-2 overflow-x-auto pb-1">{tools.map((item) => <BubbleButton key={item.key} size="sm" tone={tool === item.key ? (item.key === "erase" ? "flame" : "grape") : "neutral"} className="shrink-0" onClick={() => { setTool(item.key); if (item.key === "equipment") setEquipmentOpen(true); }}>{item.label}</BubbleButton>)}</div>
         {tool === "player" ? <div className="flex flex-wrap items-center gap-2"><Pill tone="muted">Tap empty court to add</Pill><BubbleButton size="sm" tone={addingTeam === "offense" ? "grape" : "neutral"} onClick={() => setAddingTeam("offense")}><UserPlus className="h-4 w-4" /> Offense</BubbleButton><BubbleButton size="sm" tone={addingTeam === "defense" ? "flame" : "neutral"} onClick={() => setAddingTeam("defense")}><Shield className="h-4 w-4" /> Defense</BubbleButton></div> : null}
-        {tool === "equipment" && equipmentOpen ? <div className="flex flex-wrap gap-2 rounded-2xl border border-border bg-surface-2/60 p-2">{equipmentChoices.map((item) => <BubbleButton key={item.key} size="sm" tone={equipmentTool === item.key ? "flame" : "neutral"} onClick={() => setEquipmentTool(item.key)}>{item.key === "cone" ? <Cone className="h-4 w-4" /> : item.key === "ball" ? <CircleDot className="h-4 w-4" /> : <PackageOpen className="h-4 w-4" />}{item.label}</BubbleButton>)}</div> : null}
+        {tool === "equipment" && equipmentOpen ? <div className="flex flex-wrap gap-2 rounded-2xl border border-border bg-surface-2/60 p-2">{equipmentChoices.map((item) => <BubbleButton key={item.key} size="sm" tone={equipmentTool === item.key ? "flame" : "neutral"} onClick={() => setEquipmentTool(item.key)}>{item.key === "cone" ? <TrafficCone className="h-4 w-4" /> : item.key === "ball" ? <CircleDot className="h-4 w-4" /> : <PackageOpen className="h-4 w-4" />}{item.label}</BubbleButton>)}</div> : null}
         <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2"><BubbleButton size="sm" tone="flame" onClick={() => { setMode("idle"); setTimeMs(0); setSeqIdx(seqCount); }}>+ Add Step</BubbleButton>{steps.map((step, index) => <BubbleButton key={step.seq} size="sm" tone={index === activeIdx ? "grape" : "neutral"} onClick={() => { setMode("idle"); setSeqIdx(index); }}>{index + 1}</BubbleButton>)}<Pill tone="muted">{activeIdx === seqCount ? "New step from previous finish" : `${shownActions.length} action${shownActions.length === 1 ? "" : "s"}`}</Pill></div>
       </Panel>
 

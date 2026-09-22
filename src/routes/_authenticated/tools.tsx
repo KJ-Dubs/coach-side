@@ -4,6 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { actionCardCls } from "@/components/Bubbles";
 import { Court } from "@/components/court/Court";
 import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
 
 export const Route = createFileRoute("/_authenticated/tools")({
   head: () => ({
@@ -34,20 +35,20 @@ const TOOLS: ToolCard[] = [
 ];
 
 const miniTool = "rounded-full border border-border bg-surface px-2 py-1 text-[9px] font-black text-foreground";
-const player = (left: string, top: string, label: string, defense = false) => (
-  <span key={`${left}-${top}-${label}`} className={cn("absolute flex h-6 w-6 items-center justify-center text-[9px] font-black", defense ? "rounded-md border-2 border-dashed border-flame bg-background text-flame" : "rounded-full border-2 border-grape bg-background text-foreground")} style={{ left, top }}>{defense ? `X${label}` : label}</span>
+const player = (position: string, label: string, defense = false) => (
+  <span key={`${position}-${label}`} className={cn("absolute flex h-6 w-6 items-center justify-center text-[9px] font-black", position, defense ? "rounded-md border-2 border-dashed border-flame bg-background text-flame" : "rounded-full border-2 border-grape bg-background text-foreground")}>{defense ? `X${label}` : label}</span>
 );
 
-function MiniCourt({ children }: { children: React.ReactNode }) {
+function MiniCourt({ children }: { children: ReactNode }) {
   return <Court variant="full" className="rounded-lg border" overlay={<div className="absolute inset-0">{children}</div>} />;
 }
 
 function BoardPreview() {
-  return <div className="space-y-1.5 rounded-xl border border-border/70 bg-surface-2/70 p-2"><MiniCourt>{player("20%", "57%", "1")}{player("55%", "25%", "3")}{player("72%", "60%", "5")}<span className="absolute left-[25%] top-[53%] h-1 w-[42%] origin-left -rotate-12 rounded-full bg-flame" /><span className="absolute left-[49%] top-[43%] text-flame">➤</span></MiniCourt><div className="flex flex-wrap gap-1"><span className={miniTool}>Marker</span><span className={miniTool}>Arrow</span><span className={miniTool}>Players</span><span className={miniTool}>Eraser</span><span className="h-6 w-6 rounded-full border-2 border-flame bg-grape" /><span className="h-6 w-6 rounded-full border-2 border-grape bg-flame" /><span className={cn(miniTool, "ml-auto")}>Clear Board</span></div></div>;
+  return <div className="space-y-1.5 rounded-xl border border-border/70 bg-surface-2/70 p-2"><MiniCourt>{player("left-[20%] top-[57%]", "1")}{player("left-[55%] top-[25%]", "3")}{player("left-[72%] top-[60%]", "5")}<span className="absolute left-[25%] top-[53%] h-1 w-[42%] origin-left -rotate-12 rounded-full bg-flame" /><span className="absolute left-[49%] top-[43%] text-flame">➤</span></MiniCourt><div className="flex flex-wrap gap-1"><span className={miniTool}>Marker</span><span className={miniTool}>Arrow</span><span className={miniTool}>Players</span><span className={miniTool}>Eraser</span><span className="h-6 w-6 rounded-full border-2 border-flame bg-grape" /><span className="h-6 w-6 rounded-full border-2 border-grape bg-flame" /><span className={cn(miniTool, "ml-auto")}>Clear Board</span></div></div>;
 }
 
 function ActionCourt({ drill = false }: { drill?: boolean }) {
-  return <div className="space-y-1.5 rounded-xl border border-border/70 bg-surface-2/70 p-2"><MiniCourt>{player("54%", "49%", "1")}{player("68%", "20%", "2")}{player("76%", "68%", "3")}{drill ? player("63%", "58%", "1", true) : null}<span className="absolute left-[57%] top-[48%] h-1 w-[18%] origin-left -rotate-[25deg] rounded-full bg-grape" /><span className="absolute left-[67%] top-[23%] h-0 w-[15%] origin-left rotate-[55deg] border-t-2 border-dashed border-flame" />{drill ? <><span className="absolute left-[57%] top-[72%] text-base text-flame">▲</span><span className="absolute left-[70%] top-[44%] text-base text-flame">●</span></> : null}</MiniCourt><div className="flex items-center gap-1 overflow-hidden"><span className={cn(miniTool, "border-grape")}>{drill ? "Move" : "Cut"}</span><span className={miniTool}>Pass</span><span className={miniTool}>{drill ? "Equipment" : "Screen"}</span><span className="ml-auto rounded-full border border-flame bg-flame/20 px-2 py-1 text-[9px] font-black text-foreground">Step 2</span></div></div>;
+  return <div className="space-y-1.5 rounded-xl border border-border/70 bg-surface-2/70 p-2"><MiniCourt>{player("left-[54%] top-[49%]", "1")}{player("left-[68%] top-[20%]", "2")}{player("left-[76%] top-[68%]", "3")}{drill ? player("left-[63%] top-[58%]", "1", true) : null}<span className="absolute left-[57%] top-[48%] h-1 w-[18%] origin-left -rotate-[25deg] rounded-full bg-grape" /><span className="absolute left-[67%] top-[23%] h-0 w-[15%] origin-left rotate-[55deg] border-t-2 border-dashed border-flame" />{drill ? <><span className="absolute left-[57%] top-[72%] text-base text-flame">▲</span><span className="absolute left-[70%] top-[44%] text-base text-flame">●</span></> : null}</MiniCourt><div className="flex items-center gap-1 overflow-hidden"><span className={cn(miniTool, "border-grape")}>{drill ? "Move" : "Cut"}</span><span className={miniTool}>Pass</span><span className={miniTool}>{drill ? "Equipment" : "Screen"}</span><span className="ml-auto rounded-full border border-flame bg-flame/20 px-2 py-1 text-[9px] font-black text-foreground">Step 2</span></div></div>;
 }
 
 function PlannerPreview() {
@@ -63,7 +64,7 @@ function StatsPreview() {
 }
 
 function BookPreview() {
-  return <div className="grid min-h-36 grid-cols-2 gap-2 rounded-xl border border-border/70 bg-surface-2/70 p-2">{[["Horns Flare","Offense"],["Box BLOB","BLOB"]].map(([name,cat], i) => <div key={name} className="overflow-hidden rounded-lg border border-border bg-surface"><div className="p-1"><MiniCourt>{player("55%", "48%", "1")}<span className={cn("absolute left-[58%] top-[48%] h-0 w-[25%] origin-left border-t-2", i ? "rotate-[35deg] border-dashed border-flame" : "-rotate-[20deg] border-grape")} /></MiniCourt></div><div className="px-2 pb-2"><div className="text-[10px] font-black text-foreground">{name}</div><div className="text-[8px] font-bold text-muted-foreground">{cat} · Run Play</div></div></div>)}</div>;
+  return <div className="grid min-h-36 grid-cols-2 gap-2 rounded-xl border border-border/70 bg-surface-2/70 p-2">{[["Horns Flare","Offense"],["Box BLOB","BLOB"]].map(([name,cat], i) => <div key={name} className="overflow-hidden rounded-lg border border-border bg-surface"><div className="p-1"><MiniCourt>{player("left-[55%] top-[48%]", "1")}<span className={cn("absolute left-[58%] top-[48%] h-0 w-[25%] origin-left border-t-2", i ? "rotate-[35deg] border-dashed border-flame" : "-rotate-[20deg] border-grape")} /></MiniCourt></div><div className="px-2 pb-2"><div className="text-[10px] font-black text-foreground">{name}</div><div className="text-[8px] font-bold text-muted-foreground">{cat} · Run Play</div></div></div>)}</div>;
 }
 
 function Preview({ type }: { type: PreviewType }) {
