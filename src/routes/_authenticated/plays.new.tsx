@@ -14,7 +14,9 @@ import {
   PrimaryCTA,
   TextInput,
 } from "@/components/Bubbles";
+import { PlayIndexSheet } from "@/components/PlayIndexSheet";
 import { createPlay, fetchTeams } from "@/lib/data";
+import { EMPTY_INDEX, type PlayIndex } from "@/lib/playIndex";
 import { PLAY_CATEGORIES, type PlayCategory } from "@/lib/types";
 
 const searchSchema = z.object({ category: z.string().optional() });
@@ -66,6 +68,7 @@ function CreatePlayPage() {
   );
   const [teamIds, setTeamIds] = useState<string[]>([]);
   const [basket, setBasket] = useState<"left" | "right">("right");
+  const [index, setIndex] = useState<PlayIndex>(EMPTY_INDEX);
 
   useEffect(() => {
     if (!teamIds.length && teams.data?.length) setTeamIds([teams.data[0]!.id]);
@@ -82,6 +85,12 @@ function CreatePlayPage() {
         category,
         attack_basket: basket,
         team_ids: teamIds,
+        situation: index.situation,
+        defense_faced: index.defense_faced,
+        outcome: index.outcome,
+        primary_actions: index.primary_actions,
+        time_pressure: index.time_pressure,
+        tags: index.tags,
       }),
     onSuccess: (p) => {
       void queryClient.invalidateQueries({ queryKey: ["plays"] });
@@ -93,6 +102,8 @@ function CreatePlayPage() {
   });
 
   const ready = name.trim().length > 0 && teamIds.length > 0;
+
+
 
 
   return (
