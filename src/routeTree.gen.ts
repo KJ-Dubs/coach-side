@@ -23,12 +23,14 @@ import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedRosterRouteImport } from './routes/_authenticated/roster'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as CoachUsernameRouteImport } from './routes/coach.$username'
+import { Route as DrillsDrillIdRouteImport } from './routes/drills.$drillId'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as LibraryIndexRouteImport } from './routes/library.index'
 import { Route as LibraryPlayIdRouteImport } from './routes/library.$playId'
 import { Route as LockerTokenRouteImport } from './routes/locker.$token'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as AuthenticatedDrillsIndexRouteImport } from './routes/_authenticated/drills.index'
 import { Route as AuthenticatedGameGameIdRouteImport } from './routes/_authenticated/game.$gameId'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games.index'
 import { Route as AuthenticatedGamesNewRouteImport } from './routes/_authenticated/games.new'
@@ -114,6 +116,11 @@ const CoachUsernameRoute = CoachUsernameRouteImport.update({
   path: '/coach/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DrillsDrillIdRoute = DrillsDrillIdRouteImport.update({
+  id: '/drills/$drillId',
+  path: '/drills/$drillId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
@@ -144,6 +151,12 @@ const ShareTokenRoute = ShareTokenRouteImport.update({
   path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedDrillsIndexRoute =
+  AuthenticatedDrillsIndexRouteImport.update({
+    id: '/drills/',
+    path: '/drills/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedGameGameIdRoute = AuthenticatedGameGameIdRouteImport.update({
   id: '/game/$gameId',
   path: '/game/$gameId',
@@ -240,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/coach/$username': typeof CoachUsernameRoute
+  '/drills/$drillId': typeof DrillsDrillIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/library/$playId': typeof LibraryPlayIdRoute
@@ -253,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
   '/share/play/$token': typeof SharePlayTokenRoute
+  '/drills/': typeof AuthenticatedDrillsIndexRoute
   '/games/': typeof AuthenticatedGamesIndexRoute
   '/plays/': typeof AuthenticatedPlaysIndexRoute
   '/stats/': typeof AuthenticatedStatsIndexRoute
@@ -276,6 +291,7 @@ export interface FileRoutesByTo {
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/coach/$username': typeof CoachUsernameRoute
+  '/drills/$drillId': typeof DrillsDrillIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/library/$playId': typeof LibraryPlayIdRoute
@@ -289,6 +305,7 @@ export interface FileRoutesByTo {
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
   '/share/play/$token': typeof SharePlayTokenRoute
+  '/drills': typeof AuthenticatedDrillsIndexRoute
   '/games': typeof AuthenticatedGamesIndexRoute
   '/plays': typeof AuthenticatedPlaysIndexRoute
   '/stats': typeof AuthenticatedStatsIndexRoute
@@ -314,6 +331,7 @@ export interface FileRoutesById {
   '/_authenticated/roster': typeof AuthenticatedRosterRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/coach/$username': typeof CoachUsernameRoute
+  '/drills/$drillId': typeof DrillsDrillIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/library/$playId': typeof LibraryPlayIdRoute
@@ -327,6 +345,7 @@ export interface FileRoutesById {
   '/_authenticated/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/_authenticated/stats/team': typeof AuthenticatedStatsTeamRoute
   '/share/play/$token': typeof SharePlayTokenRoute
+  '/_authenticated/drills/': typeof AuthenticatedDrillsIndexRoute
   '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
   '/_authenticated/plays/': typeof AuthenticatedPlaysIndexRoute
   '/_authenticated/stats/': typeof AuthenticatedStatsIndexRoute
@@ -352,6 +371,7 @@ export interface FileRouteTypes {
     | '/roster'
     | '/settings'
     | '/coach/$username'
+    | '/drills/$drillId'
     | '/invite/$token'
     | '/join/$token'
     | '/library/$playId'
@@ -365,6 +385,7 @@ export interface FileRouteTypes {
     | '/stats/players'
     | '/stats/team'
     | '/share/play/$token'
+    | '/drills/'
     | '/games/'
     | '/plays/'
     | '/stats/'
@@ -388,6 +409,7 @@ export interface FileRouteTypes {
     | '/roster'
     | '/settings'
     | '/coach/$username'
+    | '/drills/$drillId'
     | '/invite/$token'
     | '/join/$token'
     | '/library/$playId'
@@ -401,6 +423,7 @@ export interface FileRouteTypes {
     | '/stats/players'
     | '/stats/team'
     | '/share/play/$token'
+    | '/drills'
     | '/games'
     | '/plays'
     | '/stats'
@@ -425,6 +448,7 @@ export interface FileRouteTypes {
     | '/_authenticated/roster'
     | '/_authenticated/settings'
     | '/coach/$username'
+    | '/drills/$drillId'
     | '/invite/$token'
     | '/join/$token'
     | '/library/$playId'
@@ -438,6 +462,7 @@ export interface FileRouteTypes {
     | '/_authenticated/stats/players'
     | '/_authenticated/stats/team'
     | '/share/play/$token'
+    | '/_authenticated/drills/'
     | '/_authenticated/games/'
     | '/_authenticated/plays/'
     | '/_authenticated/stats/'
@@ -453,6 +478,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   CoachUsernameRoute: typeof CoachUsernameRoute
+  DrillsDrillIdRoute: typeof DrillsDrillIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
   JoinTokenRoute: typeof JoinTokenRoute
   LibraryPlayIdRoute: typeof LibraryPlayIdRoute
@@ -565,6 +591,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoachUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/drills/$drillId': {
+      id: '/drills/$drillId'
+      path: '/drills/$drillId'
+      fullPath: '/drills/$drillId'
+      preLoaderRoute: typeof DrillsDrillIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/invite/$token': {
       id: '/invite/$token'
       path: '/invite/$token'
@@ -606,6 +639,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/share/$token'
       preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/drills/': {
+      id: '/_authenticated/drills/'
+      path: '/drills'
+      fullPath: '/drills/'
+      preLoaderRoute: typeof AuthenticatedDrillsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/game/$gameId': {
       id: '/_authenticated/game/$gameId'
@@ -732,6 +772,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReviewGameIdRoute: typeof AuthenticatedReviewGameIdRoute
   AuthenticatedStatsPlayersRoute: typeof AuthenticatedStatsPlayersRoute
   AuthenticatedStatsTeamRoute: typeof AuthenticatedStatsTeamRoute
+  AuthenticatedDrillsIndexRoute: typeof AuthenticatedDrillsIndexRoute
   AuthenticatedGamesIndexRoute: typeof AuthenticatedGamesIndexRoute
   AuthenticatedPlaysIndexRoute: typeof AuthenticatedPlaysIndexRoute
   AuthenticatedStatsIndexRoute: typeof AuthenticatedStatsIndexRoute
@@ -756,6 +797,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReviewGameIdRoute: AuthenticatedReviewGameIdRoute,
   AuthenticatedStatsPlayersRoute: AuthenticatedStatsPlayersRoute,
   AuthenticatedStatsTeamRoute: AuthenticatedStatsTeamRoute,
+  AuthenticatedDrillsIndexRoute: AuthenticatedDrillsIndexRoute,
   AuthenticatedGamesIndexRoute: AuthenticatedGamesIndexRoute,
   AuthenticatedPlaysIndexRoute: AuthenticatedPlaysIndexRoute,
   AuthenticatedStatsIndexRoute: AuthenticatedStatsIndexRoute,
@@ -771,6 +813,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   CoachUsernameRoute: CoachUsernameRoute,
+  DrillsDrillIdRoute: DrillsDrillIdRoute,
   InviteTokenRoute: InviteTokenRoute,
   JoinTokenRoute: JoinTokenRoute,
   LibraryPlayIdRoute: LibraryPlayIdRoute,
