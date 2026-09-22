@@ -81,8 +81,10 @@ export function nearestTokenAt(tokens: PlayToken[], p: Point, radius = BIND_RADI
 export function resolveLegacyActors(frame: PlayFrame): PlayFrame {
   if (!frame) return frame;
   const needs = frame.actions.some(
-    (a) => !a.actor || ((a.type === "pass" || a.type === "handoff") && !a.target),
-  );
+    (a) =>
+      !a.actor ||
+      ((a.type === "pass" || a.type === "handoff") && !a.target && a.passTo !== "space"),
+
   if (!needs) return frame;
 
   const seqs = [...new Set(frame.actions.map((a) => a.seq))].sort((x, y) => x - y);
