@@ -440,31 +440,36 @@ function PlayDesignerPage() {
   /** Keep both outcomes as labelled options from the same shared state. */
   const commitAsOption = () => {
     const pending = pendingOption;
-    if (!pending) return;
+    const current = frame;
+    if (!pending || !current) return;
     setPendingOption(null);
-    patchFrame((f) => {
-      const rival = f.actions.find((a) => a.id === pending.rivalId);
-      const group = rival?.option?.group ?? uuid();
-      const used = f.actions.filter((a) => a.option?.group === group).length;
-      const rivalPatched = f.actions.map((a) =>
-        a.id === pending.rivalId && !a.option
-          ? { ...a, option: { group, key: "a", label: OPTION_LABELS[0]! } }
-          : a,
-      );
-      const keyIdx = rival?.option ? used : 1;
-      const next: PlayAction = {
-        ...pending.action,
-        option: {
-          group,
-          key: String.fromCharCode(97 + keyIdx),
-          label: OPTION_LABELS[keyIdx] ?? `Option ${keyIdx + 1}`,
-        },
-      };
-      setBranch((b) => ({ ...b, [group]: next.option!.key }));
-      return { ...f, actions: [...rivalPatched, next] };
-    });
+    const rival = current.actions.find((a) => a.id === pending.rivalId);
+    const group = rival?.option?.group ?? uuid();
+    const keyIdx = rival?.option
+      ? new Set(
+          current.actions.filter((a) => a.option?.group === group).map((a) => a.option!.key),
+        ).size
+      : 1;
+    const key = String.fromCharCode(97 + keyIdx);
+    const next: PlayAction = {
+      ...pending.action,
+      option: { group, key, label: OPTION_LABELS[keyIdx] ?? `Option ${keyIdx + 1}` },
+    };
+    patchFrame((f) => ({
+      ...f,
+      actions: [
+        ...f.actions.map((a) =>
+          a.id === pending.rivalId && !a.option
+            ? { ...a, option: { group, key: "a", label: OPTION_LABELS[0]! } }
+            : a,
+        ),
+        next,
+      ],
+    }));
+    setBranch((b) => ({ ...b, [group]: key }));
     setSelectedActionId(pending.action.id);
   };
+
 
   const commitAsReplacement = () => {
     const pending = pendingOption;
