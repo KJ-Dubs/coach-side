@@ -6,7 +6,9 @@ import {
   BookOpen,
   ChevronDown,
   ClipboardPenLine,
+  Dumbbell,
   Gauge,
+  ListChecks,
   LogOut,
   MessagesSquare,
   PenLine,
@@ -34,6 +36,8 @@ import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
 const QUICK = [
   { to: "/plays", label: "Playbook", icon: BookOpen },
   { to: "/plays/new", label: "Playmaker", icon: ClipboardPenLine },
+  { to: "/practice", label: "Practice", icon: ListChecks },
+  { to: "/drills", label: "Drills", icon: Dumbbell },
   { to: "/lockerroom", label: "Locker Room", icon: MessagesSquare },
   { to: "/games/new", label: "Live Game", icon: Swords },
   { to: "/stats", label: "Stats", icon: BarChart3 },
