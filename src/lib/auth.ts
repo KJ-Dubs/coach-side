@@ -25,6 +25,19 @@ export function useAuth() {
 
 /** Ordered sign-out: stop queries, drop cache, clear session, then leave. */
 export async function signOut(queryClient?: QueryClient) {
+  // Drop this device's notification subscription first, while the outgoing
+  // account is still signed in, so the next account never inherits it.
+  try {
+    const [{ unsubscribeThisDevice }, { removePushSubscription }] = await Promise.all([
+      import("./push"),
+      import("./notifications.functions"),
+    ]);
+    const endpoint = await unsubscribeThisDevice();
+    if (endpoint) await removePushSubscription({ data: { endpoint } });
+  } catch {
+    // Signing out must never be blocked by notification cleanup.
+  }
+
   if (queryClient) {
     await queryClient.cancelQueries();
     queryClient.clear();

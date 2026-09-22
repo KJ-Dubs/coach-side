@@ -12,11 +12,11 @@ import {
   fetchLibraryFeed,
   libraryPlayAsPlay,
   LIBRARY_SORTS,
-  setPlayOfTheDay,
   sortLibrary,
   type LibraryPlay,
   type LibrarySort,
 } from "@/lib/community";
+import { setPlayOfTheDayAndNotify } from "@/lib/notifications.functions";
 import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
 import { PLAY_CATEGORIES, normalizeCategory } from "@/lib/types";
 
@@ -118,11 +118,15 @@ function LibraryCard({
 }) {
   const qc = useQueryClient();
   const feature = useMutation({
-    mutationFn: () => setPlayOfTheDay(play.id),
-    onSuccess: () => {
+    mutationFn: () => setPlayOfTheDayAndNotify({ data: { playId: play.id } }),
+    onSuccess: (r) => {
       void qc.invalidateQueries({ queryKey: ["library-feed"] });
       void qc.invalidateQueries({ queryKey: ["play-of-the-day"] });
-      toast.success(`${play.name} is now the Play of the Day`);
+      toast.success(
+        r.notified > 0
+          ? `${play.name} is the Play of the Day — ${r.notified} coaches notified`
+          : `${play.name} is now the Play of the Day`,
+      );
     },
     onError: (e: Error) => toast.error(e.message),
   });

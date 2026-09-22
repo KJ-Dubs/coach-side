@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
+import { EnablePushCard } from "@/components/EnablePushCard";
 import {
   BubbleButton,
   EmptyState,
@@ -278,6 +279,9 @@ function LockerRoomPage() {
       {/* ---------------- TODAY ---------------- */}
       {tab === "today" ? (
         <div className="grid gap-3 lg:grid-cols-2">
+          <div className="lg:col-span-2">
+            <EnablePushCard />
+          </div>
           <Panel className="flex flex-col gap-3">
             <div className="flex justify-center"><Heading tone="flame" className="text-center">Today</Heading></div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

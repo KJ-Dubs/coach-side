@@ -10,6 +10,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
+import { SendNotificationPanel } from "@/components/admin/SendNotificationPanel";
 import {
   BubbleButton,
   EmptyState,
@@ -109,6 +110,7 @@ function KpiPage() {
   const checkAdmin = useServerFn(amIAppAdmin);
   const fetchReport = useServerFn(getKpiReport);
   const [range, setRange] = useState<RangeKey>("30d");
+
   const [sort, setSort] = useState<SortKey>("newest");
 
   // Owner check is per signed-in person and answered by the server, so one
@@ -443,6 +445,8 @@ function KpiPage() {
             </Panel>
           </>
         )}
+
+        <SendNotificationPanel />
       </div>
     </AppShell>
   );
