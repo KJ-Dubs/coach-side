@@ -215,7 +215,33 @@ export function PlayPresenter({
           </BubbleButton>
         </Panel>
 
+        {model.options.length ? (
+          <Panel className="flex flex-col items-center gap-2">
+            <Label>Options</Label>
+            {model.options.map((o, i) => {
+              const current =
+                branch[o.group.group] ?? o.group.branches[0]?.key ?? "";
+              return (
+                <div key={o.group.group} className="flex flex-wrap items-center justify-center gap-2">
+                  <Pill tone="muted">{`Decision ${i + 1}`}</Pill>
+                  {o.group.branches.map((b, bi) => (
+                    <BubbleButton
+                      key={b.key}
+                      size="sm"
+                      tone={current === b.key ? "flame" : "neutral"}
+                      onClick={() => setBranch((prev) => ({ ...prev, [o.group.group]: b.key }))}
+                    >
+                      {`${b.label} · ${bi + 1} of ${o.group.branches.length}`}
+                    </BubbleButton>
+                  ))}
+                </div>
+              );
+            })}
+          </Panel>
+        ) : null}
+
         <ExportPlayVideo model={model} />
+
 
         <Panel className="flex flex-wrap items-center justify-center gap-2">
           <Pill tone="muted">Court view</Pill>
