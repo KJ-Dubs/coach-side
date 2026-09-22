@@ -267,7 +267,22 @@ function PlayDesignerPage() {
 
   /* ---- action authoring ---- */
 
+  const OPTION_LABELS = ["Option A", "Option B", "Option C", "Option D", "Option E", "Option F"];
+
   const addAction = (action: PlayAction, seq: number) => {
+    // Two outcomes by the same ball handler in one sequence cannot both happen.
+    const rival = (frame?.actions ?? []).find(
+      (a) =>
+        a.seq === seq &&
+        BALL_ACTIONS.has(a.type) &&
+        BALL_ACTIONS.has(action.type) &&
+        a.actor === action.actor &&
+        a.id !== action.id,
+    );
+    if (rival) {
+      setPendingOption({ action, seq, rivalId: rival.id });
+      return;
+    }
     const conflict = (frame?.actions ?? []).some(
       (a) =>
         a.seq === seq &&
@@ -280,6 +295,7 @@ function PlayDesignerPage() {
       setSelectedActionId(action.id);
       return;
     }
+
     const label = liveTokens.find((t) => t.id === action.actor)?.label ?? "that player";
     toast.warning(`#${label} has to receive the ball before this can happen.`, {
       duration: 12000,
