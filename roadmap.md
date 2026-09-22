@@ -14,6 +14,9 @@
 - [x] Give every dashboard destination a distinct athletic accent
 
 ## In progress / ready
+- [ ] Simplify Playmaker pass creation with automatic receiver inference and post-draw override
+- [ ] Compact coach nav, add Tools showcase, and consolidate Playbook/Library discovery
+- [ ] Reduce Team Stats tabs to Overview / Games / Players / Team
 - [ ] DB: additive migration (games.home_away/overtime_minutes, team settings columns, org_members roles, coach_invites, tightened RLS, invite RPCs, logo bucket)
 - [ ] Sign-in barrier (`/`, `/auth`) + `_authenticated` gate + global offline flusher
 - [ ] Home dashboard (`/dashboard`) with 9 cards

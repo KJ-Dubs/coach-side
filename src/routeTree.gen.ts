@@ -22,6 +22,7 @@ import { Route as AuthenticatedMembershipRouteImport } from './routes/_authentic
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedRosterRouteImport } from './routes/_authenticated/roster'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedToolsRouteImport } from './routes/_authenticated/tools'
 import { Route as CoachUsernameRouteImport } from './routes/coach.$username'
 import { Route as DrillsDrillIdRouteImport } from './routes/drills.$drillId'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
@@ -112,6 +113,11 @@ const AuthenticatedRosterRoute = AuthenticatedRosterRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedToolsRoute = AuthenticatedToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const CoachUsernameRoute = CoachUsernameRouteImport.update({
@@ -272,6 +278,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRoute
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/tools': typeof AuthenticatedToolsRoute
   '/coach/$username': typeof CoachUsernameRoute
   '/drills/$drillId': typeof DrillsDrillIdRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -313,6 +320,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRoute
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/tools': typeof AuthenticatedToolsRoute
   '/coach/$username': typeof CoachUsernameRoute
   '/drills/$drillId': typeof DrillsDrillIdRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -356,6 +364,7 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/roster': typeof AuthenticatedRosterRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/tools': typeof AuthenticatedToolsRoute
   '/coach/$username': typeof CoachUsernameRoute
   '/drills/$drillId': typeof DrillsDrillIdRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -399,6 +408,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/roster'
     | '/settings'
+    | '/tools'
     | '/coach/$username'
     | '/drills/$drillId'
     | '/invite/$token'
@@ -440,6 +450,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/roster'
     | '/settings'
+    | '/tools'
     | '/coach/$username'
     | '/drills/$drillId'
     | '/invite/$token'
@@ -482,6 +493,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/roster'
     | '/_authenticated/settings'
+    | '/_authenticated/tools'
     | '/coach/$username'
     | '/drills/$drillId'
     | '/invite/$token'
@@ -620,6 +632,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tools': {
+      id: '/_authenticated/tools'
+      path: '/tools'
+      fullPath: '/tools'
+      preLoaderRoute: typeof AuthenticatedToolsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/coach/$username': {
@@ -825,6 +844,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRosterRoute: typeof AuthenticatedRosterRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
   AuthenticatedDrillsNewRoute: typeof AuthenticatedDrillsNewRoute
   AuthenticatedGameGameIdRoute: typeof AuthenticatedGameGameIdRoute
   AuthenticatedGamesNewRoute: typeof AuthenticatedGamesNewRoute
@@ -853,6 +873,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRosterRoute: AuthenticatedRosterRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedToolsRoute: AuthenticatedToolsRoute,
   AuthenticatedDrillsNewRoute: AuthenticatedDrillsNewRoute,
   AuthenticatedGameGameIdRoute: AuthenticatedGameGameIdRoute,
   AuthenticatedGamesNewRoute: AuthenticatedGamesNewRoute,

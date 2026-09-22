@@ -498,6 +498,81 @@ export type PassWarning = { actionId: string; seq: number; message: string };
 /** How far a pass endpoint may sit from where the receiver ends up. */
 export const PASS_REACH = 0.09;
 
+export type PassReceiverScore = {
+  id: string;
+  label: string;
+  score: number;
+  distance: number;
+  moving: boolean;
+};
+
+/**
+ * Choose a receiver once, while authoring, then persist that immutable token ID.
+ * Playback never guesses. Same-sequence movement endpoints outrank current token
+ * positions, which lets a pass meet a cutter without moving the drawn endpoint.
+ */
+export function scorePassReceivers(
+  startTokens: PlayToken[],
+  sequenceActions: PlayAction[],
+  pass: Pick<PlayAction, "actor" | "points">,
+): PassReceiverScore[] {
+  const endpoint = pass.points[pass.points.length - 1];
+  if (!endpoint) return [];
+
+  const projected = new Map(startTokens.map((t) => [t.id, { x: t.x, y: t.y }]));
+  const movement = new Map<string, PlayAction>();
+  const ballActors = new Set(
+    sequenceActions
+      .filter((a) => BALL_ACTIONS.has(a.type) && a.actor !== pass.actor)
+      .map((a) => a.actor)
+      .filter((id): id is string => !!id),
+  );
+  for (const action of sequenceActions) {
+    if (!action.actor || BALL_ACTIONS.has(action.type)) continue;
+    const end = resolvePath(action).at(-1);
+    if (!end) continue;
+    projected.set(action.actor, end);
+    movement.set(action.actor, action);
+  }
+
+  const passDuration = intrinsicDuration("pass", pathLength(pass.points));
+  return startTokens
+    .filter(
+      (token) =>
+        (token.team ?? "offense") === "offense" &&
+        token.id !== pass.actor &&
+        !ballActors.has(token.id),
+    )
+    .map((token) => {
+      const end = projected.get(token.id) ?? token;
+      const distance = Math.hypot(end.x - endpoint.x, end.y - endpoint.y);
+      const move = movement.get(token.id);
+      const moveDuration = move
+        ? intrinsicDuration(move.type, pathLength(resolvePath(move)))
+        : passDuration;
+      const proximity = Math.max(0, 1 - distance / PASS_REACH);
+      const timing = Math.max(0, 1 - Math.abs(passDuration - moveDuration) / MAX_MOVE_MS);
+      const moving = !!move;
+      return {
+        id: token.id,
+        label: token.label,
+        distance,
+        moving,
+        score: proximity * 0.8 + timing * 0.15 + (moving ? 0.05 : 0),
+      };
+    })
+    .sort((a, b) => b.score - a.score || a.distance - b.distance || a.id.localeCompare(b.id));
+}
+
+export function inferPassReceiver(
+  startTokens: PlayToken[],
+  sequenceActions: PlayAction[],
+  pass: Pick<PlayAction, "actor" | "points">,
+) {
+  const best = scorePassReceivers(startTokens, sequenceActions, pass)[0];
+  return best && best.distance <= PASS_REACH && best.score >= 0.55 ? best : null;
+}
+
 /**
  * A lead pass must actually reach the receiver. This never rewrites the play;
  * it only tells the coach the geometry does not meet.

@@ -157,7 +157,7 @@ function PlayerStatsPage() {
         </Link>
       }
     >
-      <StatsTabs shotCharts="players" />
+      <StatsTabs />
       <Panel className="mb-3 flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <Label>Team</Label>
@@ -214,7 +214,7 @@ function PlayerStatsPage() {
           {isCoach ? (
             <Link to="/roster">
               <BubbleButton size="sm" tone="flame">
-                {teamsInSeason.length ? "+ Add Player" : "+ Add Team"}
+                {teamsInSeason.length ? "Manage Players" : "+ Add Team"}
               </BubbleButton>
             </Link>
           ) : null}

@@ -128,7 +128,7 @@ function TeamStatsPage() {
         </Link>
       }
     >
-      <StatsTabs shotCharts="team" />
+      <StatsTabs />
       <Panel className="mb-3 flex flex-wrap items-center gap-2">
         <Label>Team</Label>
         {teamsInSeason.map((t) => (

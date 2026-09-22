@@ -301,8 +301,7 @@ function PlaybookPage() {
         </>
       }
     >
-      <Panel className="mb-3 flex flex-wrap items-center gap-2">
-        <Label>Browse</Label>
+      <Panel className="mb-3 flex flex-wrap items-center justify-center gap-2">
         <BubbleButton
           size="sm"
           tone={tab === "mine" ? "grape" : "neutral"}

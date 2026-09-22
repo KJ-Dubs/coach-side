@@ -2,19 +2,14 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
-  CalendarDays,
   BookOpen,
   ChevronDown,
-  ClipboardPenLine,
-  Dumbbell,
   Gauge,
-  ListChecks,
   LogOut,
   MessagesSquare,
-  PenLine,
   Settings,
-  Sparkles,
   Swords,
+  Wrench,
   UserRound,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -35,15 +30,10 @@ import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
 
 const QUICK = [
   { to: "/plays", label: "Playbook", icon: BookOpen },
-  { to: "/plays/new", label: "Playmaker", icon: ClipboardPenLine },
-  { to: "/practice", label: "Practice", icon: ListChecks },
-  { to: "/drills", label: "Drills", icon: Dumbbell },
   { to: "/lockerroom", label: "Locker Room", icon: MessagesSquare },
   { to: "/games/new", label: "Live Game", icon: Swords },
-  { to: "/stats", label: "Stats", icon: BarChart3 },
-  { to: "/calendar", label: "Calendar", icon: CalendarDays },
-  { to: "/board", label: "Board", icon: PenLine },
-  { to: "/library", label: "Library", icon: Sparkles },
+  { to: "/stats", label: "Team Stats", icon: BarChart3 },
+  { to: "/tools", label: "Tools", icon: Wrench },
 ] as const;
 
 export function AppShell({
@@ -158,7 +148,7 @@ export function AppShell({
               />
             </Link>
 
-            <nav className="order-3 col-span-2 grid grid-cols-4 gap-1 sm:grid-cols-8 rounded-2xl border border-border/80 bg-background/70 p-1.5 lg:order-none lg:col-span-1" aria-label="Primary navigation">
+            <nav className="order-3 col-span-2 grid grid-cols-5 gap-1 rounded-2xl border border-border/80 bg-background/70 p-1.5 lg:order-none lg:col-span-1" aria-label="Primary navigation">
               {QUICK.map((item) => {
                 const Icon = item.icon;
                 return (
