@@ -569,6 +569,14 @@ function PlayDesignerPage() {
                   {label}
                 </BubbleButton>
               ))}
+              {offView > 0 ? (
+                <>
+                  <Pill tone="flame">{offView} off this view</Pill>
+                  <BubbleButton size="sm" tone="grape" onClick={() => chooseZoom(fitZoom(frame?.tokens ?? []))}>
+                    Fit players
+                  </BubbleButton>
+                </>
+              ) : null}
             </div>
             <BubbleButton
               tone="flame"
@@ -658,6 +666,9 @@ function PlayDesignerPage() {
         </div>
 
         <div className="flex flex-col gap-3">
+          {canEdit ? (
+            <PlayIndexSheet value={index} onChange={setIndex} suggestions={suggestFromFrames(frames)} compact />
+          ) : null}
           <Panel className="flex flex-col gap-2">
             <Label>Press Maker · Two Teams</Label>
             <div className="flex flex-wrap gap-2">
