@@ -1142,6 +1142,135 @@ export type Database = {
           },
         ]
       }
+      notification_broadcasts: {
+        Row: {
+          audience_kind: string
+          audience_ref: string | null
+          body: string
+          channels: string[]
+          created_at: string
+          email_queued: number
+          id: string
+          link: string | null
+          push_failed: number
+          push_sent: number
+          recipient_count: number
+          sent_by: string | null
+          title: string
+        }
+        Insert: {
+          audience_kind: string
+          audience_ref?: string | null
+          body: string
+          channels?: string[]
+          created_at?: string
+          email_queued?: number
+          id?: string
+          link?: string | null
+          push_failed?: number
+          push_sent?: number
+          recipient_count?: number
+          sent_by?: string | null
+          title: string
+        }
+        Update: {
+          audience_kind?: string
+          audience_ref?: string | null
+          body?: string
+          channels?: string[]
+          created_at?: string
+          email_queued?: number
+          id?: string
+          link?: string | null
+          push_failed?: number
+          push_sent?: number
+          recipient_count?: number
+          sent_by?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      notification_deliveries: {
+        Row: {
+          channel: string
+          created_at: string
+          error: string | null
+          id: string
+          notification_id: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          notification_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          notification_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_email_queue: {
+        Row: {
+          attempts: number
+          body: string
+          created_at: string
+          id: string
+          last_error: string | null
+          link: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          to_email: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          body: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          link?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          to_email: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          body?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          link?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          to_email?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           announcement_notifications: boolean
@@ -1152,7 +1281,10 @@ export type Database = {
           game_reminders: boolean
           id: string
           new_play_notifications: boolean
+          play_of_the_day_notifications: boolean
           practice_reminders: boolean
+          push_enabled: boolean
+          schedule_change_notifications: boolean
           updated_at: string
           user_id: string
         }
@@ -1165,7 +1297,10 @@ export type Database = {
           game_reminders?: boolean
           id?: string
           new_play_notifications?: boolean
+          play_of_the_day_notifications?: boolean
           practice_reminders?: boolean
+          push_enabled?: boolean
+          schedule_change_notifications?: boolean
           updated_at?: string
           user_id: string
         }
@@ -1178,7 +1313,10 @@ export type Database = {
           game_reminders?: boolean
           id?: string
           new_play_notifications?: boolean
+          play_of_the_day_notifications?: boolean
           practice_reminders?: boolean
+          push_enabled?: boolean
+          schedule_change_notifications?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -1189,7 +1327,9 @@ export type Database = {
           body: string | null
           channel: string
           created_at: string
+          dedupe_key: string | null
           id: string
+          link: string | null
           read_at: string | null
           related_id: string | null
           related_type: string | null
@@ -1206,7 +1346,9 @@ export type Database = {
           body?: string | null
           channel?: string
           created_at?: string
+          dedupe_key?: string | null
           id?: string
+          link?: string | null
           read_at?: string | null
           related_id?: string | null
           related_type?: string | null
@@ -1223,7 +1365,9 @@ export type Database = {
           body?: string | null
           channel?: string
           created_at?: string
+          dedupe_key?: string | null
           id?: string
+          link?: string | null
           read_at?: string | null
           related_id?: string | null
           related_type?: string | null
@@ -1627,6 +1771,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_subscriptions: {
+        Row: {
+          active: boolean
+          auth: string
+          created_at: string
+          device_label: string | null
+          endpoint: string
+          failure_count: number
+          id: string
+          last_success_at: string | null
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          auth: string
+          created_at?: string
+          device_label?: string | null
+          endpoint: string
+          failure_count?: number
+          id?: string
+          last_success_at?: string | null
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          auth?: string
+          created_at?: string
+          device_label?: string | null
+          endpoint?: string
+          failure_count?: number
+          id?: string
+          last_success_at?: string | null
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       substitutions: {
         Row: {
