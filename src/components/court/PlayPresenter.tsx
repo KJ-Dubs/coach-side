@@ -28,17 +28,22 @@ export type NormalizedPlayback = {
   frames: PlayFrame[];
   steps: { step: PlayStep; frameIdx: number; note: string | null }[];
   labels: string[];
+  /** Decision points, tagged with the frame they belong to. */
+  options: { frameIdx: number; group: OptionGroup }[];
 };
 
 /** Turn legacy frame plays and newer sequence/action plays into one model. */
 export function normalizePlayForPlayback(
   play: Pick<Play, "name" | "category" | "attack_basket"> | null | undefined,
   frames: PlayFrame[] | undefined,
+  branch?: BranchSelection,
 ): NormalizedPlayback {
   const list = (frames ?? []).slice().sort((a, b) => a.idx - b.idx);
   const steps: NormalizedPlayback["steps"] = [];
+  const options: NormalizedPlayback["options"] = [];
   list.forEach((frame, frameIdx) => {
-    for (const step of buildSteps(frame)) steps.push({ step, frameIdx, note: frame.note });
+    for (const step of buildSteps(frame, branch)) steps.push({ step, frameIdx, note: frame.note });
+    for (const group of listOptionGroups(frame)) options.push({ frameIdx, group });
   });
   const labels = [
     ...new Set(
@@ -52,8 +57,10 @@ export function normalizePlayForPlayback(
     frames: list,
     steps,
     labels,
+    options,
   };
 }
+
 
 export function PlayPresenter({
   play,
