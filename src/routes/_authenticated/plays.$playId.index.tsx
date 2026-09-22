@@ -659,7 +659,111 @@ function PlayDesignerPage() {
             onCourtPointerMove={onMove}
             onCourtPointerUp={onUp}
           />
+          {pendingPass ? (
+            <Panel className="flex flex-col gap-3">
+              <Label>Who receives this pass?</Label>
+              <div className="flex flex-wrap gap-2">
+                {receiverChoices.map((r, i) => (
+                  <BubbleButton
+                    key={r.id}
+                    size="sm"
+                    tone={i === 0 ? "flame" : "neutral"}
+                    onClick={() => commitPass(r.id)}
+                  >
+                    {`#${r.label}`}
+                  </BubbleButton>
+                ))}
+                <BubbleButton size="sm" tone="grape" onClick={() => commitPass(null)}>
+                  Open space · option only
+                </BubbleButton>
+                <BubbleButton size="sm" tone="ghost" onClick={() => setPendingPass(null)}>
+                  Cancel
+                </BubbleButton>
+              </div>
+              <Pill tone="muted">
+                Pick the player who ends up at the ball. A lead pass to a cutter keeps the spot you
+                drew. Open space keeps the ball with the passer.
+              </Pill>
+            </Panel>
+          ) : null}
+          {pendingOption ? (
+            <Panel className="flex flex-col gap-3">
+              <Label>Add as another option?</Label>
+              <Pill tone="muted">
+                This player already has an outcome in this sequence. Options are alternatives from
+                the same starting point, and only one runs at a time.
+              </Pill>
+              <div className="flex flex-wrap gap-2">
+                <BubbleButton size="sm" tone="flame" onClick={commitAsOption}>
+                  Add Option
+                </BubbleButton>
+                <BubbleButton size="sm" tone="grape" onClick={commitAsReplacement}>
+                  Replace Current Action
+                </BubbleButton>
+                <BubbleButton size="sm" tone="ghost" onClick={() => setPendingOption(null)}>
+                  Cancel
+                </BubbleButton>
+              </div>
+            </Panel>
+          ) : null}
+          {optionGroups.length ? (
+            <Panel className="flex flex-col gap-3">
+              <Label>Options</Label>
+              {optionGroups.map((g, gi) => (
+                <div key={g.group} className="flex flex-wrap items-center gap-2">
+                  <Pill tone="muted">{`Decision ${gi + 1} · sequence ${g.seq}`}</Pill>
+                  {g.branches.map((b) => (
+                    <BubbleButton
+                      key={b.key}
+                      size="sm"
+                      tone={activeBranch[g.group] === b.key ? "flame" : "neutral"}
+                      onClick={() => {
+                        setBranch((prev) => ({ ...prev, [g.group]: b.key }));
+                        setMode("idle");
+                        setTimeMs(0);
+                        setSeqIdx(0);
+                        setSelectedActionId(null);
+                      }}
+                    >
+                      {b.label}
+                    </BubbleButton>
+                  ))}
+                  <BubbleButton
+                    size="sm"
+                    tone="ghost"
+                    onClick={() => {
+                      const key = activeBranch[g.group];
+                      const drop = g.branches.find((b) => b.key === key);
+                      if (!drop) return;
+                      patchFrame((f) => ({
+                        ...f,
+                        actions: f.actions.filter((a) => !drop.actionIds.includes(a.id)),
+                      }));
+                      setBranch((prev) => {
+                        const next = { ...prev };
+                        delete next[g.group];
+                        return next;
+                      });
+                    }}
+                  >
+                    Delete shown option
+                  </BubbleButton>
+                </div>
+              ))}
+            </Panel>
+          ) : null}
+          {activeWarnings.length ? (
+            <Panel className="flex flex-col gap-2">
+              <Label>Check this pass</Label>
+              {activeWarnings.map((w) => (
+                <Pill key={w.actionId} tone="flame">
+                  {w.message}
+                </Pill>
+              ))}
+            </Panel>
+          ) : null}
           <Panel className="flex flex-col gap-3">
+
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
               <Label>Tools</Label>
               <Pill tone="grape">Sequence {activeIdx + 1}</Pill>
