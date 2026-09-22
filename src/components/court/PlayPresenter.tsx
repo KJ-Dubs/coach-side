@@ -3,7 +3,17 @@ import { BubbleButton, InfoPanel, Label, Panel, Pill, SectionHeader } from "@/co
 import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { ExportPlayVideo } from "@/components/court/ExportPlayVideo";
 import type { CourtZoom } from "@/components/court/Court";
-import { buildSteps, sampleStep, DO_MS, SHOW_MS, type PlayStep } from "@/lib/playAnimation";
+import {
+  buildSteps,
+  listOptionGroups,
+  sampleStep,
+  DO_MS,
+  SHOW_MS,
+  type BranchSelection,
+  type OptionGroup,
+  type PlayStep,
+} from "@/lib/playAnimation";
+
 import type { Play, PlayFrame } from "@/lib/types";
 
 /**
