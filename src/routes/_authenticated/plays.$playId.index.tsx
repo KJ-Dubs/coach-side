@@ -57,6 +57,8 @@ export const Route = createFileRoute("/_authenticated/plays/$playId/")({
         property: "og:description",
         content: "Place players and draw passes, cuts and screens frame by frame.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: PlayDesignerPage,
