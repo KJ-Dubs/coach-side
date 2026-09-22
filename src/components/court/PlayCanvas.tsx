@@ -228,8 +228,22 @@ export function PlayCanvas({
     ? shownActions.find((a) => a.id === selectedActionId)
     : undefined;
   const selectedLabel = selected
-    ? `${shownTokens.find((t) => t.id === selected.actor)?.label ?? "?"} • ${ACTION_NAME[selected.type] ?? selected.type} • Seq ${selected.seq}`
+    ? [
+        `${shownTokens.find((t) => t.id === selected.actor)?.label ?? "?"}`,
+        selected.option
+          ? `${selected.option.label} ${ACTION_NAME[selected.type] ?? selected.type}`
+          : (ACTION_NAME[selected.type] ?? selected.type),
+        selected.type === "pass" && selected.passTo === "space"
+          ? "Target area"
+          : selected.target
+            ? `→ ${shownTokens.find((t) => t.id === selected.target)?.label ?? "?"}`
+            : null,
+        `Seq ${selected.seq}`,
+      ]
+        .filter(Boolean)
+        .join(" • ")
     : null;
+
   const ghostPts = Array.isArray(ghost)
     ? ghost
     : ghost
