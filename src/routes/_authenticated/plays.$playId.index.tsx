@@ -405,6 +405,7 @@ function PlayDesignerPage() {
   };
 
   const hasDefense = (frame?.tokens ?? []).some((t) => t.team === "defense");
+  const offView = outsideCount(zoom, frame?.tokens ?? []);
   const activeActions = frame?.actions.filter((a) => a.seq === seqNumber) ?? [];
   const sequenceInvalid =
     activeActions.some(
