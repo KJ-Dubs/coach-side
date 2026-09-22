@@ -6,12 +6,17 @@ import {
   DO_MS,
   SHOW_MS,
   buildSteps,
+  defaultBranchSelection,
   findChainConflicts,
+  findPassWarnings,
+  listOptionGroups,
   nearestTokenAt,
   resolveLegacyActors,
   sampleTimeline,
   stateAtSequenceStart,
+  type BranchSelection,
 } from "@/lib/playAnimation";
+
 import { simplifyPath, type Point } from "@/lib/playPath";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
