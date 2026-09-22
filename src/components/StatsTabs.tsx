@@ -7,16 +7,15 @@ const TABS = [
   { to: "/games", label: "Games", exact: false },
   { to: "/stats/players", label: "Players", exact: false },
   { to: "/stats/team", label: "Team", exact: false },
-  { to: "/roster", label: "Roster", exact: false },
 ] as const;
 
 const base =
   "inline-flex min-h-11 items-center rounded-full border px-4 text-xs font-black uppercase tracking-wide transition-colors";
 
 /** One consistent tab bar across the stats + game history area. */
-export function StatsTabs({ shotCharts }: { shotCharts?: "team" | "players" }) {
+export function StatsTabs() {
   return (
-    <Panel className="mb-3 flex flex-wrap items-center gap-2">
+    <Panel className="mb-3 flex flex-wrap items-center justify-center gap-2">
       {TABS.map((t) => (
         <Link
           key={t.to}
@@ -30,13 +29,6 @@ export function StatsTabs({ shotCharts }: { shotCharts?: "team" | "players" }) {
           {t.label}
         </Link>
       ))}
-      <Link
-        to={shotCharts === "players" ? "/stats/players" : "/stats/team"}
-        hash="shot-charts"
-        className={cn(base, "border-border bg-surface-2/70 text-foreground")}
-      >
-        Shot Charts
-      </Link>
     </Panel>
   );
 }

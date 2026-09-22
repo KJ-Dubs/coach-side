@@ -56,7 +56,7 @@ function StatsOverview() {
   const recent = [...games].slice(0, 5);
 
   return (
-    <AppShell title="Stats" subtitle={team ? `${team.name} · ${team.season}` : "Season reporting"}>
+    <AppShell title="Team Stats" subtitle={team ? `${team.name} · ${team.season}` : "Season reporting"}>
       <StatsTabs />
 
       {teams.length > 1 ? (

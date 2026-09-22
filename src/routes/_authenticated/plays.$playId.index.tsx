@@ -9,10 +9,12 @@ import {
   defaultBranchSelection,
   findChainConflicts,
   findPassWarnings,
+  inferPassReceiver,
   listOptionGroups,
   nearestTokenAt,
   resolveLegacyActors,
   sampleTimeline,
+  scorePassReceivers,
   stateAtSequenceStart,
   type BranchSelection,
 } from "@/lib/playAnimation";
@@ -55,6 +57,8 @@ export const Route = createFileRoute("/_authenticated/plays/$playId/")({
         property: "og:description",
         content: "Place players and draw passes, cuts and screens frame by frame.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: PlayDesignerPage,
@@ -136,8 +140,6 @@ function PlayDesignerPage() {
   const [index, setIndex] = useState<PlayIndex>(EMPTY_INDEX);
   /** Which option branch is shown for each decision point. */
   const [branch, setBranch] = useState<BranchSelection>({});
-  /** A drawn pass waiting for the coach to say who receives it. */
-  const [pendingPass, setPendingPass] = useState<{ action: PlayAction; seq: number } | null>(null);
   /** A new outcome that clashes with an outcome already in this sequence. */
   const [pendingOption, setPendingOption] = useState<{
     action: PlayAction;
@@ -390,12 +392,26 @@ function PlayDesignerPage() {
         return;
       }
       if (tool === "pass") {
-        // A pass can be thrown to a player OR to the spot a cutter is running to.
-        // The coach says who receives it; CoachSide never guesses from geometry.
-        setPendingPass({
-          action: { id: uuid(), type: tool, seq: seqNumber, points: pts, actor: actorId },
+        const base: PlayAction = {
+          id: uuid(),
+          type: tool,
           seq: seqNumber,
-        });
+          points: pts,
+          actor: actorId,
+        };
+        const receiver = inferPassReceiver(
+          projected.tokens,
+          frame.actions.filter((action) => action.seq === seqNumber),
+          base,
+        );
+        addAction(
+          receiver
+            ? { ...base, target: receiver.id, transfersBall: true, passTo: "receiver" }
+            : { ...base, transfersBall: false, passTo: "space" },
+          seqNumber,
+        );
+        if (receiver) toast.success(`Pass linked to #${receiver.label}`, { duration: 1800 });
+        else toast.info("Pass saved to open space. Possession stays with the passer.", { duration: 3000 });
         return;
       }
       addAction(
@@ -405,36 +421,35 @@ function PlayDesignerPage() {
     }
   };
 
-  /** Where each offense player ends up in the sequence being drawn. */
-  const receiverChoices = useMemo(() => {
-    const pass = pendingPass;
-    if (!pass) return [];
-    const end = pass.action.points[pass.action.points.length - 1];
-    if (!end) return [];
-    const ends = new Map<string, { x: number; y: number }>();
-    for (const t of projected.tokens) ends.set(t.id, { x: t.x, y: t.y });
-    for (const a of frame?.actions ?? []) {
-      if (a.seq !== pass.seq || BALL_ACTIONS.has(a.type) || !a.actor) continue;
-      const last = a.points[a.points.length - 1];
-      if (last) ends.set(a.actor, { x: last.x, y: last.y });
-    }
-    return projected.tokens
-      .filter((t) => (t.team ?? "offense") === "offense" && t.id !== pass.action.actor)
-      .map((t) => {
-        const e = ends.get(t.id) ?? { x: t.x, y: t.y };
-        return { id: t.id, label: t.label, dist: Math.hypot(e.x - end.x, e.y - end.y) };
-      })
-      .sort((a, b) => a.dist - b.dist);
-  }, [pendingPass, projected.tokens, frame?.actions]);
+  const selectedPass = useMemo(
+    () => frame?.actions.find((action) => action.id === selectedActionId && action.type === "pass") ?? null,
+    [frame?.actions, selectedActionId],
+  );
+  const selectedPassChoices = useMemo(
+    () =>
+      selectedPass
+        ? scorePassReceivers(
+            projected.tokens,
+            (frame?.actions ?? []).filter((action) => action.seq === selectedPass.seq),
+            selectedPass,
+          )
+        : [],
+    [selectedPass, projected.tokens, frame?.actions],
+  );
 
-  const commitPass = (receiverId: string | null) => {
-    const pass = pendingPass;
-    if (!pass) return;
-    setPendingPass(null);
-    const action: PlayAction = receiverId
-      ? { ...pass.action, target: receiverId, transfersBall: true, passTo: "receiver" }
-      : { ...pass.action, passTo: "space" };
-    addAction(action, pass.seq);
+  const retargetPass = (receiverId: string | null) => {
+    if (!selectedPass) return;
+    patchFrame((currentFrame) => ({
+      ...currentFrame,
+      actions: currentFrame.actions.map((action) => {
+        if (action.id !== selectedPass.id) return action;
+        if (receiverId) {
+          return { ...action, target: receiverId, transfersBall: true, passTo: "receiver" };
+        }
+        const { target: _target, ...withoutTarget } = action;
+        return { ...withoutTarget, transfersBall: false, passTo: "space" };
+      }),
+    }));
   };
 
   /** Keep both outcomes as labelled options from the same shared state. */
@@ -659,31 +674,35 @@ function PlayDesignerPage() {
             onCourtPointerMove={onMove}
             onCourtPointerUp={onUp}
           />
-          {pendingPass ? (
-            <Panel className="flex flex-col gap-3">
-              <Label>Who receives this pass?</Label>
+          {selectedPass ? (
+            <Panel className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Label>Selected pass</Label>
+                <Pill tone={selectedPass.passTo === "space" ? "muted" : "grape"}>
+                  {selectedPass.passTo === "space"
+                    ? "Open space · no possession change"
+                    : `Receiver #${liveTokens.find((token) => token.id === selectedPass.target)?.label ?? "?"}`}
+                </Pill>
+              </div>
               <div className="flex flex-wrap gap-2">
-                {receiverChoices.map((r, i) => (
+                {selectedPassChoices.map((receiver) => (
                   <BubbleButton
-                    key={r.id}
+                    key={receiver.id}
                     size="sm"
-                    tone={i === 0 ? "flame" : "neutral"}
-                    onClick={() => commitPass(r.id)}
+                    tone={selectedPass.target === receiver.id ? "flame" : "neutral"}
+                    onClick={() => retargetPass(receiver.id)}
                   >
-                    {`#${r.label}`}
+                    #{receiver.label}
                   </BubbleButton>
                 ))}
-                <BubbleButton size="sm" tone="grape" onClick={() => commitPass(null)}>
-                  Open space · option only
-                </BubbleButton>
-                <BubbleButton size="sm" tone="ghost" onClick={() => setPendingPass(null)}>
-                  Cancel
+                <BubbleButton
+                  size="sm"
+                  tone={selectedPass.passTo === "space" ? "grape" : "ghost"}
+                  onClick={() => retargetPass(null)}
+                >
+                  Open space
                 </BubbleButton>
               </div>
-              <Pill tone="muted">
-                Pick the player who ends up at the ball. A lead pass to a cutter keeps the spot you
-                drew. Open space keeps the ball with the passer.
-              </Pill>
             </Panel>
           ) : null}
           {pendingOption ? (
