@@ -73,8 +73,13 @@ export function PlayPresenter({
   loading?: boolean;
   className?: string;
 }) {
-  const model = useMemo(() => normalizePlayForPlayback(play, frames), [play, frames]);
+  const [branch, setBranch] = useState<BranchSelection>({});
+  const model = useMemo(
+    () => normalizePlayForPlayback(play, frames, branch),
+    [play, frames, branch],
+  );
   const total = model.steps.length;
+
 
   const [idx, setIdx] = useState(0);
   const [phase, setPhase] = useState<"show" | "do">("show");
