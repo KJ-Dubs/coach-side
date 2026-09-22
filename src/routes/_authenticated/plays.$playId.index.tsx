@@ -545,8 +545,13 @@ function PlayDesignerPage() {
   const activeActions = frame?.actions.filter((a) => a.seq === seqNumber) ?? [];
   const sequenceInvalid =
     activeActions.some(
-      (a) => !a.actor || ((a.type === "pass" || a.type === "handoff") && !a.target),
+      (a) =>
+        !a.actor ||
+        (a.type === "handoff" && !a.target) ||
+        (a.type === "pass" && !a.target && a.passTo !== "space"),
     ) || findChainConflicts(frame).some((c) => c.seq === seqNumber);
+  const activeWarnings = passWarnings.filter((w) => w.seq === seqNumber);
+
 
   const setTokens = (tokens: PlayToken[]) => patchFrame((f) => ({ ...f, tokens }));
 
