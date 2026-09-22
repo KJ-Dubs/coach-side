@@ -135,6 +135,22 @@ export async function dispatchNotification(input: DispatchInput): Promise<Dispat
   result.recipients = eligible.length;
   if (!eligible.length) return result;
 
+  // ---------- duplicate guard ----------
+  // Anyone already told about this exact event drops out before anything sends.
+  if (input.dedupeKey) {
+    const { data: already } = await db
+      .from("notifications")
+      .select("user_id")
+      .eq("dedupe_key", input.dedupeKey)
+      .in("user_id", eligible);
+    const told = new Set(((already ?? []) as { user_id: string }[]).map((r) => r.user_id));
+    for (let i = eligible.length - 1; i >= 0; i--) {
+      if (told.has(eligible[i]!)) eligible.splice(i, 1);
+    }
+    result.recipients = eligible.length;
+    if (!eligible.length) return result;
+  }
+
   // ---------- in-app ----------
   const notificationIdByUser = new Map<string, string>();
   if (channels.includes("inapp")) {
@@ -152,25 +168,13 @@ export async function dispatchNotification(input: DispatchInput): Promise<Dispat
       dedupe_key: input.dedupeKey ?? null,
       sent_at: new Date().toISOString(),
     }));
-    const { data } = await db
-      .from("notifications")
-      .upsert(rows, { onConflict: "user_id,dedupe_key", ignoreDuplicates: true })
-      .select("id, user_id");
+    const { data } = await db.from("notifications").insert(rows).select("id, user_id");
     for (const r of (data ?? []) as { id: string; user_id: string }[]) {
       notificationIdByUser.set(r.user_id, r.id);
     }
     result.inapp = notificationIdByUser.size;
-
-    // A dedupe collision means this person was already told; skip them entirely.
-    if (input.dedupeKey) {
-      const delivered = new Set(notificationIdByUser.keys());
-      for (let i = eligible.length - 1; i >= 0; i--) {
-        if (!delivered.has(eligible[i]!)) eligible.splice(i, 1);
-      }
-      result.recipients = eligible.length;
-      if (!eligible.length) return result;
-    }
   }
+
 
   const deliveries: Record<string, unknown>[] = [];
 
