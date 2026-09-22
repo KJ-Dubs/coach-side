@@ -322,6 +322,13 @@ export async function createPlay(input: {
   category: string;
   attack_basket?: "left" | "right";
   team_ids?: string[];
+  /** Coaching index answers captured before the first save. */
+  situation?: string | null;
+  defense_faced?: string | null;
+  outcome?: string | null;
+  primary_actions?: string[];
+  time_pressure?: string | null;
+  tags?: string[];
 }): Promise<Play> {
   const { team_ids, ...row } = input;
   const { data: auth } = await supabase.auth.getUser();

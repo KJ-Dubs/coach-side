@@ -18,7 +18,9 @@ import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Label, Note, Panel, Pill } from "@/components/Bubbles";
 import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
-import type { CourtZoom } from "@/components/court/Court";
+import { fitZoom, outsideCount, type CourtZoom } from "@/components/court/Court";
+import { PlayIndexSheet } from "@/components/PlayIndexSheet";
+import { EMPTY_INDEX, suggestFromFrames, type PlayIndex } from "@/lib/playIndex";
 import { fetchFrames, fetchPlay, saveFrames, updatePlay } from "@/lib/data";
 import { useMe } from "@/lib/useMe";
 import { fetchCoachLabel, isPlayOwner } from "@/lib/playOwnership";
@@ -126,6 +128,7 @@ function PlayDesignerPage() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Offense");
   const [saving, setSaving] = useState(false);
+  const [index, setIndex] = useState<PlayIndex>(EMPTY_INDEX);
 
   useEffect(() => {
     if (framesQ.data) {
@@ -142,6 +145,14 @@ function PlayDesignerPage() {
       setName(play.data.name);
       setCategory(normalizeCategory(play.data.category));
       setFlip(play.data.attack_basket === "left");
+      setIndex({
+        situation: play.data.situation ?? null,
+        defense_faced: play.data.defense_faced ?? null,
+        outcome: play.data.outcome ?? null,
+        primary_actions: play.data.primary_actions ?? [],
+        time_pressure: play.data.time_pressure ?? null,
+        tags: play.data.tags ?? [],
+      });
     }
   }, [play.data]);
 
@@ -373,7 +384,18 @@ function PlayDesignerPage() {
     try {
 
       await saveFrames(playId, frames);
-      await updatePlay(playId, { name, category, attack_basket: flip ? "left" : "right" });
+      await updatePlay(playId, {
+        name,
+        category,
+        attack_basket: flip ? "left" : "right",
+        situation: index.situation,
+        defense_faced: index.defense_faced,
+        outcome: index.outcome,
+        primary_actions: index.primary_actions,
+        time_pressure: index.time_pressure,
+        tags: index.tags,
+        indexed_at: index.situation ? new Date().toISOString() : null,
+      } as Partial<typeof play.data & object>);
       toast.success("Play saved");
     } catch (e) {
       toast.error((e as Error).message);
@@ -383,6 +405,7 @@ function PlayDesignerPage() {
   };
 
   const hasDefense = (frame?.tokens ?? []).some((t) => t.team === "defense");
+  const offView = outsideCount(zoom, frame?.tokens ?? []);
   const activeActions = frame?.actions.filter((a) => a.seq === seqNumber) ?? [];
   const sequenceInvalid =
     activeActions.some(
@@ -547,6 +570,14 @@ function PlayDesignerPage() {
                   {label}
                 </BubbleButton>
               ))}
+              {offView > 0 ? (
+                <>
+                  <Pill tone="flame">{offView} off this view</Pill>
+                  <BubbleButton size="sm" tone="grape" onClick={() => chooseZoom(fitZoom(frame?.tokens ?? []))}>
+                    Fit players
+                  </BubbleButton>
+                </>
+              ) : null}
             </div>
             <BubbleButton
               tone="flame"
@@ -636,6 +667,9 @@ function PlayDesignerPage() {
         </div>
 
         <div className="flex flex-col gap-3">
+          {canEdit ? (
+            <PlayIndexSheet value={index} onChange={setIndex} suggestions={suggestFromFrames(frames, flip ? "left" : "right")} compact />
+          ) : null}
           <Panel className="flex flex-col gap-2">
             <Label>Press Maker · Two Teams</Label>
             <div className="flex flex-wrap gap-2">

@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { SocialCTA } from "@/components/SocialCTA";
 import {
   BarChart3,
   CalendarDays,
@@ -287,6 +288,10 @@ export function Landing() {
           </div>
         </Panel>
       </main>
+
+      <div className="mx-auto w-full max-w-6xl px-3">
+        <SocialCTA />
+      </div>
 
       <footer className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2 px-3 pb-6">
         <span className="inline-flex items-center gap-2 rounded-2xl border border-border/70 bg-surface-2/70 px-3 py-2">
