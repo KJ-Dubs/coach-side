@@ -674,6 +674,219 @@ export type Database = {
           },
         ]
       }
+      drill_frames: {
+        Row: {
+          actions: Json
+          created_at: string
+          drill_id: string
+          id: string
+          idx: number
+          note: string | null
+          objects: Json
+          tokens: Json
+        }
+        Insert: {
+          actions?: Json
+          created_at?: string
+          drill_id: string
+          id?: string
+          idx: number
+          note?: string | null
+          objects?: Json
+          tokens?: Json
+        }
+        Update: {
+          actions?: Json
+          created_at?: string
+          drill_id?: string
+          id?: string
+          idx?: number
+          note?: string | null
+          objects?: Json
+          tokens?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drill_frames_drill_id_fkey"
+            columns: ["drill_id"]
+            isOneToOne: false
+            referencedRelation: "drills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drill_hearts: {
+        Row: {
+          created_at: string
+          drill_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          drill_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          drill_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drill_hearts_drill_id_fkey"
+            columns: ["drill_id"]
+            isOneToOne: false
+            referencedRelation: "drills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drill_team_assignments: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          drill_id: string
+          id: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          drill_id: string
+          id?: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          drill_id?: string
+          id?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drill_team_assignments_drill_id_fkey"
+            columns: ["drill_id"]
+            isOneToOne: false
+            referencedRelation: "drills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drill_team_assignments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drills: {
+        Row: {
+          category: string
+          coaching_points: string | null
+          copied_at: string | null
+          court_orientation: string
+          created_at: string
+          created_by: string | null
+          creator_username: string | null
+          difficulty: string
+          duration_minutes: number
+          equipment: string[]
+          group_size: string
+          hearts: number
+          id: string
+          instructions: string
+          library_author_name: string | null
+          name: string
+          published_at: string | null
+          published_to_library: boolean
+          repetitions: string | null
+          root_drill_id: string | null
+          scoring_rules: string | null
+          skill_focus: string[]
+          source_creator_id: string | null
+          source_drill_id: string | null
+          style: string
+          tags: string[]
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          coaching_points?: string | null
+          copied_at?: string | null
+          court_orientation?: string
+          created_at?: string
+          created_by?: string | null
+          creator_username?: string | null
+          difficulty?: string
+          duration_minutes?: number
+          equipment?: string[]
+          group_size?: string
+          hearts?: number
+          id?: string
+          instructions?: string
+          library_author_name?: string | null
+          name: string
+          published_at?: string | null
+          published_to_library?: boolean
+          repetitions?: string | null
+          root_drill_id?: string | null
+          scoring_rules?: string | null
+          skill_focus?: string[]
+          source_creator_id?: string | null
+          source_drill_id?: string | null
+          style?: string
+          tags?: string[]
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          coaching_points?: string | null
+          copied_at?: string | null
+          court_orientation?: string
+          created_at?: string
+          created_by?: string | null
+          creator_username?: string | null
+          difficulty?: string
+          duration_minutes?: number
+          equipment?: string[]
+          group_size?: string
+          hearts?: number
+          id?: string
+          instructions?: string
+          library_author_name?: string | null
+          name?: string
+          published_at?: string | null
+          published_to_library?: boolean
+          repetitions?: string | null
+          root_drill_id?: string | null
+          scoring_rules?: string | null
+          skill_focus?: string[]
+          source_creator_id?: string | null
+          source_drill_id?: string | null
+          style?: string
+          tags?: string[]
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drills_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_reminders: {
         Row: {
           created_at: string
@@ -1609,20 +1822,27 @@ export type Database = {
           copied_at: string | null
           created_at: string
           created_by: string | null
+          defense_faced: string | null
           id: string
+          indexed_at: string | null
           is_shared: boolean
           library_author_name: string | null
           library_version: number
           name: string
+          outcome: string | null
+          primary_actions: string[]
           publish_anonymous: boolean
           published_at: string | null
           published_by: string | null
           published_to_library: boolean
           root_play_id: string | null
           share_token: string | null
+          situation: string | null
           source_creator_id: string | null
           source_play_id: string | null
+          tags: string[]
           team_id: string | null
+          time_pressure: string | null
         }
         Insert: {
           attack_basket?: string
@@ -1630,20 +1850,27 @@ export type Database = {
           copied_at?: string | null
           created_at?: string
           created_by?: string | null
+          defense_faced?: string | null
           id?: string
+          indexed_at?: string | null
           is_shared?: boolean
           library_author_name?: string | null
           library_version?: number
           name: string
+          outcome?: string | null
+          primary_actions?: string[]
           publish_anonymous?: boolean
           published_at?: string | null
           published_by?: string | null
           published_to_library?: boolean
           root_play_id?: string | null
           share_token?: string | null
+          situation?: string | null
           source_creator_id?: string | null
           source_play_id?: string | null
+          tags?: string[]
           team_id?: string | null
+          time_pressure?: string | null
         }
         Update: {
           attack_basket?: string
@@ -1651,20 +1878,27 @@ export type Database = {
           copied_at?: string | null
           created_at?: string
           created_by?: string | null
+          defense_faced?: string | null
           id?: string
+          indexed_at?: string | null
           is_shared?: boolean
           library_author_name?: string | null
           library_version?: number
           name?: string
+          outcome?: string | null
+          primary_actions?: string[]
           publish_anonymous?: boolean
           published_at?: string | null
           published_by?: string | null
           published_to_library?: boolean
           root_play_id?: string | null
           share_token?: string | null
+          situation?: string | null
           source_creator_id?: string | null
           source_play_id?: string | null
+          tags?: string[]
           team_id?: string | null
+          time_pressure?: string | null
         }
         Relationships: [
           {
@@ -1683,6 +1917,106 @@ export type Database = {
           },
           {
             foreignKeyName: "plays_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_plan_blocks: {
+        Row: {
+          block_type: string
+          completed: boolean
+          created_at: string
+          id: string
+          idx: number
+          minutes: number
+          notes: string | null
+          plan_id: string
+          ref_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          block_type?: string
+          completed?: boolean
+          created_at?: string
+          id?: string
+          idx?: number
+          minutes?: number
+          notes?: string | null
+          plan_id: string
+          ref_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          block_type?: string
+          completed?: boolean
+          created_at?: string
+          id?: string
+          idx?: number
+          minutes?: number
+          notes?: string | null
+          plan_id?: string
+          ref_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_plan_blocks_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "practice_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_plans: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          plan_date: string
+          shared_to_locker: boolean
+          start_time: string | null
+          team_id: string
+          title: string
+          total_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          plan_date?: string
+          shared_to_locker?: boolean
+          start_time?: string | null
+          team_id: string
+          title?: string
+          total_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          plan_date?: string
+          shared_to_locker?: boolean
+          start_time?: string | null
+          team_id?: string
+          title?: string
+          total_minutes?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_plans_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
@@ -2267,6 +2601,10 @@ export type Database = {
       }
       can_post_conversation: { Args: { _conv: string }; Returns: boolean }
       can_read_conversation: { Args: { _conv: string }; Returns: boolean }
+      copy_drill_for_me: {
+        Args: { _drill: string; _name?: string }
+        Returns: string
+      }
       copy_play_for_me: {
         Args: { _name?: string; _play: string; _team_ids?: string[] }
         Returns: string
@@ -2282,6 +2620,9 @@ export type Database = {
           username: string
         }[]
       }
+      drill_owned: { Args: { _drill: string }; Returns: boolean }
+      drill_published: { Args: { _drill: string }; Returns: boolean }
+      drill_visible: { Args: { _drill: string }; Returns: boolean }
       ensure_direct_conversation: {
         Args: { _other: string; _team: string }
         Returns: string
@@ -2336,14 +2677,20 @@ export type Database = {
           author_label: string
           category: string
           creator_username: string
+          defense_faced: string
           featured: boolean
           hearts: number
           hearts_recent: number
           id: string
           library_version: number
           name: string
+          outcome: string
+          primary_actions: string[]
           published_at: string
           share_token: string
+          situation: string
+          tags: string[]
+          time_pressure: string
         }[]
       }
       my_access: { Args: never; Returns: Json }
@@ -2355,6 +2702,7 @@ export type Database = {
           username: string
         }[]
       }
+      my_hearted_drills: { Args: never; Returns: string[] }
       my_hearted_plays: { Args: never; Returns: string[] }
       my_org_id: { Args: never; Returns: string }
       my_role: {
@@ -2368,6 +2716,8 @@ export type Database = {
       play_owned: { Args: { _play: string }; Returns: boolean }
       play_published: { Args: { _play: string }; Returns: boolean }
       play_visible: { Args: { _play: string }; Returns: boolean }
+      practice_plan_coach: { Args: { _plan: string }; Returns: boolean }
+      practice_plan_visible: { Args: { _plan: string }; Returns: boolean }
       public_play_frames: {
         Args: { _play: string }
         Returns: {
@@ -2420,6 +2770,7 @@ export type Database = {
       team_member_stored_user: { Args: { _id: string }; Returns: string }
       team_modules: { Args: { _team: string }; Returns: string[] }
       team_visible: { Args: { _team: string }; Returns: boolean }
+      toggle_drill_heart: { Args: { _drill: string }; Returns: boolean }
       toggle_play_heart: { Args: { _play: string }; Returns: boolean }
     }
     Enums: {

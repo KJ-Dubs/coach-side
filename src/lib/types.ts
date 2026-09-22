@@ -154,6 +154,14 @@ export type Play = {
   root_play_id?: string | null;
   source_creator_id?: string | null;
   copied_at?: string | null;
+  /** Coaching index: what this play is for, so it can be found again. */
+  situation?: string | null;
+  defense_faced?: string | null;
+  outcome?: string | null;
+  primary_actions?: string[];
+  time_pressure?: string | null;
+  tags?: string[];
+  indexed_at?: string | null;
 };
 
 

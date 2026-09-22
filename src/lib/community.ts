@@ -23,6 +23,12 @@ export type LibraryPlay = {
   hearts: number;
   hearts_recent: number;
   featured: boolean;
+  situation: string | null;
+  defense_faced: string | null;
+  outcome: string | null;
+  primary_actions: string[];
+  time_pressure: string | null;
+  tags: string[];
 };
 
 export type LibrarySort = "featured" | "trending" | "top" | "new";
@@ -48,6 +54,12 @@ function row(r: Record<string, unknown>): LibraryPlay {
     hearts: Number(r["hearts"] ?? 0),
     hearts_recent: Number(r["hearts_recent"] ?? 0),
     featured: !!r["featured"],
+    situation: (r["situation"] as string | null) ?? null,
+    defense_faced: (r["defense_faced"] as string | null) ?? null,
+    outcome: (r["outcome"] as string | null) ?? null,
+    primary_actions: (r["primary_actions"] as string[] | null) ?? [],
+    time_pressure: (r["time_pressure"] as string | null) ?? null,
+    tags: (r["tags"] as string[] | null) ?? [],
   };
 }
 

@@ -43,6 +43,32 @@ export function zoomBox(zoom: CourtZoom) {
   return { x: 0, w: 1 };
 }
 
+/** Is this normalized court point inside the visible camera slice? */
+export function inZoom(zoom: CourtZoom, p: { x: number; y: number }) {
+  const b = zoomBox(zoom);
+  return p.x >= b.x - 0.02 && p.x <= b.x + b.w + 0.02;
+}
+
+/** How many of these players sit outside the current camera. */
+export function outsideCount(zoom: CourtZoom, pts: { x: number; y: number }[]) {
+  return pts.filter((p) => !inZoom(zoom, p)).length;
+}
+
+/**
+ * Smallest camera that still shows every given player. Player positions are
+ * never changed — only the camera moves.
+ */
+export function fitZoom(pts: { x: number; y: number }[], preferred: CourtZoom = "right"): CourtZoom {
+  if (!pts.length) return preferred;
+  const order: CourtZoom[] = [preferred, "right", "left", "top", "bottom", "full"];
+  for (const z of order) {
+    if (outsideCount(z, pts) === 0) return z;
+  }
+  return "full";
+}
+
+
+
 /** Full-court normalized point -> position inside the visible court box (0..1). */
 export function toLocal(zoom: CourtZoom, p: { x: number; y: number }) {
   if (zoom === "top") return { x: 1 - p.y, y: p.x * 2 };

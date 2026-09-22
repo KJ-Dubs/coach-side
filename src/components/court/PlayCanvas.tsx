@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Court, type CourtZoom } from "./Court";
 import { withVisualOffsets } from "@/lib/playAnimation";
 import type { PlayAction, PlayFrame, PlayToken } from "@/lib/types";
@@ -179,6 +180,7 @@ export function PlayCanvas({
   activeSeq,
   focusTokenId,
   selectedActionId,
+  extras,
 }: {
   frame: PlayFrame | undefined;
   flip?: boolean | undefined;
@@ -198,6 +200,8 @@ export function PlayCanvas({
   focusTokenId?: string | undefined;
   /** Editor identity chip: shows "5 • Cut • Seq 6" for the selected action. */
   selectedActionId?: string | undefined;
+  /** Extra SVG drawn under the actions (drill equipment: cones, chairs, spots). */
+  extras?: ReactNode | undefined;
 }) {
   const shownTokens = withVisualOffsets(tokens ?? frame?.tokens ?? []);
   const shownActions = actions ?? frame?.actions ?? [];
@@ -228,6 +232,7 @@ export function PlayCanvas({
       onCourtPointerMove={onCourtPointerMove}
       onCourtPointerUp={onCourtPointerUp}
     >
+      {extras}
       {shownActions.map((a) => (
         <ActionShape
           key={a.id}
