@@ -101,6 +101,20 @@ function ActionShape({ a, flip, dim, vertical }: { a: PlayAction; flip: boolean;
       >
         {a.seq}
       </text>
+      {a.option ? (
+        <text
+          x={mid.x}
+          y={mid.y + 34}
+          transform={vertical ? `rotate(-90 ${mid.x} ${mid.y})` : undefined}
+          textAnchor="middle"
+          fontSize={15}
+          fontWeight={900}
+          fill="var(--flame)"
+        >
+          {a.option.label}
+        </text>
+      ) : null}
+
     </g>
   );
 }
