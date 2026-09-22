@@ -655,8 +655,20 @@ export async function createTeamEvent(input: NewTeamEvent): Promise<TeamEvent> {
   };
   const { data, error } = await supabase.from("team_events").insert(row).select("*").single();
   if (error) throw error;
-  return data as unknown as TeamEvent;
+  const created = data as unknown as TeamEvent;
+  alertTeam({
+    teamId: created.team_id,
+    kind: created.event_type === "game" ? "game" : "schedule",
+    title: `New on the schedule: ${created.title}`,
+    body: `${new Date(created.starts_at).toLocaleString()}${created.location ? ` · ${created.location}` : ""}`,
+    link: "/calendar",
+    relatedId: created.id,
+  });
+  return created;
 }
+
+/** Only a real change to when/where/whether it happens is worth an alert. */
+const SCHEDULE_FIELDS = ["starts_at", "ends_at", "location", "status", "arrival_at"] as const;
 
 export async function updateTeamEvent(id: string, patch: Partial<TeamEvent>) {
   const next = { ...patch, last_modified_at: new Date().toISOString() };
@@ -664,14 +676,53 @@ export async function updateTeamEvent(id: string, patch: Partial<TeamEvent>) {
     next.kind =
       patch.event_type === "game" || patch.event_type === "practice" ? patch.event_type : "event";
   }
+  const { data: before } = await supabase
+    .from("team_events")
+    .select("team_id, title, starts_at, ends_at, location, status, arrival_at, event_type")
+    .eq("id", id)
+    .maybeSingle();
   const { error } = await supabase.from("team_events").update(next as never).eq("id", id);
   if (error) throw error;
+
+  const prev = before as unknown as TeamEvent | null;
+  if (!prev) return;
+  const meaningful = SCHEDULE_FIELDS.some(
+    (f) => patch[f] !== undefined && patch[f] !== prev[f],
+  );
+  if (!meaningful) return;
+  const when = new Date((patch.starts_at ?? prev.starts_at) as string).toLocaleString();
+  alertTeam({
+    teamId: prev.team_id,
+    kind: "schedule",
+    title: `Schedule change: ${patch.title ?? prev.title}`,
+    body:
+      (patch.status ?? prev.status) === "cancelled"
+        ? "This has been cancelled."
+        : `Now ${when}${patch.location ?? prev.location ? ` · ${patch.location ?? prev.location}` : ""}`,
+    link: "/calendar",
+  });
 }
 
 export async function deleteTeamEvent(id: string) {
+  const { data: before } = await supabase
+    .from("team_events")
+    .select("team_id, title")
+    .eq("id", id)
+    .maybeSingle();
   const { error } = await supabase.from("team_events").delete().eq("id", id);
   if (error) throw error;
+  const prev = before as unknown as { team_id: string; title: string } | null;
+  if (prev) {
+    alertTeam({
+      teamId: prev.team_id,
+      kind: "schedule",
+      title: `Removed from the schedule: ${prev.title}`,
+      body: "Check the CoachSide calendar for the latest schedule.",
+      link: "/calendar",
+    });
+  }
 }
+
 
 /* ---------------- reminders ---------------- */
 
