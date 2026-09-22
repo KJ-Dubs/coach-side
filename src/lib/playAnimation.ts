@@ -481,10 +481,50 @@ export function sampleStep(step: PlayStep, phase: PlayPhase, progress: number): 
 
 export type Timeline = { steps: PlayStep[]; totalMs: number };
 
-export function buildTimeline(frame: PlayFrame | undefined): Timeline {
-  const steps = buildSteps(frame);
+export function buildTimeline(frame: PlayFrame | undefined, selection?: BranchSelection): Timeline {
+  const steps = buildSteps(frame, selection);
   return { steps, totalMs: steps.length * (SHOW_MS + DO_MS) };
 }
+
+/* ------------------------------------------------------------------ */
+/* lead pass validation                                                */
+/* ------------------------------------------------------------------ */
+
+export type PassWarning = { actionId: string; seq: number; message: string };
+
+/** How far a pass endpoint may sit from where the receiver ends up. */
+export const PASS_REACH = 0.09;
+
+/**
+ * A lead pass must actually reach the receiver. This never rewrites the play;
+ * it only tells the coach the geometry does not meet.
+ */
+export function findPassWarnings(
+  frame: PlayFrame | undefined,
+  selection?: BranchSelection,
+): PassWarning[] {
+  if (!frame) return [];
+  const out: PassWarning[] = [];
+  for (const step of buildSteps(frame, selection)) {
+    for (const a of step.actions) {
+      if (a.type !== "pass" || a.passTo === "space" || !a.targetId) continue;
+      const end = a.points[a.points.length - 1];
+      const receiver = step.endTokens.find((t) => t.id === a.targetId);
+      if (!end || !receiver) continue;
+      const d = Math.hypot(end.x - receiver.x, end.y - receiver.y);
+      if (d > PASS_REACH) {
+        const label = step.startTokens.find((t) => t.id === a.targetId)?.label ?? "?";
+        out.push({
+          actionId: a.id,
+          seq: step.seq,
+          message: `The pass in sequence ${step.seq} does not reach #${label}. Move the pass end point or pick a different receiver.`,
+        });
+      }
+    }
+  }
+  return out;
+}
+
 
 /** Sample the whole frame timeline at an absolute time in ms. */
 export function sampleTimeline(tl: Timeline, ms: number) {
