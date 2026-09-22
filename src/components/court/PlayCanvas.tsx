@@ -232,6 +232,7 @@ export function PlayCanvas({
       onCourtPointerMove={onCourtPointerMove}
       onCourtPointerUp={onCourtPointerUp}
     >
+      {extras}
       {shownActions.map((a) => (
         <ActionShape
           key={a.id}
