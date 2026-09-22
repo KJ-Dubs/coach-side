@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { NotificationPrefsPanel } from "@/components/NotificationPrefsPanel";
+import { EnablePushCard } from "@/components/EnablePushCard";
 import { PublicProfilePanel } from "@/components/community/PublicProfilePanel";
 import {
   BubbleButton,
@@ -174,6 +175,10 @@ function ProfilePage() {
         )}
 
         {isPlayer ? null : <PublicProfilePanel />}
+
+        <div className="lg:col-span-2">
+          <EnablePushCard />
+        </div>
 
         <div className="lg:col-span-2">
           <NotificationPrefsPanel />
