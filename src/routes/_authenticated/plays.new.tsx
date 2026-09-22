@@ -199,6 +199,8 @@ function CreatePlayPage() {
             </div>
           </Field>
 
+          <PlayIndexSheet value={index} onChange={setIndex} compact />
+
           <PrimaryCTA>
             <BubbleButton
               tone="flame"
