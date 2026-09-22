@@ -95,7 +95,7 @@ export function PlayPresenter({
     setPhase("show");
     setProgress(0);
     setPlaying(false);
-  }, [total, model.name]);
+  }, [total, model.name, branch]);
 
   useEffect(() => {
     if (!playing || total === 0) return;
