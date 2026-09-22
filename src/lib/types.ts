@@ -126,8 +126,17 @@ export type PlayAction = {
   /** Receiving token for passes and handoffs. */
   target?: string;
   transfersBall?: boolean;
+  /**
+   * Where a pass is thrown. "receiver" = the drawn end point is a real pass to
+   * `target` (possibly a lead pass to where the receiver will be).
+   * "space" = teaching option only; it never changes the canonical ball owner.
+   */
+  passTo?: "receiver" | "space";
+  /** Branching outcome membership. Actions without this are canonical. */
+  option?: { group: string; key: string; label: string };
   durationMs?: number;
   label?: string;
+
 };
 
 export type Play = {

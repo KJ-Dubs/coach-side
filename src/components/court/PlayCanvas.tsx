@@ -101,6 +101,20 @@ function ActionShape({ a, flip, dim, vertical }: { a: PlayAction; flip: boolean;
       >
         {a.seq}
       </text>
+      {a.option ? (
+        <text
+          x={mid.x}
+          y={mid.y + 34}
+          transform={vertical ? `rotate(-90 ${mid.x} ${mid.y})` : undefined}
+          textAnchor="middle"
+          fontSize={15}
+          fontWeight={900}
+          fill="var(--flame)"
+        >
+          {a.option.label}
+        </text>
+      ) : null}
+
     </g>
   );
 }
@@ -214,8 +228,22 @@ export function PlayCanvas({
     ? shownActions.find((a) => a.id === selectedActionId)
     : undefined;
   const selectedLabel = selected
-    ? `${shownTokens.find((t) => t.id === selected.actor)?.label ?? "?"} • ${ACTION_NAME[selected.type] ?? selected.type} • Seq ${selected.seq}`
+    ? [
+        `${shownTokens.find((t) => t.id === selected.actor)?.label ?? "?"}`,
+        selected.option
+          ? `${selected.option.label} ${ACTION_NAME[selected.type] ?? selected.type}`
+          : (ACTION_NAME[selected.type] ?? selected.type),
+        selected.type === "pass" && selected.passTo === "space"
+          ? "Target area"
+          : selected.target
+            ? `→ ${shownTokens.find((t) => t.id === selected.target)?.label ?? "?"}`
+            : null,
+        `Seq ${selected.seq}`,
+      ]
+        .filter(Boolean)
+        .join(" • ")
     : null;
+
   const ghostPts = Array.isArray(ghost)
     ? ghost
     : ghost

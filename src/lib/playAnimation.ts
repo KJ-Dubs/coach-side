@@ -81,8 +81,12 @@ export function nearestTokenAt(tokens: PlayToken[], p: Point, radius = BIND_RADI
 export function resolveLegacyActors(frame: PlayFrame): PlayFrame {
   if (!frame) return frame;
   const needs = frame.actions.some(
-    (a) => !a.actor || ((a.type === "pass" || a.type === "handoff") && !a.target),
+    (a) =>
+      !a.actor ||
+      ((a.type === "pass" || a.type === "handoff") && !a.target && a.passTo !== "space"),
   );
+
+
   if (!needs) return frame;
 
   const seqs = [...new Set(frame.actions.map((a) => a.seq))].sort((x, y) => x - y);
@@ -107,13 +111,14 @@ export function resolveLegacyActors(frame: PlayFrame): PlayFrame {
             ? nearestTokenId(startTokens, start)
             : null;
       const target =
-        a.type === "pass" || a.type === "handoff"
+        (a.type === "pass" || a.type === "handoff") && a.passTo !== "space"
           ? a.target && startTokens.some((t) => t.id === a.target)
             ? a.target
             : end
               ? nearestTokenId(startTokens, end, "offense")
               : null
           : null;
+
       patched.set(a.id, {
         ...a,
         ...(actor ? { actor } : {}),
@@ -224,10 +229,76 @@ function intrinsicDuration(type: string, len: number) {
   return Math.min(MAX_MOVE_MS, Math.max(MIN_MOVE_MS, ms));
 }
 
+/* ------------------------------------------------------------------ */
+/* option branches                                                     */
+/* ------------------------------------------------------------------ */
+
+export type OptionBranch = { key: string; label: string; actionIds: string[] };
+export type OptionGroup = { group: string; seq: number; branches: OptionBranch[] };
+export type BranchSelection = Record<string, string>;
+
+/** Decision points in a frame, in sequence order. */
+export function listOptionGroups(frame: PlayFrame | undefined): OptionGroup[] {
+  if (!frame) return [];
+  const map = new Map<string, OptionGroup>();
+  for (const a of frame.actions) {
+    const opt = a.option;
+    if (!opt) continue;
+    let g = map.get(opt.group);
+    if (!g) {
+      g = { group: opt.group, seq: a.seq, branches: [] };
+      map.set(opt.group, g);
+    }
+    g.seq = Math.min(g.seq, a.seq);
+    let b = g.branches.find((x) => x.key === opt.key);
+    if (!b) {
+      b = { key: opt.key, label: opt.label || opt.key, actionIds: [] };
+      g.branches.push(b);
+    }
+    b.actionIds.push(a.id);
+  }
+  const out = [...map.values()];
+  for (const g of out) g.branches.sort((a, b) => a.key.localeCompare(b.key));
+  return out.sort((a, b) => a.seq - b.seq || a.group.localeCompare(b.group));
+}
+
+/** First branch of every group, used when the viewer has not chosen one. */
+export function defaultBranchSelection(frame: PlayFrame | undefined): BranchSelection {
+  const out: BranchSelection = {};
+  for (const g of listOptionGroups(frame)) {
+    const first = g.branches[0];
+    if (first) out[g.group] = first.key;
+  }
+  return out;
+}
+
+/**
+ * Collapse branching outcomes to exactly one branch per decision point so the
+ * canonical state stays single-valued. Mutually exclusive options never run
+ * together.
+ */
+export function selectBranches(frame: PlayFrame, selection?: BranchSelection): PlayFrame {
+  const groups = listOptionGroups(frame);
+  if (groups.length === 0) return frame;
+  const chosen: BranchSelection = { ...defaultBranchSelection(frame) };
+  for (const g of groups) {
+    const want = selection?.[g.group];
+    if (want && g.branches.some((b) => b.key === want)) chosen[g.group] = want;
+  }
+  return {
+    ...frame,
+    actions: frame.actions.filter((a) => !a.option || chosen[a.option.group] === a.option.key),
+  };
+}
+
 /** Build the ordered, fully deterministic sequence timeline for a frame. */
-export function buildSteps(frameIn: PlayFrame | undefined): PlayStep[] {
+export function buildSteps(
+  frameIn: PlayFrame | undefined,
+  selection?: BranchSelection,
+): PlayStep[] {
   if (!frameIn) return [];
-  const frame = resolveLegacyActors(frameIn);
+  const frame = selectBranches(resolveLegacyActors(frameIn), selection);
+
   const seqs = [...new Set(frame.actions.map((a) => a.seq))].sort((a, b) => a - b);
   let tokens = frame.tokens.map((t) => ({ ...t }));
   let ball = frame.tokens.find((t) => t.ball)?.id ?? null;
@@ -252,7 +323,7 @@ export function buildSteps(frameIn: PlayFrame | undefined): PlayStep[] {
       if (BALL_ACTIONS.has(a.type)) {
         if (a.type === "shot") {
           if (endBall === actorId) endBall = null;
-        } else {
+        } else if (a.passTo !== "space") {
           const targetId = a.target && startTokens.some((t) => t.id === a.target) ? a.target : null;
           // Possession only moves when the current owner actually passes it.
           if (targetId && startBall === actorId) endBall = targetId;
@@ -268,15 +339,21 @@ export function buildSteps(frameIn: PlayFrame | undefined): PlayStep[] {
       const actorId = a.actor && startTokens.some((t) => t.id === a.actor) ? a.actor : null;
       const targetId =
         (a.type === "pass" || a.type === "handoff") &&
+        a.passTo !== "space" &&
         a.target &&
         startTokens.some((t) => t.id === a.target)
           ? a.target
           : null;
       const base = resolvePath(a);
       const from = tokenPoint(startTokens, actorId);
+      // A pass drawn with an explicit endpoint (lead pass / pass to space) keeps
+      // that absolute destination. Legacy passes still retarget to the receiver.
       const to =
-        a.type === "pass" || a.type === "handoff" ? tokenPoint(endTokens, targetId) : null;
+        a.type === "handoff" || (a.type === "pass" && !a.passTo)
+          ? tokenPoint(endTokens, targetId)
+          : null;
       const points = rebasePath(base, from, to);
+
       const len = pathLength(points);
       return {
         ...a,
@@ -314,8 +391,13 @@ export function buildSteps(frameIn: PlayFrame | undefined): PlayStep[] {
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
 /** Token + ball state at the exact start of a sequence index (0-based). */
-export function stateAtSequenceStart(frame: PlayFrame | undefined, index: number): PlaySample {
-  const steps = buildSteps(frame);
+export function stateAtSequenceStart(
+  frame: PlayFrame | undefined,
+  index: number,
+  selection?: BranchSelection,
+): PlaySample {
+  const steps = buildSteps(frame, selection);
+
   if (steps.length === 0) {
     const tokens = (frame?.tokens ?? []).map((t) => ({ ...t }));
     const owner = tokens.find((t) => t.ball)?.id ?? null;
@@ -363,13 +445,19 @@ export function sampleStep(step: PlayStep, phase: PlayPhase, progress: number): 
   }
 
   // Possession: only a completed transfer by the CURRENT owner changes it.
+  // A pass drawn to open space is a teaching option: the ball never leaves.
   let owner: string | null = step.startBall;
-  let ball: Point | null = tokenPoint(tokens, owner);
-
+  let ball = tokenPoint(tokens, owner);
   const transfer = step.actions.find(
-    (a) => BALL_ACTIONS.has(a.type) && a.actorId && a.actorId === step.startBall,
+    (a) =>
+      BALL_ACTIONS.has(a.type) &&
+      a.actorId &&
+      a.actorId === step.startBall &&
+      a.passTo !== "space" &&
+      (a.type === "shot" || a.targetId),
   );
   if (transfer) {
+
     const local = localOf(transfer);
     if (local <= 0) {
       owner = step.startBall;
@@ -378,24 +466,68 @@ export function sampleStep(step: PlayStep, phase: PlayPhase, progress: number): 
       owner = step.endBall;
       ball = owner ? tokenPoint(tokens, owner) : getPointAlongPath(transfer.points, 1);
     } else {
-      // In flight: nobody owns it.
+      // In flight: nobody owns it. Lead passes fly to their absolute endpoint;
+      // legacy passes keep chasing the receiver they were drawn onto.
       owner = null;
       const from = tokenPoint(tokens, transfer.actorId);
-      const to = transfer.targetId ? tokenPoint(tokens, transfer.targetId) : null;
+      const chase =
+        transfer.type === "handoff" || (transfer.type === "pass" && !transfer.passTo);
+      const to = chase && transfer.targetId ? tokenPoint(tokens, transfer.targetId) : null;
       const live = rebasePath(transfer.points, from, to);
       ball = getPointAlongPath(live, ease(local));
     }
   }
+
 
   return { tokens: tokens.map((t) => ({ ...t, ball: t.id === owner })), ball, ballOwner: owner };
 }
 
 export type Timeline = { steps: PlayStep[]; totalMs: number };
 
-export function buildTimeline(frame: PlayFrame | undefined): Timeline {
-  const steps = buildSteps(frame);
+export function buildTimeline(frame: PlayFrame | undefined, selection?: BranchSelection): Timeline {
+  const steps = buildSteps(frame, selection);
   return { steps, totalMs: steps.length * (SHOW_MS + DO_MS) };
 }
+
+/* ------------------------------------------------------------------ */
+/* lead pass validation                                                */
+/* ------------------------------------------------------------------ */
+
+export type PassWarning = { actionId: string; seq: number; message: string };
+
+/** How far a pass endpoint may sit from where the receiver ends up. */
+export const PASS_REACH = 0.09;
+
+/**
+ * A lead pass must actually reach the receiver. This never rewrites the play;
+ * it only tells the coach the geometry does not meet.
+ */
+export function findPassWarnings(
+  frame: PlayFrame | undefined,
+  selection?: BranchSelection,
+): PassWarning[] {
+  if (!frame) return [];
+  const out: PassWarning[] = [];
+  for (const step of buildSteps(frame, selection)) {
+    for (const a of step.actions) {
+      if (a.type !== "pass" || a.passTo === "space" || !a.targetId) continue;
+      const end = a.points[a.points.length - 1];
+      const receiver = step.endTokens.find((t) => t.id === a.targetId);
+      if (!end || !receiver) continue;
+      const d = Math.hypot(end.x - receiver.x, end.y - receiver.y);
+      if (d > PASS_REACH) {
+        const label = step.startTokens.find((t) => t.id === a.targetId)?.label ?? "?";
+        out.push({
+          actionId: a.id,
+          seq: step.seq,
+          message: `The pass in sequence ${step.seq} does not reach #${label}. Move the pass end point or pick a different receiver.`,
+        });
+      }
+    }
+  }
+  return out;
+}
+
 
 /** Sample the whole frame timeline at an absolute time in ms. */
 export function sampleTimeline(tl: Timeline, ms: number) {

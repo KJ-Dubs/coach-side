@@ -6,12 +6,17 @@ import {
   DO_MS,
   SHOW_MS,
   buildSteps,
+  defaultBranchSelection,
   findChainConflicts,
+  findPassWarnings,
+  listOptionGroups,
   nearestTokenAt,
   resolveLegacyActors,
   sampleTimeline,
   stateAtSequenceStart,
+  type BranchSelection,
 } from "@/lib/playAnimation";
+
 import { simplifyPath, type Point } from "@/lib/playPath";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
@@ -129,6 +134,17 @@ function PlayDesignerPage() {
   const [category, setCategory] = useState("Offense");
   const [saving, setSaving] = useState(false);
   const [index, setIndex] = useState<PlayIndex>(EMPTY_INDEX);
+  /** Which option branch is shown for each decision point. */
+  const [branch, setBranch] = useState<BranchSelection>({});
+  /** A drawn pass waiting for the coach to say who receives it. */
+  const [pendingPass, setPendingPass] = useState<{ action: PlayAction; seq: number } | null>(null);
+  /** A new outcome that clashes with an outcome already in this sequence. */
+  const [pendingOption, setPendingOption] = useState<{
+    action: PlayAction;
+    seq: number;
+    rivalId: string;
+  } | null>(null);
+
 
   useEffect(() => {
     if (framesQ.data) {
@@ -176,7 +192,13 @@ function PlayDesignerPage() {
 
   /* ---- deterministic engine state ---- */
 
-  const steps = useMemo(() => buildSteps(frame), [frame]);
+  const optionGroups = useMemo(() => listOptionGroups(frame), [frame]);
+  const activeBranch = useMemo<BranchSelection>(
+    () => ({ ...defaultBranchSelection(frame), ...branch }),
+    [frame, branch],
+  );
+  const steps = useMemo(() => buildSteps(frame, activeBranch), [frame, activeBranch]);
+  const passWarnings = useMemo(() => findPassWarnings(frame, activeBranch), [frame, activeBranch]);
   const seqCount = steps.length;
   const activeIdx = Math.min(seqIdx, seqCount);
   const activeStep = steps[activeIdx];
@@ -184,9 +206,10 @@ function PlayDesignerPage() {
 
   /** Exact court state this sequence begins from. */
   const projected = useMemo(
-    () => stateAtSequenceStart(frame, activeIdx),
-    [frame, activeIdx],
+    () => stateAtSequenceStart(frame, activeIdx, activeBranch),
+    [frame, activeIdx, activeBranch],
   );
+
 
   const timeline = useMemo(() => ({ steps, totalMs: steps.length * STEP_MS }), [steps]);
   const rangeStart = mode === "preview" ? activeIdx * STEP_MS : 0;
@@ -244,7 +267,22 @@ function PlayDesignerPage() {
 
   /* ---- action authoring ---- */
 
+  const OPTION_LABELS = ["Option A", "Option B", "Option C", "Option D", "Option E", "Option F"];
+
   const addAction = (action: PlayAction, seq: number) => {
+    // Two outcomes by the same ball handler in one sequence cannot both happen.
+    const rival = (frame?.actions ?? []).find(
+      (a) =>
+        a.seq === seq &&
+        BALL_ACTIONS.has(a.type) &&
+        BALL_ACTIONS.has(action.type) &&
+        a.actor === action.actor &&
+        a.id !== action.id,
+    );
+    if (rival) {
+      setPendingOption({ action, seq, rivalId: rival.id });
+      return;
+    }
     const conflict = (frame?.actions ?? []).some(
       (a) =>
         a.seq === seq &&
@@ -257,6 +295,7 @@ function PlayDesignerPage() {
       setSelectedActionId(action.id);
       return;
     }
+
     const label = liveTokens.find((t) => t.id === action.actor)?.label ?? "that player";
     toast.warning(`#${label} has to receive the ball before this can happen.`, {
       duration: 12000,
@@ -330,22 +369,119 @@ function PlayDesignerPage() {
         toast.info("Start the line on a player so CoachSide knows who is doing it.");
         return;
       }
-      const targetId = tool === "pass" || tool === "handoff" ? bindToken(p) : null;
-      if ((tool === "pass" || tool === "handoff") && !targetId) {
-        toast.info("End a pass or handoff on the player who receives the ball.");
+      if (tool === "handoff") {
+        const targetId = bindToken(p);
+        if (!targetId) {
+          toast.info("End a handoff on the player who takes the ball.");
+          return;
+        }
+        addAction(
+          {
+            id: uuid(),
+            type: tool,
+            seq: seqNumber,
+            points: pts,
+            actor: actorId,
+            target: targetId,
+            transfersBall: true,
+          },
+          seqNumber,
+        );
         return;
       }
-      const action: PlayAction = {
-        id: uuid(),
-        type: tool,
-        seq: seqNumber,
-        points: pts,
-        actor: actorId,
-        ...(targetId ? { target: targetId, transfersBall: true } : {}),
-      };
-      addAction(action, seqNumber);
+      if (tool === "pass") {
+        // A pass can be thrown to a player OR to the spot a cutter is running to.
+        // The coach says who receives it; CoachSide never guesses from geometry.
+        setPendingPass({
+          action: { id: uuid(), type: tool, seq: seqNumber, points: pts, actor: actorId },
+          seq: seqNumber,
+        });
+        return;
+      }
+      addAction(
+        { id: uuid(), type: tool, seq: seqNumber, points: pts, actor: actorId },
+        seqNumber,
+      );
     }
   };
+
+  /** Where each offense player ends up in the sequence being drawn. */
+  const receiverChoices = useMemo(() => {
+    const pass = pendingPass;
+    if (!pass) return [];
+    const end = pass.action.points[pass.action.points.length - 1];
+    if (!end) return [];
+    const ends = new Map<string, { x: number; y: number }>();
+    for (const t of projected.tokens) ends.set(t.id, { x: t.x, y: t.y });
+    for (const a of frame?.actions ?? []) {
+      if (a.seq !== pass.seq || BALL_ACTIONS.has(a.type) || !a.actor) continue;
+      const last = a.points[a.points.length - 1];
+      if (last) ends.set(a.actor, { x: last.x, y: last.y });
+    }
+    return projected.tokens
+      .filter((t) => (t.team ?? "offense") === "offense" && t.id !== pass.action.actor)
+      .map((t) => {
+        const e = ends.get(t.id) ?? { x: t.x, y: t.y };
+        return { id: t.id, label: t.label, dist: Math.hypot(e.x - end.x, e.y - end.y) };
+      })
+      .sort((a, b) => a.dist - b.dist);
+  }, [pendingPass, projected.tokens, frame?.actions]);
+
+  const commitPass = (receiverId: string | null) => {
+    const pass = pendingPass;
+    if (!pass) return;
+    setPendingPass(null);
+    const action: PlayAction = receiverId
+      ? { ...pass.action, target: receiverId, transfersBall: true, passTo: "receiver" }
+      : { ...pass.action, passTo: "space" };
+    addAction(action, pass.seq);
+  };
+
+  /** Keep both outcomes as labelled options from the same shared state. */
+  const commitAsOption = () => {
+    const pending = pendingOption;
+    const current = frame;
+    if (!pending || !current) return;
+    setPendingOption(null);
+    const rival = current.actions.find((a) => a.id === pending.rivalId);
+    const group = rival?.option?.group ?? uuid();
+    const keyIdx = rival?.option
+      ? new Set(
+          current.actions.filter((a) => a.option?.group === group).map((a) => a.option!.key),
+        ).size
+      : 1;
+    const key = String.fromCharCode(97 + keyIdx);
+    const next: PlayAction = {
+      ...pending.action,
+      option: { group, key, label: OPTION_LABELS[keyIdx] ?? `Option ${keyIdx + 1}` },
+    };
+    patchFrame((f) => ({
+      ...f,
+      actions: [
+        ...f.actions.map((a) =>
+          a.id === pending.rivalId && !a.option
+            ? { ...a, option: { group, key: "a", label: OPTION_LABELS[0]! } }
+            : a,
+        ),
+        next,
+      ],
+    }));
+    setBranch((b) => ({ ...b, [group]: key }));
+    setSelectedActionId(pending.action.id);
+  };
+
+
+  const commitAsReplacement = () => {
+    const pending = pendingOption;
+    if (!pending) return;
+    setPendingOption(null);
+    patchFrame((f) => ({
+      ...f,
+      actions: [...f.actions.filter((a) => a.id !== pending.rivalId), pending.action],
+    }));
+    setSelectedActionId(pending.action.id);
+  };
+
 
   /** Commit the play's end state as the frame's new starting positions. */
   const applyEndState = () => {
@@ -409,8 +545,13 @@ function PlayDesignerPage() {
   const activeActions = frame?.actions.filter((a) => a.seq === seqNumber) ?? [];
   const sequenceInvalid =
     activeActions.some(
-      (a) => !a.actor || ((a.type === "pass" || a.type === "handoff") && !a.target),
+      (a) =>
+        !a.actor ||
+        (a.type === "handoff" && !a.target) ||
+        (a.type === "pass" && !a.target && a.passTo !== "space"),
     ) || findChainConflicts(frame).some((c) => c.seq === seqNumber);
+  const activeWarnings = passWarnings.filter((w) => w.seq === seqNumber);
+
 
   const setTokens = (tokens: PlayToken[]) => patchFrame((f) => ({ ...f, tokens }));
 
@@ -518,7 +659,111 @@ function PlayDesignerPage() {
             onCourtPointerMove={onMove}
             onCourtPointerUp={onUp}
           />
+          {pendingPass ? (
+            <Panel className="flex flex-col gap-3">
+              <Label>Who receives this pass?</Label>
+              <div className="flex flex-wrap gap-2">
+                {receiverChoices.map((r, i) => (
+                  <BubbleButton
+                    key={r.id}
+                    size="sm"
+                    tone={i === 0 ? "flame" : "neutral"}
+                    onClick={() => commitPass(r.id)}
+                  >
+                    {`#${r.label}`}
+                  </BubbleButton>
+                ))}
+                <BubbleButton size="sm" tone="grape" onClick={() => commitPass(null)}>
+                  Open space · option only
+                </BubbleButton>
+                <BubbleButton size="sm" tone="ghost" onClick={() => setPendingPass(null)}>
+                  Cancel
+                </BubbleButton>
+              </div>
+              <Pill tone="muted">
+                Pick the player who ends up at the ball. A lead pass to a cutter keeps the spot you
+                drew. Open space keeps the ball with the passer.
+              </Pill>
+            </Panel>
+          ) : null}
+          {pendingOption ? (
+            <Panel className="flex flex-col gap-3">
+              <Label>Add as another option?</Label>
+              <Pill tone="muted">
+                This player already has an outcome in this sequence. Options are alternatives from
+                the same starting point, and only one runs at a time.
+              </Pill>
+              <div className="flex flex-wrap gap-2">
+                <BubbleButton size="sm" tone="flame" onClick={commitAsOption}>
+                  Add Option
+                </BubbleButton>
+                <BubbleButton size="sm" tone="grape" onClick={commitAsReplacement}>
+                  Replace Current Action
+                </BubbleButton>
+                <BubbleButton size="sm" tone="ghost" onClick={() => setPendingOption(null)}>
+                  Cancel
+                </BubbleButton>
+              </div>
+            </Panel>
+          ) : null}
+          {optionGroups.length ? (
+            <Panel className="flex flex-col gap-3">
+              <Label>Options</Label>
+              {optionGroups.map((g, gi) => (
+                <div key={g.group} className="flex flex-wrap items-center gap-2">
+                  <Pill tone="muted">{`Decision ${gi + 1} · sequence ${g.seq}`}</Pill>
+                  {g.branches.map((b) => (
+                    <BubbleButton
+                      key={b.key}
+                      size="sm"
+                      tone={activeBranch[g.group] === b.key ? "flame" : "neutral"}
+                      onClick={() => {
+                        setBranch((prev) => ({ ...prev, [g.group]: b.key }));
+                        setMode("idle");
+                        setTimeMs(0);
+                        setSeqIdx(0);
+                        setSelectedActionId(null);
+                      }}
+                    >
+                      {b.label}
+                    </BubbleButton>
+                  ))}
+                  <BubbleButton
+                    size="sm"
+                    tone="ghost"
+                    onClick={() => {
+                      const key = activeBranch[g.group];
+                      const drop = g.branches.find((b) => b.key === key);
+                      if (!drop) return;
+                      patchFrame((f) => ({
+                        ...f,
+                        actions: f.actions.filter((a) => !drop.actionIds.includes(a.id)),
+                      }));
+                      setBranch((prev) => {
+                        const next = { ...prev };
+                        delete next[g.group];
+                        return next;
+                      });
+                    }}
+                  >
+                    Delete shown option
+                  </BubbleButton>
+                </div>
+              ))}
+            </Panel>
+          ) : null}
+          {activeWarnings.length ? (
+            <Panel className="flex flex-col gap-2">
+              <Label>Check this pass</Label>
+              {activeWarnings.map((w) => (
+                <Pill key={w.actionId} tone="flame">
+                  {w.message}
+                </Pill>
+              ))}
+            </Panel>
+          ) : null}
           <Panel className="flex flex-col gap-3">
+
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
               <Label>Tools</Label>
               <Pill tone="grape">Sequence {activeIdx + 1}</Pill>

@@ -3,7 +3,17 @@ import { BubbleButton, InfoPanel, Label, Panel, Pill, SectionHeader } from "@/co
 import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { ExportPlayVideo } from "@/components/court/ExportPlayVideo";
 import type { CourtZoom } from "@/components/court/Court";
-import { buildSteps, sampleStep, DO_MS, SHOW_MS, type PlayStep } from "@/lib/playAnimation";
+import {
+  buildSteps,
+  listOptionGroups,
+  sampleStep,
+  DO_MS,
+  SHOW_MS,
+  type BranchSelection,
+  type OptionGroup,
+  type PlayStep,
+} from "@/lib/playAnimation";
+
 import type { Play, PlayFrame } from "@/lib/types";
 
 /**
@@ -18,17 +28,22 @@ export type NormalizedPlayback = {
   frames: PlayFrame[];
   steps: { step: PlayStep; frameIdx: number; note: string | null }[];
   labels: string[];
+  /** Decision points, tagged with the frame they belong to. */
+  options: { frameIdx: number; group: OptionGroup }[];
 };
 
 /** Turn legacy frame plays and newer sequence/action plays into one model. */
 export function normalizePlayForPlayback(
   play: Pick<Play, "name" | "category" | "attack_basket"> | null | undefined,
   frames: PlayFrame[] | undefined,
+  branch?: BranchSelection,
 ): NormalizedPlayback {
   const list = (frames ?? []).slice().sort((a, b) => a.idx - b.idx);
   const steps: NormalizedPlayback["steps"] = [];
+  const options: NormalizedPlayback["options"] = [];
   list.forEach((frame, frameIdx) => {
-    for (const step of buildSteps(frame)) steps.push({ step, frameIdx, note: frame.note });
+    for (const step of buildSteps(frame, branch)) steps.push({ step, frameIdx, note: frame.note });
+    for (const group of listOptionGroups(frame)) options.push({ frameIdx, group });
   });
   const labels = [
     ...new Set(
@@ -42,8 +57,10 @@ export function normalizePlayForPlayback(
     frames: list,
     steps,
     labels,
+    options,
   };
 }
+
 
 export function PlayPresenter({
   play,
@@ -56,8 +73,13 @@ export function PlayPresenter({
   loading?: boolean;
   className?: string;
 }) {
-  const model = useMemo(() => normalizePlayForPlayback(play, frames), [play, frames]);
+  const [branch, setBranch] = useState<BranchSelection>({});
+  const model = useMemo(
+    () => normalizePlayForPlayback(play, frames, branch),
+    [play, frames, branch],
+  );
   const total = model.steps.length;
+
 
   const [idx, setIdx] = useState(0);
   const [phase, setPhase] = useState<"show" | "do">("show");
@@ -73,7 +95,7 @@ export function PlayPresenter({
     setPhase("show");
     setProgress(0);
     setPlaying(false);
-  }, [total, model.name]);
+  }, [total, model.name, branch]);
 
   useEffect(() => {
     if (!playing || total === 0) return;
@@ -193,7 +215,33 @@ export function PlayPresenter({
           </BubbleButton>
         </Panel>
 
+        {model.options.length ? (
+          <Panel className="flex flex-col items-center gap-2">
+            <Label>Options</Label>
+            {model.options.map((o, i) => {
+              const current =
+                branch[o.group.group] ?? o.group.branches[0]?.key ?? "";
+              return (
+                <div key={o.group.group} className="flex flex-wrap items-center justify-center gap-2">
+                  <Pill tone="muted">{`Decision ${i + 1}`}</Pill>
+                  {o.group.branches.map((b, bi) => (
+                    <BubbleButton
+                      key={b.key}
+                      size="sm"
+                      tone={current === b.key ? "flame" : "neutral"}
+                      onClick={() => setBranch((prev) => ({ ...prev, [o.group.group]: b.key }))}
+                    >
+                      {`${b.label} · ${bi + 1} of ${o.group.branches.length}`}
+                    </BubbleButton>
+                  ))}
+                </div>
+              );
+            })}
+          </Panel>
+        ) : null}
+
         <ExportPlayVideo model={model} />
+
 
         <Panel className="flex flex-wrap items-center justify-center gap-2">
           <Pill tone="muted">Court view</Pill>
