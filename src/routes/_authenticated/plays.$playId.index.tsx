@@ -668,7 +668,7 @@ function PlayDesignerPage() {
 
         <div className="flex flex-col gap-3">
           {canEdit ? (
-            <PlayIndexSheet value={index} onChange={setIndex} suggestions={suggestFromFrames(frames)} compact />
+            <PlayIndexSheet value={index} onChange={setIndex} suggestions={suggestFromFrames(frames, flip ? "left" : "right")} compact />
           ) : null}
           <Panel className="flex flex-col gap-2">
             <Label>Press Maker · Two Teams</Label>
