@@ -446,6 +446,8 @@ export function sampleStep(step: PlayStep, phase: PlayPhase, progress: number): 
 
   // Possession: only a completed transfer by the CURRENT owner changes it.
   // A pass drawn to open space is a teaching option: the ball never leaves.
+  let owner: string | null = step.startBall;
+  let ball = tokenPoint(tokens, owner);
   const transfer = step.actions.find(
     (a) =>
       BALL_ACTIONS.has(a.type) &&
@@ -455,6 +457,7 @@ export function sampleStep(step: PlayStep, phase: PlayPhase, progress: number): 
       (a.type === "shot" || a.targetId),
   );
   if (transfer) {
+
     const local = localOf(transfer);
     if (local <= 0) {
       owner = step.startBall;
