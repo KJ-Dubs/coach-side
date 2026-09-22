@@ -391,8 +391,13 @@ export function buildSteps(
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
 /** Token + ball state at the exact start of a sequence index (0-based). */
-export function stateAtSequenceStart(frame: PlayFrame | undefined, index: number): PlaySample {
-  const steps = buildSteps(frame);
+export function stateAtSequenceStart(
+  frame: PlayFrame | undefined,
+  index: number,
+  selection?: BranchSelection,
+): PlaySample {
+  const steps = buildSteps(frame, selection);
+
   if (steps.length === 0) {
     const tokens = (frame?.tokens ?? []).map((t) => ({ ...t }));
     const owner = tokens.find((t) => t.ball)?.id ?? null;
