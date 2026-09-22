@@ -1,12 +1,12 @@
 import { PlayCanvas } from "./PlayCanvas";
 import type { CourtZoom } from "./Court";
 import type { DrillFrame, DrillObject } from "@/lib/drills";
-import type { PlayFrame } from "@/lib/types";
+import type { PlayAction, PlayFrame, PlayToken } from "@/lib/types";
 
 const W = 940;
 const H = 500;
 
-function ObjectShape({ o }: { o: DrillObject }) {
+export function DrillObjectShape({ o }: { o: DrillObject }) {
   const x = o.x * W;
   const y = o.y * H;
   if (o.type === "cone") {
@@ -49,11 +49,23 @@ export function DrillCanvas({
   zoom = "full",
   className,
   onCourtPoint,
+  onCourtPointerMove,
+  onCourtPointerUp,
+  tokens,
+  actions,
+  ball,
+  ghost,
 }: {
   frame: DrillFrame | undefined;
   zoom?: CourtZoom;
   className?: string;
   onCourtPoint?: ((p: { x: number; y: number }) => void) | undefined;
+  onCourtPointerMove?: ((p: { x: number; y: number }) => void) | undefined;
+  onCourtPointerUp?: ((p: { x: number; y: number }) => void) | undefined;
+  tokens?: PlayToken[] | undefined;
+  actions?: PlayAction[] | undefined;
+  ball?: { x: number; y: number } | null | undefined;
+  ghost?: { x: number; y: number }[] | null | undefined;
 }) {
   const asPlayFrame = frame
     ? ({ ...frame, play_id: frame.drill_id } as unknown as PlayFrame)
@@ -64,10 +76,16 @@ export function DrillCanvas({
       zoom={zoom}
       className={className}
       onCourtPoint={onCourtPoint}
+      onCourtPointerMove={onCourtPointerMove}
+      onCourtPointerUp={onCourtPointerUp}
+      tokens={tokens}
+      actions={actions}
+      ball={ball}
+      ghost={ghost}
       extras={
         <g>
           {(frame?.objects ?? []).map((o) => (
-            <ObjectShape key={o.id} o={o} />
+            <DrillObjectShape key={o.id} o={o} />
           ))}
         </g>
       }
