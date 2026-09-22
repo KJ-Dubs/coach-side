@@ -3,13 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 export type NotificationPrefs = {
   id: string;
   user_id: string;
+  push_enabled: boolean;
   email_enabled: boolean;
   practice_reminders: boolean;
   game_reminders: boolean;
+  schedule_change_notifications: boolean;
   new_play_notifications: boolean;
   challenge_notifications: boolean;
   announcement_notifications: boolean;
   assignment_notifications: boolean;
+  play_of_the_day_notifications: boolean;
 };
 
 export type AppNotification = {
@@ -27,13 +30,16 @@ export type AppNotification = {
 };
 
 export const PREF_LABELS: { key: keyof NotificationPrefs; label: string }[] = [
-  { key: "email_enabled", label: "Email me" },
-  { key: "practice_reminders", label: "Practices" },
-  { key: "game_reminders", label: "Games" },
-  { key: "new_play_notifications", label: "New plays" },
-  { key: "challenge_notifications", label: "Challenges" },
+  { key: "push_enabled", label: "Push notifications" },
+  { key: "email_enabled", label: "Email fallback" },
   { key: "announcement_notifications", label: "Announcements" },
+  { key: "new_play_notifications", label: "New team plays" },
   { key: "assignment_notifications", label: "Assignments" },
+  { key: "challenge_notifications", label: "Challenges" },
+  { key: "schedule_change_notifications", label: "Schedule changes" },
+  { key: "game_reminders", label: "Game alerts" },
+  { key: "practice_reminders", label: "Practice alerts" },
+  { key: "play_of_the_day_notifications", label: "Play of the Day" },
 ];
 
 async function uid() {

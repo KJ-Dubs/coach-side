@@ -31,6 +31,8 @@ export default defineConfig({
         globDirectory: "dist/client",
         swDest: "dist/client/sw.js",
         globPatterns: ["assets/**/*.{js,css,woff,woff2}", "favicon.png", "icons/*.png"],
+        // Push handling only — adds no caching and leaves install/offline as-is.
+        importScripts: ["/push-sw.js"],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         clientsClaim: true,
