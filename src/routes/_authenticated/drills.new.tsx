@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { CircleDot, PackageOpen, Play, Save, Shield, TrafficCone, UserPlus } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { CircleDot, PackageOpen, Play, Save, Shield, TrafficCone, UserPlus, Undo2, Redo2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Field, InfoPanel, Label, Panel, Pill, PrimaryCTA, SelectInput, TextInput } from "@/components/Bubbles";
@@ -25,8 +25,8 @@ export const Route = createFileRoute("/_authenticated/drills/new")({
   component: DrillMakerPage,
 });
 
-type Tool = "player" | "pass" | "dribble" | "screen" | "shot" | "equipment" | "erase";
-type EquipmentTool = DrillObject["type"];
+type Tool = "position" | "cut" | "pass" | "dribble" | "screen" | "shot" | "equipment" | "erase";
+type EquipmentTool = Exclude<DrillObject["type"], "line">;
 type AnimMode = "idle" | "preview" | "replay";
 const STEP_MS = SHOW_MS + DO_MS;
 const uid = () => uuid();
@@ -43,12 +43,14 @@ function asPlayFrame(frame: DrillFrame): PlayFrame {
 
 function DrillMakerPage() {
   const navigate = useNavigate();
-  const [tool, setTool] = useState<Tool>("player");
+  const [tool, setTool] = useState<Tool>("position");
   const [equipmentTool, setEquipmentTool] = useState<EquipmentTool>("cone");
   const [equipmentOpen, setEquipmentOpen] = useState(false);
   const [addingTeam, setAddingTeam] = useState<"offense" | "defense">("offense");
   const [zoom, setZoom] = useState<CourtZoom>("right");
   const [frame, setFrame] = useState<DrillFrame>({ id: "draft", drill_id: "draft", idx: 0, tokens: START_TOKENS, actions: [], objects: [], note: null });
+  const [history, setHistory] = useState<DrillFrame[]>([]);
+  const [future, setFuture] = useState<DrillFrame[]>([]);
   const [seqIdx, setSeqIdx] = useState(0);
   const [stroke, setStroke] = useState<Point[] | null>(null);
   const [dragObject, setDragObject] = useState<string | null>(null);
@@ -102,7 +104,28 @@ function DrillMakerPage() {
     return () => { if (raf.current !== null) cancelAnimationFrame(raf.current); };
   }, [mode, rangeEnd, rangeStart]);
 
-  const patch = (next: Partial<DrillFrame>) => setFrame((current) => ({ ...current, ...next }));
+  const commit = useCallback((next: DrillFrame) => {
+    setHistory((prev) => [...prev.slice(-19), frame]);
+    setFuture([]);
+    setFrame(next);
+  }, [frame]);
+
+  const undo = () => {
+    if (history.length === 0) return;
+    const prev = history[history.length - 1]!;
+    setFuture((f) => [frame, ...f]);
+    setHistory((h) => h.slice(0, -1));
+    setFrame(prev);
+  };
+
+  const redo = () => {
+    if (future.length === 0) return;
+    const next = future[0]!;
+    setHistory((h) => [...h, frame]);
+    setFuture((f) => f.slice(1));
+    setFrame(next);
+  };
+
   const objectAt = (p: Point) => [...frame.objects].reverse().find((object) => Math.hypot(object.x - p.x, object.y - p.y) < 0.045);
   const actionAt = (p: Point) => [...frame.actions].reverse().find((action) => action.seq === seqNumber && action.points.some((point) => Math.hypot(point.x - p.x, point.y - p.y) < 0.045));
   const tokenAt = (p: Point) => nearestTokenAt(shownTokens, p);
@@ -113,15 +136,29 @@ function DrillMakerPage() {
       const object = objectAt(p);
       const action = actionAt(p);
       const token = tokenAt(p);
-      if (object) patch({ objects: frame.objects.filter((item) => item.id !== object.id) });
-      else if (action) patch({ actions: frame.actions.filter((item) => item.id !== action.id) });
-      else if (token) patch({ tokens: frame.tokens.filter((item) => item.id !== token) });
+      if (object) commit({ ...frame, objects: frame.objects.filter((item) => item.id !== object.id) });
+      else if (action) commit({ ...frame, actions: frame.actions.filter((item) => item.id !== action.id) });
+      else if (token) commit({ ...frame, tokens: frame.tokens.filter((item) => item.id !== token) });
       return;
     }
     if (tool === "equipment") {
       const existing = objectAt(p);
-      if (existing) setDragObject(existing.id);
-      else patch({ objects: [...frame.objects, { id: uid(), type: equipmentTool, x: p.x, y: p.y, ...(equipmentTool === "text" ? { label: "START" } : {}) }] });
+      if (existing) {
+        setDragObject(existing.id);
+        setHistory((prev) => [...prev.slice(-19), frame]);
+        setFuture([]);
+      } else commit({ ...frame, objects: [...frame.objects, { id: uid(), type: equipmentTool, x: p.x, y: p.y, ...(equipmentTool === "text" ? { label: "NOTE" } : {}) }] });
+      return;
+    }
+    if (tool === "position") {
+      const token = tokenAt(p);
+      if (token) {
+        setDragObject(token);
+        setHistory((prev) => [...prev.slice(-19), frame]);
+        setFuture([]);
+        return;
+      }
+      setStroke([p]);
       return;
     }
     setStroke([p]);
@@ -129,7 +166,12 @@ function DrillMakerPage() {
 
   const onMove = (p: Point) => {
     if (dragObject) {
-      patch({ objects: frame.objects.map((object) => object.id === dragObject ? { ...object, x: p.x, y: p.y } : object) });
+      const isToken = frame.tokens.some(t => t.id === dragObject);
+      if (isToken) {
+        setFrame(f => ({ ...f, tokens: f.tokens.map(t => t.id === dragObject ? { ...t, x: p.x, y: p.y } : t) }));
+      } else {
+        setFrame(f => ({ ...f, objects: f.objects.map(o => o.id === dragObject ? { ...o, x: p.x, y: p.y } : o) }));
+      }
       return;
     }
     if (stroke) setStroke([...stroke, p]);
@@ -137,7 +179,7 @@ function DrillMakerPage() {
 
   const addPlayer = (p: Point) => {
     const sameTeam = frame.tokens.filter((token) => (token.team ?? "offense") === addingTeam);
-    patch({ tokens: [...frame.tokens, { id: uid(), label: String(sameTeam.length + 1), x: p.x, y: p.y, ball: false, team: addingTeam }] });
+    commit({ ...frame, tokens: [...frame.tokens, { id: uid(), label: String(sameTeam.length + 1), x: p.x, y: p.y, ball: false, team: addingTeam }] });
     toast.success(addingTeam === "offense" ? "Player added" : "Defender added", { duration: 1400 });
   };
 
@@ -145,24 +187,41 @@ function DrillMakerPage() {
     if (dragObject) { setDragObject(null); return; }
     const drawn = stroke ? simplifyPath([...stroke, p]) : null;
     setStroke(null);
+    
+    if (tool === "position" && (!drawn || drawn.length < 2)) {
+      const actor = tokenAt(p);
+      if (!actor) { addPlayer(p); return; }
+    }
+
     if (!drawn?.length) return;
     const first = drawn[0];
     if (!first) return;
     const distance = Math.hypot(p.x - first.x, p.y - first.y);
     const actor = tokenAt(first);
-    if (tool === "player" && !actor && distance < 0.03) { addPlayer(p); return; }
-    if (!actor) { toast.info("Start on a player, or tap empty court to add one."); return; }
+
+    if (tool === "position") {
+      if (actor && distance > 0.03) return;
+      if (!actor && distance < 0.03) { addPlayer(p); return; }
+    }
+
+    if (!actor) { 
+      if (tool !== "equipment" && tool !== "erase") {
+        toast.info("Start on a player, or use Position Player to add one."); 
+      }
+      return; 
+    }
     if (distance < 0.03) return;
-    if (tool === "equipment" || tool === "erase") return;
-    const type: PlayActionType = tool === "player" ? "move" : tool;
+    if (tool === "equipment" || tool === "erase" || tool === "position") return;
+
+    const type: PlayActionType = tool === "cut" ? "move" : tool;
     const base: PlayAction = { id: uid(), type, seq: seqNumber, points: drawn, actor };
     if (type === "pass") {
       const receiver = inferPassReceiver(projected.tokens, frame.actions.filter((action) => action.seq === seqNumber), base);
-      patch({ actions: [...frame.actions, receiver ? { ...base, target: receiver.id, transfersBall: true, passTo: "receiver" } : { ...base, passTo: "space", transfersBall: false }] });
+      commit({ ...frame, actions: [...frame.actions, receiver ? { ...base, target: receiver.id, transfersBall: true, passTo: "receiver" } : { ...base, passTo: "space", transfersBall: false }] });
       toast[receiver ? "success" : "info"](receiver ? `Pass linked to #${receiver.label}` : "Pass saved to open space", { duration: 1800 });
       return;
     }
-    patch({ actions: [...frame.actions, base] });
+    commit({ ...frame, actions: [...frame.actions, base] });
   };
 
   const preview = () => { if (!activeStep) return; setTimeMs(activeIdx * STEP_MS); setMode("preview"); };
@@ -182,18 +241,27 @@ function DrillMakerPage() {
   });
 
   const tools: { key: Tool; label: string }[] = [
-    { key: "player", label: "Move / Player" }, { key: "pass", label: "Pass" }, { key: "dribble", label: "Dribble" }, { key: "screen", label: "Screen" }, { key: "shot", label: "Shot" }, { key: "equipment", label: "Equipment" }, { key: "erase", label: "Erase" },
+    { key: "position", label: "Position Player" }, { key: "cut", label: "Cut / Move" }, { key: "pass", label: "Pass" }, { key: "dribble", label: "Dribble" }, { key: "screen", label: "Screen" }, { key: "shot", label: "Shot" }, { key: "equipment", label: "Equipment" }, { key: "erase", label: "Erase" },
   ];
-  const equipmentChoices: { key: EquipmentTool; label: string }[] = [{ key: "cone", label: "Cone" }, { key: "chair", label: "Chair" }, { key: "spot", label: "Spot" }, { key: "ball", label: "Extra Ball" }, { key: "line", label: "Starting Line" }, { key: "text", label: "Text" }];
+  const equipmentChoices: { key: EquipmentTool; label: string }[] = [{ key: "cone", label: "Cone" }, { key: "chair", label: "Chair" }, { key: "spot", label: "Spot" }, { key: "ball", label: "Extra Ball" }, { key: "text", label: "Text" }];
 
   return <AppShell title="Drill Maker" subtitle="Build on the court first" actions={<Link to="/drills"><BubbleButton size="sm" tone="ghost">My Drills</BubbleButton></Link>}>
     <div className="flex flex-col gap-3">
       <DrillCanvas frame={frame} zoom={zoom} tokens={shownTokens} actions={shownActions} ball={live?.sample.ball ?? projected.ball} ghost={stroke} onCourtPoint={onDown} onCourtPointerMove={onMove} onCourtPointerUp={onUp} />
 
       <Panel className="flex flex-col gap-2 p-2.5">
-        <div className="flex items-center justify-between gap-2"><Label>Build tools</Label><Pill tone="grape">Step {activeIdx + 1}</Pill></div>
-        <div className="flex gap-2 overflow-x-auto pb-1">{tools.map((item) => <BubbleButton key={item.key} size="sm" tone={tool === item.key ? (item.key === "erase" ? "flame" : "grape") : "neutral"} className="shrink-0" onClick={() => { setTool(item.key); if (item.key === "equipment") setEquipmentOpen(true); }}>{item.label}</BubbleButton>)}</div>
-        {tool === "player" ? <div className="flex flex-wrap items-center gap-2"><Pill tone="muted">Tap empty court to add</Pill><BubbleButton size="sm" tone={addingTeam === "offense" ? "grape" : "neutral"} onClick={() => setAddingTeam("offense")}><UserPlus className="h-4 w-4" /> Offense</BubbleButton><BubbleButton size="sm" tone={addingTeam === "defense" ? "flame" : "neutral"} onClick={() => setAddingTeam("defense")}><Shield className="h-4 w-4" /> Defense</BubbleButton></div> : null}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Label>Build tools</Label>
+            <Pill tone="grape">Step {activeIdx + 1}</Pill>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <BubbleButton size="sm" tone="neutral" onClick={undo} disabled={history.length === 0} title="Undo"><Undo2 className="h-4 w-4" /></BubbleButton>
+            <BubbleButton size="sm" tone="neutral" onClick={redo} disabled={future.length === 0} title="Redo"><Redo2 className="h-4 w-4" /></BubbleButton>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 gap-2">{tools.map((item) => <BubbleButton key={item.key} size="sm" tone={tool === item.key ? (item.key === "erase" ? "flame" : "grape") : "neutral"} className="min-h-11 min-w-0 px-1 text-center text-[11px] sm:px-3 sm:text-xs" onClick={() => { setTool(item.key); if (item.key === "equipment") setEquipmentOpen(true); }}>{item.label}</BubbleButton>)}</div>
+        {tool === "position" ? <div className="flex flex-wrap items-center gap-2"><Pill tone="muted">Tap empty court to add • Drag to move</Pill><BubbleButton size="sm" tone={addingTeam === "offense" ? "grape" : "neutral"} onClick={() => setAddingTeam("offense")}><UserPlus className="h-4 w-4" /> Offense</BubbleButton><BubbleButton size="sm" tone={addingTeam === "defense" ? "flame" : "neutral"} onClick={() => setAddingTeam("defense")}><Shield className="h-4 w-4" /> Defense</BubbleButton></div> : null}
         {tool === "equipment" && equipmentOpen ? <div className="flex flex-wrap gap-2 rounded-2xl border border-border bg-surface-2/60 p-2">{equipmentChoices.map((item) => <BubbleButton key={item.key} size="sm" tone={equipmentTool === item.key ? "flame" : "neutral"} onClick={() => setEquipmentTool(item.key)}>{item.key === "cone" ? <TrafficCone className="h-4 w-4" /> : item.key === "ball" ? <CircleDot className="h-4 w-4" /> : <PackageOpen className="h-4 w-4" />}{item.label}</BubbleButton>)}</div> : null}
         <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2"><BubbleButton size="sm" tone="flame" onClick={() => { setMode("idle"); setTimeMs(0); setSeqIdx(seqCount); }}>+ Add Step</BubbleButton>{steps.map((step, index) => <BubbleButton key={step.seq} size="sm" tone={index === activeIdx ? "grape" : "neutral"} onClick={() => { setMode("idle"); setSeqIdx(index); }}>{index + 1}</BubbleButton>)}<Pill tone="muted">{activeIdx === seqCount ? "New step from previous finish" : `${shownActions.length} action${shownActions.length === 1 ? "" : "s"}`}</Pill></div>
       </Panel>

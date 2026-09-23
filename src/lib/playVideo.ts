@@ -178,10 +178,10 @@ function drawAction(
 
   const d = curl
     ? curl.d
-    : freehand
-      ? polyD(pts)
-      : a.type === "dribble"
-        ? dribbleD(start, end)
+    : a.type === "dribble"
+      ? dribbleD(pts)
+      : freehand
+        ? polyD(pts)
         : `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
 
   ctx.save();

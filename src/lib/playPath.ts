@@ -44,30 +44,27 @@ export function bezierAt(a: Point, c1: Point, c2: Point, b: Point, t: number): P
   };
 }
 
-/** Bumpy dribble path in pixel space. */
-export function dribbleD(a: Point, b: Point) {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len;
-  const uy = dy / len;
-  const nx = -uy;
-  const ny = ux;
-  const amp = 11;
-  const humps = Math.max(2, Math.round((len - 22) / 26));
-  const usable = Math.max(0, len - 22);
-  const step = usable / humps;
-  let d = `M ${a.x} ${a.y}`;
-  for (let i = 0; i < humps; i++) {
-    const s = i * step;
-    const e = (i + 1) * step;
-    const dir = i % 2 === 0 ? 1 : -1;
-    const cx = a.x + ux * ((s + e) / 2) + nx * amp * 2 * dir;
-    const cy = a.y + uy * ((s + e) / 2) + ny * amp * 2 * dir;
-    d += ` Q ${cx} ${cy} ${a.x + ux * e} ${a.y + uy * e}`;
+/** Basketball-diagram dribble squiggle that follows the full drawn polyline. */
+export function dribbleD(path: Point[]) {
+  if (path.length < 2) return "";
+  const total = pathLength(path);
+  if (total === 0) return polyD(path);
+  const waves = Math.max(2, Math.round(total / 28));
+  const samples = waves * 4;
+  const amplitude = Math.min(11, Math.max(6, total / 18));
+  const waved: Point[] = [];
+  for (let index = 0; index <= samples; index += 1) {
+    const progress = index / samples;
+    const center = getPointAlongPath(path, progress);
+    const before = getPointAlongPath(path, Math.max(0, progress - 0.004));
+    const after = getPointAlongPath(path, Math.min(1, progress + 0.004));
+    const dx = after.x - before.x;
+    const dy = after.y - before.y;
+    const length = Math.hypot(dx, dy) || 1;
+    const offset = Math.sin(progress * waves * Math.PI * 2) * amplitude;
+    waved.push({ x: center.x + (-dy / length) * offset, y: center.y + (dx / length) * offset });
   }
-  d += ` L ${b.x} ${b.y}`;
-  return d;
+  return polyD(waved);
 }
 
 /** Smooth polyline path string (pixel space) for freehand drawn lines. */

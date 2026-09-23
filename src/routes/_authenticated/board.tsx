@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/board")({
   component: BoardPage,
 });
 
-type Tool = "draw" | "arrow" | "marker" | "erase";
+type Tool = "draw" | "arrow" | "marker" | "xo" | "erase";
 
 const COLORS: { name: string; value: string }[] = [
   { name: "White", value: "#f8fafc" },
@@ -101,6 +101,15 @@ function ObjectShape({ o }: { o: BoardObject }) {
       </g>
     );
   }
+  if (o.kind === "xo") {
+    const c = px(o);
+    return o.symbol === "X" ? (
+      <g stroke={o.color} strokeWidth={7} strokeLinecap="round">
+        <line x1={c.x - 16} y1={c.y - 16} x2={c.x + 16} y2={c.y + 16} />
+        <line x1={c.x + 16} y1={c.y - 16} x2={c.x - 16} y2={c.y + 16} />
+      </g>
+    ) : <circle cx={c.x} cy={c.y} r={19} fill="none" stroke={o.color} strokeWidth={7} />;
+  }
   const c = px(o);
   return (
     <g>
@@ -140,18 +149,21 @@ function BoardPage() {
   const saved = readBoard();
   const [objects, setObjects] = useState<BoardObject[]>(saved.objects);
   const [redo, setRedo] = useState<BoardObject[][]>(saved.redo);
+  const [history, setHistory] = useState<BoardObject[][]>([]);
   const [zoom, setZoom] = useState<CourtZoom>(saved.zoom);
   const [tool, setTool] = useState<Tool>("draw");
   const [color, setColor] = useState(COLORS[0]!.value);
-  const [width, setWidth] = useState(8);
+  const [width, setWidth] = useState(4);
   const [team, setTeam] = useState<"offense" | "defense">("offense");
   const [label, setLabel] = useState("1");
+  const [xoSymbol, setXoSymbol] = useState<"X" | "O">("X");
   const [compact, setCompact] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
   const draft = useRef<BoardObject | null>(null);
   const down = useRef(false);
   const dragId = useRef<string | null>(null);
+  const gestureStart = useRef<BoardObject[] | null>(null);
   const [, force] = useState(0);
 
   useEffect(() => {
@@ -159,16 +171,22 @@ function BoardPage() {
   }, [objects, redo, zoom]);
 
   const commit = useCallback((o: BoardObject) => {
-    setObjects((prev) => [...prev, o]);
+    setObjects((prev) => {
+      setHistory((states) => [...states, prev]);
+      return [...prev, o];
+    });
     setRedo([]);
   }, []);
 
   const undo = useCallback(() => {
-    setObjects((prev) => {
-      if (!prev.length) return prev;
-      const next = prev.slice(0, -1);
-      setRedo((r) => [...r, prev]);
-      return next;
+    setHistory((states) => {
+      const previous = states[states.length - 1];
+      if (!previous) return states;
+      setObjects((current) => {
+        setRedo((future) => [...future, current]);
+        return previous;
+      });
+      return states.slice(0, -1);
     });
   }, []);
 
@@ -176,7 +194,10 @@ function BoardPage() {
     setRedo((r) => {
       const last = r[r.length - 1];
       if (!last) return r;
-      setObjects(last);
+      setObjects((current) => {
+        setHistory((states) => [...states, current]);
+        return last;
+      });
       return r.slice(0, -1);
     });
   }, []);
@@ -184,7 +205,13 @@ function BoardPage() {
   const eraseAt = (p: BoardPoint) => {
     setObjects((prev) => {
       const keep = prev.filter((o) => !hitTest(o, p, 0.018));
-      if (keep.length !== prev.length) setRedo([]);
+      if (keep.length !== prev.length) {
+        if (!gestureStart.current) {
+          gestureStart.current = prev;
+          setHistory((states) => [...states, prev]);
+        }
+        setRedo([]);
+      }
       return keep;
     });
   };
@@ -195,13 +222,15 @@ function BoardPage() {
       eraseAt(p);
       return;
     }
-    if (tool === "marker") {
-      const existing = [...objects].reverse().find((o) => o.kind === "marker" && hitTest(o, p, 0.018));
+    if (tool === "marker" || tool === "xo") {
+      const existing = [...objects].reverse().find((o) => (o.kind === "marker" || o.kind === "xo") && hitTest(o, p, 0.018));
       if (existing) {
+        gestureStart.current = objects;
         dragId.current = existing.id;
         return;
       }
-      commit({ id: newId(), kind: "marker", color, team, label, x: p.x, y: p.y });
+      if (tool === "xo") commit({ id: newId(), kind: "xo", symbol: xoSymbol, color, x: p.x, y: p.y });
+      else commit({ id: newId(), kind: "marker", color, team, label, x: p.x, y: p.y });
       return;
     }
     draft.current =
@@ -220,7 +249,7 @@ function BoardPage() {
     if (dragId.current) {
       const id = dragId.current;
       setObjects((prev) =>
-        prev.map((o) => (o.id === id && o.kind === "marker" ? { ...o, x: p.x, y: p.y } : o)),
+        prev.map((o) => (o.id === id && (o.kind === "marker" || o.kind === "xo") ? { ...o, x: p.x, y: p.y } : o)),
       );
       return;
     }
@@ -236,6 +265,11 @@ function BoardPage() {
 
   const onUp = () => {
     down.current = false;
+    if (dragId.current && gestureStart.current) {
+      setHistory((states) => [...states, gestureStart.current ?? []]);
+      setRedo([]);
+    }
+    gestureStart.current = null;
     dragId.current = null;
     const d = draft.current;
     draft.current = null;
@@ -327,6 +361,7 @@ function BoardPage() {
           {toolBtn("draw", "Marker")}
           {toolBtn("arrow", "Arrow")}
           {toolBtn("marker", "Players")}
+          {toolBtn("xo", "X / O")}
           {toolBtn("erase", "Eraser")}
 
           <span className="mx-1 h-6 w-px bg-border" aria-hidden />
@@ -402,8 +437,16 @@ function BoardPage() {
             </>
           ) : null}
 
+          {tool === "xo" ? (
+            <>
+              <span className="mx-1 h-6 w-px bg-border" aria-hidden />
+              <BubbleButton size="sm" tone={xoSymbol === "X" ? "grape" : "neutral"} aria-pressed={xoSymbol === "X"} onClick={() => setXoSymbol("X")}>X</BubbleButton>
+              <BubbleButton size="sm" tone={xoSymbol === "O" ? "grape" : "neutral"} aria-pressed={xoSymbol === "O"} onClick={() => setXoSymbol("O")}>O</BubbleButton>
+            </>
+          ) : null}
+
           <span className="mx-1 h-6 w-px bg-border" aria-hidden />
-          <BubbleButton size="sm" tone="neutral" onClick={undo} disabled={!objects.length}>
+          <BubbleButton size="sm" tone="neutral" onClick={undo} disabled={!history.length}>
             ↶ Undo
           </BubbleButton>
           <BubbleButton size="sm" tone="neutral" onClick={doRedo} disabled={!redo.length}>
@@ -416,7 +459,8 @@ function BoardPage() {
                 size="sm"
                 tone="danger"
                 onClick={() => {
-                  setRedo((r) => [...r, objects]);
+                  setHistory((states) => [...states, objects]);
+                  setRedo([]);
                   setObjects([]);
                   setConfirmClear(false);
                 }}

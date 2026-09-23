@@ -31,7 +31,7 @@ export function DrillObjectShape({ o }: { o: DrillObject }) {
     return <circle cx={x} cy={y} r={11} fill="var(--flame)" stroke="var(--background)" strokeWidth={3} />;
   }
   if (o.type === "line") {
-    return <line x1={x - 26} y1={y} x2={x + 26} y2={y} stroke="var(--court-line)" strokeWidth={6} />;
+    return null;
   }
   if (o.type === "text") {
     return (
