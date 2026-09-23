@@ -19,6 +19,7 @@
 - [x] Reduce Team Stats tabs to Overview / Games / Players / Team
 - [x] Replace Tools card previews with representative value-focused miniatures
 - [x] Rebuild Drill Maker around court-first Playmaker-style drawing, steps, equipment, and preview
+- [x] Correct Drill Maker positioning, undo/redo, wrapped tools, dribble visuals, and Board X/O markers
 - [ ] DB: additive migration (games.home_away/overtime_minutes, team settings columns, org_members roles, coach_invites, tightened RLS, invite RPCs, logo bucket)
 - [ ] Sign-in barrier (`/`, `/auth`) + `_authenticated` gate + global offline flusher
 - [ ] Home dashboard (`/dashboard`) with 9 cards

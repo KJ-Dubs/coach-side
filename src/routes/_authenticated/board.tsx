@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/board")({
   component: BoardPage,
 });
 
-type Tool = "draw" | "arrow" | "marker" | "erase";
+type Tool = "draw" | "arrow" | "marker" | "xo" | "erase";
 
 const COLORS: { name: string; value: string }[] = [
   { name: "White", value: "#f8fafc" },
@@ -101,6 +101,15 @@ function ObjectShape({ o }: { o: BoardObject }) {
       </g>
     );
   }
+  if (o.kind === "xo") {
+    const c = px(o);
+    return o.symbol === "X" ? (
+      <g stroke={o.color} strokeWidth={7} strokeLinecap="round">
+        <line x1={c.x - 16} y1={c.y - 16} x2={c.x + 16} y2={c.y + 16} />
+        <line x1={c.x + 16} y1={c.y - 16} x2={c.x - 16} y2={c.y + 16} />
+      </g>
+    ) : <circle cx={c.x} cy={c.y} r={19} fill="none" stroke={o.color} strokeWidth={7} />;
+  }
   const c = px(o);
   return (
     <g>
@@ -143,9 +152,10 @@ function BoardPage() {
   const [zoom, setZoom] = useState<CourtZoom>(saved.zoom);
   const [tool, setTool] = useState<Tool>("draw");
   const [color, setColor] = useState(COLORS[0]!.value);
-  const [width, setWidth] = useState(8);
+  const [width, setWidth] = useState(4);
   const [team, setTeam] = useState<"offense" | "defense">("offense");
   const [label, setLabel] = useState("1");
+  const [xoSymbol, setXoSymbol] = useState<"X" | "O">("X");
   const [compact, setCompact] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
@@ -195,13 +205,14 @@ function BoardPage() {
       eraseAt(p);
       return;
     }
-    if (tool === "marker") {
-      const existing = [...objects].reverse().find((o) => o.kind === "marker" && hitTest(o, p, 0.018));
+    if (tool === "marker" || tool === "xo") {
+      const existing = [...objects].reverse().find((o) => (o.kind === "marker" || o.kind === "xo") && hitTest(o, p, 0.018));
       if (existing) {
         dragId.current = existing.id;
         return;
       }
-      commit({ id: newId(), kind: "marker", color, team, label, x: p.x, y: p.y });
+      if (tool === "xo") commit({ id: newId(), kind: "xo", symbol: xoSymbol, color, x: p.x, y: p.y });
+      else commit({ id: newId(), kind: "marker", color, team, label, x: p.x, y: p.y });
       return;
     }
     draft.current =
@@ -220,7 +231,7 @@ function BoardPage() {
     if (dragId.current) {
       const id = dragId.current;
       setObjects((prev) =>
-        prev.map((o) => (o.id === id && o.kind === "marker" ? { ...o, x: p.x, y: p.y } : o)),
+        prev.map((o) => (o.id === id && (o.kind === "marker" || o.kind === "xo") ? { ...o, x: p.x, y: p.y } : o)),
       );
       return;
     }
@@ -327,6 +338,7 @@ function BoardPage() {
           {toolBtn("draw", "Marker")}
           {toolBtn("arrow", "Arrow")}
           {toolBtn("marker", "Players")}
+          {toolBtn("xo", "X / O")}
           {toolBtn("erase", "Eraser")}
 
           <span className="mx-1 h-6 w-px bg-border" aria-hidden />
@@ -399,6 +411,14 @@ function BoardPage() {
                   {n}
                 </BubbleButton>
               ))}
+            </>
+          ) : null}
+
+          {tool === "xo" ? (
+            <>
+              <span className="mx-1 h-6 w-px bg-border" aria-hidden />
+              <BubbleButton size="sm" tone={xoSymbol === "X" ? "grape" : "neutral"} aria-pressed={xoSymbol === "X"} onClick={() => setXoSymbol("X")}>X</BubbleButton>
+              <BubbleButton size="sm" tone={xoSymbol === "O" ? "grape" : "neutral"} aria-pressed={xoSymbol === "O"} onClick={() => setXoSymbol("O")}>O</BubbleButton>
             </>
           ) : null}
 

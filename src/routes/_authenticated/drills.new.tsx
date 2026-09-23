@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/drills/new")({
 });
 
 type Tool = "position" | "cut" | "pass" | "dribble" | "screen" | "shot" | "equipment" | "erase";
-type EquipmentTool = DrillObject["type"];
+type EquipmentTool = Exclude<DrillObject["type"], "line">;
 type AnimMode = "idle" | "preview" | "replay";
 const STEP_MS = SHOW_MS + DO_MS;
 const uid = () => uuid();
@@ -147,7 +147,7 @@ function DrillMakerPage() {
         setDragObject(existing.id);
         setHistory((prev) => [...prev.slice(-19), frame]);
         setFuture([]);
-      } else commit({ ...frame, objects: [...frame.objects, { id: uid(), type: equipmentTool, x: p.x, y: p.y, ...(equipmentTool === "text" ? { label: "START" } : {}) }] });
+      } else commit({ ...frame, objects: [...frame.objects, { id: uid(), type: equipmentTool, x: p.x, y: p.y, ...(equipmentTool === "text" ? { label: "NOTE" } : {}) }] });
       return;
     }
     if (tool === "position") {
@@ -260,7 +260,7 @@ function DrillMakerPage() {
             <BubbleButton size="sm" tone="neutral" onClick={redo} disabled={future.length === 0} title="Redo"><Redo2 className="h-4 w-4" /></BubbleButton>
           </div>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1">{tools.map((item) => <BubbleButton key={item.key} size="sm" tone={tool === item.key ? (item.key === "erase" ? "flame" : "grape") : "neutral"} className="shrink-0" onClick={() => { setTool(item.key); if (item.key === "equipment") setEquipmentOpen(true); }}>{item.label}</BubbleButton>)}</div>
+        <div className="grid grid-cols-4 gap-2">{tools.map((item) => <BubbleButton key={item.key} size="sm" tone={tool === item.key ? (item.key === "erase" ? "flame" : "grape") : "neutral"} className="min-h-11 min-w-0 px-1 text-center text-[11px] sm:px-3 sm:text-xs" onClick={() => { setTool(item.key); if (item.key === "equipment") setEquipmentOpen(true); }}>{item.label}</BubbleButton>)}</div>
         {tool === "position" ? <div className="flex flex-wrap items-center gap-2"><Pill tone="muted">Tap empty court to add • Drag to move</Pill><BubbleButton size="sm" tone={addingTeam === "offense" ? "grape" : "neutral"} onClick={() => setAddingTeam("offense")}><UserPlus className="h-4 w-4" /> Offense</BubbleButton><BubbleButton size="sm" tone={addingTeam === "defense" ? "flame" : "neutral"} onClick={() => setAddingTeam("defense")}><Shield className="h-4 w-4" /> Defense</BubbleButton></div> : null}
         {tool === "equipment" && equipmentOpen ? <div className="flex flex-wrap gap-2 rounded-2xl border border-border bg-surface-2/60 p-2">{equipmentChoices.map((item) => <BubbleButton key={item.key} size="sm" tone={equipmentTool === item.key ? "flame" : "neutral"} onClick={() => setEquipmentTool(item.key)}>{item.key === "cone" ? <TrafficCone className="h-4 w-4" /> : item.key === "ball" ? <CircleDot className="h-4 w-4" /> : <PackageOpen className="h-4 w-4" />}{item.label}</BubbleButton>)}</div> : null}
         <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2"><BubbleButton size="sm" tone="flame" onClick={() => { setMode("idle"); setTimeMs(0); setSeqIdx(seqCount); }}>+ Add Step</BubbleButton>{steps.map((step, index) => <BubbleButton key={step.seq} size="sm" tone={index === activeIdx ? "grape" : "neutral"} onClick={() => { setMode("idle"); setSeqIdx(index); }}>{index + 1}</BubbleButton>)}<Pill tone="muted">{activeIdx === seqCount ? "New step from previous finish" : `${shownActions.length} action${shownActions.length === 1 ? "" : "s"}`}</Pill></div>
