@@ -157,7 +157,14 @@ function DrillMakerPage() {
         setDragObject(existing.id);
         setHistory((prev) => [...prev.slice(-19), frame]);
         setFuture([]);
-      } else commit({ ...frame, objects: [...frame.objects, { id: uid(), type: equipmentTool, x: p.x, y: p.y, ...(equipmentTool === "text" ? { label: "NOTE" } : {}) }] });
+      } else commit({ ...frame, objects: [...frame.objects, {
+        id: uid(),
+        type: equipmentTool,
+        x: p.x,
+        y: p.y,
+        ...(equipmentTool === "ball" ? { ownerTokenId: null, ballState: "free" as const, assignedOrder: Date.now(), startSeq: seqNumber } : {}),
+        ...(equipmentTool === "text" ? { label: "NOTE" } : {}),
+      }] });
       return;
     }
     if (tool === "position") {
