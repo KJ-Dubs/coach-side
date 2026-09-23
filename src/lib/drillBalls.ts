@@ -9,6 +9,7 @@ export type DrillBallState = {
   ownerTokenId: string | null;
   state: "free" | "possessed" | "in-flight";
   assignedOrder: number;
+  startSeq: number;
 };
 
 export type DrillBallSample = DrillBallState & { point: Point };
@@ -22,7 +23,7 @@ function tokenPoint(tokens: PlayToken[], id: string | null) {
 
 export function normalizeDrillBalls(frame: DrillFrame | undefined): DrillBallState[] {
   if (!frame) return [];
-  const stored = frame.objects
+  const stored: DrillBallState[] = frame.objects
     .filter((object) => object.type === "ball")
     .map((object, index) => ({
       id: object.id,
@@ -31,11 +32,13 @@ export function normalizeDrillBalls(frame: DrillFrame | undefined): DrillBallSta
       ownerTokenId: object.ownerTokenId ?? null,
       state: object.ownerTokenId ? "possessed" as const : "free" as const,
       assignedOrder: object.assignedOrder ?? index,
+      startSeq: object.startSeq ?? 1,
     }));
-  if (stored.length) return stored;
   const owner = frame.tokens.find((token) => token.ball);
-  if (!owner) return [];
-  return [{ id: PRIMARY_ID, x: owner.x, y: owner.y, ownerTokenId: owner.id, state: "possessed", assignedOrder: 0 }];
+  if (owner && !stored.some((ball) => ball.id === PRIMARY_ID)) {
+    stored.unshift({ id: PRIMARY_ID, x: owner.x, y: owner.y, ownerTokenId: owner.id, state: "possessed", assignedOrder: -1, startSeq: 1 });
+  }
+  return stored;
 }
 
 export function ballsToObjects(objects: DrillObject[], balls: DrillBallState[]): DrillObject[] {
@@ -50,8 +53,40 @@ export function ballsToObjects(objects: DrillObject[], balls: DrillBallState[]):
       ownerTokenId: ball.ownerTokenId,
       ballState: ball.ownerTokenId ? "possessed" as const : "free" as const,
       assignedOrder: ball.assignedOrder,
+      startSeq: ball.startSeq,
+      ballSetups: objects.find((object) => object.id === ball.id)?.ballSetups ?? [],
     })),
   ];
+}
+
+export function materializeDrillBalls(frame: DrillFrame): DrillFrame {
+  const balls = normalizeDrillBalls(frame);
+  return {
+    ...frame,
+    tokens: frame.tokens.map((token) => ({ ...token, ball: false })),
+    objects: ballsToObjects(frame.objects, balls),
+  };
+}
+
+export function setDrillBallSetup(
+  frame: DrillFrame,
+  ballId: string,
+  seq: number,
+  point: Point,
+  ownerTokenId: string | null,
+): DrillFrame {
+  const order = Date.now();
+  return {
+    ...frame,
+    objects: frame.objects.map((object) => {
+      if (object.id !== ballId || object.type !== "ball") return object;
+      if (seq <= (object.startSeq ?? 1)) {
+        return { ...object, x: point.x, y: point.y, ownerTokenId, ballState: ownerTokenId ? "possessed" : "free", assignedOrder: order };
+      }
+      const setups = (object.ballSetups ?? []).filter((setup) => setup.seq !== seq);
+      return { ...object, ballSetups: [...setups, { seq, x: point.x, y: point.y, ownerTokenId, assignedOrder: order }] };
+    }),
+  };
 }
 
 export function ballOwnedBy(balls: DrillBallState[], tokenId: string) {
@@ -103,12 +138,22 @@ export function drillStateAtSequenceStart(frame: DrillFrame, index: number) {
   let tokens = frame.tokens.map((token) => ({ ...token, ball: false }));
   let balls = normalizeDrillBalls(frame);
   const sequences = actionsBySequence(frame);
+  const requestedSeq = sequences[index] ?? ((sequences.at(-1) ?? 0) + 1);
+  balls = balls.filter((ball) => ball.startSeq <= requestedSeq);
   for (let i = 0; i < Math.min(index, sequences.length); i += 1) {
     const actions = frame.actions.filter((action) => action.seq === sequences[i]);
     const endTokens = endTokensForSequence(tokens, actions);
     balls = advanceBalls(balls, tokens, endTokens, actions);
     tokens = endTokens;
   }
+  balls = balls.map((ball) => {
+    const object = frame.objects.find((item) => item.id === ball.id);
+    const setup = object?.ballSetups
+      ?.filter((item) => item.seq <= requestedSeq)
+      .sort((a, b) => b.seq - a.seq)[0];
+    if (!setup) return ball;
+    return { ...ball, x: setup.x, y: setup.y, ownerTokenId: setup.ownerTokenId, assignedOrder: setup.assignedOrder, state: setup.ownerTokenId ? "possessed" : "free" };
+  });
   return { tokens, balls };
 }
 
@@ -144,7 +189,7 @@ export function sampleDrillBalls(
 export function visibleDrillBalls(frame: DrillFrame | undefined, tokens?: PlayToken[]) {
   if (!frame) return [];
   const shown = tokens ?? frame.tokens;
-  return normalizeDrillBalls(frame).map((ball) => ({
+  return normalizeDrillBalls(frame).filter((ball) => ball.startSeq <= 1).map((ball) => ({
     id: ball.id,
     ownerId: ball.ownerTokenId,
     point: tokenPoint(shown, ball.ownerTokenId) ?? { x: ball.x, y: ball.y },

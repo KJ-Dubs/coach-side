@@ -60,6 +60,14 @@ export type DrillObject = {
   ownerTokenId?: string | null;
   ballState?: "free" | "possessed" | "in-flight";
   assignedOrder?: number;
+  startSeq?: number;
+  ballSetups?: {
+    seq: number;
+    x: number;
+    y: number;
+    ownerTokenId: string | null;
+    assignedOrder: number;
+  }[];
 };
 
 export type Drill = {
