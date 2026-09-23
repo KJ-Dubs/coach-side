@@ -141,6 +141,15 @@ export function drillStateAtSequenceStart(frame: DrillFrame, index: number) {
   const requestedSeq = sequences[index] ?? ((sequences.at(-1) ?? 0) + 1);
   balls = balls.filter((ball) => ball.startSeq <= requestedSeq);
   for (let i = 0; i < Math.min(index, sequences.length); i += 1) {
+    const currentSeq = sequences[i]!;
+    balls = balls.map((ball) => {
+      const setup = frame.objects.find((item) => item.id === ball.id)?.ballSetups
+        ?.filter((item) => item.seq <= currentSeq)
+        .sort((a, b) => b.seq - a.seq)[0];
+      return setup
+        ? { ...ball, x: setup.x, y: setup.y, ownerTokenId: setup.ownerTokenId, assignedOrder: setup.assignedOrder, state: setup.ownerTokenId ? "possessed" as const : "free" as const }
+        : ball;
+    });
     const actions = frame.actions.filter((action) => action.seq === sequences[i]);
     const endTokens = endTokensForSequence(tokens, actions);
     balls = advanceBalls(balls, tokens, endTokens, actions);

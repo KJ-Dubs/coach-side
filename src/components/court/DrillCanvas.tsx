@@ -73,6 +73,7 @@ export function DrillCanvas({
   const asPlayFrame = frame
     ? ({ ...frame, play_id: frame.drill_id } as unknown as PlayFrame)
     : undefined;
+  const drillTokens = (tokens ?? frame?.tokens)?.map((token) => ({ ...token, ball: false }));
   return (
     <PlayCanvas
       frame={asPlayFrame}
@@ -81,7 +82,7 @@ export function DrillCanvas({
       onCourtPoint={onCourtPoint}
       onCourtPointerMove={onCourtPointerMove}
       onCourtPointerUp={onCourtPointerUp}
-      tokens={tokens}
+      tokens={drillTokens}
       actions={actions}
       ball={ball}
       balls={balls ?? visibleDrillBalls(frame, tokens)}

@@ -137,6 +137,7 @@ function DrillMakerPage() {
   };
 
   const objectAt = (p: Point) => [...frame.objects].reverse().find((object) => Math.hypot(object.x - p.x, object.y - p.y) < 0.045);
+  const ballAt = (p: Point) => [...shownBalls].reverse().find((ball) => Math.hypot(ball.point.x - p.x, ball.point.y - p.y) < 0.05);
   const actionAt = (p: Point) => [...frame.actions].reverse().find((action) => action.seq === seqNumber && action.points.some((point) => Math.hypot(point.x - p.x, point.y - p.y) < 0.045));
   const tokenAt = (p: Point) => nearestTokenAt(shownTokens, p);
 
@@ -144,9 +145,11 @@ function DrillMakerPage() {
     if (mode !== "idle") setMode("idle");
     if (tool === "erase") {
       const object = objectAt(p);
+      const ball = ballAt(p);
       const action = actionAt(p);
       const token = tokenAt(p);
-      if (object) commit({ ...frame, objects: frame.objects.filter((item) => item.id !== object.id) });
+      if (ball) commit({ ...frame, objects: frame.objects.filter((item) => item.id !== ball.id), actions: frame.actions.filter((item) => item.ballId !== ball.id) });
+      else if (object) commit({ ...frame, objects: frame.objects.filter((item) => item.id !== object.id) });
       else if (action) commit({ ...frame, actions: frame.actions.filter((item) => item.id !== action.id) });
       else if (token) commit({ ...frame, tokens: frame.tokens.filter((item) => item.id !== token) });
       return;
@@ -168,12 +171,12 @@ function DrillMakerPage() {
       return;
     }
     if (tool === "position") {
-      const ball = objectAt(p);
-      if (ball?.type === "ball") {
-        setDragObject(ball.id);
+      const shownBall = ballAt(p);
+      if (shownBall) {
+        setDragObject(shownBall.id);
         setHistory((prev) => [...prev.slice(-19), frame]);
         setFuture([]);
-        setFrame((current) => setDrillBallSetup(current, ball.id, seqNumber, p, null));
+        setFrame((current) => setDrillBallSetup(current, shownBall.id, seqNumber, p, null));
         return;
       }
       const token = tokenAt(p);
