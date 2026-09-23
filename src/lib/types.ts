@@ -123,6 +123,8 @@ export type PlayAction = {
   points: { x: number; y: number }[];
   /** Token that performs the action. */
   actor?: string;
+  /** Drill Maker only: immutable basketball used by this action. */
+  ballId?: string;
   /** Receiving token for passes and handoffs. */
   target?: string;
   transfersBall?: boolean;

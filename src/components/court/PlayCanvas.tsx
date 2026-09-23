@@ -190,6 +190,7 @@ export function PlayCanvas({
   tokens,
   actions,
   ball,
+  balls,
   dimOtherActions = false,
   activeSeq,
   focusTokenId,
@@ -208,6 +209,7 @@ export function PlayCanvas({
   tokens?: PlayToken[] | undefined;
   actions?: PlayAction[] | undefined;
   ball?: Point | null | undefined;
+  balls?: { id: string; point: Point; ownerId: string | null }[] | undefined;
   dimOtherActions?: boolean | undefined;
   activeSeq?: number | undefined;
   /** Emphasize one player and their actions (read-only presenter view). */
@@ -280,6 +282,16 @@ export function PlayCanvas({
       {ballPx ? (
         <BallMark p={attached ? { x: ballPx.x + 22, y: ballPx.y - 20 } : ballPx} />
       ) : null}
+      {balls?.map((item, index) => {
+        const point = xf(item.point, flip);
+        const spread = index % 3;
+        return (
+          <BallMark
+            key={item.id}
+            p={item.ownerId ? { x: point.x + 22 + spread * 7, y: point.y - 20 + spread * 5 } : point}
+          />
+        );
+      })}
       {ghostPts && ghostPts.length > 1 ? (
         <path
           d={polyD(ghostPts.map((p) => xf(p, flip)))}
