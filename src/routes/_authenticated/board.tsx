@@ -149,6 +149,7 @@ function BoardPage() {
   const saved = readBoard();
   const [objects, setObjects] = useState<BoardObject[]>(saved.objects);
   const [redo, setRedo] = useState<BoardObject[][]>(saved.redo);
+  const [history, setHistory] = useState<BoardObject[][]>([]);
   const [zoom, setZoom] = useState<CourtZoom>(saved.zoom);
   const [tool, setTool] = useState<Tool>("draw");
   const [color, setColor] = useState(COLORS[0]!.value);
@@ -162,6 +163,7 @@ function BoardPage() {
   const draft = useRef<BoardObject | null>(null);
   const down = useRef(false);
   const dragId = useRef<string | null>(null);
+  const gestureStart = useRef<BoardObject[] | null>(null);
   const [, force] = useState(0);
 
   useEffect(() => {
@@ -169,16 +171,22 @@ function BoardPage() {
   }, [objects, redo, zoom]);
 
   const commit = useCallback((o: BoardObject) => {
-    setObjects((prev) => [...prev, o]);
+    setObjects((prev) => {
+      setHistory((states) => [...states, prev]);
+      return [...prev, o];
+    });
     setRedo([]);
   }, []);
 
   const undo = useCallback(() => {
-    setObjects((prev) => {
-      if (!prev.length) return prev;
-      const next = prev.slice(0, -1);
-      setRedo((r) => [...r, prev]);
-      return next;
+    setHistory((states) => {
+      const previous = states[states.length - 1];
+      if (!previous) return states;
+      setObjects((current) => {
+        setRedo((future) => [...future, current]);
+        return previous;
+      });
+      return states.slice(0, -1);
     });
   }, []);
 
@@ -186,7 +194,10 @@ function BoardPage() {
     setRedo((r) => {
       const last = r[r.length - 1];
       if (!last) return r;
-      setObjects(last);
+      setObjects((current) => {
+        setHistory((states) => [...states, current]);
+        return last;
+      });
       return r.slice(0, -1);
     });
   }, []);
@@ -194,7 +205,13 @@ function BoardPage() {
   const eraseAt = (p: BoardPoint) => {
     setObjects((prev) => {
       const keep = prev.filter((o) => !hitTest(o, p, 0.018));
-      if (keep.length !== prev.length) setRedo([]);
+      if (keep.length !== prev.length) {
+        if (!gestureStart.current) {
+          gestureStart.current = prev;
+          setHistory((states) => [...states, prev]);
+        }
+        setRedo([]);
+      }
       return keep;
     });
   };
@@ -208,6 +225,7 @@ function BoardPage() {
     if (tool === "marker" || tool === "xo") {
       const existing = [...objects].reverse().find((o) => (o.kind === "marker" || o.kind === "xo") && hitTest(o, p, 0.018));
       if (existing) {
+        gestureStart.current = objects;
         dragId.current = existing.id;
         return;
       }
@@ -247,6 +265,11 @@ function BoardPage() {
 
   const onUp = () => {
     down.current = false;
+    if (dragId.current && gestureStart.current) {
+      setHistory((states) => [...states, gestureStart.current ?? []]);
+      setRedo([]);
+    }
+    gestureStart.current = null;
     dragId.current = null;
     const d = draft.current;
     draft.current = null;
@@ -423,7 +446,7 @@ function BoardPage() {
           ) : null}
 
           <span className="mx-1 h-6 w-px bg-border" aria-hidden />
-          <BubbleButton size="sm" tone="neutral" onClick={undo} disabled={!objects.length}>
+          <BubbleButton size="sm" tone="neutral" onClick={undo} disabled={!history.length}>
             ↶ Undo
           </BubbleButton>
           <BubbleButton size="sm" tone="neutral" onClick={doRedo} disabled={!redo.length}>
@@ -436,7 +459,8 @@ function BoardPage() {
                 size="sm"
                 tone="danger"
                 onClick={() => {
-                  setRedo((r) => [...r, objects]);
+                  setHistory((states) => [...states, objects]);
+                  setRedo([]);
                   setObjects([]);
                   setConfirmClear(false);
                 }}
