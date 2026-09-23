@@ -12,6 +12,7 @@ import { buildSteps, inferPassReceiver, nearestTokenAt, sampleTimeline, stateAtS
 import { simplifyPath, type Point } from "@/lib/playPath";
 import type { PlayAction, PlayActionType, PlayFrame, PlayToken } from "@/lib/types";
 import { uuid } from "@/lib/offline";
+import { ballOwnedBy, ballsToObjects, drillStateAtSequenceStart, materializeDrillBalls, normalizeDrillBalls, sampleDrillBalls, setDrillBallSetup } from "@/lib/drillBalls";
 
 export const Route = createFileRoute("/_authenticated/drills/new")({
   head: () => ({ meta: [
@@ -32,10 +33,12 @@ const STEP_MS = SHOW_MS + DO_MS;
 const uid = () => uuid();
 
 const START_TOKENS: PlayToken[] = [
-  { id: "drill-p1", label: "1", x: 0.58, y: 0.5, ball: true, team: "offense" },
+  { id: "drill-p1", label: "1", x: 0.58, y: 0.5, ball: false, team: "offense" },
   { id: "drill-p2", label: "2", x: 0.7, y: 0.24, ball: false, team: "offense" },
   { id: "drill-p3", label: "3", x: 0.7, y: 0.76, ball: false, team: "offense" },
 ];
+
+const START_BALL: DrillObject = { id: "drill-primary-ball", type: "ball", x: 0.58, y: 0.5, ownerTokenId: "drill-p1", ballState: "possessed", assignedOrder: 0, startSeq: 1 };
 
 function asPlayFrame(frame: DrillFrame): PlayFrame {
   return { id: frame.id, play_id: frame.drill_id, idx: frame.idx, tokens: frame.tokens, actions: frame.actions, note: frame.note };
@@ -48,7 +51,7 @@ function DrillMakerPage() {
   const [equipmentOpen, setEquipmentOpen] = useState(false);
   const [addingTeam, setAddingTeam] = useState<"offense" | "defense">("offense");
   const [zoom, setZoom] = useState<CourtZoom>("right");
-  const [frame, setFrame] = useState<DrillFrame>({ id: "draft", drill_id: "draft", idx: 0, tokens: START_TOKENS, actions: [], objects: [], note: null });
+  const [frame, setFrame] = useState<DrillFrame>({ id: "draft", drill_id: "draft", idx: 0, tokens: START_TOKENS, actions: [], objects: [START_BALL], note: null });
   const [history, setHistory] = useState<DrillFrame[]>([]);
   const [future, setFuture] = useState<DrillFrame[]>([]);
   const [seqIdx, setSeqIdx] = useState(0);
@@ -77,12 +80,19 @@ function DrillMakerPage() {
   const activeStep = steps[activeIdx];
   const seqNumber = activeStep?.seq ?? (steps[seqCount - 1]?.seq ?? 0) + 1;
   const projected = useMemo(() => stateAtSequenceStart(playFrame, activeIdx), [playFrame, activeIdx]);
+  const drillProjected = useMemo(() => drillStateAtSequenceStart(frame, activeIdx), [frame, activeIdx]);
   const timeline = useMemo(() => ({ steps, totalMs: steps.length * STEP_MS }), [steps]);
   const rangeStart = mode === "preview" ? activeIdx * STEP_MS : 0;
   const rangeEnd = mode === "preview" ? (activeIdx + 1) * STEP_MS : timeline.totalMs;
   const live = mode === "idle" ? null : sampleTimeline(timeline, timeMs);
-  const shownTokens = live?.sample.tokens ?? projected.tokens;
+  const shownTokens = (live?.sample.tokens ?? projected.tokens).map((token) => ({ ...token, ball: false }));
   const shownActions = live?.step.actions ?? activeStep?.actions ?? [];
+  const shownBalls = useMemo(() => sampleDrillBalls(
+    drillProjected.balls,
+    live?.step.actions ?? activeStep?.actions ?? [],
+    shownTokens,
+    live?.progress ?? 0,
+  ).map((ball) => ({ id: ball.id, point: ball.point, ownerId: ball.ownerTokenId })), [activeStep?.actions, drillProjected.balls, live?.progress, live?.step.actions, shownTokens]);
 
   useEffect(() => {
     if (mode === "idle") return;
@@ -151,6 +161,14 @@ function DrillMakerPage() {
       return;
     }
     if (tool === "position") {
+      const ball = objectAt(p);
+      if (ball?.type === "ball") {
+        setDragObject(ball.id);
+        setHistory((prev) => [...prev.slice(-19), frame]);
+        setFuture([]);
+        setFrame((current) => setDrillBallSetup(current, ball.id, seqNumber, p, null));
+        return;
+      }
       const token = tokenAt(p);
       if (token) {
         setDragObject(token);
@@ -170,7 +188,7 @@ function DrillMakerPage() {
       if (isToken) {
         setFrame(f => ({ ...f, tokens: f.tokens.map(t => t.id === dragObject ? { ...t, x: p.x, y: p.y } : t) }));
       } else {
-        setFrame(f => ({ ...f, objects: f.objects.map(o => o.id === dragObject ? { ...o, x: p.x, y: p.y } : o) }));
+        setFrame(f => setDrillBallSetup(f, dragObject, seqNumber, p, null));
       }
       return;
     }
@@ -184,7 +202,16 @@ function DrillMakerPage() {
   };
 
   const onUp = (p: Point) => {
-    if (dragObject) { setDragObject(null); return; }
+    if (dragObject) {
+      const dragged = frame.objects.find((object) => object.id === dragObject);
+      if (dragged?.type === "ball") {
+        const ownerId = nearestTokenAt(shownTokens, p, 0.06);
+        setFrame((current) => setDrillBallSetup(current, dragObject, seqNumber, p, ownerId));
+        toast[ownerId ? "success" : "info"](ownerId ? `Ball assigned to #${shownTokens.find((token) => token.id === ownerId)?.label ?? "?"}` : "Ball left free on the court", { duration: 1400 });
+      }
+      setDragObject(null);
+      return;
+    }
     const drawn = stroke ? simplifyPath([...stroke, p]) : null;
     setStroke(null);
     
@@ -214,7 +241,12 @@ function DrillMakerPage() {
     if (tool === "equipment" || tool === "erase" || tool === "position") return;
 
     const type: PlayActionType = tool === "cut" ? "move" : tool;
-    const base: PlayAction = { id: uid(), type, seq: seqNumber, points: drawn, actor };
+    const ownedBall = ballOwnedBy(drillProjected.balls, actor);
+    if ((type === "pass" || type === "dribble") && !ownedBall) {
+      toast.info("Give this player a ball first", { duration: 1800 });
+      return;
+    }
+    const base: PlayAction = { id: uid(), type, seq: seqNumber, points: drawn, actor, ...(ownedBall ? { ballId: ownedBall.id } : {}) };
     if (type === "pass") {
       const receiver = inferPassReceiver(projected.tokens, frame.actions.filter((action) => action.seq === seqNumber), base);
       commit({ ...frame, actions: [...frame.actions, receiver ? { ...base, target: receiver.id, transfersBall: true, passTo: "receiver" } : { ...base, passTo: "space", transfersBall: false }] });
@@ -233,7 +265,8 @@ function DrillMakerPage() {
   const save = useMutation({
     mutationFn: async (publish: boolean) => {
       const drill = await createDrill({ name: name.trim(), category, skill_focus: skills, group_size: groupSize, court_orientation: zoom, equipment, duration_minutes: minutes, repetitions: null, instructions: instructions.trim(), coaching_points: null, scoring_rules: result.trim() || null, difficulty, style, published_to_library: publish, published_at: publish ? new Date().toISOString() : null });
-      await saveDrillFrames(drill.id, [{ idx: 0, tokens: frame.tokens, actions: frame.actions, objects: frame.objects, note: frame.note }]);
+      const saved = materializeDrillBalls(frame);
+      await saveDrillFrames(drill.id, [{ idx: 0, tokens: saved.tokens, actions: saved.actions, objects: saved.objects, note: saved.note }]);
       return drill.id;
     },
     onSuccess: (id) => { toast.success("Drill saved"); navigate({ to: "/drills/$drillId", params: { drillId: id } }); },
@@ -247,7 +280,7 @@ function DrillMakerPage() {
 
   return <AppShell title="Drill Maker" subtitle="Build on the court first" actions={<Link to="/drills"><BubbleButton size="sm" tone="ghost">My Drills</BubbleButton></Link>}>
     <div className="flex flex-col gap-3">
-      <DrillCanvas frame={frame} zoom={zoom} tokens={shownTokens} actions={shownActions} ball={live?.sample.ball ?? projected.ball} ghost={stroke} onCourtPoint={onDown} onCourtPointerMove={onMove} onCourtPointerUp={onUp} />
+      <DrillCanvas frame={frame} zoom={zoom} tokens={shownTokens} actions={shownActions} balls={shownBalls} ghost={stroke} onCourtPoint={onDown} onCourtPointerMove={onMove} onCourtPointerUp={onUp} />
 
       <Panel className="flex flex-col gap-2 p-2.5">
         <div className="flex items-center justify-between gap-2">
