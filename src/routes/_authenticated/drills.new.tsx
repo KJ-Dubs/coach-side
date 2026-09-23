@@ -153,10 +153,13 @@ function DrillMakerPage() {
     if (tool === "position") {
       const token = tokenAt(p);
       if (token) {
-        setDragObject(token); // Reusing dragObject for token dragging in position tool
+        setDragObject(token);
         setHistory((prev) => [...prev.slice(-19), frame]);
         setFuture([]);
+        return;
       }
+      setStroke([p]);
+      return;
     }
     setStroke([p]);
   };
@@ -197,10 +200,7 @@ function DrillMakerPage() {
     const actor = tokenAt(first);
 
     if (tool === "position") {
-      if (actor && distance > 0.03) {
-        // This is handled by onMove/drag now, but we'll ensure it's clean
-        return;
-      }
+      if (actor && distance > 0.03) return;
       if (!actor && distance < 0.03) { addPlayer(p); return; }
     }
 
@@ -213,7 +213,7 @@ function DrillMakerPage() {
     if (distance < 0.03) return;
     if (tool === "equipment" || tool === "erase" || tool === "position") return;
 
-    const type: PlayActionType = tool === "cut" ? "move" : tool as PlayActionType;
+    const type: PlayActionType = tool === "cut" ? "move" : tool;
     const base: PlayAction = { id: uid(), type, seq: seqNumber, points: drawn, actor };
     if (type === "pass") {
       const receiver = inferPassReceiver(projected.tokens, frame.actions.filter((action) => action.seq === seqNumber), base);
