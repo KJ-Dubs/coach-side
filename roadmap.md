@@ -21,6 +21,7 @@
 - [x] Rebuild Drill Maker around court-first Playmaker-style drawing, steps, equipment, and preview
 - [x] Correct Drill Maker positioning, undo/redo, wrapped tools, dribble visuals, and Board X/O markers
 - [x] Add explicit Board full/left/right camera views and a quick screen symbol tool
+- [x] Make Drill Maker Extra Balls independently assignable, passable, dribblable, and step-safe
 - [ ] DB: additive migration (games.home_away/overtime_minutes, team settings columns, org_members roles, coach_invites, tightened RLS, invite RPCs, logo bucket)
 - [ ] Sign-in barrier (`/`, `/auth`) + `_authenticated` gate + global offline flusher
 - [ ] Home dashboard (`/dashboard`) with 9 cards

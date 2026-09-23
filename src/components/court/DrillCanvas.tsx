@@ -2,6 +2,7 @@ import { PlayCanvas } from "./PlayCanvas";
 import type { CourtZoom } from "./Court";
 import type { DrillFrame, DrillObject } from "@/lib/drills";
 import type { PlayAction, PlayFrame, PlayToken } from "@/lib/types";
+import { visibleDrillBalls } from "@/lib/drillBalls";
 
 const W = 940;
 const H = 500;
@@ -28,7 +29,7 @@ export function DrillObjectShape({ o }: { o: DrillObject }) {
     );
   }
   if (o.type === "ball") {
-    return <circle cx={x} cy={y} r={11} fill="var(--flame)" stroke="var(--background)" strokeWidth={3} />;
+    return null;
   }
   if (o.type === "line") {
     return null;
@@ -54,6 +55,7 @@ export function DrillCanvas({
   tokens,
   actions,
   ball,
+  balls,
   ghost,
 }: {
   frame: DrillFrame | undefined;
@@ -65,6 +67,7 @@ export function DrillCanvas({
   tokens?: PlayToken[] | undefined;
   actions?: PlayAction[] | undefined;
   ball?: { x: number; y: number } | null | undefined;
+  balls?: { id: string; point: { x: number; y: number }; ownerId: string | null }[] | undefined;
   ghost?: { x: number; y: number }[] | null | undefined;
 }) {
   const asPlayFrame = frame
@@ -81,6 +84,7 @@ export function DrillCanvas({
       tokens={tokens}
       actions={actions}
       ball={ball}
+      balls={balls ?? visibleDrillBalls(frame, tokens)}
       ghost={ghost}
       extras={
         <g>
