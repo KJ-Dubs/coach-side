@@ -193,28 +193,20 @@ function BoardPage() {
   }, []);
 
   const undo = useCallback(() => {
-    setHistory((states) => {
-      const previous = states[states.length - 1];
-      if (!previous) return states;
-      setObjects((current) => {
-        setRedo((future) => [...future, current]);
-        return previous;
-      });
-      return states.slice(0, -1);
-    });
-  }, []);
+    const previous = history[history.length - 1];
+    if (!previous) return;
+    setRedo((future) => [...future, objects]);
+    setObjects(previous);
+    setHistory((states) => states.slice(0, -1));
+  }, [history, objects]);
 
   const doRedo = useCallback(() => {
-    setRedo((r) => {
-      const last = r[r.length - 1];
-      if (!last) return r;
-      setObjects((current) => {
-        setHistory((states) => [...states, current]);
-        return last;
-      });
-      return r.slice(0, -1);
-    });
-  }, []);
+    const next = redo[redo.length - 1];
+    if (!next) return;
+    setHistory((states) => [...states, objects]);
+    setObjects(next);
+    setRedo((future) => future.slice(0, -1));
+  }, [objects, redo]);
 
   const eraseAt = (p: BoardPoint) => {
     setObjects((prev) => {
