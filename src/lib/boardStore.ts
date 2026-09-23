@@ -9,6 +9,7 @@ export type BoardPoint = { x: number; y: number };
 export type BoardObject =
   | { id: string; kind: "stroke"; color: string; width: number; pts: BoardPoint[] }
   | { id: string; kind: "arrow"; color: string; width: number; from: BoardPoint; to: BoardPoint }
+  | { id: string; kind: "screen"; color: string; width: number; from: BoardPoint; to: BoardPoint }
   | {
       id: string;
       kind: "marker";
@@ -23,7 +24,7 @@ export type BoardObject =
 export type BoardSnapshot = {
   objects: BoardObject[];
   redo: BoardObject[][];
-  zoom: "full" | "left";
+  zoom: "full" | "left" | "right";
 };
 
 let snapshot: BoardSnapshot = { objects: [], redo: [], zoom: "full" };
@@ -56,7 +57,22 @@ const asp = (p: BoardPoint): BoardPoint => ({ x: p.x, y: p.y * 0.532 });
 export function hitTest(o: BoardObject, point: BoardPoint, tol: number) {
   const p = asp(point);
   if (o.kind === "marker" || o.kind === "xo") return Math.hypot(o.x - p.x, asp(o).y - p.y) < tol * 1.8;
-  if (o.kind === "arrow") return segDist(p, asp(o.from), asp(o.to)) < tol;
+  if (o.kind === "arrow" || o.kind === "screen") {
+    if (segDist(p, asp(o.from), asp(o.to)) < tol) return true;
+    if (o.kind === "screen") {
+      const dx = o.to.x - o.from.x;
+      const dy = (o.to.y - o.from.y) * 0.532;
+      const length = Math.hypot(dx, dy);
+      if (length > 0) {
+        const cap = 0.025;
+        const nx = (-dy / length) * cap;
+        const ny = (dx / length) * cap;
+        const end = asp(o.to);
+        return segDist(p, { x: end.x - nx, y: end.y - ny }, { x: end.x + nx, y: end.y + ny }) < tol;
+      }
+    }
+    return false;
+  }
   for (let i = 1; i < o.pts.length; i += 1) {
     if (segDist(p, asp(o.pts[i - 1]!), asp(o.pts[i]!)) < tol) return true;
   }

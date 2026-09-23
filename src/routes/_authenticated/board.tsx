@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/board")({
   component: BoardPage,
 });
 
-type Tool = "draw" | "arrow" | "marker" | "xo" | "erase";
+type Tool = "draw" | "arrow" | "screen" | "marker" | "xo" | "erase";
 
 const COLORS: { name: string; value: string }[] = [
   { name: "White", value: "#f8fafc" },
@@ -101,6 +101,20 @@ function ObjectShape({ o }: { o: BoardObject }) {
       </g>
     );
   }
+  if (o.kind === "screen") {
+    const a = px(o.from);
+    const b = px(o.to);
+    const ang = Math.atan2(b.y - a.y, b.x - a.x);
+    const cap = 18 + o.width;
+    const nx = -Math.sin(ang) * cap;
+    const ny = Math.cos(ang) * cap;
+    return (
+      <g fill="none" stroke={o.color} strokeWidth={o.width} strokeLinecap="round">
+        <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} />
+        <line x1={b.x - nx} y1={b.y - ny} x2={b.x + nx} y2={b.y + ny} />
+      </g>
+    );
+  }
   if (o.kind === "xo") {
     const c = px(o);
     return o.symbol === "X" ? (
@@ -167,7 +181,7 @@ function BoardPage() {
   const [, force] = useState(0);
 
   useEffect(() => {
-    writeBoard({ objects, redo, zoom: zoom === "left" ? "left" : "full" });
+    writeBoard({ objects, redo, zoom: zoom === "left" || zoom === "right" ? zoom : "full" });
   }, [objects, redo, zoom]);
 
   const commit = useCallback((o: BoardObject) => {
@@ -179,28 +193,20 @@ function BoardPage() {
   }, []);
 
   const undo = useCallback(() => {
-    setHistory((states) => {
-      const previous = states[states.length - 1];
-      if (!previous) return states;
-      setObjects((current) => {
-        setRedo((future) => [...future, current]);
-        return previous;
-      });
-      return states.slice(0, -1);
-    });
-  }, []);
+    const previous = history[history.length - 1];
+    if (!previous) return;
+    setRedo((future) => [...future, objects]);
+    setObjects(previous);
+    setHistory((states) => states.slice(0, -1));
+  }, [history, objects]);
 
   const doRedo = useCallback(() => {
-    setRedo((r) => {
-      const last = r[r.length - 1];
-      if (!last) return r;
-      setObjects((current) => {
-        setHistory((states) => [...states, current]);
-        return last;
-      });
-      return r.slice(0, -1);
-    });
-  }, []);
+    const next = redo[redo.length - 1];
+    if (!next) return;
+    setHistory((states) => [...states, objects]);
+    setObjects(next);
+    setRedo((future) => future.slice(0, -1));
+  }, [objects, redo]);
 
   const eraseAt = (p: BoardPoint) => {
     setObjects((prev) => {
@@ -234,8 +240,8 @@ function BoardPage() {
       return;
     }
     draft.current =
-      tool === "arrow"
-        ? { id: newId(), kind: "arrow", color, width, from: p, to: p }
+      tool === "arrow" || tool === "screen"
+        ? { id: newId(), kind: tool, color, width, from: p, to: p }
         : { id: newId(), kind: "stroke", color, width, pts: [p] };
     force((n) => n + 1);
   };
@@ -255,7 +261,7 @@ function BoardPage() {
     }
     const d = draft.current;
     if (!d) return;
-    if (d.kind === "arrow") d.to = p;
+    if (d.kind === "arrow" || d.kind === "screen") d.to = p;
     else if (d.kind === "stroke") {
       const last = d.pts[d.pts.length - 1];
       if (!last || Math.hypot(last.x - p.x, last.y - p.y) > 0.002) d.pts.push(p);
@@ -307,19 +313,27 @@ function BoardPage() {
         <Pill tone="flame">Timeout Board</Pill>
         <BubbleButton
           size="sm"
-          tone={zoom === "left" ? "grape" : "neutral"}
-          aria-pressed={zoom === "left"}
-          onClick={() => setZoom("left")}
-        >
-          Half Court
-        </BubbleButton>
-        <BubbleButton
-          size="sm"
           tone={zoom === "full" ? "grape" : "neutral"}
           aria-pressed={zoom === "full"}
           onClick={() => setZoom("full")}
         >
           Full Court
+        </BubbleButton>
+        <BubbleButton
+          size="sm"
+          tone={zoom === "left" ? "grape" : "neutral"}
+          aria-pressed={zoom === "left"}
+          onClick={() => setZoom("left")}
+        >
+          Left Half
+        </BubbleButton>
+        <BubbleButton
+          size="sm"
+          tone={zoom === "right" ? "grape" : "neutral"}
+          aria-pressed={zoom === "right"}
+          onClick={() => setZoom("right")}
+        >
+          Right Half
         </BubbleButton>
         <BubbleButton
           size="sm"
@@ -360,8 +374,9 @@ function BoardPage() {
           <Pill tone="muted">Tool</Pill>
           {toolBtn("draw", "Marker")}
           {toolBtn("arrow", "Arrow")}
-          {toolBtn("marker", "Players")}
+           {toolBtn("screen", "Screen")}
           {toolBtn("xo", "X / O")}
+           {toolBtn("marker", "Players")}
           {toolBtn("erase", "Eraser")}
 
           <span className="mx-1 h-6 w-px bg-border" aria-hidden />
