@@ -80,7 +80,7 @@ function DrillMakerPage() {
   const activeStep = steps[activeIdx];
   const seqNumber = activeStep?.seq ?? (steps[seqCount - 1]?.seq ?? 0) + 1;
   const projected = useMemo(() => stateAtSequenceStart(playFrame, activeIdx), [playFrame, activeIdx]);
-  const drillProjected = useMemo(() => drillStateAtSequenceStart(frame, activeIdx), [frame, activeIdx]);
+  const drillProjected = useMemo(() => drillStateAtSequenceStart(frame, live?.index ?? activeIdx), [frame, live?.index, activeIdx]);
   const timeline = useMemo(() => ({ steps, totalMs: steps.length * STEP_MS }), [steps]);
   const rangeStart = mode === "preview" ? activeIdx * STEP_MS : 0;
   const rangeEnd = mode === "preview" ? (activeIdx + 1) * STEP_MS : timeline.totalMs;

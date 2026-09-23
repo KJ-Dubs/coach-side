@@ -144,8 +144,7 @@ export function drillStateAtSequenceStart(frame: DrillFrame, index: number) {
     const currentSeq = sequences[i]!;
     balls = balls.map((ball) => {
       const setup = frame.objects.find((item) => item.id === ball.id)?.ballSetups
-        ?.filter((item) => item.seq <= currentSeq)
-        .sort((a, b) => b.seq - a.seq)[0];
+        ?.find((item) => item.seq === currentSeq);
       return setup
         ? { ...ball, x: setup.x, y: setup.y, ownerTokenId: setup.ownerTokenId, assignedOrder: setup.assignedOrder, state: setup.ownerTokenId ? "possessed" as const : "free" as const }
         : ball;
@@ -157,9 +156,7 @@ export function drillStateAtSequenceStart(frame: DrillFrame, index: number) {
   }
   balls = balls.map((ball) => {
     const object = frame.objects.find((item) => item.id === ball.id);
-    const setup = object?.ballSetups
-      ?.filter((item) => item.seq <= requestedSeq)
-      .sort((a, b) => b.seq - a.seq)[0];
+    const setup = object?.ballSetups?.find((item) => item.seq === requestedSeq);
     if (!setup) return ball;
     return { ...ball, x: setup.x, y: setup.y, ownerTokenId: setup.ownerTokenId, assignedOrder: setup.assignedOrder, state: setup.ownerTokenId ? "possessed" : "free" };
   });
