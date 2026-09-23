@@ -17,7 +17,8 @@ export type BoardObject =
       label: string;
       x: number;
       y: number;
-    };
+    }
+  | { id: string; kind: "xo"; symbol: "X" | "O"; color: string; x: number; y: number };
 
 export type BoardSnapshot = {
   objects: BoardObject[];
@@ -54,7 +55,7 @@ const asp = (p: BoardPoint): BoardPoint => ({ x: p.x, y: p.y * 0.532 });
 /** Hit test used by the eraser and by marker dragging. */
 export function hitTest(o: BoardObject, point: BoardPoint, tol: number) {
   const p = asp(point);
-  if (o.kind === "marker") return Math.hypot(o.x - p.x, asp(o).y - p.y) < tol * 1.8;
+  if (o.kind === "marker" || o.kind === "xo") return Math.hypot(o.x - p.x, asp(o).y - p.y) < tol * 1.8;
   if (o.kind === "arrow") return segDist(p, asp(o.from), asp(o.to)) < tol;
   for (let i = 1; i < o.pts.length; i += 1) {
     if (segDist(p, asp(o.pts[i - 1]!), asp(o.pts[i]!)) < tol) return true;
