@@ -18,6 +18,7 @@ import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHelpRouteImport } from './routes/_authenticated/help'
 import { Route as AuthenticatedKpiRouteImport } from './routes/_authenticated/kpi'
+import { Route as AuthenticatedLaunchQaRouteImport } from './routes/_authenticated/launch-qa'
 import { Route as AuthenticatedLockerRouteImport } from './routes/_authenticated/locker'
 import { Route as AuthenticatedLockerroomRouteImport } from './routes/_authenticated/lockerroom'
 import { Route as AuthenticatedMembershipRouteImport } from './routes/_authenticated/membership'
@@ -98,6 +99,11 @@ const AuthenticatedHelpRoute = AuthenticatedHelpRouteImport.update({
 const AuthenticatedKpiRoute = AuthenticatedKpiRouteImport.update({
   id: '/kpi',
   path: '/kpi',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLaunchQaRoute = AuthenticatedLaunchQaRouteImport.update({
+  id: '/launch-qa',
+  path: '/launch-qa',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedLockerRoute = AuthenticatedLockerRouteImport.update({
@@ -299,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/help': typeof AuthenticatedHelpRoute
   '/kpi': typeof AuthenticatedKpiRoute
+  '/launch-qa': typeof AuthenticatedLaunchQaRoute
   '/locker': typeof AuthenticatedLockerRoute
   '/lockerroom': typeof AuthenticatedLockerroomRoute
   '/membership': typeof AuthenticatedMembershipRoute
@@ -345,6 +352,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/help': typeof AuthenticatedHelpRoute
   '/kpi': typeof AuthenticatedKpiRoute
+  '/launch-qa': typeof AuthenticatedLaunchQaRoute
   '/locker': typeof AuthenticatedLockerRoute
   '/lockerroom': typeof AuthenticatedLockerroomRoute
   '/membership': typeof AuthenticatedMembershipRoute
@@ -393,6 +401,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/help': typeof AuthenticatedHelpRoute
   '/_authenticated/kpi': typeof AuthenticatedKpiRoute
+  '/_authenticated/launch-qa': typeof AuthenticatedLaunchQaRoute
   '/_authenticated/locker': typeof AuthenticatedLockerRoute
   '/_authenticated/lockerroom': typeof AuthenticatedLockerroomRoute
   '/_authenticated/membership': typeof AuthenticatedMembershipRoute
@@ -441,6 +450,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/help'
     | '/kpi'
+    | '/launch-qa'
     | '/locker'
     | '/lockerroom'
     | '/membership'
@@ -487,6 +497,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/help'
     | '/kpi'
+    | '/launch-qa'
     | '/locker'
     | '/lockerroom'
     | '/membership'
@@ -534,6 +545,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/help'
     | '/_authenticated/kpi'
+    | '/_authenticated/launch-qa'
     | '/_authenticated/locker'
     | '/_authenticated/lockerroom'
     | '/_authenticated/membership'
@@ -655,6 +667,13 @@ declare module '@tanstack/react-router' {
       path: '/kpi'
       fullPath: '/kpi'
       preLoaderRoute: typeof AuthenticatedKpiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/launch-qa': {
+      id: '/_authenticated/launch-qa'
+      path: '/launch-qa'
+      fullPath: '/launch-qa'
+      preLoaderRoute: typeof AuthenticatedLaunchQaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/locker': {
@@ -919,6 +938,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHelpRoute: typeof AuthenticatedHelpRoute
   AuthenticatedKpiRoute: typeof AuthenticatedKpiRoute
+  AuthenticatedLaunchQaRoute: typeof AuthenticatedLaunchQaRoute
   AuthenticatedLockerRoute: typeof AuthenticatedLockerRoute
   AuthenticatedLockerroomRoute: typeof AuthenticatedLockerroomRoute
   AuthenticatedMembershipRoute: typeof AuthenticatedMembershipRoute
@@ -950,6 +970,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHelpRoute: AuthenticatedHelpRoute,
   AuthenticatedKpiRoute: AuthenticatedKpiRoute,
+  AuthenticatedLaunchQaRoute: AuthenticatedLaunchQaRoute,
   AuthenticatedLockerRoute: AuthenticatedLockerRoute,
   AuthenticatedLockerroomRoute: AuthenticatedLockerroomRoute,
   AuthenticatedMembershipRoute: AuthenticatedMembershipRoute,
