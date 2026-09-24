@@ -1,3 +1,4 @@
+import { TipInterstitial } from "@/components/TipInterstitial";
 import { createFileRoute, Link, type LinkProps } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -75,7 +76,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: Dashboard,
+  component: () => (<><TipInterstitial dest="dashboard" /><Dashboard /></>),
 });
 
 type Action = {
