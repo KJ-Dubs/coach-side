@@ -1,3 +1,4 @@
+import { PaidGate } from "@/components/billing/PaidGate";
 import { useEffect, useRef, useState } from "react";
 import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
 import {
@@ -16,7 +17,7 @@ import {
  * Export the animated play to a social-ready MP4. Uses the shared play
  * animation model, so the download matches Present Play.
  */
-export function ExportPlayVideo({
+function ExportPlayVideoInner({
   model,
   className,
 }: {
@@ -230,5 +231,13 @@ export function ExportPlayVideo({
         ) : null}
       </Panel>
     </section>
+  );
+}
+
+export function ExportPlayVideo(props: Parameters<typeof ExportPlayVideoInner>[0]) {
+  return (
+    <PaidGate module="playbook_plus" benefit="Download your plays as MP4 videos for social and film sessions.">
+      <ExportPlayVideoInner {...props} />
+    </PaidGate>
   );
 }

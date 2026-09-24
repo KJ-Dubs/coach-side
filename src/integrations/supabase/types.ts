@@ -227,6 +227,24 @@ export type Database = {
           },
         ]
       }
+      anon_funnel_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+        }
+        Relationships: []
+      }
       app_admins: {
         Row: {
           created_at: string
@@ -342,6 +360,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      billing_price_map: {
+        Row: {
+          plan_key: string
+          stripe_price_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          plan_key: string
+          stripe_price_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          plan_key?: string
+          stripe_price_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      billing_webhook_events: {
+        Row: {
+          error: string | null
+          event_id: string
+          event_type: string
+          livemode: boolean | null
+          processed: boolean
+          provider: string
+          received_at: string
+          team_id: string | null
+        }
+        Insert: {
+          error?: string | null
+          event_id: string
+          event_type: string
+          livemode?: boolean | null
+          processed?: boolean
+          provider: string
+          received_at?: string
+          team_id?: string | null
+        }
+        Update: {
+          error?: string | null
+          event_id?: string
+          event_type?: string
+          livemode?: boolean | null
+          processed?: boolean
+          provider?: string
+          received_at?: string
+          team_id?: string | null
+        }
+        Relationships: []
       }
       calendar_connections: {
         Row: {
@@ -1494,6 +1566,7 @@ export type Database = {
           game_reminders: boolean
           id: string
           new_play_notifications: boolean
+          onboarding_tips: boolean
           play_of_the_day_notifications: boolean
           practice_reminders: boolean
           push_enabled: boolean
@@ -1510,6 +1583,7 @@ export type Database = {
           game_reminders?: boolean
           id?: string
           new_play_notifications?: boolean
+          onboarding_tips?: boolean
           play_of_the_day_notifications?: boolean
           practice_reminders?: boolean
           push_enabled?: boolean
@@ -1526,6 +1600,7 @@ export type Database = {
           game_reminders?: boolean
           id?: string
           new_play_notifications?: boolean
+          onboarding_tips?: boolean
           play_of_the_day_notifications?: boolean
           practice_reminders?: boolean
           push_enabled?: boolean
@@ -1602,6 +1677,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      nurture_deliveries: {
+        Row: {
+          created_at: string
+          day: number
+          id: string
+          message_key: string
+          team_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day: number
+          id?: string
+          message_key: string
+          team_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day?: number
+          id?: string
+          message_key?: string
+          team_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       org_members: {
         Row: {
@@ -1716,6 +1818,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "play_hearts_play_id_fkey"
+            columns: ["play_id"]
+            isOneToOne: false
+            referencedRelation: "plays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      play_of_the_day: {
+        Row: {
+          created_at: string
+          day: string
+          notified_at: string | null
+          play_id: string | null
+          set_by: string | null
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          notified_at?: string | null
+          play_id?: string | null
+          set_by?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          notified_at?: string | null
+          play_id?: string | null
+          set_by?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "play_of_the_day_play_id_fkey"
             columns: ["play_id"]
             isOneToOne: false
             referencedRelation: "plays"
@@ -2209,10 +2349,13 @@ export type Database = {
       team_billing: {
         Row: {
           billing_owner: string | null
+          billing_provider: string
+          cancel_at_period_end: boolean
           created_at: string
           current_period_end: string | null
           last_webhook_at: string | null
           last_webhook_error: string | null
+          last_webhook_event_id: string | null
           modules: string[]
           pending_effective_at: string | null
           pending_modules: string[] | null
@@ -2220,15 +2363,22 @@ export type Database = {
           square_plan_variation_id: string | null
           square_subscription_id: string | null
           status: string
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string | null
           team_id: string
           updated_at: string
         }
         Insert: {
           billing_owner?: string | null
+          billing_provider?: string
+          cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
           last_webhook_at?: string | null
           last_webhook_error?: string | null
+          last_webhook_event_id?: string | null
           modules?: string[]
           pending_effective_at?: string | null
           pending_modules?: string[] | null
@@ -2236,15 +2386,22 @@ export type Database = {
           square_plan_variation_id?: string | null
           square_subscription_id?: string | null
           status?: string
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
           team_id: string
           updated_at?: string
         }
         Update: {
           billing_owner?: string | null
+          billing_provider?: string
+          cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
           last_webhook_at?: string | null
           last_webhook_error?: string | null
+          last_webhook_event_id?: string | null
           modules?: string[]
           pending_effective_at?: string | null
           pending_modules?: string[] | null
@@ -2252,6 +2409,10 @@ export type Database = {
           square_plan_variation_id?: string | null
           square_subscription_id?: string | null
           status?: string
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
           team_id?: string
           updated_at?: string
         }
@@ -2509,6 +2670,41 @@ export type Database = {
           },
         ]
       }
+      team_trials: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          ends_at: string
+          source: string
+          started_at: string
+          team_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string
+          source?: string
+          started_at?: string
+          team_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string
+          source?: string
+          started_at?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_trials_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           allow_player_posting: boolean
@@ -2588,6 +2784,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trial_claims: {
+        Row: {
+          claimed_at: string
+          id: string
+          org_id: string | null
+          team_id: string | null
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          id?: string
+          org_id?: string | null
+          team_id?: string | null
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          id?: string
+          org_id?: string | null
+          team_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_achievements: {
+        Row: {
+          achievement_key: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_key: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_key?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -2694,6 +2935,7 @@ export type Database = {
         }[]
       }
       my_access: { Args: never; Returns: Json }
+      my_achievement_metrics: { Args: never; Returns: Json }
       my_followed_creators: {
         Args: never
         Returns: {
@@ -2739,6 +2981,10 @@ export type Database = {
           _title: string
           _type: string
         }
+        Returns: undefined
+      }
+      schedule_play_of_the_day: {
+        Args: { _day: string; _play: string }
         Returns: undefined
       }
       set_follow_creator: {

@@ -12,10 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authenticated/achievements'
 import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/board'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedHelpRouteImport } from './routes/_authenticated/help'
 import { Route as AuthenticatedKpiRouteImport } from './routes/_authenticated/kpi'
+import { Route as AuthenticatedLaunchQaRouteImport } from './routes/_authenticated/launch-qa'
 import { Route as AuthenticatedLockerRouteImport } from './routes/_authenticated/locker'
 import { Route as AuthenticatedLockerroomRouteImport } from './routes/_authenticated/lockerroom'
 import { Route as AuthenticatedMembershipRouteImport } from './routes/_authenticated/membership'
@@ -47,7 +50,9 @@ import { Route as AuthenticatedStatsTeamRouteImport } from './routes/_authentica
 import { Route as SharePlayTokenRouteImport } from './routes/share.play.$token'
 import { Route as AuthenticatedPlaysPlayIdIndexRouteImport } from './routes/_authenticated/plays.$playId.index'
 import { Route as AuthenticatedPlaysPlayIdViewRouteImport } from './routes/_authenticated/plays.$playId.view'
+import { Route as ApiPublicCronDailyRouteImport } from './routes/api/public/cron.daily'
 import { Route as ApiPublicSquareWebhookRouteImport } from './routes/api/public/square.webhook'
+import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe.webhook'
 import { Route as ApiPublicGoogleCalendarCallbackRouteImport } from './routes/api/public/google.calendar.callback'
 import { Route as ApiPublicLockerTokenCalendarRouteImport } from './routes/api/public/locker.$token.calendar'
 
@@ -65,6 +70,12 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAchievementsRoute =
+  AuthenticatedAchievementsRouteImport.update({
+    id: '/achievements',
+    path: '/achievements',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedBoardRoute = AuthenticatedBoardRouteImport.update({
   id: '/board',
   path: '/board',
@@ -80,9 +91,19 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHelpRoute = AuthenticatedHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedKpiRoute = AuthenticatedKpiRouteImport.update({
   id: '/kpi',
   path: '/kpi',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLaunchQaRoute = AuthenticatedLaunchQaRouteImport.update({
+  id: '/launch-qa',
+  path: '/launch-qa',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedLockerRoute = AuthenticatedLockerRouteImport.update({
@@ -247,9 +268,19 @@ const AuthenticatedPlaysPlayIdViewRoute =
     path: '/plays/$playId/view',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicCronDailyRoute = ApiPublicCronDailyRouteImport.update({
+  id: '/api/public/cron/daily',
+  path: '/api/public/cron/daily',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSquareWebhookRoute = ApiPublicSquareWebhookRouteImport.update({
   id: '/api/public/square/webhook',
   path: '/api/public/square/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
+  id: '/api/public/stripe/webhook',
+  path: '/api/public/stripe/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicGoogleCalendarCallbackRoute =
@@ -268,10 +299,13 @@ const ApiPublicLockerTokenCalendarRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/achievements': typeof AuthenticatedAchievementsRoute
   '/board': typeof AuthenticatedBoardRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/help': typeof AuthenticatedHelpRoute
   '/kpi': typeof AuthenticatedKpiRoute
+  '/launch-qa': typeof AuthenticatedLaunchQaRoute
   '/locker': typeof AuthenticatedLockerRoute
   '/lockerroom': typeof AuthenticatedLockerroomRoute
   '/membership': typeof AuthenticatedMembershipRoute
@@ -302,7 +336,9 @@ export interface FileRoutesByFullPath {
   '/practice/': typeof AuthenticatedPracticeIndexRoute
   '/stats/': typeof AuthenticatedStatsIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
+  '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
+  '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
   '/api/public/google/calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
   '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
@@ -310,10 +346,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/achievements': typeof AuthenticatedAchievementsRoute
   '/board': typeof AuthenticatedBoardRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/help': typeof AuthenticatedHelpRoute
   '/kpi': typeof AuthenticatedKpiRoute
+  '/launch-qa': typeof AuthenticatedLaunchQaRoute
   '/locker': typeof AuthenticatedLockerRoute
   '/lockerroom': typeof AuthenticatedLockerroomRoute
   '/membership': typeof AuthenticatedMembershipRoute
@@ -344,7 +383,9 @@ export interface FileRoutesByTo {
   '/practice': typeof AuthenticatedPracticeIndexRoute
   '/stats': typeof AuthenticatedStatsIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
+  '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
+  '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/plays/$playId': typeof AuthenticatedPlaysPlayIdIndexRoute
   '/api/public/google/calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
   '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
@@ -354,10 +395,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/achievements': typeof AuthenticatedAchievementsRoute
   '/_authenticated/board': typeof AuthenticatedBoardRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/help': typeof AuthenticatedHelpRoute
   '/_authenticated/kpi': typeof AuthenticatedKpiRoute
+  '/_authenticated/launch-qa': typeof AuthenticatedLaunchQaRoute
   '/_authenticated/locker': typeof AuthenticatedLockerRoute
   '/_authenticated/lockerroom': typeof AuthenticatedLockerroomRoute
   '/_authenticated/membership': typeof AuthenticatedMembershipRoute
@@ -388,7 +432,9 @@ export interface FileRoutesById {
   '/_authenticated/practice/': typeof AuthenticatedPracticeIndexRoute
   '/_authenticated/stats/': typeof AuthenticatedStatsIndexRoute
   '/_authenticated/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
+  '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
+  '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/_authenticated/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
   '/api/public/google/calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
   '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
@@ -398,10 +444,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/achievements'
     | '/board'
     | '/calendar'
     | '/dashboard'
+    | '/help'
     | '/kpi'
+    | '/launch-qa'
     | '/locker'
     | '/lockerroom'
     | '/membership'
@@ -432,7 +481,9 @@ export interface FileRouteTypes {
     | '/practice/'
     | '/stats/'
     | '/plays/$playId/view'
+    | '/api/public/cron/daily'
     | '/api/public/square/webhook'
+    | '/api/public/stripe/webhook'
     | '/plays/$playId/'
     | '/api/public/google/calendar/callback'
     | '/api/public/locker/$token/calendar'
@@ -440,10 +491,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/achievements'
     | '/board'
     | '/calendar'
     | '/dashboard'
+    | '/help'
     | '/kpi'
+    | '/launch-qa'
     | '/locker'
     | '/lockerroom'
     | '/membership'
@@ -474,7 +528,9 @@ export interface FileRouteTypes {
     | '/practice'
     | '/stats'
     | '/plays/$playId/view'
+    | '/api/public/cron/daily'
     | '/api/public/square/webhook'
+    | '/api/public/stripe/webhook'
     | '/plays/$playId'
     | '/api/public/google/calendar/callback'
     | '/api/public/locker/$token/calendar'
@@ -483,10 +539,13 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/achievements'
     | '/_authenticated/board'
     | '/_authenticated/calendar'
     | '/_authenticated/dashboard'
+    | '/_authenticated/help'
     | '/_authenticated/kpi'
+    | '/_authenticated/launch-qa'
     | '/_authenticated/locker'
     | '/_authenticated/lockerroom'
     | '/_authenticated/membership'
@@ -517,7 +576,9 @@ export interface FileRouteTypes {
     | '/_authenticated/practice/'
     | '/_authenticated/stats/'
     | '/_authenticated/plays/$playId/view'
+    | '/api/public/cron/daily'
     | '/api/public/square/webhook'
+    | '/api/public/stripe/webhook'
     | '/_authenticated/plays/$playId/'
     | '/api/public/google/calendar/callback'
     | '/api/public/locker/$token/calendar'
@@ -536,7 +597,9 @@ export interface RootRouteChildren {
   ShareTokenRoute: typeof ShareTokenRoute
   LibraryIndexRoute: typeof LibraryIndexRoute
   SharePlayTokenRoute: typeof SharePlayTokenRoute
+  ApiPublicCronDailyRoute: typeof ApiPublicCronDailyRoute
   ApiPublicSquareWebhookRoute: typeof ApiPublicSquareWebhookRoute
+  ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
   ApiPublicGoogleCalendarCallbackRoute: typeof ApiPublicGoogleCalendarCallbackRoute
   ApiPublicLockerTokenCalendarRoute: typeof ApiPublicLockerTokenCalendarRoute
 }
@@ -564,6 +627,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/achievements': {
+      id: '/_authenticated/achievements'
+      path: '/achievements'
+      fullPath: '/achievements'
+      preLoaderRoute: typeof AuthenticatedAchievementsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/board': {
       id: '/_authenticated/board'
       path: '/board'
@@ -585,11 +655,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/help': {
+      id: '/_authenticated/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof AuthenticatedHelpRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/kpi': {
       id: '/_authenticated/kpi'
       path: '/kpi'
       fullPath: '/kpi'
       preLoaderRoute: typeof AuthenticatedKpiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/launch-qa': {
+      id: '/_authenticated/launch-qa'
+      path: '/launch-qa'
+      fullPath: '/launch-qa'
+      preLoaderRoute: typeof AuthenticatedLaunchQaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/locker': {
@@ -809,11 +893,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlaysPlayIdViewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/cron/daily': {
+      id: '/api/public/cron/daily'
+      path: '/api/public/cron/daily'
+      fullPath: '/api/public/cron/daily'
+      preLoaderRoute: typeof ApiPublicCronDailyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/square/webhook': {
       id: '/api/public/square/webhook'
       path: '/api/public/square/webhook'
       fullPath: '/api/public/square/webhook'
       preLoaderRoute: typeof ApiPublicSquareWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/stripe/webhook': {
+      id: '/api/public/stripe/webhook'
+      path: '/api/public/stripe/webhook'
+      fullPath: '/api/public/stripe/webhook'
+      preLoaderRoute: typeof ApiPublicStripeWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/google/calendar/callback': {
@@ -834,10 +932,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAchievementsRoute: typeof AuthenticatedAchievementsRoute
   AuthenticatedBoardRoute: typeof AuthenticatedBoardRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedHelpRoute: typeof AuthenticatedHelpRoute
   AuthenticatedKpiRoute: typeof AuthenticatedKpiRoute
+  AuthenticatedLaunchQaRoute: typeof AuthenticatedLaunchQaRoute
   AuthenticatedLockerRoute: typeof AuthenticatedLockerRoute
   AuthenticatedLockerroomRoute: typeof AuthenticatedLockerroomRoute
   AuthenticatedMembershipRoute: typeof AuthenticatedMembershipRoute
@@ -863,10 +964,13 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAchievementsRoute: AuthenticatedAchievementsRoute,
   AuthenticatedBoardRoute: AuthenticatedBoardRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedHelpRoute: AuthenticatedHelpRoute,
   AuthenticatedKpiRoute: AuthenticatedKpiRoute,
+  AuthenticatedLaunchQaRoute: AuthenticatedLaunchQaRoute,
   AuthenticatedLockerRoute: AuthenticatedLockerRoute,
   AuthenticatedLockerroomRoute: AuthenticatedLockerroomRoute,
   AuthenticatedMembershipRoute: AuthenticatedMembershipRoute,
@@ -907,7 +1011,9 @@ const rootRouteChildren: RootRouteChildren = {
   ShareTokenRoute: ShareTokenRoute,
   LibraryIndexRoute: LibraryIndexRoute,
   SharePlayTokenRoute: SharePlayTokenRoute,
+  ApiPublicCronDailyRoute: ApiPublicCronDailyRoute,
   ApiPublicSquareWebhookRoute: ApiPublicSquareWebhookRoute,
+  ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
   ApiPublicGoogleCalendarCallbackRoute: ApiPublicGoogleCalendarCallbackRoute,
   ApiPublicLockerTokenCalendarRoute: ApiPublicLockerTokenCalendarRoute,
 }

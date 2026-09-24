@@ -1,3 +1,4 @@
+import { TipInterstitial } from "@/components/TipInterstitial";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -40,7 +41,7 @@ export const Route = createFileRoute("/_authenticated/plays/new")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: CreatePlayPage,
+  component: () => (<><TipInterstitial dest="playmaker" /><CreatePlayPage /></>),
 });
 
 const CATEGORY_HINT: Record<PlayCategory, string> = {

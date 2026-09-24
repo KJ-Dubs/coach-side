@@ -20,7 +20,8 @@ export type PrefColumn =
   | "practice_reminders"
   | "game_reminders"
   | "schedule_change_notifications"
-  | "play_of_the_day_notifications";
+  | "play_of_the_day_notifications"
+  | "onboarding_tips";
 
 export type Audience =
   | { kind: "all_users" }

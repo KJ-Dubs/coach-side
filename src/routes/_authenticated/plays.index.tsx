@@ -1,3 +1,4 @@
+import { TipInterstitial } from "@/components/TipInterstitial";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -65,7 +66,7 @@ export const Route = createFileRoute("/_authenticated/plays/")({
       },
     ],
   }),
-  component: PlaybookPage,
+  component: () => (<><TipInterstitial dest="playbook" /><PlaybookPage /></>),
 });
 
 const CATEGORY_META: Record<

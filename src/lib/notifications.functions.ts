@@ -186,7 +186,9 @@ export const setPlayOfTheDayAndNotify = createServerFn({ method: "POST" })
       relatedType: "play",
       relatedId: data.playId,
       prefColumn: "play_of_the_day_notifications",
-      dedupeKey: `potd:${data.playId}`,
+      dedupeKey: `potd:${(await import("./retention.server")).todayKey()}:${data.playId}`,
     });
+    const { todayKey } = await import("./retention.server");
+    await db.from("play_of_the_day").update({ notified_at: new Date().toISOString() }).eq("day", todayKey());
     return { notified: res.inapp, pushSent: res.pushSent };
   });

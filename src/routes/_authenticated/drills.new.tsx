@@ -1,3 +1,4 @@
+import { TipInterstitial } from "@/components/TipInterstitial";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/drills/new")({
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ] }),
-  component: DrillMakerPage,
+  component: () => (<><TipInterstitial dest="drillmaker" /><DrillMakerPage /></>),
 });
 
 type Tool = "position" | "cut" | "pass" | "dribble" | "screen" | "shot" | "equipment" | "erase";

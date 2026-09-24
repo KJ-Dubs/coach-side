@@ -1,3 +1,4 @@
+import { PaidGate } from "@/components/billing/PaidGate";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
@@ -13,7 +14,7 @@ import type { Play } from "@/lib/types";
  * Adds a published CoachSide Library play to the coach's team(s). The play
  * itself is never copied — the team simply links to the published version.
  */
-export function AddToPlaybook({ play, compact }: { play: Play; compact?: boolean }) {
+function AddToPlaybookInner({ play, compact }: { play: Play; compact?: boolean }) {
   const qc = useQueryClient();
   const router = useRouter();
   const { teams, teamId } = useCurrentTeam();
@@ -102,5 +103,13 @@ export function AddToPlaybook({ play, compact }: { play: Play; compact?: boolean
         </div>
       ) : null}
     </div>
+  );
+}
+
+export function AddToPlaybook(props: Parameters<typeof AddToPlaybookInner>[0]) {
+  return (
+    <PaidGate module="playbook_plus" benefit="Save CoachSide Library plays straight into your team Playbook." compact>
+      <AddToPlaybookInner {...props} />
+    </PaidGate>
   );
 }

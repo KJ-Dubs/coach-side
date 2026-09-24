@@ -11,8 +11,11 @@
  * (BILLING_ENFORCEMENT_ENABLED) and is OFF until we switch it on, so nothing
  * in the app is locked today.
  */
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsAppAdmin } from "./useIsAppAdmin";
+import { PERSONAS, PERSONA_EVENT, readPersona, type PersonaKey } from "./personas";
 
 export type ModuleKey = "playbook_plus" | "gameday_plus" | "team_hub_plus";
 
@@ -135,6 +138,14 @@ export type Entitlement = {
   /** False while BILLING_ENFORCEMENT_ENABLED is off: nothing is locked. */
   enforced: boolean;
   loading: boolean;
+  trialEndsAt: string | null;
+  /** Whole days left in the Complete trial; null when no trial exists. */
+  trialDaysLeft: number | null;
+  trialActive: boolean;
+  trialExpired: boolean;
+  cancelAtPeriodEnd: boolean;
+  /** Set when an owner is previewing a Launch QA persona. */
+  simulated: PersonaKey | null;
 };
 
 export const NO_ENTITLEMENT: Entitlement = {
@@ -146,7 +157,28 @@ export const NO_ENTITLEMENT: Entitlement = {
   currentPeriodEnd: null,
   enforced: false,
   loading: false,
+  trialEndsAt: null,
+  trialDaysLeft: null,
+  trialActive: false,
+  trialExpired: false,
+  cancelAtPeriodEnd: false,
+  simulated: null,
 };
+
+export function daysLeft(endsAt: string | null, now = Date.now()): number | null {
+  if (!endsAt) return null;
+  return Math.max(0, Math.ceil((new Date(endsAt).getTime() - now) / 86_400_000));
+}
+
+/** Contextual trial message tier: 7, 3, 1 days left, or expired. */
+export function trialMessage(days: number | null, expired: boolean): string | null {
+  if (expired) return "Your Complete trial ended. Keep one module for $6 or everything for $15.";
+  if (days === null) return null;
+  if (days <= 1) return "Your Complete trial ends tomorrow.";
+  if (days <= 3) return `${days} days left — keep the tools you use most.`;
+  if (days <= 7) return "You're halfway through your Complete trial — try what you haven't yet.";
+  return null;
+}
 
 /** Single read point for gating. Always allows while enforcement is off. */
 export function hasModule(entitlement: Entitlement, key: ModuleKey): boolean {
@@ -160,6 +192,8 @@ type RawEntitlement = {
   status: string | null;
   current_period_end: string | null;
   complimentary: boolean | null;
+  trial_ends_at?: string | null;
+  cancel_at_period_end?: boolean | null;
 };
 
 async function fetchTeamEntitlement(teamId: string): Promise<RawEntitlement | null> {
@@ -178,8 +212,21 @@ async function fetchEnforcement(): Promise<boolean> {
   return cfg.enforcementEnabled;
 }
 
+function usePersona(): PersonaKey | null {
+  const { isAdmin } = useIsAppAdmin();
+  const [key, setKey] = useState<PersonaKey | null>(null);
+  useEffect(() => {
+    const sync = () => setKey(readPersona());
+    sync();
+    window.addEventListener(PERSONA_EVENT, sync);
+    return () => window.removeEventListener(PERSONA_EVENT, sync);
+  }, []);
+  return isAdmin ? key : null;
+}
+
 /** Everything a screen needs to decide what this team can use. */
 export function useEntitlement(teamId: string | null): Entitlement {
+  const persona = usePersona();
   const ent = useQuery({
     queryKey: ["team-entitlement", teamId],
     queryFn: () => fetchTeamEntitlement(teamId!),
@@ -192,17 +239,50 @@ export function useEntitlement(teamId: string | null): Entitlement {
     staleTime: 300_000,
   });
 
+  if (persona) {
+    const p = PERSONAS.find((x) => x.key === persona)!;
+    const inTrial = p.trialDaysLeft !== null && !p.trialExpired;
+    return {
+      teamId,
+      modules: p.modules,
+      status: p.status,
+      complete: isComplete(p.modules) && !inTrial,
+      complimentary: false,
+      currentPeriodEnd: null,
+      enforced: true,
+      loading: false,
+      trialEndsAt: null,
+      trialDaysLeft: p.trialDaysLeft,
+      trialActive: inTrial,
+      trialExpired: !!p.trialExpired,
+      cancelAtPeriodEnd: !!p.cancelAtPeriodEnd,
+      simulated: persona,
+    };
+  }
+
   const modules = ((ent.data?.modules ?? []) as string[]).filter((m): m is ModuleKey =>
     ALL_MODULES.includes(m as ModuleKey),
   );
+  const trialEndsAt = ent.data?.trial_ends_at ?? null;
+  const tDays = daysLeft(trialEndsAt);
+  const trialActive = !!trialEndsAt && new Date(trialEndsAt).getTime() > Date.now();
+  const status = ((ent.data?.status as BillingStatus) ?? "free") as BillingStatus;
+  const paid = ["active", "grace", "past_due", "complimentary"].includes(status) || !!ent.data?.complimentary;
   return {
     teamId,
     modules,
-    status: ((ent.data?.status as BillingStatus) ?? "free") as BillingStatus,
-    complete: isComplete(modules),
+    status,
+    // A trial is not a purchase: keep showing the "Keep Complete" path.
+    complete: isComplete(modules) && (paid || !trialActive),
     complimentary: !!ent.data?.complimentary,
     currentPeriodEnd: ent.data?.current_period_end ?? null,
     enforced: enforcement.data === true,
     loading: ent.isLoading || enforcement.isLoading,
+    trialEndsAt,
+    trialDaysLeft: trialActive ? tDays : trialEndsAt ? 0 : null,
+    trialActive,
+    trialExpired: !!trialEndsAt && !trialActive,
+    cancelAtPeriodEnd: !!ent.data?.cancel_at_period_end,
+    simulated: null,
   };
 }

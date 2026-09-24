@@ -1,3 +1,4 @@
+import { TipInterstitial } from "@/components/TipInterstitial";
 import { createFileRoute, Link, type LinkProps } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -23,6 +24,8 @@ import { PlayerQrPanel } from "@/components/PlayerQrPanel";
 import { CoachNotes } from "@/components/CoachNotes";
 import { useAccess, resolveRole } from "@/lib/access";
 import { consumePendingInvite } from "@/lib/pendingInvite";
+import { TrialStatus } from "@/components/billing/TrialStatus";
+import { HelpCard, ProgressCard } from "@/components/ProgressCard";
 import { InstallAppCard } from "@/components/InstallApp";
 import { EnablePushCard } from "@/components/EnablePushCard";
 import { useCurrentTeam } from "@/lib/teamContext";
@@ -75,7 +78,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: Dashboard,
+  component: () => (<><TipInterstitial dest="dashboard" /><Dashboard /></>),
 });
 
 type Action = {
@@ -178,7 +181,7 @@ function TodayStrip({ teamId }: { teamId: string | null }) {
 /** Membership prompt. Hidden once a team holds all three modules. */
 function MembershipCard({ teamId }: { teamId: string | null }) {
   const entitlement = useEntitlement(teamId);
-  if (entitlement.complete) return null;
+  if (entitlement.complete || entitlement.trialActive) return null;
   return (
     <Panel className="flex flex-col items-center gap-3 text-center">
       <h2 className="text-xl font-black text-foreground">{COMPLETE_NAME}</h2>
@@ -254,7 +257,15 @@ function Dashboard() {
         </Panel>
       ) : null}
 
+      <TrialStatus teamId={teamId} />
+
       <TodayStrip teamId={teamId} />
+
+      {isCoach ? (
+        <div className="mb-3">
+          <ProgressCard />
+        </div>
+      ) : null}
 
       <div className="mb-3">
         <PlayOfTheDayCard canAdd={isCoach} />
@@ -322,6 +333,8 @@ function Dashboard() {
           </BubbleButton>
         </Link>
       </Panel>
+
+      <HelpCard />
 
       <InstallAppCard />
 
