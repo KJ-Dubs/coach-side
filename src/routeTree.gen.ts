@@ -49,7 +49,9 @@ import { Route as AuthenticatedStatsTeamRouteImport } from './routes/_authentica
 import { Route as SharePlayTokenRouteImport } from './routes/share.play.$token'
 import { Route as AuthenticatedPlaysPlayIdIndexRouteImport } from './routes/_authenticated/plays.$playId.index'
 import { Route as AuthenticatedPlaysPlayIdViewRouteImport } from './routes/_authenticated/plays.$playId.view'
+import { Route as ApiPublicCronDailyRouteImport } from './routes/api/public/cron.daily'
 import { Route as ApiPublicSquareWebhookRouteImport } from './routes/api/public/square.webhook'
+import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe.webhook'
 import { Route as ApiPublicGoogleCalendarCallbackRouteImport } from './routes/api/public/google.calendar.callback'
 import { Route as ApiPublicLockerTokenCalendarRouteImport } from './routes/api/public/locker.$token.calendar'
 
@@ -260,9 +262,19 @@ const AuthenticatedPlaysPlayIdViewRoute =
     path: '/plays/$playId/view',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicCronDailyRoute = ApiPublicCronDailyRouteImport.update({
+  id: '/api/public/cron/daily',
+  path: '/api/public/cron/daily',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSquareWebhookRoute = ApiPublicSquareWebhookRouteImport.update({
   id: '/api/public/square/webhook',
   path: '/api/public/square/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
+  id: '/api/public/stripe/webhook',
+  path: '/api/public/stripe/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicGoogleCalendarCallbackRoute =
@@ -317,7 +329,9 @@ export interface FileRoutesByFullPath {
   '/practice/': typeof AuthenticatedPracticeIndexRoute
   '/stats/': typeof AuthenticatedStatsIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
+  '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
+  '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
   '/api/public/google/calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
   '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
@@ -361,7 +375,9 @@ export interface FileRoutesByTo {
   '/practice': typeof AuthenticatedPracticeIndexRoute
   '/stats': typeof AuthenticatedStatsIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
+  '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
+  '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/plays/$playId': typeof AuthenticatedPlaysPlayIdIndexRoute
   '/api/public/google/calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
   '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
@@ -407,7 +423,9 @@ export interface FileRoutesById {
   '/_authenticated/practice/': typeof AuthenticatedPracticeIndexRoute
   '/_authenticated/stats/': typeof AuthenticatedStatsIndexRoute
   '/_authenticated/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
+  '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
+  '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/_authenticated/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
   '/api/public/google/calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
   '/api/public/locker/$token/calendar': typeof ApiPublicLockerTokenCalendarRoute
@@ -453,7 +471,9 @@ export interface FileRouteTypes {
     | '/practice/'
     | '/stats/'
     | '/plays/$playId/view'
+    | '/api/public/cron/daily'
     | '/api/public/square/webhook'
+    | '/api/public/stripe/webhook'
     | '/plays/$playId/'
     | '/api/public/google/calendar/callback'
     | '/api/public/locker/$token/calendar'
@@ -497,7 +517,9 @@ export interface FileRouteTypes {
     | '/practice'
     | '/stats'
     | '/plays/$playId/view'
+    | '/api/public/cron/daily'
     | '/api/public/square/webhook'
+    | '/api/public/stripe/webhook'
     | '/plays/$playId'
     | '/api/public/google/calendar/callback'
     | '/api/public/locker/$token/calendar'
@@ -542,7 +564,9 @@ export interface FileRouteTypes {
     | '/_authenticated/practice/'
     | '/_authenticated/stats/'
     | '/_authenticated/plays/$playId/view'
+    | '/api/public/cron/daily'
     | '/api/public/square/webhook'
+    | '/api/public/stripe/webhook'
     | '/_authenticated/plays/$playId/'
     | '/api/public/google/calendar/callback'
     | '/api/public/locker/$token/calendar'
@@ -561,7 +585,9 @@ export interface RootRouteChildren {
   ShareTokenRoute: typeof ShareTokenRoute
   LibraryIndexRoute: typeof LibraryIndexRoute
   SharePlayTokenRoute: typeof SharePlayTokenRoute
+  ApiPublicCronDailyRoute: typeof ApiPublicCronDailyRoute
   ApiPublicSquareWebhookRoute: typeof ApiPublicSquareWebhookRoute
+  ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
   ApiPublicGoogleCalendarCallbackRoute: typeof ApiPublicGoogleCalendarCallbackRoute
   ApiPublicLockerTokenCalendarRoute: typeof ApiPublicLockerTokenCalendarRoute
 }
@@ -848,11 +874,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlaysPlayIdViewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/cron/daily': {
+      id: '/api/public/cron/daily'
+      path: '/api/public/cron/daily'
+      fullPath: '/api/public/cron/daily'
+      preLoaderRoute: typeof ApiPublicCronDailyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/square/webhook': {
       id: '/api/public/square/webhook'
       path: '/api/public/square/webhook'
       fullPath: '/api/public/square/webhook'
       preLoaderRoute: typeof ApiPublicSquareWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/stripe/webhook': {
+      id: '/api/public/stripe/webhook'
+      path: '/api/public/stripe/webhook'
+      fullPath: '/api/public/stripe/webhook'
+      preLoaderRoute: typeof ApiPublicStripeWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/google/calendar/callback': {
@@ -950,7 +990,9 @@ const rootRouteChildren: RootRouteChildren = {
   ShareTokenRoute: ShareTokenRoute,
   LibraryIndexRoute: LibraryIndexRoute,
   SharePlayTokenRoute: SharePlayTokenRoute,
+  ApiPublicCronDailyRoute: ApiPublicCronDailyRoute,
   ApiPublicSquareWebhookRoute: ApiPublicSquareWebhookRoute,
+  ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
   ApiPublicGoogleCalendarCallbackRoute: ApiPublicGoogleCalendarCallbackRoute,
   ApiPublicLockerTokenCalendarRoute: ApiPublicLockerTokenCalendarRoute,
 }
