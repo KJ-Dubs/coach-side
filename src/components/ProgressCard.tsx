@@ -58,12 +58,12 @@ export function ProgressCard() {
 
 export function HelpCard() {
   return (
-    <Panel className="mb-3 flex flex-wrap items-center gap-2">
-      <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-2 text-base font-bold text-foreground">
+    <Panel className="mb-3 flex flex-col items-center gap-3 px-4 py-4 text-center">
+      <p className="text-sm font-semibold leading-relaxed text-muted-foreground sm:text-base">
         Need help maximizing your CoachSide account?
-      </span>
-      <Link to="/help" className="ml-auto">
-        <BubbleButton size="sm" tone="grape">
+      </p>
+      <Link to="/help">
+        <BubbleButton tone="grape">
           CoachSide Help
         </BubbleButton>
       </Link>

@@ -98,8 +98,13 @@ export const HELP_SECTIONS: HelpSection[] = [
     what: "In-app and push alerts for announcements, schedule changes, Play of the Day and tips.",
     when: "Turn on push on the phone you bring to practice.",
     useCases: ["Get a push when the bus time changes."],
-    steps: ["Tap Enable push on Home.", "Choose categories in Settings → Notifications, including Onboarding tips."],
-    faq: [{ q: "I'm not getting pushes on iPhone.", a: "Install CoachSide to your Home Screen first, then enable push from inside the app." }],
+    steps: [
+      "On iPhone or iPad: open CoachSide in Safari, tap Share, choose Add to Home Screen, then open the installed app.",
+      "On Android or Chrome: choose Install App or Add to Home Screen from the browser menu, then open CoachSide from your home screen.",
+      "On Home, tap Enable Notifications and allow alerts when your device asks.",
+      "Choose alert categories in Settings → Notifications.",
+    ],
+    faq: [{ q: "I'm not getting pushes on iPhone.", a: "CoachSide must be added to your Home Screen from Safari. Open that installed version, then enable notifications from Home." }],
   },
   {
     id: "billing", title: "Membership & Billing",

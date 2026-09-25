@@ -26,7 +26,6 @@ import { useAccess, resolveRole } from "@/lib/access";
 import { consumePendingInvite } from "@/lib/pendingInvite";
 import { TrialStatus } from "@/components/billing/TrialStatus";
 import { HelpCard, ProgressCard } from "@/components/ProgressCard";
-import { InstallAppCard } from "@/components/InstallApp";
 import { EnablePushCard } from "@/components/EnablePushCard";
 import { useCurrentTeam } from "@/lib/teamContext";
 import { PlayOfTheDayCard } from "@/components/community/PlayOfTheDayCard";
@@ -336,8 +335,6 @@ function Dashboard() {
       </Panel>
 
       <HelpCard />
-
-      <InstallAppCard />
 
       <div className="mt-3">
         <EnablePushCard />

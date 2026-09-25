@@ -109,3 +109,7 @@
 ## CoachSide Tips reliability
 - [x] Make eligible tips StrictMode-safe with readiness dismissal and a 3-second safety timeout
 - [x] Verify fast, slow, repeat, back-navigation, and route-cleanup behavior
+
+## Dashboard notification cleanup
+- [x] Combine install and push setup into one compact, state-aware card
+- [x] Simplify dashboard Help copy while preserving the Help destination
