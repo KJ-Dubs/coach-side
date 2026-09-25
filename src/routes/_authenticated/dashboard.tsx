@@ -13,7 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { BubbleButton, EmptyState, InfoList, InfoPanel, Label, Panel, Pill, PrimaryCTA } from "@/components/Bubbles";
+import { BubbleButton, EmptyState, InfoList, InfoPanel, Label, Panel, PrimaryCTA } from "@/components/Bubbles";
 import { fetchTeamEvents, fetchGames, logoSignedUrl } from "@/lib/data";
 import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -112,29 +112,29 @@ function UpNext({ teamId }: { teamId: string | null }) {
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
 
   return (
-    <Panel className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-      <div className="min-w-0 text-left">
+    <Panel className="grid gap-4 px-4 py-4 text-center sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:text-left">
+      <div className="min-w-0">
         <Label>Up next</Label>
         {next ? (
           <div className="mt-2 min-w-0">
-          <span className="block truncate text-lg font-black leading-tight text-foreground">
-            {next.title}
-          </span>
-          <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            {new Date(next.starts_at).toLocaleString(undefined, {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            })}
-          </p>
-          {next.location ? <p className="text-sm font-semibold text-muted-foreground">{next.location}</p> : null}
+            <h2 className="break-words text-lg font-black leading-tight text-foreground sm:text-xl">
+              {next.title}
+            </h2>
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">
+              {new Date(next.starts_at).toLocaleString(undefined, {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </p>
+            {next.location ? <p className="text-sm font-semibold text-muted-foreground">{next.location}</p> : null}
           </div>
         ) : <p className="mt-2 text-sm font-semibold text-muted-foreground">Nothing scheduled</p>}
       </div>
-      <Link to="/calendar" className="justify-self-center sm:justify-self-end">
-        <BubbleButton size="sm" tone="neutral">
+      <Link to="/calendar" className="w-full max-w-[360px] justify-self-center sm:w-auto sm:justify-self-end">
+        <BubbleButton size="sm" tone="neutral" className="w-full justify-center sm:w-auto">
           Calendar
         </BubbleButton>
       </Link>
@@ -162,14 +162,14 @@ function TodayStrip({ teamId }: { teamId: string | null }) {
   if (!game) return <UpNext teamId={teamId} />;
 
   return (
-    <Panel className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-flame/60 bg-flame/10">
-      <div className="min-w-0 text-left">
+    <Panel className="grid gap-4 border-flame/60 bg-flame/10 px-4 py-4 text-center sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:text-left">
+      <div className="min-w-0">
         <Label>Game today</Label>
-        <h2 className="mt-2 truncate text-xl font-black leading-tight text-foreground">{game.opponent ? `vs ${game.opponent}` : game.title}</h2>
+        <h2 className="mt-2 break-words text-xl font-black leading-tight text-foreground">{game.opponent ? `vs ${game.opponent}` : game.title}</h2>
         <p className="mt-1 text-sm font-semibold text-muted-foreground">{new Date(game.starts_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}{game.location ? ` · ${game.location}` : ""}</p>
       </div>
-      <Link to="/games/new">
-        <BubbleButton tone="flame" size="lg" className="min-h-14">
+      <Link to="/games/new" className="w-full max-w-[360px] justify-self-center sm:w-auto sm:justify-self-end">
+        <BubbleButton tone="flame" size="lg" className="min-h-14 w-full justify-center sm:w-auto">
           ▶ Start Live Game
         </BubbleButton>
       </Link>
@@ -216,27 +216,29 @@ function Dashboard() {
       title={`Welcome back, ${greeting}`}
       subtitle={team ? `${team.name} · ${team.season}` : (me.org?.name ?? "Your basketball program")}
       logoUrl={teamLogo.data ?? null}
+      balancedTitle
     >
       {isCoach ? <TipInterstitial dest="dashboard" /> : null}
-      <Panel className="mb-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-        <div className="min-w-0 text-center sm:text-left">
+      <div className="space-y-4">
+      <Panel className="flex flex-col items-center gap-3 px-4 py-4 text-center">
+        <div className="min-w-0">
           <Label>Current team</Label>
-          <h2 className="mt-2 truncate text-xl font-black text-foreground">{team ? team.name : "No team yet"}</h2>
+          <h2 className="mt-2 break-words text-xl font-black text-foreground">{team ? team.name : "No team yet"}</h2>
           {team ? <p className="text-sm font-semibold text-muted-foreground">{team.season}</p> : null}
         </div>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="flex w-full max-w-[360px] flex-col items-stretch gap-2">
           {teams.length > 1 ? (
             teams
               .filter((t) => t.id !== teamId)
               .slice(0, 4)
               .map((t) => (
-                <BubbleButton key={t.id} size="sm" tone="neutral" onClick={() => setTeam(t.id)}>
+                <BubbleButton key={t.id} size="sm" tone="neutral" className="w-full justify-center text-center" onClick={() => setTeam(t.id)}>
                   Switch to {t.name}
                 </BubbleButton>
               ))
           ) : (
-            <Link to="/roster">
-              <BubbleButton size="sm" tone="neutral">
+            <Link to="/roster" className="w-full">
+              <BubbleButton size="sm" tone="neutral" className="w-full justify-center text-center">
                 Manage teams
               </BubbleButton>
             </Link>
@@ -245,33 +247,40 @@ function Dashboard() {
       </Panel>
 
       {live.length ? (
-        <Panel className="mb-3 flex flex-wrap items-center gap-2">
-          <Pill tone="flame">In progress</Pill>
-          {live.map((g) => (
-            <Link key={g.id} to="/game/$gameId" params={{ gameId: g.id }}>
-              <BubbleButton size="sm" tone="flame">
-                vs {g.opponent} · resume live court
-              </BubbleButton>
-            </Link>
-          ))}
+        <Panel className="flex flex-col items-center gap-3 px-4 py-4 text-center">
+          <Label>In progress</Label>
+          <div className="flex w-full flex-col items-center gap-2.5">
+            {live.map((g) => (
+              <Link key={g.id} to="/game/$gameId" params={{ gameId: g.id }} className="w-full max-w-[520px]">
+                <BubbleButton tone="flame" size="lg" className="min-h-14 w-full justify-center text-center">
+                  vs {g.opponent} · Resume Live Court
+                </BubbleButton>
+              </Link>
+            ))}
+          </div>
         </Panel>
       ) : null}
 
-      <TrialStatus teamId={teamId} />
-
       <TodayStrip teamId={teamId} />
 
+      <TrialStatus teamId={teamId} />
+
       {isCoach ? (
-        <div className="mb-3">
+        <div>
           <ProgressCard />
         </div>
       ) : null}
 
-      <div className="mb-3">
+      <div>
         <PlayOfTheDayCard canAdd={isCoach} />
       </div>
 
-      <div className="mb-3 grid gap-3 sm:grid-cols-2">
+      <HelpCard />
+
+      <EnablePushCard />
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
         {PRIMARY.map((c) => {
           const Icon = c.icon;
           return (
@@ -299,7 +308,7 @@ function Dashboard() {
         })}
       </div>
 
-      <Panel className="mb-3 flex flex-wrap items-center justify-center gap-2">
+      <Panel className="mt-4 flex flex-wrap items-center justify-center gap-2">
         <Label>More tools</Label>
         {SECONDARY.map((c) => {
           const Icon = c.icon;
@@ -314,7 +323,7 @@ function Dashboard() {
         })}
       </Panel>
 
-      <div className="mb-3 grid gap-3 lg:grid-cols-2">
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <CoachNotes />
         <MembershipCard teamId={teamId} />
       </div>
@@ -323,7 +332,7 @@ function Dashboard() {
 
       {isCoach ? <PlayerQrPanel teams={teams} /> : null}
 
-      <Panel className="mb-3 flex flex-wrap items-center gap-2">
+      <Panel className="mt-4 flex flex-wrap items-center gap-2">
         <Label>Parents & families</Label>
         <InfoPanel className="sm:flex-1">Read-only stats and schedule link. No playbook, no account needed.</InfoPanel>
         <Link to="/locker">
@@ -334,14 +343,8 @@ function Dashboard() {
         </Link>
       </Panel>
 
-      <HelpCard />
-
-      <div className="mt-3">
-        <EnablePushCard />
-      </div>
-
       {!teams.length ? (
-        <Panel className="mt-3 flex flex-col gap-2">
+        <Panel className="mt-4 flex flex-col gap-2">
           <Label>Start here</Label>
           <EmptyState>Try the product first — set up your team whenever you are ready</EmptyState>
           <div className="flex flex-wrap gap-2">

@@ -44,6 +44,7 @@ export function AppShell({
   actions,
   wide,
   logoUrl,
+  balancedTitle,
   backTo,
   backLabel = "Back",
 }: {
@@ -53,6 +54,7 @@ export function AppShell({
   actions?: ReactNode | undefined;
   wide?: boolean | undefined;
   logoUrl?: string | null | undefined;
+  balancedTitle?: boolean | undefined;
   backTo?: string | undefined;
   backLabel?: string | undefined;
 }) {
@@ -226,17 +228,23 @@ export function AppShell({
           </div>
         </header>
 
-        <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-3xl border border-border/70 bg-surface/80 px-4 py-4 sm:flex sm:flex-wrap sm:justify-center sm:text-center">
+        <div className={cn(
+          "mb-4 items-center gap-3 rounded-3xl border border-border/70 bg-surface/80 px-4 py-4 text-center",
+          balancedTitle
+            ? "flex flex-col justify-center sm:grid sm:grid-cols-[3rem_minmax(0,1fr)_3rem]"
+            : "grid grid-cols-[minmax(0,1fr)_auto] sm:flex sm:flex-wrap sm:justify-center",
+        )}>
           {backTo ? <div className="col-span-2 justify-self-start sm:col-span-1"><BackNav to={backTo} label={backLabel} /></div> : null}
           {logoUrl ? (
-            <span className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-flame/50 bg-surface-2/80 p-1 shadow-lg shadow-black/30">
+            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-flame/50 bg-surface-2/80 p-1 shadow-lg shadow-black/30 sm:justify-self-start">
               <img src={logoUrl} alt="Team logo" className="h-full w-full object-contain" />
             </span>
-          ) : null}
-          <div className="min-w-0 text-center sm:min-w-[280px]">
+          ) : balancedTitle ? <span className="hidden h-12 w-12 sm:block" aria-hidden /> : null}
+          <div className={cn("min-w-0 text-center", !balancedTitle && "sm:min-w-[280px]")}>
             <h1 className="text-2xl font-black leading-tight text-foreground sm:text-3xl">{title}</h1>
             {subtitle ? <p className="mt-1 text-sm font-semibold leading-relaxed text-muted-foreground">{subtitle}</p> : null}
           </div>
+          {balancedTitle ? <span className="hidden h-12 w-12 sm:block" aria-hidden /> : null}
         </div>
 
         {children}

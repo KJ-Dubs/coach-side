@@ -58,7 +58,7 @@ export function ProgressCard() {
 
 export function HelpCard() {
   return (
-    <Panel className="mb-3 flex flex-col items-center gap-3 px-4 py-4 text-center">
+    <Panel className="flex flex-col items-center gap-3 px-4 py-4 text-center">
       <p className="text-sm font-semibold leading-relaxed text-muted-foreground sm:text-base">
         Need help maximizing your CoachSide account?
       </p>
