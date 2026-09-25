@@ -1,3 +1,4 @@
+import { trackAnon } from "@/lib/funnel";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { BubbleButton, Field, Label, Note, Panel, Pill, TextInput } from "@/components/Bubbles";
@@ -86,6 +87,7 @@ export function AuthCard({
     try {
       if (mode === "signup") {
         if (password.length < 6) throw new Error("Password needs at least 6 characters");
+        void trackAnon("signup_started");
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
