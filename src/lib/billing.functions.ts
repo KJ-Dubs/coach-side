@@ -8,10 +8,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   ALL_MODULES,
-  planTier,
-  priceFor,
   type ModuleKey,
-  type PlanTier,
 } from "./entitlements";
 
 const moduleSchema = z.enum(["playbook_plus", "gameday_plus", "team_hub_plus"]);

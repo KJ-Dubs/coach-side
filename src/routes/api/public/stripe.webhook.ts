@@ -1,14 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 /**
- * Stripe webhook. Inactive until STRIPE_WEBHOOK_SECRET exists. Verifies the
- * Stripe-Signature header, stores each event id once (idempotent retries),
- * and maps the subscription price to team modules via the owner price map.
- * Checkout sessions and subscriptions must carry metadata.team_id.
+ * Stripe webhook — the only thing that activates or removes paid access.
+ * Verifies Stripe-Signature, stores each event id once (retries are no-ops),
+ * then syncs the team's single subscription into team_billing.
+ * Data is never deleted: cancellation only clears modules.
  */
 async function verify(body: string, header: string, secret: string): Promise<boolean> {
-  const parts = Object.fromEntries(header.split(",").map((p) => p.split("=") as [string, string]));
-  const t = parts["t"];
+  const t = header.split(",").find((p) => p.startsWith("t="))?.slice(2);
   const sigs = header.split(",").filter((p) => p.startsWith("v1=")).map((p) => p.slice(3));
   if (!t || !sigs.length) return false;
   if (Math.abs(Date.now() / 1000 - Number(t)) > 600) return false;
@@ -20,87 +19,115 @@ async function verify(body: string, header: string, secret: string): Promise<boo
   });
 }
 
-const STATUS: Record<string, string> = {
-  active: "active",
-  trialing: "active",
-  past_due: "past_due",
-  unpaid: "past_due",
-  canceled: "canceled",
-  incomplete: "pending",
-  incomplete_expired: "canceled",
-  paused: "canceled",
-};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Any = any;
 
 export const Route = createFileRoute("/api/public/stripe/webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         const secret = process.env["STRIPE_WEBHOOK_SECRET"];
-        if (!secret) return new Response("Stripe webhook not configured", { status: 503 });
+        if (!secret) return new Response("Stripe webhook secret not configured", { status: 503 });
         const body = await request.text();
-        const sig = request.headers.get("stripe-signature") ?? "";
-        if (!(await verify(body, sig, secret))) return new Response("Invalid signature", { status: 401 });
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const event = JSON.parse(body) as { id: string; type: string; livemode: boolean; data: { object: any } };
-        const { adminDb } = await import("@/lib/notify.server");
-        const db = await adminDb();
+        if (!(await verify(body, request.headers.get("stripe-signature") ?? "", secret))) {
+          return new Response("Invalid signature", { status: 401 });
+        }
+        const event = JSON.parse(body) as { id: string; type: string; livemode: boolean; data: { object: Any } };
         const obj = event.data.object ?? {};
-        const teamId: string | null = obj.metadata?.team_id ?? obj.subscription_details?.metadata?.team_id ?? null;
+        const { adminDb } = await import("@/lib/notify.server");
+        const st = await import("@/lib/stripe.server");
+        const db = await adminDb();
+
+        // Resolve the team: metadata first, then our stored subscription/customer.
+        let teamId: string | null =
+          obj.metadata?.team_id ?? obj.subscription_details?.metadata?.team_id ?? obj.parent?.subscription_details?.metadata?.team_id ?? obj.client_reference_id ?? null;
+        const subRef: string | null = typeof obj.subscription === "string" ? obj.subscription : obj.object === "subscription" ? obj.id : null;
+        if (!teamId && subRef) {
+          const { data } = await db.from("team_billing").select("team_id").eq("stripe_subscription_id", subRef).maybeSingle();
+          teamId = data?.team_id ?? null;
+        }
+        if (!teamId && typeof obj.customer === "string") {
+          const { data } = await db.from("team_billing").select("team_id").eq("stripe_customer_id", obj.customer).maybeSingle();
+          teamId = data?.team_id ?? null;
+        }
 
         const { error: dup } = await db.from("billing_webhook_events").insert({
-          event_id: event.id,
-          provider: "stripe",
-          event_type: event.type,
-          livemode: event.livemode,
-          team_id: teamId,
+          event_id: event.id, provider: "stripe", event_type: event.type, livemode: event.livemode, team_id: teamId,
         });
-        if (dup) return new Response("ok (duplicate)"); // already processed
+        if (dup) return new Response("ok (already processed)");
 
         let error: string | null = null;
         try {
-          if (teamId && (event.type.startsWith("customer.subscription.") || event.type === "checkout.session.completed")) {
-            const now = new Date().toISOString();
-            if (event.type === "checkout.session.completed") {
-              await db.from("team_billing").upsert({
-                team_id: teamId,
-                billing_provider: "stripe",
-                stripe_customer_id: obj.customer ?? null,
-                stripe_subscription_id: obj.subscription ?? null,
-                last_webhook_at: now,
-                last_webhook_event_id: event.id,
-                status: "pending",
-                modules: [],
-              }, { onConflict: "team_id" });
-              await db.from("product_activity_events").insert({ user_id: obj.metadata?.user_id ?? null, event_type: "checkout_completed", team_id: teamId }).then(() => null, () => null);
-            } else {
-              const priceId: string | null = obj.items?.data?.[0]?.price?.id ?? null;
-              const { data: map } = await db.from("billing_price_map").select("plan_key").eq("stripe_price_id", priceId).maybeSingle();
-              const key = (map?.plan_key as string | undefined) ?? null;
-              const modules = !key ? [] : key === "complete" ? ["playbook_plus", "gameday_plus", "team_hub_plus"] : key.split("+");
-              const status = event.type === "customer.subscription.deleted" ? "canceled" : (STATUS[obj.status] ?? "pending");
-              await db.from("team_billing").upsert({
-                team_id: teamId,
-                billing_provider: "stripe",
-                stripe_customer_id: obj.customer ?? null,
-                stripe_subscription_id: obj.id ?? null,
-                stripe_price_id: priceId,
-                subscription_status: obj.status ?? null,
-                status,
-                modules: status === "canceled" ? [] : modules,
-                cancel_at_period_end: !!obj.cancel_at_period_end,
-                current_period_end: obj.current_period_end ? new Date(obj.current_period_end * 1000).toISOString() : null,
-                last_webhook_at: now,
-                last_webhook_event_id: event.id,
-                last_webhook_error: key ? null : "Price ID not in the owner price map",
-              }, { onConflict: "team_id" });
+          const now = new Date().toISOString();
+          const base = { billing_provider: "stripe", last_webhook_at: now, last_webhook_event_id: event.id };
+          const owner = obj.metadata?.billing_owner ?? null;
+          const log = (type: string) =>
+            owner ? db.from("product_activity_events").insert({ user_id: owner, event_type: type, team_id: teamId }) : Promise.resolve();
+
+          const syncSubscription = async (sub: Any, deleted = false) => {
+            const item = sub.items?.data?.[0];
+            const priceId: string | null = item?.price?.id ?? null;
+            const plan = await st.planForPrice(db, priceId, item?.price?.lookup_key ?? null);
+            const status = deleted ? "canceled" : st.mapStatus(sub.status);
+            const periodEnd = sub.current_period_end ?? item?.current_period_end ?? null;
+            const { data: prev } = await db.from("team_billing").select("modules, status").eq("team_id", teamId).maybeSingle();
+            await db.from("team_billing").upsert({
+              team_id: teamId,
+              ...base,
+              stripe_customer_id: sub.customer ?? null,
+              stripe_subscription_id: sub.id,
+              stripe_price_id: priceId,
+              subscription_status: deleted ? "canceled" : sub.status,
+              status,
+              modules: status === "canceled" ? [] : st.modulesFor(plan),
+              pending_modules: null,
+              cancel_at_period_end: !!sub.cancel_at_period_end,
+              current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+              last_webhook_error: plan ? null : `Price ${priceId} is not mapped to a CoachSide plan`,
+              ...(sub.metadata?.billing_owner ? { billing_owner: sub.metadata.billing_owner } : {}),
+            }, { onConflict: "team_id" });
+            const ownerId = sub.metadata?.billing_owner;
+            if (ownerId && status === "active" && prev?.status !== "active") {
+              await db.from("product_activity_events").insert({ user_id: ownerId, event_type: "paid_active", team_id: teamId });
             }
+            if (ownerId && deleted) await db.from("product_activity_events").insert({ user_id: ownerId, event_type: "cancel", team_id: teamId });
+          };
+
+          if (!teamId) {
+            error = "No CoachSide team found for this event";
+          } else if (event.type === "checkout.session.completed") {
+            await db.from("team_billing").upsert({
+              team_id: teamId, ...base,
+              stripe_customer_id: obj.customer ?? null,
+              stripe_subscription_id: obj.subscription ?? null,
+            }, { onConflict: "team_id" });
+            await log("checkout_completed");
+            // Pull the subscription now so access doesn't wait for the next event.
+            if (obj.subscription && st.stripeConfig().secretPresent) {
+              await syncSubscription(await st.stripe("GET", `/subscriptions/${obj.subscription}`));
+            }
+          } else if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
+            await syncSubscription(obj);
+          } else if (event.type === "customer.subscription.deleted") {
+            await syncSubscription(obj, true);
+          } else if (event.type === "invoice.paid") {
+            await db.from("team_billing").update({ ...base, status: "active", last_webhook_error: null }).eq("team_id", teamId).neq("status", "canceled");
+          } else if (event.type === "invoice.payment_failed") {
+            // Smart Retries keep trying; access continues in grace until Stripe gives up.
+            await db.from("team_billing").update({ ...base, status: "grace", last_webhook_error: "Payment failed — Stripe is retrying" }).eq("team_id", teamId);
+          } else if (event.type === "customer.subscription.trial_will_end") {
+            await db.from("team_billing").update(base).eq("team_id", teamId);
           }
         } catch (e) {
           error = e instanceof Error ? e.message : "processing failed";
         }
         await db.from("billing_webhook_events").update({ processed: !error, error }).eq("event_id", event.id);
-        return error ? new Response("error", { status: 500 }) : new Response("ok");
+        // Return 500 on processing errors so Stripe retries (the id row is cleared to allow it).
+        if (error && error !== "No CoachSide team found for this event") {
+          await db.from("billing_webhook_events").delete().eq("event_id", event.id);
+          return new Response("error", { status: 500 });
+        }
+        return new Response("ok");
       },
     },
   },

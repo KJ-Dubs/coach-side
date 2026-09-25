@@ -137,6 +137,14 @@ function LaunchQaPage() {
               <Pill>Price map</Pill><OnOff on={d.config.priceMapComplete} yes="Complete" no="Incomplete" />
             </div>
             <div className="flex flex-wrap gap-2">
+              <Pill>Stripe server secret</Pill><OnOff on={d.stripe.secretPresent} yes="Present" no="Not configured" />
+              {d.stripe.reason ? <Pill tone="danger">{d.stripe.reason}</Pill> : null}
+              <Pill tone="muted">Last webhook: {d.stripe.lastWebhookAt ? new Date(d.stripe.lastWebhookAt).toLocaleString() : "none yet"}</Pill>
+              {d.stripe.subscriptions.length === 0 ? <Pill tone="muted">No Stripe subscriptions observed</Pill> : d.stripe.subscriptions.map((x) => (
+                <Pill key={x.status} tone="grape">{x.status}: {x.count}</Pill>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
               <Pill tone="grape">Support: {d.config.supportEmail}</Pill>
               <Pill tone="muted">From: {d.config.fromEmail}</Pill>
               <Pill tone="muted">Webhook path: {d.config.webhookUrl}</Pill>
@@ -145,10 +153,10 @@ function LaunchQaPage() {
 
           <Panel className="flex flex-col gap-2">
             <Label>Stripe price IDs</Label>
-            <Note>Paste the real price IDs from your Stripe dashboard. Nothing is invented; empty rows stay "missing".</Note>
+            <Note>Test prices come from your Stripe sandbox. Saving a value here overrides it — map live-mode IDs here after QA.</Note>
             {d.priceMap.map((row) => (
               <div key={row.planKey} className="grid gap-2 sm:grid-cols-[220px_minmax(0,1fr)_auto] sm:items-center">
-                <Pill tone={row.priceId ? "success" : "danger"}>{PLAN_LABEL[row.planKey]}</Pill>
+                <Pill tone={row.priceId ? "success" : "danger"}>{PLAN_LABEL[row.planKey]} · {row.source}</Pill>
                 <TextInput
                   value={prices[row.planKey] ?? ""}
                   placeholder="price_…"
