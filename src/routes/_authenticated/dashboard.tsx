@@ -78,7 +78,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => (<><TipInterstitial dest="dashboard" /><Dashboard /></>),
+  component: Dashboard,
 });
 
 type Action = {
@@ -218,6 +218,7 @@ function Dashboard() {
       subtitle={team ? `${team.name} · ${team.season}` : (me.org?.name ?? "Your basketball program")}
       logoUrl={teamLogo.data ?? null}
     >
+      {isCoach ? <TipInterstitial dest="dashboard" /> : null}
       <Panel className="mb-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
         <div className="min-w-0 text-center sm:text-left">
           <Label>Current team</Label>
