@@ -107,5 +107,5 @@
 - [x] Verify mobile/iPad navigation, scrolling, permissions, and build
 
 ## CoachSide Tips reliability
-- [ ] Make eligible tips StrictMode-safe with readiness dismissal and a 3-second safety timeout
-- [ ] Verify fast, slow, repeat, back-navigation, and route-cleanup behavior
+- [x] Make eligible tips StrictMode-safe with readiness dismissal and a 3-second safety timeout
+- [x] Verify fast, slow, repeat, back-navigation, and route-cleanup behavior
