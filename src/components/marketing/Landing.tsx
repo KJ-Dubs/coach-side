@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { trackAnon } from "@/lib/funnel";
 import { Link } from "@tanstack/react-router";
 import { SocialCTA } from "@/components/SocialCTA";
 import {
@@ -127,6 +129,7 @@ function Shot({ src, alt, caption }: { src: string; alt: string; caption: string
 }
 
 export function Landing() {
+  useEffect(() => { void trackAnon("landing_view"); }, []);
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/90 backdrop-blur">

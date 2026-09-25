@@ -39,7 +39,8 @@ export type LaunchQa = {
     fromEmail: string;
     priceMapComplete: boolean;
   };
-  priceMap: { planKey: string; priceId: string | null }[];
+  priceMap: { planKey: string; priceId: string | null; source: string }[];
+  stripe: { secretPresent: boolean; reason: string | null; lastWebhookAt: string | null; subscriptions: { status: string; count: number }[] };
   webhookEvents: { eventId: string; type: string; processed: boolean; error: string | null; receivedAt: string; livemode: boolean | null }[];
   checklist: { key: string; label: string; status: CheckStatus; detail: string }[];
   funnel: { event: string; count: number }[];
@@ -60,9 +61,11 @@ export const getLaunchQa = createServerFn({ method: "GET" })
     const { enforcementEnabled } = await import("./billing.server");
     const db = await adminDb();
 
-    const sk = process.env["STRIPE_SECRET_KEY"] ?? "";
-    const stripeMode = sk.startsWith("sk_live_") || sk.startsWith("rk_live_") ? "live" : sk ? "test" : "not_configured";
-    const webhookConfigured = Boolean(process.env["STRIPE_WEBHOOK_SECRET"]);
+    const st = await import("./stripe.server");
+    const scfg = st.stripeConfig();
+    const stripeMode = scfg.mode;
+    const webhookConfigured = scfg.webhookSecretPresent;
+    const resolved = await st.resolvePrices(db as never);
 
     const [pm, wh, tb, ua, ev, anon, potd, plays, members] = await Promise.all([
       db.from("billing_price_map").select("plan_key, stripe_price_id"),
@@ -76,10 +79,11 @@ export const getLaunchQa = createServerFn({ method: "GET" })
       db.from("team_members").select("user_id, role, active"),
     ]);
 
-    const priceMap = PLAN_KEYS.map((k) => ({
-      planKey: k,
-      priceId: ((pm.data ?? []) as { plan_key: string; stripe_price_id: string | null }[]).find((r) => r.plan_key === k)?.stripe_price_id ?? null,
-    }));
+    void pm;
+    const priceMap = PLAN_KEYS.map((k) => {
+      const r = resolved.find((x) => x.plan === k);
+      return { planKey: k, priceId: r?.priceId ?? null, source: r?.source ?? "missing" };
+    });
     const events = (wh.data ?? []) as { event_id: string; event_type: string; processed: boolean; error: string | null; received_at: string; livemode: boolean | null }[];
     const billing = (tb.data ?? []) as { status: string; stripe_subscription_id: string | null; cancel_at_period_end: boolean; modules: string[] }[];
     const stripeRows = billing.filter((b) => b.stripe_subscription_id);
@@ -126,7 +130,18 @@ export const getLaunchQa = createServerFn({ method: "GET" })
     const { data: mine } = await db.from("product_activity_events").select("event_type, created_at").eq("user_id", context.userId).order("created_at", { ascending: false }).limit(50);
     const playList = (plays.data ?? []) as { id: string; name: string }[];
 
+    const statusCounts = new Map<string, number>();
+    for (const b of stripeRows) {
+      const k = b.cancel_at_period_end ? `${b.status} (cancels at period end)` : b.status;
+      statusCounts.set(k, (statusCounts.get(k) ?? 0) + 1);
+    }
     return {
+      stripe: {
+        secretPresent: scfg.secretPresent,
+        reason: scfg.reason,
+        lastWebhookAt: events[0]?.received_at ?? null,
+        subscriptions: [...statusCounts].map(([status, count]) => ({ status, count })),
+      },
       config: {
         enforcementEnabled: enforcementEnabled(),
         stripeMode,

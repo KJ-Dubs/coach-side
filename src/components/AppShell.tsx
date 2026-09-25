@@ -202,6 +202,11 @@ export function AppShell({
                       <Link to="/kpi"><Gauge /> My KPI</Link>
                     </DropdownMenuItem>
                   ) : null}
+                  {isOwner ? (
+                    <DropdownMenuItem asChild className="cursor-pointer rounded-xl px-3 py-2.5 font-bold text-flame focus:bg-flame/15">
+                      <Link to="/launch-qa"><Gauge /> Launch QA</Link>
+                    </DropdownMenuItem>
+                  ) : null}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="cursor-pointer rounded-xl px-3 py-2.5 font-bold text-flame focus:bg-flame/15 focus:text-flame"

@@ -8,10 +8,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   ALL_MODULES,
-  planTier,
-  priceFor,
   type ModuleKey,
-  type PlanTier,
 } from "./entitlements";
 
 const moduleSchema = z.enum(["playbook_plus", "gameday_plus", "team_hub_plus"]);
@@ -54,13 +51,14 @@ export type BillingConfig = {
 export const getBillingConfig = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async (): Promise<BillingConfig> => {
-    const { squareConfig, enforcementEnabled, WEBHOOK_URL } = await import("./billing.server");
-    const cfg = squareConfig();
+    const { enforcementEnabled } = await import("./billing.server");
+    const { stripeConfig } = await import("./stripe.server");
+    const cfg = stripeConfig();
     return {
       enforcementEnabled: enforcementEnabled(),
-      checkoutConfigured: cfg.configured,
-      checkoutReason: cfg.reason,
-      webhookUrl: WEBHOOK_URL,
+      checkoutConfigured: cfg.secretPresent,
+      checkoutReason: cfg.secretPresent ? null : "Checkout is not set up yet (Stripe server secret not configured).",
+      webhookUrl: "https://coachside.live/api/public/stripe/webhook",
     };
   });
 
@@ -118,7 +116,7 @@ export const getTeamBilling = createServerFn({ method: "GET" })
       currentPeriodEnd: (row?.current_period_end as string | null) ?? null,
       complimentary: live.length > 0,
       complimentaryExpiresAt: (live[0]?.expires_at as string | null) ?? null,
-      subscriptionRef: mask((row?.square_subscription_id as string | null) ?? null),
+      subscriptionRef: mask(((row as Record<string, unknown> | null)?.["stripe_subscription_id"] as string | null) ?? (row?.square_subscription_id as string | null) ?? null),
       lastWebhookAt: (row?.last_webhook_at as string | null) ?? null,
       lastWebhookError: (row?.last_webhook_error as string | null) ?? null,
       isAdmin: isAdmin === true,
@@ -129,104 +127,128 @@ export type CheckoutResult =
   | { ok: true; url: string }
   | { ok: false; reason: string; setupIncomplete: boolean };
 
-/** Starts (or swaps to) the one recurring plan for this team. */
+/**
+ * Starts Stripe-hosted Checkout for the team's single subscription, or swaps
+ * the existing subscription to the new price (never a second subscription).
+ * The webhook — not this redirect — activates entitlements.
+ */
 export const startTeamCheckout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z
-      .object({
-        teamId: z.string().uuid(),
-        modules: z.array(moduleSchema).min(1),
-        origin: z.string().url(),
-      })
-      .parse(d),
+    z.object({ teamId: z.string().uuid(), modules: z.array(moduleSchema).min(1), origin: z.string().url() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<CheckoutResult> => {
     await assertCoach(context.supabase as unknown as RpcClient, data.teamId);
-    const square = await import("./billing.server");
-    const cfg = square.squareConfig();
-    if (!cfg.configured) {
-      return { ok: false, reason: cfg.reason!, setupIncomplete: true };
-    }
-    const tier: PlanTier = planTier(data.modules);
-    const variation = square.planVariationId(tier);
-    if (!variation) {
-      return { ok: false, reason: "That plan is not configured yet.", setupIncomplete: true };
-    }
-
+    const st = await import("./stripe.server");
+    const cfg = st.stripeConfig();
+    if (!cfg.secretPresent) return { ok: false, reason: "Checkout is not set up yet (Stripe server secret not configured).", setupIncomplete: true };
+    const plan = st.planKeyFor(data.modules as ModuleKey[]);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: row } = await supabaseAdmin
-      .from("team_billing")
-      .select("square_customer_id,square_subscription_id")
-      .eq("team_id", data.teamId)
-      .maybeSingle();
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("email,full_name")
-      .eq("id", context.userId)
-      .maybeSingle();
+    const db = supabaseAdmin as never as Parameters<typeof st.resolvePrices>[0];
+    const priceId = plan ? await st.priceIdFor(db, plan) : null;
+    if (!plan || !priceId) return { ok: false, reason: "That plan's Stripe price is not mapped yet.", setupIncomplete: true };
 
-    // Already subscribed → swap the single recurring plan instead of adding one.
-    if (row?.square_subscription_id) {
-      await square.swapSubscriptionPlan(row.square_subscription_id as string, variation);
-      await supabaseAdmin
-        .from("team_billing")
-        .update({
-          pending_modules: data.modules,
-          square_plan_variation_id: variation,
-          billing_owner: context.userId,
-        })
-        .eq("team_id", data.teamId);
-      return { ok: true, url: `${data.origin}/membership?swapped=1` };
+    const { data: row } = await supabaseAdmin.from("team_billing").select("*").eq("team_id", data.teamId).maybeSingle();
+    const { data: profile } = await supabaseAdmin.from("profiles").select("email,full_name").eq("id", context.userId).maybeSingle();
+    const origin = new URL(data.origin).origin;
+    const meta = { team_id: data.teamId, billing_owner: context.userId, plan_key: plan };
+
+    const subId = (row as { stripe_subscription_id?: string | null } | null)?.stripe_subscription_id ?? null;
+    const status = (row as { status?: string } | null)?.status ?? "free";
+    if (subId && status !== "canceled") {
+      type Sub = { items: { data: { id: string }[] }; current_period_end?: number };
+      const sub = await st.stripe<Sub>("GET", `/subscriptions/${subId}`);
+      const itemId = sub.items.data[0]?.id;
+      await st.stripe("POST", `/subscriptions/${subId}`, {
+        "items[0][id]": itemId,
+        "items[0][price]": priceId,
+        proration_behavior: "create_prorations",
+        cancel_at_period_end: false,
+        "metadata[team_id]": meta.team_id,
+        "metadata[billing_owner]": meta.billing_owner,
+        "metadata[plan_key]": meta.plan_key,
+      }, `swap-${subId}-${priceId}`);
+      await supabaseAdmin.from("team_billing").update({ pending_modules: data.modules, billing_owner: context.userId }).eq("team_id", data.teamId);
+      await supabaseAdmin.from("product_activity_events").insert({ user_id: context.userId, event_type: "upgrade", team_id: data.teamId });
+      return { ok: true, url: `${origin}/membership?swapped=1` };
     }
 
-    const customerId = await square.findOrCreateCustomer({
-      existingId: (row?.square_customer_id as string | null) ?? null,
-      email: (profile?.email as string | null) ?? null,
-      name: (profile?.full_name as string | null) ?? null,
-      referenceId: context.userId,
-    });
-    const url = await square.createSubscriptionCheckout({
-      planVariationId: variation,
-      customerId,
-      teamId: data.teamId,
-      redirectUrl: `${data.origin}/membership?checkout=complete`,
-      note: `CoachSide membership · $${priceFor(data.modules)}/month`,
+    let customerId = (row as { stripe_customer_id?: string | null } | null)?.stripe_customer_id ?? null;
+    if (!customerId) {
+      const c = await st.stripe<{ id: string }>("POST", "/customers", {
+        email: (profile?.email as string | null) ?? undefined,
+        name: (profile?.full_name as string | null) ?? undefined,
+        "metadata[team_id]": data.teamId,
+        "metadata[billing_owner]": context.userId,
+      }, `cust-${data.teamId}`);
+      customerId = c.id;
+    }
+    const session = await st.stripe<{ id: string; url: string }>("POST", "/checkout/sessions", {
+      mode: "subscription",
+      customer: customerId,
+      "line_items[0][price]": priceId,
+      "line_items[0][quantity]": 1,
+      client_reference_id: data.teamId,
+      success_url: `${origin}/membership?checkout=complete&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/membership?checkout=canceled`,
+      allow_promotion_codes: false,
+      "metadata[team_id]": meta.team_id,
+      "metadata[billing_owner]": meta.billing_owner,
+      "metadata[plan_key]": meta.plan_key,
+      "subscription_data[metadata][team_id]": meta.team_id,
+      "subscription_data[metadata][billing_owner]": meta.billing_owner,
+      "subscription_data[metadata][plan_key]": meta.plan_key,
     });
 
     await supabaseAdmin.from("team_billing").upsert(
       {
         team_id: data.teamId,
-        status: "pending",
+        billing_provider: "stripe",
+        status: status === "active" ? status : "pending",
         pending_modules: data.modules,
-        square_customer_id: customerId,
-        square_plan_variation_id: variation,
+        stripe_customer_id: customerId,
+        stripe_price_id: priceId,
         billing_owner: context.userId,
       },
       { onConflict: "team_id" },
     );
-    return { ok: true, url };
+    await supabaseAdmin.from("product_activity_events").insert({ user_id: context.userId, event_type: "checkout_started", team_id: data.teamId });
+    return { ok: true, url: session.url };
   });
 
-/** Downgrade/cancel: access continues to the end of the paid period. */
+/** Stripe Customer Portal: payment method, invoices, cancel, plan changes. */
+export const openBillingPortal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ teamId: z.string().uuid(), origin: z.string().url() }).parse(d))
+  .handler(async ({ data, context }): Promise<CheckoutResult> => {
+    await assertCoach(context.supabase as unknown as RpcClient, data.teamId);
+    const st = await import("./stripe.server");
+    if (!st.stripeConfig().secretPresent) return { ok: false, reason: "Stripe server secret not configured.", setupIncomplete: true };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin.from("team_billing").select("stripe_customer_id").eq("team_id", data.teamId).maybeSingle();
+    const customer = (row as { stripe_customer_id?: string | null } | null)?.stripe_customer_id;
+    if (!customer) return { ok: false, reason: "This team has no Stripe billing yet.", setupIncomplete: false };
+    const s = await st.stripe<{ url: string }>("POST", "/billing_portal/sessions", {
+      customer,
+      return_url: `${new URL(data.origin).origin}/membership`,
+    });
+    return { ok: true, url: s.url };
+  });
+
+/** Cancel at period end: access and data stay until the paid period ends. */
 export const cancelTeamMembership = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ teamId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<{ ok: boolean; reason?: string }> => {
     await assertCoach(context.supabase as unknown as RpcClient, data.teamId);
-    const square = await import("./billing.server");
+    const st = await import("./stripe.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: row } = await supabaseAdmin
-      .from("team_billing")
-      .select("square_subscription_id")
-      .eq("team_id", data.teamId)
-      .maybeSingle();
-    if (!row?.square_subscription_id) return { ok: false, reason: "No active membership." };
-    await square.cancelSubscription(row.square_subscription_id as string);
-    await supabaseAdmin
-      .from("team_billing")
-      .update({ pending_modules: [], status: "canceled" })
-      .eq("team_id", data.teamId);
+    const { data: row } = await supabaseAdmin.from("team_billing").select("stripe_subscription_id").eq("team_id", data.teamId).maybeSingle();
+    const subId = (row as { stripe_subscription_id?: string | null } | null)?.stripe_subscription_id;
+    if (!subId) return { ok: false, reason: "No active membership." };
+    await st.stripe("POST", `/subscriptions/${subId}`, { cancel_at_period_end: true });
+    await supabaseAdmin.from("team_billing").update({ cancel_at_period_end: true }).eq("team_id", data.teamId);
+    await supabaseAdmin.from("product_activity_events").insert({ user_id: context.userId, event_type: "cancel", team_id: data.teamId });
     return { ok: true };
   });
 

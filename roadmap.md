@@ -92,3 +92,10 @@
 - [x] Practice Planner: /practice list + /practice/$planId timed block builder with Locker Room sharing
 - [x] Non-destructive camera fit: "off this view" warning + Fit players in Playmaker
 - [ ] BLOCKED on user: real Instagram / Facebook URLs before social buttons show
+
+## Stripe test-mode QA (Sep 25)
+- [ ] Stripe adapter: hosted Checkout (subscription, one price per team), customer mapping, portal
+- [ ] Map 7 test price IDs (env/config + lookup_key fallback)
+- [ ] Webhook: checkout.session.completed, subscription created/updated/deleted, invoice.paid/payment_failed, trial_will_end
+- [ ] Single-subscription upgrade/downgrade with proration
+- [ ] Launch QA Stripe status; enforcement stays OFF
