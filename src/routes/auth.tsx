@@ -63,8 +63,18 @@ function AuthPage() {
 
   useEffect(() => {
     if (!ready || !session || recovering) return;
-    // Owner analytics only: a sign-in happened. No device or content details.
-    void trackActivity("signed_in");
+    // Owner analytics only: a sign-in happened. Deduped per user for 30 min
+    // so repeat auth-page visits / double auth-state callbacks log once.
+    try {
+      const key = `coachside.signedin.${session.user.id}`;
+      const last = Number(localStorage.getItem(key) || 0);
+      if (Date.now() - last > 30 * 60 * 1000) {
+        localStorage.setItem(key, String(Date.now()));
+        void trackActivity("signed_in");
+      }
+    } catch {
+      /* never block sign-in */
+    }
     // A player who started from a team invite always resumes that invite.
     const pending = consumePendingInvite();
     if (pending) {

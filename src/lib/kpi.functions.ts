@@ -407,14 +407,18 @@ export const getKpiReport = createServerFn({ method: "POST" })
         });
       }
     }
+    const trackedTeamCreated = new Set(
+      tracked.filter((e) => e.event_type === "team_created" && e.team_id).map((e) => e.team_id),
+    );
     for (const t of teams) {
+      if (trackedTeamCreated.has(t.id)) continue; // logged event already covers it
       const staff = teamMembers.find(
         (m) => m.team_id === t.id && (m.role === "head_coach" || m.role === "assistant_coach"),
       );
       feed.push({
         at: t.created_at,
         type: "Team created",
-        who: nameOf(staff?.user_id),
+        who: staff ? nameOf(staff.user_id) : "No coach on team",
         detail: t.name,
       });
     }
@@ -458,10 +462,27 @@ export const getKpiReport = createServerFn({ method: "POST" })
         detail: teamName(r.team_id),
       });
     }
+    const EVENT_LABELS: Record<string, string> = {
+      signed_in: "Signed in",
+      team_created: "Team created",
+      trial_started: "Complete trial started (14 days, no charge)",
+      trial_expired: "Complete trial ended",
+      library_play_added_to_playbook: "Library play added to Playbook",
+      play_exported_video: "Play exported as video",
+      membership_changed: "Membership changed",
+    };
+    const seenSignIn = new Set<string>();
     for (const e of tracked) {
+      if (e.event_type === "signed_in") {
+        // Collapse legacy duplicates logged within the same minute.
+        const k = `${e.user_id}|${String(e.created_at).slice(0, 16)}`;
+        if (seenSignIn.has(k)) continue;
+        seenSignIn.add(k);
+      }
+      const label = EVENT_LABELS[e.event_type] ?? String(e.event_type).replace(/_/g, " ");
       feed.push({
         at: e.created_at,
-        type: String(e.event_type).replace(/_/g, " "),
+        type: label.charAt(0).toUpperCase() + label.slice(1),
         who: nameOf(e.user_id),
         detail: teamName(e.team_id),
       });
