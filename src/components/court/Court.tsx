@@ -148,6 +148,7 @@ export function Court({
   const camera = variant === "full" ? courtCamera(zoom) : { viewBox: { x: 0, y: 0, w: view.w, h: view.h } };
   const vb = camera.viewBox;
   const ref = useRef<HTMLDivElement>(null);
+  const interactive = Boolean(onCourtPoint || onCourtPointerMove || onCourtPointerUp);
 
   const pointFrom = (e: ReactPointerEvent) => {
     const el = ref.current;
@@ -165,8 +166,15 @@ export function Court({
         "relative w-full select-none overflow-hidden rounded-3xl border-2 border-border bg-court shadow-2xl shadow-black/40 transition-all duration-300",
         className,
       )}
-      style={{ aspectRatio: `${vb.w} / ${vb.h}`, cursor, touchAction: "none", ...style }}
+      style={{
+        aspectRatio: `${vb.w} / ${vb.h}`,
+        cursor: interactive ? cursor : "default",
+        touchAction: interactive ? "none" : "pan-y",
+        ...style,
+      }}
       onPointerDown={(e) => {
+        if (!interactive) return;
+        e.currentTarget.setPointerCapture(e.pointerId);
         const p = pointFrom(e);
         if (p && onCourtPoint) onCourtPoint(p);
       }}
@@ -177,6 +185,10 @@ export function Court({
       onPointerUp={(e) => {
         const p = pointFrom(e);
         if (p && onCourtPointerUp) onCourtPointerUp(p);
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+      }}
+      onPointerCancel={(e) => {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
       }}
     >
       <svg

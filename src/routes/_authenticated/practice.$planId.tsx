@@ -118,7 +118,7 @@ function PracticePlanPage() {
       actions={
         <Link to="/practice">
           <BubbleButton size="sm" tone="ghost">
-            All plans
+            ← All plans
           </BubbleButton>
         </Link>
       }

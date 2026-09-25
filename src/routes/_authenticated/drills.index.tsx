@@ -33,9 +33,9 @@ function MyDrillsPage() {
               + New Drill
             </BubbleButton>
           </Link>
-          <Link to="/library">
+          <Link to="/plays" search={{ tab: "library", content: "drills" }}>
             <BubbleButton size="sm" tone="ghost">
-              Drill Library
+              CoachSide Drill Library
             </BubbleButton>
           </Link>
         </div>

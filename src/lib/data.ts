@@ -267,15 +267,69 @@ export type PlayTeamAssignment = {
   team_id: string;
   is_visible: boolean;
   library_version: number | null;
+  folder_id: string | null;
+};
+
+export type TeamPlaybookFolder = {
+  id: string;
+  team_id: string;
+  name: string;
+  description: string | null;
+  created_by: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 };
 
 /** Every play↔team link the signed-in coach can see. Source of truth for team playbooks. */
 export async function fetchPlayAssignments(): Promise<PlayTeamAssignment[]> {
   const { data, error } = await supabase
     .from("play_team_assignments")
-    .select("id,play_id,team_id,is_visible,library_version");
+    .select("id,play_id,team_id,is_visible,library_version,folder_id");
   if (error) throw error;
   return (data ?? []) as unknown as PlayTeamAssignment[];
+}
+
+export async function fetchPlaybookFolders(teamId: string): Promise<TeamPlaybookFolder[]> {
+  const { data, error } = await supabase
+    .from("team_playbook_folders")
+    .select("*")
+    .eq("team_id", teamId)
+    .order("sort_order")
+    .order("name");
+  if (error) throw error;
+  return (data ?? []) as TeamPlaybookFolder[];
+}
+
+export async function createPlaybookFolder(teamId: string, name: string) {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error("Sign in first");
+  const { data, error } = await supabase
+    .from("team_playbook_folders")
+    .insert({ team_id: teamId, name: name.trim(), created_by: auth.user.id })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as TeamPlaybookFolder;
+}
+
+export async function renamePlaybookFolder(folderId: string, name: string) {
+  const { error } = await supabase.from("team_playbook_folders").update({ name: name.trim() }).eq("id", folderId);
+  if (error) throw error;
+}
+
+export async function deletePlaybookFolder(folderId: string) {
+  const { error } = await supabase.from("team_playbook_folders").delete().eq("id", folderId);
+  if (error) throw error;
+}
+
+export async function movePlayToFolder(playId: string, teamId: string, folderId: string | null) {
+  const { error } = await supabase
+    .from("play_team_assignments")
+    .update({ folder_id: folderId })
+    .eq("play_id", playId)
+    .eq("team_id", teamId);
+  if (error) throw error;
 }
 
 export async function fetchTeamsForPlay(playId: string): Promise<string[]> {

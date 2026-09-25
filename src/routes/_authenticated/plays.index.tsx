@@ -26,9 +26,16 @@ import {
   fetchTeams,
   setPlayTeams,
   updatePlay,
+  createPlaybookFolder,
+  deletePlaybookFolder,
+  fetchPlaybookFolders,
+  movePlayToFolder,
+  renamePlaybookFolder,
+  type TeamPlaybookFolder,
 } from "@/lib/data";
 import { publishPlay, setPlayAnonymous, unpublishPlay } from "@/lib/library";
 import { LibraryFeed } from "@/components/community/LibraryFeed";
+import { DrillFeed } from "@/components/drills/DrillFeed";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
 import { isPlayOwner } from "@/lib/playOwnership";
 import { useMe } from "@/lib/useMe";
@@ -47,6 +54,8 @@ const searchSchema = z.object({
   category: z.string().optional(),
   team: z.string().optional(),
   tab: z.enum(["mine", "library"]).optional(),
+  content: z.enum(["plays", "drills"]).optional(),
+  folder: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/plays/")({
@@ -99,7 +108,15 @@ function PlaybookPage() {
   const selected = isCategory(search.category) ? search.category : null;
   const teamFilter = search.team ?? "ALL";
   const tab = search.tab ?? "mine";
+  const libraryContent = search.content ?? "plays";
+  const folderFilter = search.folder ?? "ALL";
   const me = useMe();
+  const folders = useQuery({
+    queryKey: ["playbook-folders", teamFilter],
+    queryFn: () => fetchPlaybookFolders(teamFilter),
+    enabled: teamFilter !== "ALL" && tab === "mine",
+  });
+
   const myUserId = me.user?.id ?? null;
 
   /** playId -> teamIds it is shared with (legacy team_id counts as an assignment). */
@@ -130,10 +147,14 @@ function PlaybookPage() {
 
   const visiblePlays = useMemo(
     () =>
-      myPlays.filter(
-        (p) => teamFilter === "ALL" || (teamsByPlay.get(p.id) ?? []).includes(teamFilter),
-      ),
-    [myPlays, teamFilter, teamsByPlay],
+      myPlays.filter((p) => {
+        if (teamFilter === "ALL") return true;
+        if (!(teamsByPlay.get(p.id) ?? []).includes(teamFilter)) return false;
+        if (folderFilter === "ALL") return true;
+        const assignment = assignments.data?.find((a) => a.play_id === p.id && a.team_id === teamFilter);
+        return folderFilter === "UNFILED" ? !assignment?.folder_id : assignment?.folder_id === folderFilter;
+      }),
+    [myPlays, teamFilter, teamsByPlay, folderFilter, assignments.data],
   );
 
 
@@ -162,6 +183,7 @@ function PlaybookPage() {
       search: {
         ...(category ? { category } : {}),
         ...(teamFilter !== "ALL" ? { team: teamFilter } : {}),
+        ...(folderFilter !== "ALL" ? { folder: folderFilter } : {}),
       },
     });
 
@@ -176,6 +198,18 @@ function PlaybookPage() {
 
   const setTab = (next: "mine" | "library") =>
     navigate({ to: "/plays", search: next === "library" ? { tab: "library" } : {} });
+
+  const setLibraryContent = (content: "plays" | "drills") =>
+    navigate({ to: "/plays", search: { tab: "library", content } });
+
+  const setFolder = (folder: string) => navigate({
+    to: "/plays",
+    search: {
+      ...(selected ? { category: selected } : {}),
+      ...(teamFilter !== "ALL" ? { team: teamFilter } : {}),
+      ...(folder !== "ALL" ? { folder } : {}),
+    },
+  });
 
   const teamName = (id: string | null) =>
     id ? (teams.data?.find((t) => t.id === id)?.name ?? "Team") : "All teams";
@@ -279,6 +313,29 @@ function PlaybookPage() {
   });
 
   const [quickOpen, setQuickOpen] = useState(false);
+  const [folderName, setFolderName] = useState("");
+  const [folderEditor, setFolderEditor] = useState<string | null>(null);
+
+  const folderCreate = useMutation({
+    mutationFn: () => createPlaybookFolder(teamFilter, folderName),
+    onSuccess: () => { setFolderName(""); void queryClient.invalidateQueries({ queryKey: ["playbook-folders", teamFilter] }); toast.success("Folder created"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const folderRename = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => renamePlaybookFolder(id, name),
+    onSuccess: () => { setFolderEditor(null); void queryClient.invalidateQueries({ queryKey: ["playbook-folders", teamFilter] }); toast.success("Folder renamed"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const folderDelete = useMutation({
+    mutationFn: deletePlaybookFolder,
+    onSuccess: () => { setFolder("ALL"); void queryClient.invalidateQueries({ queryKey: ["playbook-folders", teamFilter] }); void queryClient.invalidateQueries({ queryKey: ["play-assignments"] }); toast.success("Folder deleted; plays moved to Unfiled"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const moveFolder = useMutation({
+    mutationFn: ({ playId, folderId }: { playId: string; folderId: string | null }) => movePlayToFolder(playId, teamFilter, folderId),
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ["play-assignments"] }); toast.success("Play moved"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
 
   return (
@@ -320,7 +377,13 @@ function PlaybookPage() {
       </Panel>
 
       {tab === "library" ? (
-        <LibraryFeed variant="app" />
+        <>
+          <Panel className="mb-3 flex flex-wrap items-center justify-center gap-2">
+            <BubbleButton tone={libraryContent === "plays" ? "flame" : "neutral"} onClick={() => setLibraryContent("plays")}>Plays</BubbleButton>
+            <BubbleButton tone={libraryContent === "drills" ? "flame" : "neutral"} onClick={() => setLibraryContent("drills")}>Drills</BubbleButton>
+          </Panel>
+          {libraryContent === "plays" ? <LibraryFeed variant="app" /> : <DrillFeed />}
+        </>
       ) : (
       <>
       <Panel className="mb-3 flex flex-wrap items-center gap-2">
@@ -346,6 +409,24 @@ function PlaybookPage() {
           {visiblePlays.length} {visiblePlays.length === 1 ? "play" : "plays"}
         </Pill>
       </Panel>
+
+      {teamFilter !== "ALL" ? (
+        <Panel className="mb-3 flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Label>Team folders</Label>
+            <BubbleButton size="sm" tone={folderFilter === "ALL" ? "grape" : "neutral"} onClick={() => setFolder("ALL")}>All Plays</BubbleButton>
+            <BubbleButton size="sm" tone={folderFilter === "UNFILED" ? "grape" : "neutral"} onClick={() => setFolder("UNFILED")}>Unfiled</BubbleButton>
+            {(folders.data ?? []).map((folder) => <BubbleButton key={folder.id} size="sm" tone={folderFilter === folder.id ? "grape" : "neutral"} onClick={() => setFolder(folder.id)}>{folder.name}</BubbleButton>)}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <TextInput className="max-w-xs" placeholder="New folder, e.g. vs East High" value={folderName} onChange={(e) => setFolderName(e.target.value)} />
+            <BubbleButton size="sm" tone="flame" disabled={!folderName.trim() || folderCreate.isPending} onClick={() => folderCreate.mutate()}>+ New Folder</BubbleButton>
+            {folderFilter !== "ALL" && folderFilter !== "UNFILED" ? <BubbleButton size="sm" tone="neutral" onClick={() => setFolderEditor(folderFilter)}>Rename</BubbleButton> : null}
+            {folderFilter !== "ALL" && folderFilter !== "UNFILED" ? <BubbleButton size="sm" tone="ghost" onClick={() => { if (window.confirm("Delete this folder? Its plays will move to Unfiled.")) folderDelete.mutate(folderFilter); }}>Delete folder</BubbleButton> : null}
+          </div>
+          {folderEditor ? <FolderRename folder={(folders.data ?? []).find((f) => f.id === folderEditor) ?? null} onCancel={() => setFolderEditor(null)} onSave={(name) => folderRename.mutate({ id: folderEditor, name })} /> : null}
+        </Panel>
+      ) : null}
 
 
       {!selected ? (
@@ -445,6 +526,10 @@ function PlaybookPage() {
                 }}
                 onSaveTeams={(ids) => assignTeams.mutate({ playId: p.id, teamIds: ids })}
                 savingTeams={assignTeams.isPending}
+                activeTeamId={teamFilter !== "ALL" ? teamFilter : null}
+                folders={folders.data ?? []}
+                folderId={assignments.data?.find((a) => a.play_id === p.id && a.team_id === teamFilter)?.folder_id ?? null}
+                onMoveFolder={(folderId) => moveFolder.mutate({ playId: p.id, folderId })}
                 onPublish={(anonymous) =>
                   publish.mutate({
                     p,
@@ -485,6 +570,10 @@ function PlayCard({
   onPublish,
   onUnpublish,
   onAnonymous,
+  activeTeamId,
+  folders,
+  folderId,
+  onMoveFolder,
 }: {
   play: Play;
   canEdit: boolean;
@@ -503,6 +592,10 @@ function PlayCard({
   onPublish: (anonymous: boolean) => void;
   onUnpublish: () => void;
   onAnonymous: (anonymous: boolean) => void;
+  activeTeamId: string | null;
+  folders: TeamPlaybookFolder[];
+  folderId: string | null;
+  onMoveFolder: (folderId: string | null) => void;
 }) {
 
   const [menu, setMenu] = useState(false);
@@ -585,6 +678,17 @@ function PlayCard({
           <BubbleButton size="sm" tone="neutral" onClick={openTeams}>
             Teams
           </BubbleButton>
+          {activeTeamId ? (
+            <select
+              aria-label={`Move ${play.name} to folder`}
+              className="min-h-11 rounded-full border border-border bg-surface-2 px-3 text-xs font-bold text-foreground"
+              value={folderId ?? ""}
+              onChange={(e) => onMoveFolder(e.target.value || null)}
+            >
+              <option value="">Unfiled</option>
+              {folders.map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
+            </select>
+          ) : null}
           {canEdit && play.is_shared ? (
             <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onUnshare}>
               Stop sharing
@@ -674,6 +778,12 @@ function PlayCard({
       ) : null}
     </Panel>
   );
+}
+
+function FolderRename({ folder, onCancel, onSave }: { folder: TeamPlaybookFolder | null; onCancel: () => void; onSave: (name: string) => void }) {
+  const [name, setName] = useState(folder?.name ?? "");
+  if (!folder) return null;
+  return <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-grape/50 bg-grape/10 p-2"><TextInput className="max-w-xs" value={name} onChange={(e) => setName(e.target.value)} /><BubbleButton size="sm" tone="grape" disabled={!name.trim()} onClick={() => onSave(name)}>Save name</BubbleButton><BubbleButton size="sm" tone="ghost" onClick={onCancel}>Cancel</BubbleButton></div>;
 }
 
 /** Inline quick-create: name + teams, then straight into the designer. */

@@ -631,7 +631,7 @@ function PlayDesignerPage() {
         <div className="flex flex-wrap gap-2">
           <Link to="/plays" search={{ category: normalizeCategory(category) }}>
             <BubbleButton size="sm" tone="ghost">
-              Playbook
+              ← Exit to Playbook
             </BubbleButton>
           </Link>
           <Link to="/plays/$playId/view" params={{ playId }}>
