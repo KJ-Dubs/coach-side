@@ -153,6 +153,13 @@ export function EnablePushCard() {
           {activeDevices.length > 1 ? (
             <p className="text-xs font-semibold text-muted-foreground">Active on {activeDevices.length} devices</p>
           ) : null}
+          <Link
+            to="/profile"
+            hash="notification-preferences"
+            className="text-sm font-bold text-grape-bright underline decoration-grape/60 underline-offset-4 hover:text-foreground"
+          >
+            Manage notification preferences
+          </Link>
           <div className="flex flex-wrap justify-center gap-2">
             <BubbleButton size="sm" tone="neutral" disabled={testPush.isPending} onClick={() => testPush.mutate()}>
               {testPush.isPending ? "Sending…" : "Send test notification"}
@@ -164,13 +171,15 @@ export function EnablePushCard() {
         </>
       ) : null}
 
-      <Link
-        to="/help"
-        hash="notifications"
-        className="text-sm font-bold text-grape-bright underline decoration-grape/60 underline-offset-4 hover:text-foreground"
-      >
-        How to install CoachSide
-      </Link>
+      {state !== "on" ? (
+        <Link
+          to="/help"
+          hash="notifications"
+          className="text-sm font-bold text-grape-bright underline decoration-grape/60 underline-offset-4 hover:text-foreground"
+        >
+          How to install CoachSide
+        </Link>
+      ) : null}
     </Panel>
   );
 }

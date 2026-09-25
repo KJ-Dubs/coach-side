@@ -182,7 +182,7 @@ function ProfilePage() {
           <EnablePushCard />
         </div>
 
-        <div className="lg:col-span-2">
+        <div id="notification-preferences" className="scroll-mt-24 lg:col-span-2">
           <NotificationPrefsPanel />
         </div>
 
