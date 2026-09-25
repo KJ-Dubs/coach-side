@@ -116,7 +116,7 @@ export const getTeamBilling = createServerFn({ method: "GET" })
       currentPeriodEnd: (row?.current_period_end as string | null) ?? null,
       complimentary: live.length > 0,
       complimentaryExpiresAt: (live[0]?.expires_at as string | null) ?? null,
-      subscriptionRef: mask(((row as Record<string, unknown> | null)?.stripe_subscription_id as string | null) ?? (row?.square_subscription_id as string | null) ?? null),
+      subscriptionRef: mask(((row as Record<string, unknown> | null)?.["stripe_subscription_id"] as string | null) ?? (row?.square_subscription_id as string | null) ?? null),
       lastWebhookAt: (row?.last_webhook_at as string | null) ?? null,
       lastWebhookError: (row?.last_webhook_error as string | null) ?? null,
       isAdmin: isAdmin === true,

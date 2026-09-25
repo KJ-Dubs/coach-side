@@ -99,7 +99,7 @@ export async function stripe<T = Record<string, unknown>>(method: "GET" | "POST"
       "Content-Type": "application/x-www-form-urlencoded",
       ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
     },
-    body: method === "GET" ? undefined : body,
+    body: method === "GET" ? null : body,
   });
   const json = (await res.json()) as T & { error?: { message?: string } };
   if (!res.ok) {
