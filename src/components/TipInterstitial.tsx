@@ -64,7 +64,9 @@ export function TipInterstitial({ dest, ready = true }: { dest: TipDestination; 
     setShow(true);
     const skipTimer = window.setTimeout(() => setCanSkip(true), TIP_SKIP_AFTER_MS);
     const minimumTimer = window.setTimeout(() => setMinDone(true), TIP_MIN_MS);
-    const safetyTimer = window.setTimeout(close, TIP_MAX_MS);
+    // Begin the fade early enough that even the transition itself completes
+    // within the absolute safety window.
+    const safetyTimer = window.setTimeout(close, TIP_MAX_MS - TIP_FADE_MS);
     return () => {
       window.clearTimeout(skipTimer);
       window.clearTimeout(minimumTimer);
