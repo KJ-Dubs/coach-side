@@ -104,4 +104,4 @@
 - [x] Add consistent source-aware Back / Exit navigation across nested app screens
 - [x] Make static court previews pass through touch scrolling without weakening interactive courts
 - [x] Add team Playbook folders with coach-only management and read-only team visibility
-- [ ] Verify mobile/iPad navigation, scrolling, permissions, and build
+- [x] Verify mobile/iPad navigation, scrolling, permissions, and build
