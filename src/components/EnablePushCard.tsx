@@ -6,10 +6,13 @@
  * button that the browser would refuse.
  */
 import { useEffect, useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { Bell, Check, Download } from "lucide-react";
 import { toast } from "sonner";
-import { BubbleButton, Heading, InfoList, Note, Panel, Pill, PrimaryCTA } from "@/components/Bubbles";
+import { BubbleButton, Panel, PrimaryCTA } from "@/components/Bubbles";
+import { useInstallApp } from "@/components/InstallApp";
 import {
   getPushConfig,
   listMyDevices,
@@ -21,7 +24,9 @@ import { currentPushState, subscribeThisDevice, unsubscribeThisDevice, type Push
 
 export function EnablePushCard() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [state, setState] = useState<PushState | null>(null);
+  const installApp = useInstallApp();
 
   const config = useServerFn(getPushConfig);
   const save = useServerFn(savePushSubscription);
@@ -74,75 +79,106 @@ export function EnablePushCard() {
   });
 
   const activeDevices = (devices.data ?? []).filter((d) => d.active);
+  const shouldInstall = state === "needs_install" || (!installApp.installed && installApp.hasPrompt);
+
+  const install = async () => {
+    if (installApp.hasPrompt) {
+      await installApp.install();
+      setState(await currentPushState());
+      return;
+    }
+    await navigate({ to: "/help", hash: "notifications" });
+  };
 
   return (
-    <Panel className="flex flex-col gap-3">
-      <div className="text-center">
-        <Heading tone="grape">Enable CoachSide Notifications</Heading>
-      </div>
-      <Note>
-        Get told the moment your coach posts an announcement, a new play or an assignment — plus the
-        daily featured play from the CoachSide Library.
-      </Note>
+    <Panel className="flex flex-col items-center gap-2.5 px-4 py-4 text-center">
+      <h2 className="text-xl font-black leading-tight text-foreground sm:text-2xl">
+        Stay Updated with CoachSide
+      </h2>
+      <p className="max-w-2xl text-sm font-semibold leading-relaxed text-muted-foreground">
+        Get alerts for team announcements, new plays, assignments, schedule changes, and the daily Play of the Day.
+      </p>
 
       {state === "needs_install" ? (
-        <>
-          <InfoList
-            items={[
-              "Tap the Share button in Safari",
-              "Choose Add to Home Screen",
-              "Open CoachSide from your Home Screen, then come back here",
-            ]}
-          />
-          <Note>iPhone and iPad can only send notifications once CoachSide is on your Home Screen.</Note>
-        </>
+        <p className="max-w-xl text-sm leading-relaxed text-foreground">
+          On iPhone or iPad, open CoachSide in Safari, tap Share, then Add to Home Screen. Open the installed app to enable notifications.
+        </p>
       ) : null}
 
-      {state === "unsupported" ? (
-        <Note>This browser can't show notifications. Try Chrome on Android, or install CoachSide.</Note>
+      {installApp.hasPrompt && state !== "on" ? (
+        <p className="max-w-xl text-sm leading-relaxed text-foreground">
+          On Android or Chrome, choose Install App or Add to Home Screen, then open CoachSide from your home screen.
+        </p>
+      ) : null}
+
+      {state === "unsupported" && !shouldInstall ? (
+        <p className="text-sm text-foreground">Push notifications aren't available in this browser.</p>
       ) : null}
 
       {state === "blocked" ? (
-        <Note>
-          Notifications are blocked for CoachSide in this browser's settings. Allow them there, then
-          come back and turn them on.
-        </Note>
+        <p className="max-w-xl text-sm leading-relaxed text-foreground">
+          Allow CoachSide notifications in your browser settings, then return here.
+        </p>
       ) : null}
 
-      {state === "off" ? (
+      {shouldInstall ? (
         <PrimaryCTA>
-          <BubbleButton
-            tone="grape"
-            size="lg"
-            disabled={enable.isPending || !cfg.data?.publicKey}
-            onClick={() => enable.mutate()}
-          >
-            {enable.isPending ? "Turning on…" : "Turn on notifications"}
+          <BubbleButton tone="flame" size="lg" onClick={() => void install()}>
+            <Download className="h-5 w-5" aria-hidden />
+            Install CoachSide
+          </BubbleButton>
+        </PrimaryCTA>
+      ) : state === "off" ? (
+        <PrimaryCTA>
+          <BubbleButton tone="grape" size="lg" disabled={enable.isPending || !cfg.data?.publicKey} onClick={() => enable.mutate()}>
+            <Bell className="h-5 w-5" aria-hidden />
+            {enable.isPending ? "Enabling…" : "Enable Notifications"}
+          </BubbleButton>
+        </PrimaryCTA>
+      ) : state === "blocked" ? (
+        <PrimaryCTA>
+          <BubbleButton tone="grape" size="lg" disabled>
+            <Bell className="h-5 w-5" aria-hidden /> Enable Notifications
           </BubbleButton>
         </PrimaryCTA>
       ) : null}
 
       {state === "on" ? (
         <>
-          <div className="flex flex-wrap justify-center gap-2">
-            <Pill tone="grape">Notifications on for this device</Pill>
-            {activeDevices.length > 1 ? (
-              <Pill tone="neutral">{activeDevices.length} devices</Pill>
-            ) : null}
-          </div>
           <PrimaryCTA>
-            <BubbleButton tone="flame" disabled={testPush.isPending} onClick={() => testPush.mutate()}>
-              {testPush.isPending ? "Sending…" : "Send test notification"}
-            </BubbleButton>
-            <BubbleButton tone="neutral" disabled={disable.isPending} onClick={() => disable.mutate()}>
-              {disable.isPending ? "Turning off…" : "Turn off on this device"}
+            <BubbleButton tone="grape" size="lg" disabled>
+              <Check className="h-5 w-5" aria-hidden /> Notifications are on
             </BubbleButton>
           </PrimaryCTA>
+          {activeDevices.length > 1 ? (
+            <p className="text-xs font-semibold text-muted-foreground">Active on {activeDevices.length} devices</p>
+          ) : null}
+          <Link
+            to="/profile"
+            hash="notification-preferences"
+            className="text-sm font-bold text-grape-bright underline decoration-grape/60 underline-offset-4 hover:text-foreground"
+          >
+            Manage notification preferences
+          </Link>
+          <div className="flex flex-wrap justify-center gap-2">
+            <BubbleButton size="sm" tone="neutral" disabled={testPush.isPending} onClick={() => testPush.mutate()}>
+              {testPush.isPending ? "Sending…" : "Send test notification"}
+            </BubbleButton>
+            <BubbleButton size="sm" tone="ghost" disabled={disable.isPending} onClick={() => disable.mutate()}>
+              {disable.isPending ? "Turning off…" : "Turn off on this device"}
+            </BubbleButton>
+          </div>
         </>
       ) : null}
 
-      {cfg.data && !cfg.data.emailConfigured ? (
-        <Note>Email delivery is not configured yet, so alerts arrive in the app and on your devices.</Note>
+      {state !== "on" ? (
+        <Link
+          to="/help"
+          hash="notifications"
+          className="text-sm font-bold text-grape-bright underline decoration-grape/60 underline-offset-4 hover:text-foreground"
+        >
+          How to install CoachSide
+        </Link>
       ) : null}
     </Panel>
   );
