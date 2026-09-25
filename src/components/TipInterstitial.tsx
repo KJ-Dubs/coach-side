@@ -9,11 +9,34 @@ import {
   type TipDestination,
 } from "@/lib/tips";
 
-const KEY = (d: TipDestination) => `coachside.tip.seen.${d}`;
+// One id per app load: a refresh/new app session starts a fresh tip session,
+// while client-side navigation within the same load keeps the marks.
+const LOAD_ID = Math.random().toString(36).slice(2);
+const KEY = (d: TipDestination) => `coachside.tip.seen.${LOAD_ID}.${d}`;
+const memorySeen = new Set<TipDestination>();
+
+function hasSeen(d: TipDestination) {
+  if (memorySeen.has(d)) return true;
+  try {
+    return sessionStorage.getItem(KEY(d)) === "1";
+  } catch {
+    return false;
+  }
+}
+function markSeen(d: TipDestination) {
+  memorySeen.add(d);
+  try {
+    sessionStorage.setItem(KEY(d), "1");
+  } catch {
+    // in-memory mark still applies
+  }
+}
 
 /**
- * Short CoachSide Tip overlay. Shows at most once per destination per browser
- * session, stays while `ready` is false, and never appears on game screens.
+ * Short CoachSide Tip overlay. Shows at most once per destination per app
+ * session. The destination is marked seen only once the tip has actually been
+ * displayed (when it begins closing), so remounts during auth/hydration can't
+ * suppress it before it ever renders.
  */
 export function TipInterstitial({ dest, ready = true }: { dest: TipDestination; ready?: boolean }) {
   const [show, setShow] = useState(false);
@@ -24,10 +47,13 @@ export function TipInterstitial({ dest, ready = true }: { dest: TipDestination; 
   const decisionRef = useRef<{ dest: TipDestination; show: boolean } | null>(null);
   const closingRef = useRef(false);
   const fadeTimerRef = useRef<number | null>(null);
+  const destRef = useRef(dest);
+  destRef.current = dest;
 
   const close = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
+    markSeen(destRef.current);
     setLeaving(true);
     if (fadeTimerRef.current !== null) window.clearTimeout(fadeTimerRef.current);
     fadeTimerRef.current = window.setTimeout(() => {
@@ -38,15 +64,7 @@ export function TipInterstitial({ dest, ready = true }: { dest: TipDestination; 
 
   useEffect(() => {
     if (decisionRef.current?.dest !== dest) {
-      let alreadySeen = false;
-      try {
-        alreadySeen = sessionStorage.getItem(KEY(dest)) === "1";
-        if (!alreadySeen) sessionStorage.setItem(KEY(dest), "1");
-      } catch {
-        // Storage can be unavailable in private/restricted contexts. The hard
-        // timeout still guarantees this one in-memory display cannot trap users.
-      }
-      decisionRef.current = { dest, show: !alreadySeen };
+      decisionRef.current = { dest, show: !hasSeen(dest) };
     }
     if (!decisionRef.current.show) {
       setShow(false);
