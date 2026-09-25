@@ -241,6 +241,18 @@ function MembershipPage() {
     },
   });
 
+  const portal = useMutation({
+    mutationFn: async () => {
+      const { openBillingPortal } = await import("@/lib/billing.functions");
+      return openBillingPortal({ data: { teamId: teamId!, origin: window.location.origin } });
+    },
+    onSuccess: (r) => {
+      if (r.ok) window.location.assign(r.url);
+      else toast.error(r.reason);
+    },
+    onError: () => toast.error("Billing portal is not available yet."),
+  });
+
   const status = (billing.data?.status ?? "free") as BillingStatus;
 
   return (
@@ -381,6 +393,11 @@ function MembershipPage() {
           >
             {checkout.isPending ? "Opening checkout…" : `Continue — $${total}/month`}
           </BubbleButton>
+          {billing.data?.subscriptionRef ? (
+            <BubbleButton tone="neutral" disabled={portal.isPending} onClick={() => portal.mutate()}>
+              {portal.isPending ? "Opening…" : "Manage billing"}
+            </BubbleButton>
+          ) : null}
           {billing.data?.subscriptionRef ? (
             <BubbleButton tone="neutral" onClick={() => cancel.mutate()}>
               Cancel at period end
