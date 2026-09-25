@@ -73,6 +73,8 @@ export const Route = createFileRoute("/_authenticated/plays/")({
         property: "og:description",
         content: "Present, edit, share and duplicate plays from organised category folders.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: () => (<><TipInterstitial dest="playbook" /><PlaybookPage /></>),
@@ -167,13 +169,15 @@ function PlaybookPage() {
     return out;
   }, [visiblePlays]);
 
-  const inCategory = useMemo(
+  const listedPlays = useMemo(
     () =>
       selected
         ? visiblePlays
             .filter((p) => normalizeCategory(p.category) === selected)
             .sort((a, b) => a.name.localeCompare(b.name))
-        : [],
+        : folderFilter !== "ALL"
+          ? [...visiblePlays].sort((a, b) => a.name.localeCompare(b.name))
+          : [],
     [visiblePlays, selected],
   );
 
@@ -429,7 +433,7 @@ function PlaybookPage() {
       ) : null}
 
 
-      {!selected ? (
+      {!selected && folderFilter === "ALL" ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {PLAY_CATEGORIES.map((c) => {
             const meta = CATEGORY_META[c];
@@ -495,12 +499,12 @@ function PlaybookPage() {
           ) : null}
 
           {plays.isLoading ? <EmptyState>Loading plays…</EmptyState> : null}
-          {!plays.isLoading && inCategory.length === 0 ? (
-            <EmptyState>No {selected} plays yet — create one to fill this folder</EmptyState>
+          {!plays.isLoading && listedPlays.length === 0 ? (
+            <EmptyState>No {selected ?? (folderFilter === "UNFILED" ? "Unfiled" : "folder")} plays yet</EmptyState>
           ) : null}
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {inCategory.map((p) => (
+            {listedPlays.map((p) => (
               <PlayCard
                 key={p.id}
                 play={p}

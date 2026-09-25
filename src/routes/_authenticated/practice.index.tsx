@@ -72,6 +72,8 @@ function PracticeIndexPage() {
     <AppShell
       title="Practice Planner"
       subtitle="Build the plan, then run it in the gym"
+      backTo="/tools"
+      backLabel="Tools"
       actions={
         <Link to="/drills">
           <BubbleButton size="sm" tone="ghost">

@@ -111,6 +111,8 @@ function CreatePlayPage() {
     <AppShell
       title="Create a Play"
       subtitle="Name it, file it, then draw it"
+      backTo="/plays"
+      backLabel="Playbook"
       actions={
         <Link to="/plays">
           <BubbleButton size="sm" tone="ghost">

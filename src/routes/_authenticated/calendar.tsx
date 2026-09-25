@@ -188,7 +188,7 @@ function CalendarPage() {
   const feed = team?.locker_token ? lockerCalendarUrl(team.locker_token) : "";
 
   return (
-    <AppShell title="Team Calendar" subtitle="Practices, games and team events in one place">
+    <AppShell title="Team Calendar" subtitle="Practices, games and team events in one place" backTo="/lockerroom" backLabel="Locker Room">
       <Panel className="mb-3 flex flex-wrap items-center gap-2">
         <Label>Team</Label>
         <SelectInput

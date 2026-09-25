@@ -26,6 +26,8 @@ function MyDrillsPage() {
     <AppShell
       title="My Drills"
       subtitle="Your own drills, plus anything you saved from the Library"
+      backTo="/tools"
+      backLabel="Tools"
       actions={
         <div className="flex flex-wrap gap-2">
           <Link to="/drills/new">

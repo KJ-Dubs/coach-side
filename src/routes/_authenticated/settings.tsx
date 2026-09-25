@@ -68,7 +68,7 @@ function SettingsPage() {
   const team = teams.data?.find((t) => t.id === teamId) ?? null;
 
   return (
-    <AppShell title="Settings" subtitle="Account, team, game defaults and coach access">
+    <AppShell title="Settings" subtitle="Account, team, game defaults and coach access" backTo="/dashboard" backLabel="Home">
       <div className="grid gap-3 lg:grid-cols-2">
         <AccountCard
           email={me.user?.email ?? me.profile?.email ?? ""}

@@ -177,7 +177,7 @@ function KpiPage() {
   })();
 
   return (
-    <AppShell title="My KPI" subtitle="Owner-only view of signups, usage, content and memberships." wide>
+    <AppShell title="My KPI" subtitle="Owner-only view of signups, usage, content and memberships." backTo="/dashboard" backLabel="Home" wide>
       <div className="flex flex-col gap-4">
         <Panel className="flex flex-col items-center gap-3">
           <Label>Date range</Label>

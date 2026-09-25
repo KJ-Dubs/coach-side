@@ -627,6 +627,8 @@ function PlayDesignerPage() {
       wide
       title="Play Designer"
       subtitle="Drag players, drag to draw actions, build frames"
+      backTo="/plays"
+      backLabel="Playbook"
       actions={
         <div className="flex flex-wrap gap-2">
           <Link to="/plays" search={{ category: normalizeCategory(category) }}>

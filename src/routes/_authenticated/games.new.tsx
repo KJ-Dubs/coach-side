@@ -195,7 +195,7 @@ function NewGamePage() {
   });
 
   return (
-    <AppShell title="Start a Game" subtitle="Five quick steps, then the live court">
+    <AppShell title="Start a Game" subtitle="Five quick steps, then the live court" backTo="/tools" backLabel="Tools">
       {resumeGame ? (
         <Panel className="mb-3 flex flex-col items-center gap-3 border-flame/60">
           <span className="text-xl font-black leading-tight text-foreground">

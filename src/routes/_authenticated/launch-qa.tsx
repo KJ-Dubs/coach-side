@@ -118,7 +118,7 @@ function LaunchQaPage() {
   const trialExpired = trialDay >= 14;
 
   return (
-    <AppShell title="Launch QA" subtitle="Confirm trials, paywalls, achievements and billing before enforcement">
+    <AppShell title="Launch QA" subtitle="Confirm trials, paywalls, achievements and billing before enforcement" backTo="/dashboard" backLabel="Home">
       {!d ? (
         <EmptyState>{qa.isError ? "Could not load Launch QA" : "Loading…"}</EmptyState>
       ) : (

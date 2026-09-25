@@ -24,7 +24,7 @@ function AchievementsPage() {
   const q = useMyProgress();
   const data = q.data;
   return (
-    <AppShell title="CoachSide Progress" subtitle="Achievements from what you actually do in CoachSide">
+    <AppShell title="CoachSide Progress" subtitle="Achievements from what you actually do in CoachSide" backTo="/dashboard" backLabel="Home">
       {!data ? (
         <EmptyState>{q.isError ? "Could not load progress" : "Loading your progress…"}</EmptyState>
       ) : (
