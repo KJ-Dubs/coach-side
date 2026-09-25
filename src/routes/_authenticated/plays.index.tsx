@@ -490,7 +490,7 @@ function PlaybookPage() {
             </BubbleButton>
           </Panel>
 
-          {quickOpen ? (
+          {quickOpen && selected ? (
             <QuickCreate
               category={selected}
               defaultTeam={teamFilter !== "ALL" ? teamFilter : (teams.data?.[0]?.id ?? "")}

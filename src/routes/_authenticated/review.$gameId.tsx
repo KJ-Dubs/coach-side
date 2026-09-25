@@ -161,6 +161,8 @@ function ReviewPage() {
 
   return (
     <AppShell
+      backTo="/games"
+      backLabel="Game History"
       wide
       title={game.data ? `${game.data.opponent} — Report` : "Game Report"}
       subtitle={game.data?.game_date}
