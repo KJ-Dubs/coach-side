@@ -105,3 +105,7 @@
 - [x] Make static court previews pass through touch scrolling without weakening interactive courts
 - [x] Add team Playbook folders with coach-only management and read-only team visibility
 - [x] Verify mobile/iPad navigation, scrolling, permissions, and build
+
+## CoachSide Tips reliability
+- [ ] Make eligible tips StrictMode-safe with readiness dismissal and a 3-second safety timeout
+- [ ] Verify fast, slow, repeat, back-navigation, and route-cleanup behavior

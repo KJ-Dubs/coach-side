@@ -27,3 +27,5 @@ export const COACHSIDE_TIPS: string[] = [
 
 export const TIP_MIN_MS = 1800;
 export const TIP_SKIP_AFTER_MS = 1000;
+export const TIP_MAX_MS = 3000;
+export const TIP_FADE_MS = 280;
