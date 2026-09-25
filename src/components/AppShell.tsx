@@ -27,6 +27,7 @@ import { initialsOf, signOut } from "@/lib/auth";
 import { resolveRole, useAccess } from "@/lib/access";
 import { useMe } from "@/lib/useMe";
 import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
+import { BackNav } from "@/components/BackNav";
 
 const QUICK = [
   { to: "/plays", label: "Playbook", icon: BookOpen },
@@ -43,6 +44,8 @@ export function AppShell({
   actions,
   wide,
   logoUrl,
+  backTo,
+  backLabel = "Back",
 }: {
   children: ReactNode;
   title: string;
@@ -50,6 +53,8 @@ export function AppShell({
   actions?: ReactNode | undefined;
   wide?: boolean | undefined;
   logoUrl?: string | null | undefined;
+  backTo?: string | undefined;
+  backLabel?: string | undefined;
 }) {
   const me = useMe();
   const { access } = useAccess();
@@ -114,6 +119,7 @@ export function AppShell({
           </header>
 
           <div className="mb-4 flex flex-col items-center gap-2 rounded-3xl border border-border/70 bg-surface/80 px-4 py-4 text-center">
+            {backTo ? <div className="self-start"><BackNav to={backTo} label={backLabel} /></div> : null}
             <h1 className="text-2xl font-black leading-tight text-foreground sm:text-3xl">
               {title}
             </h1>
@@ -221,6 +227,7 @@ export function AppShell({
         </header>
 
         <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-3xl border border-border/70 bg-surface/80 px-4 py-4 sm:flex sm:flex-wrap sm:justify-center sm:text-center">
+          {backTo ? <div className="col-span-2 justify-self-start sm:col-span-1"><BackNav to={backTo} label={backLabel} /></div> : null}
           {logoUrl ? (
             <span className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-flame/50 bg-surface-2/80 p-1 shadow-lg shadow-black/30">
               <img src={logoUrl} alt="Team logo" className="h-full w-full object-contain" />

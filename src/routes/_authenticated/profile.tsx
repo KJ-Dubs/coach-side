@@ -73,6 +73,8 @@ function ProfilePage() {
     <AppShell
       title="Profile"
       subtitle={isPlayer ? "Your player account" : "Who you are in this program"}
+      backTo={isPlayer ? "/lockerroom" : "/dashboard"}
+      backLabel={isPlayer ? "Locker Room" : "Home"}
       actions={
         isPlayer ? undefined : (
           <Link to="/settings">

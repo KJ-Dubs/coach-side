@@ -289,7 +289,7 @@ function DrillMakerPage() {
   ];
   const equipmentChoices: { key: EquipmentTool; label: string }[] = [{ key: "cone", label: "Cone" }, { key: "chair", label: "Chair" }, { key: "spot", label: "Spot" }, { key: "ball", label: "Extra Ball" }, { key: "text", label: "Text" }];
 
-  return <AppShell title="Drill Maker" subtitle="Build on the court first" actions={<Link to="/drills"><BubbleButton size="sm" tone="ghost">My Drills</BubbleButton></Link>}>
+  return <AppShell title="Drill Maker" subtitle="Build on the court first" backTo="/tools" backLabel="Tools" actions={<div className="flex flex-wrap gap-2"><Link to="/drills"><BubbleButton size="sm" tone="ghost">My Drills</BubbleButton></Link><Link to="/plays" search={{ tab: "library", content: "drills" }}><BubbleButton size="sm" tone="neutral">CoachSide Drill Library</BubbleButton></Link></div>}>
     <div className="flex flex-col gap-3">
       <DrillCanvas frame={frame} zoom={zoom} tokens={shownTokens} actions={shownActions} balls={shownBalls} ghost={stroke} onCourtPoint={onDown} onCourtPointerMove={onMove} onCourtPointerUp={onUp} />
 

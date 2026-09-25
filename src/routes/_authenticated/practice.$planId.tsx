@@ -115,10 +115,12 @@ function PracticePlanPage() {
     <AppShell
       title={plan.data?.title ?? "Practice Plan"}
       subtitle={plan.data ? `${plan.data.plan_date} • ${plan.data.total_minutes} minutes` : "Loading…"}
+      backTo="/practice"
+      backLabel="All plans"
       actions={
         <Link to="/practice">
           <BubbleButton size="sm" tone="ghost">
-            All plans
+            ← All plans
           </BubbleButton>
         </Link>
       }

@@ -285,7 +285,7 @@ function BoardPage() {
 
   const exit = () => {
     if (window.history.length > 1) router.history.back();
-    else void navigate({ to: "/dashboard" });
+    else void navigate({ to: "/tools" });
   };
 
   const toolBtn = (t: Tool, labelText: string) => (

@@ -100,8 +100,8 @@
 - [ ] Single-subscription upgrade/downgrade with proration
 - [ ] Launch QA Stripe status; enforcement stays OFF
 ## UX cleanup and playbook organization
-- [ ] Add visible Plays / Drills discovery in Playbook Library and Drill Maker
-- [ ] Add consistent source-aware Back / Exit navigation across nested app screens
-- [ ] Make static court previews pass through touch scrolling without weakening interactive courts
-- [ ] Add team Playbook folders with coach-only management and read-only team visibility
+- [x] Add visible Plays / Drills discovery in Playbook Library and Drill Maker
+- [x] Add consistent source-aware Back / Exit navigation across nested app screens
+- [x] Make static court previews pass through touch scrolling without weakening interactive courts
+- [x] Add team Playbook folders with coach-only management and read-only team visibility
 - [ ] Verify mobile/iPad navigation, scrolling, permissions, and build

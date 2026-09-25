@@ -32,7 +32,7 @@ function HelpPage() {
   }, [q]);
 
   return (
-    <AppShell title="CoachSide Help" subtitle="Get the most out of your CoachSide account">
+    <AppShell title="CoachSide Help" subtitle="Get the most out of your CoachSide account" backTo="/dashboard" backLabel="Home">
       <Panel className="mb-3 flex flex-col gap-2">
         <Label>Search help</Label>
         <TextInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Try “press break”, “QR”, “push”…" />

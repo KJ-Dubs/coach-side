@@ -256,7 +256,7 @@ function MembershipPage() {
   const status = (billing.data?.status ?? "free") as BillingStatus;
 
   return (
-    <AppShell title="Membership" subtitle="One monthly membership per team">
+    <AppShell title="Membership" subtitle="One monthly membership per team" backTo="/dashboard" backLabel="Home">
       <Panel className="mb-3 flex flex-wrap items-center gap-2">
         <Label>Buying for</Label>
         <span className="rounded-2xl border border-grape/60 bg-grape/20 px-4 py-2 text-lg font-black leading-tight text-foreground">

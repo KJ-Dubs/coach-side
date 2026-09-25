@@ -26,6 +26,8 @@ function MyDrillsPage() {
     <AppShell
       title="My Drills"
       subtitle="Your own drills, plus anything you saved from the Library"
+      backTo="/tools"
+      backLabel="Tools"
       actions={
         <div className="flex flex-wrap gap-2">
           <Link to="/drills/new">
@@ -33,9 +35,9 @@ function MyDrillsPage() {
               + New Drill
             </BubbleButton>
           </Link>
-          <Link to="/library">
+          <Link to="/plays" search={{ tab: "library", content: "drills" }}>
             <BubbleButton size="sm" tone="ghost">
-              Drill Library
+              CoachSide Drill Library
             </BubbleButton>
           </Link>
         </div>
