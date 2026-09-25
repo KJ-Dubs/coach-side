@@ -1868,6 +1868,7 @@ export type Database = {
           assigned_by: string | null
           category_override: string | null
           created_at: string
+          folder_id: string | null
           id: string
           is_visible: boolean
           library_version: number | null
@@ -1880,6 +1881,7 @@ export type Database = {
           assigned_by?: string | null
           category_override?: string | null
           created_at?: string
+          folder_id?: string | null
           id?: string
           is_visible?: boolean
           library_version?: number | null
@@ -1892,6 +1894,7 @@ export type Database = {
           assigned_by?: string | null
           category_override?: string | null
           created_at?: string
+          folder_id?: string | null
           id?: string
           is_visible?: boolean
           library_version?: number | null
@@ -1901,6 +1904,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "play_team_assignments_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "team_playbook_folders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "play_team_assignments_play_id_fkey"
             columns: ["play_id"]
@@ -2616,6 +2626,47 @@ export type Database = {
           },
           {
             foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_playbook_folders: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          sort_order: number
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          sort_order?: number
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_playbook_folders_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
