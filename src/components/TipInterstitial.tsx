@@ -9,32 +9,56 @@ import {
   type TipDestination,
 } from "@/lib/tips";
 
-// One id per app load: a refresh/new app session starts a fresh tip session,
-// while client-side navigation within the same load keeps the marks.
-const LOAD_ID = Math.random().toString(36).slice(2);
-const KEY = (d: TipDestination) => `coachside.tip.seen.${LOAD_ID}.${d}`;
-const memorySeen = new Set<TipDestination>();
+// Per-destination cooldown. Timestamps live in sessionStorage (cleared on a
+// fresh app/browser launch) with an in-memory mirror.
+const COOLDOWN_MS = 30 * 60 * 1000;
+const KEY = (d: TipDestination) => `coachside.tip.lastShown.${d}`;
+const LAST_TIP_KEY = "coachside.tip.lastText";
+const memoryShown = new Map<TipDestination, number>();
 
-function hasSeen(d: TipDestination) {
-  if (memorySeen.has(d)) return true;
+function lastShown(d: TipDestination) {
+  let t = memoryShown.get(d) ?? 0;
   try {
-    return sessionStorage.getItem(KEY(d)) === "1";
+    t = Math.max(t, Number(sessionStorage.getItem(KEY(d))) || 0);
   } catch {
-    return false;
+    // memory only
   }
+  return t;
+}
+function hasSeen(d: TipDestination) {
+  return Date.now() - lastShown(d) < COOLDOWN_MS;
 }
 function markSeen(d: TipDestination) {
-  memorySeen.add(d);
+  const now = Date.now();
+  memoryShown.set(d, now);
   try {
-    sessionStorage.setItem(KEY(d), "1");
+    sessionStorage.setItem(KEY(d), String(now));
   } catch {
     // in-memory mark still applies
   }
 }
+let memoryLastTip = "";
+function pickTip() {
+  let prev = memoryLastTip;
+  try {
+    prev = sessionStorage.getItem(LAST_TIP_KEY) ?? prev;
+  } catch {
+    // ignore
+  }
+  const pool = COACHSIDE_TIPS.filter((t) => t !== prev);
+  const tip = pool[Math.floor(Math.random() * pool.length)] ?? COACHSIDE_TIPS[0]!;
+  memoryLastTip = tip;
+  try {
+    sessionStorage.setItem(LAST_TIP_KEY, tip);
+  } catch {
+    // ignore
+  }
+  return tip;
+}
 
 /**
  * Short CoachSide Tip overlay. Shows at most once per destination per app
- * session. The destination is marked seen only once the tip has actually been
+ * session within a 30-minute cooldown. The destination is marked seen only once the tip has actually been
  * displayed (when it begins closing), so remounts during auth/hydration can't
  * suppress it before it ever renders.
  */
@@ -78,7 +102,7 @@ export function TipInterstitial({ dest, ready = true }: { dest: TipDestination; 
     setLeaving(false);
     setCanSkip(false);
     setMinDone(false);
-    setTip(COACHSIDE_TIPS[Math.floor(Math.random() * COACHSIDE_TIPS.length)]!);
+    setTip((cur) => cur || pickTip());
     setShow(true);
     const skipTimer = window.setTimeout(() => setCanSkip(true), TIP_SKIP_AFTER_MS);
     const minimumTimer = window.setTimeout(() => setMinDone(true), TIP_MIN_MS);

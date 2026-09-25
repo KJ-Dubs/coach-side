@@ -71,11 +71,12 @@ function OnOff({ on, yes = "ON", no = "OFF" }: { on: boolean; yes?: string; no?:
 }
 
 function LaunchQaPage() {
-  const { isAdmin, checking } = useIsAppAdmin();
+  const { isAdmin, resolved, isError, retry } = useIsAppAdmin();
   const navigate = useNavigate();
   useEffect(() => {
-    if (!checking && !isAdmin) navigate({ to: "/dashboard", replace: true });
-  }, [checking, isAdmin, navigate]);
+    // Redirect only on a successful, definitive non-admin answer.
+    if (resolved && !isAdmin) navigate({ to: "/dashboard", replace: true });
+  }, [resolved, isAdmin, navigate]);
 
   const fetchQa = useServerFn(getLaunchQa);
   const qa = useQuery({ queryKey: ["launch-qa"], queryFn: () => fetchQa(), enabled: isAdmin });
@@ -99,7 +100,16 @@ function LaunchQaPage() {
     if (qa.data) setPrices(Object.fromEntries(qa.data.priceMap.map((p) => [p.planKey, p.priceId ?? ""])));
   }, [qa.data]);
 
-  if (!isAdmin) return null;
+  if (!isAdmin) {
+    return (
+      <AppShell title="Launch QA" subtitle="Owner tools" backTo="/dashboard" backLabel="Home">
+        <Panel className="flex flex-col items-center gap-3">
+          <EmptyState>{isError ? "Could not confirm owner access" : "Checking access…"}</EmptyState>
+          {isError ? <BubbleButton tone="grape" onClick={retry}>Retry</BubbleButton> : null}
+        </Panel>
+      </AppShell>
+    );
+  }
   const d = qa.data;
   const p = PERSONAS.find((x) => x.key === persona) ?? null;
   const refresh = () => qc.invalidateQueries({ queryKey: ["launch-qa"] });

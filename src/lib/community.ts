@@ -201,8 +201,9 @@ export async function setPlayOfTheDay(playId: string | null) {
 
 export async function fetchIsAppAdmin(): Promise<boolean> {
   const { data, error } = await supabase.rpc("is_app_admin" as never);
-  if (error) return false;
-  return !!data;
+  // A transient failure is not a definitive "no" — let callers retry.
+  if (error) throw error;
+  return data === true;
 }
 
 /** A Library row rendered through components that expect a saved play. */

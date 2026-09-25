@@ -11,12 +11,21 @@ import { fetchIsAppAdmin } from "./community";
  * Every owner-only action is also checked again on the server.
  */
 export function useIsAppAdmin() {
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
   const q = useQuery({
     queryKey: ["is-app-admin", user?.id ?? "signed-out"],
     queryFn: fetchIsAppAdmin,
     enabled: !!user,
     staleTime: 300_000,
+    retry: 2,
   });
-  return { isAdmin: !!user && q.data === true, checking: !!user && q.isLoading };
+  const resolved = ready && (!user || q.isSuccess);
+  return {
+    isAdmin: !!user && q.data === true,
+    checking: !ready || (!!user && q.isPending && !q.isError),
+    /** True only after a successful answer (or confirmed signed-out). */
+    resolved,
+    isError: !!user && q.isError && !q.isSuccess,
+    retry: () => void q.refetch(),
+  };
 }
