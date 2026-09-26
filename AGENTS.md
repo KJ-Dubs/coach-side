@@ -15,3 +15,4 @@ Film Room: film jobs stage AI/manual events in film_job_events; only coach-revie
 
 - Locker Room team organization uses canonical play assignments plus many-to-many folder memberships; folders never own or clone plays.
 - Player private messaging uses one team/player coaching-staff thread whose active coach membership is synchronized from team membership.
+- Presenter Back uses router history after normal navigation and source/search fallbacks only for direct links, preserving list scroll and filters.

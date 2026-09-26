@@ -70,6 +70,7 @@
 ## Playbook navigation UX
 - [x] One-tap "Run Play" on every playbook card and Locker Room play tile
 - [x] Presenter Prev/Next play within the current category/team context, Exit back to source
+- [x] Restore authenticated My Playbook court thumbnails and exact history-aware presenter return
 
 ## Playmaker mobile workflow and court views
 - [x] Put Tools and next-sequence creation directly below the court

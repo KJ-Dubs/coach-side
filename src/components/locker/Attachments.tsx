@@ -62,7 +62,7 @@ export function AttachmentCard({
       <Link
         to="/plays/$playId/view"
         params={{ playId: attachment.related_id ?? "" }}
-        search={{ from: "lockerroom" }}
+        search={{ from: "lockerroom", ...(teamId ? { team: teamId } : {}) }}
         className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-grape/60 bg-grape/15 px-3 py-2 transition-colors hover:bg-grape/25"
       >
         <Pill tone="grape">Play</Pill>
