@@ -124,3 +124,10 @@
 - [ ] Tools launcher Film Room card; game review Film pill
 - [ ] stats.ts plus/minus
 - [ ] AGENTS.md rule; typecheck/build; verify flows
+
+## Film Room (staged rollout)
+- [x] Private game-film storage + film job/event/sub/log tables with coach-only RLS
+- [x] Film provider interface (none | HTTP worker) + HMAC-signed worker API routes
+- [x] Film Room screens: list, new-job wizard, review workspace with manual tagging
+- [x] Finalize reviewed events into real game stats (review-first, never auto)
+- [ ] Real CV worker service (separate Python/GPU) — interface ready, not connected

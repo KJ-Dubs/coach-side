@@ -10,3 +10,5 @@
 <!-- LOVABLE:END -->
 
 - Play and drill MP4 exports share `src/lib/playVideo.ts` so title, court, timing, branding, and encoder behavior cannot drift.
+
+Film Room: film jobs stage AI/manual events in film_job_events; only coach-reviewed events reach game_events via finalize_film_job. Never auto-promote.

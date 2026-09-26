@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BarChart3, BookOpen, ClipboardPenLine, Dumbbell, ListChecks, PenLine, Swords, type LucideIcon } from "lucide-react";
+import { BarChart3, BookOpen, Clapperboard, ClipboardPenLine, Dumbbell, ListChecks, PenLine, Swords, type LucideIcon } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { actionCardCls } from "@/components/Bubbles";
 import { Court } from "@/components/court/Court";
