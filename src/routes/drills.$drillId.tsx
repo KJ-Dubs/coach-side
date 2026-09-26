@@ -11,6 +11,7 @@ import {
   SectionHeader,
 } from "@/components/Bubbles";
 import { DrillCanvas } from "@/components/court/DrillCanvas";
+import { ExportDrillVideo } from "@/components/court/ExportDrillVideo";
 import { SocialCTA } from "@/components/SocialCTA";
 import { copyDrillForMe, fetchDrill, fetchDrillFrames } from "@/lib/drills";
 import { useAuth } from "@/lib/auth";
@@ -77,6 +78,8 @@ function DrillPage() {
             <DrillCanvas frame={frames.data?.[0]} />
             {frames.data?.[0]?.note ? <InfoPanel>{frames.data[0]!.note}</InfoPanel> : null}
           </Panel>
+
+          {frames.data?.length ? <ExportDrillVideo drill={d} frames={frames.data} /> : null}
 
           <Panel className="flex flex-col gap-3">
             <div className="flex flex-wrap justify-center gap-2">

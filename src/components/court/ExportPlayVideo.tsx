@@ -41,6 +41,7 @@ function ExportPlayVideoInner({
   );
 
   const empty = model.steps.length === 0;
+  const contentLabel = model.kind === "drill" ? "drill" : "play";
 
   const reset = () => {
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
@@ -116,7 +117,7 @@ function ExportPlayVideoInner({
           <div className="flex min-w-0 flex-col gap-3">
             {empty ? (
               <div className="flex justify-center rounded-2xl border border-border bg-surface-2/50 p-3">
-                <Label>This play has no actions yet, so there is nothing to animate. Add actions first.</Label>
+                <Label>This {contentLabel} has no actions yet, so there is nothing to animate. Add actions first.</Label>
               </div>
             ) : (
               <>
