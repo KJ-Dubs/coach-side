@@ -1,31 +1,80 @@
-# Why "Dog" can't be added to a second team
+# Simplify Locker Room into a four-part team hub
 
-## Finding (confirmed against live data)
+## Goal
+Refactor the existing authenticated Locker Room into one landing page with exactly four primary destinations: **Team Chat, Schedule, Playbook, and Plans**. Reuse the current chat, calendar, assignments, attachments, notifications, and canonical play-sharing systems; preserve all historical records and keep the public parent link limited to stats and schedule.
 
-The database rule is working correctly. The app is sending it a team the coach doesn't coach.
+## User experience
 
-- "Dog" is owned by the Test Tem coach (team_id = Test Tem, a different program) and is published to the Library.
-- The Aliso Niguel coach already has Dog on Aliso Niguel Sophomores (assignment made 2026-09-17), and is now adding it to Aliso Niguel (varsity).
-- On the play card, the pre-checked "Available to" list is built from `teamsByPlay` in `plays.index.tsx`. That list **includes the play's legacy `plays.team_id`**, which is Test Tem, the owner's private team.
-- When the coach clicks Save team access, `setPlayTeams` (`src/lib/data.ts`) compares that list against `fetchTeamsForPlay`. Under RLS, `fetchTeamsForPlay` returns only assignments the coach can see (Sophomores), not Test Tem.
-- So the diff treats Test Tem as "new" and inserts `{play: Dog, team: Test Tem}` along with the varsity row, all in one client-side insert.
-- The INSERT policy `assignments insert` is `is_team_coach(team_id) AND (play_visible(play_id) OR play_published(play_id))`. `play_published` passes, but `is_team_coach(Test Tem)` returns false, so the whole batch is rejected with the RLS error. The varsity row would have passed on its own.
+### Locker Room landing
+- Keep the team selector and coach-only invite/access control above four large summary cards.
+- Team Chat shows unread or latest-message context; Schedule shows the next event; Playbook shows play/recent-share context; Plans shows open and next-due work.
+- Use URL-backed area/item state so notifications and attachments open the correct area, folder, plan, event, or conversation directly.
+- Every nested view gets a consistent Back to Locker Room control.
 
-A second hidden bug: after inserting, `setPlayTeams` calls `updatePlay(..., { team_id })` on the original play. Plays are owner-only, so a non-owner would hit that next.
+### Team Chat
+- Coach sub-tabs: **Team Chat | Messages**. Player sub-tabs: **Team Chat | Message Coaches**.
+- Reuse the team conversation and staff conversation. Coach Messages provides player threads plus staff chat; players receive one private coaching-staff thread and no player directory.
+- Add a secure player/coaching-staff conversation type, one per player/team. Keep its members synchronized with the player, head coach, and active assistant coaches as team membership changes.
+- Add coach-controlled pin/unpin state to team-chat messages. Show pinned messages first or in a compact pinned section.
+- Preserve old announcements and render them as a labeled legacy pinned/important section; do not copy or delete historical records.
+- Replace the always-open attachment picker with a bottom-left **+** button and compact chooser for Play, Playbook Folder, Drill, Practice Plan, Event, Plan/Task, and Resource/Link.
+- Render every attachment as a rich, tappable card with the correct team-scoped destination.
 
-## Answers to your questions
+### Schedule
+- Add **Upcoming | Calendar** sub-tabs, using the existing `team_events` records and Google-imported rows.
+- Reuse the current event cards and event form, including type, opponent/title, dates, times, arrival, location, notes, visibility, and reminders.
+- Extract the current month calendar and event form into shared Locker Room/calendar components rather than creating a second system.
+- Improve calendar days with high-contrast purple/orange markers or short event labels and a selected-day event list.
+- Coaches get one prominent centered **+ Add Event**, edit/delete for native events, and compact Google Calendar settings. Google events remain read-only.
+- Players get the same schedule views without management controls.
+- Keep event notifications and preferences, but deep-link them into the Locker Room Schedule area.
 
-- **Policy causing the failure:** `play_team_assignments` "assignments insert", specifically the `is_team_coach(team_id)` check on the foreign Test Tem row.
-- **Related to the earlier is_team_coach org fix?** No. `is_team_coach` correctly passes for every team in the coach's own org, and all live coaches get their authority through `org_members`. This is a client bug that mixes up the legacy `team_id` with real assignments.
-- **Can a library play be linked to a second team without cloning?** Yes. That's the intended model: the policy allows any coach of the target team to link a published play. The original is never modified.
-- **Client-side under RLS?** Yes, it's a direct browser insert. That's acceptable because RLS is the correct authority. No server function is needed.
-- **Intended rule:** a coach may link a play to team T only if they coach T and the play is visible to them or published. They may only unlink teams they coach. Only the owner changes the play itself.
+### Playbook
+- Add **All Plays | Folders** sub-tabs using canonical `plays` plus `play_team_assignments`; adopting a play never clones or mutates the source.
+- Reuse team Playbook folder CRUD, add ordering controls where practical, and show creator/Library attribution for adopted plays.
+- Upgrade folders from the current one-folder-per-team-assignment field to a many-to-many membership table, backfilling every existing folder relationship.
+- Coaches can create, rename, delete, reorder, and add/remove play references. Players can browse folders and run plays read-only.
+- Deleting a folder deletes only its membership links. Removing a play from a folder does not revoke team access. Explicit removal from the Playbook removes only that team assignment.
+- Preserve owner-only editing and the existing **Edit as My Version** derivative flow.
 
-## Safest minimal fix (frontend only, no policy change)
+### Plans
+- Reframe the existing assignments system as Plans; keep all existing assignment records and completion history.
+- Coach form: title, instructions, optional due date/time, whole team or selected players, and multiple rich attachments.
+- Add attachment support for plays, folders, drills, events/games, practice plans, plans/tasks, and safe URLs/resources while retaining legacy `linked_type` / `linked_id` reads.
+- Players see relevant active plans, open attachments, mark complete, and retain completed history.
+- Coaches see roster-wide status, including Not viewed for players without a status row, plus completion timestamps.
+- Keep Practice Planner separate; a practice plan appears here only when explicitly attached.
 
-1. In `setPlayTeams`, keep only additions and removals for teams the user actually coaches: intersect with the coach's own team list. Never touch other teams.
-2. Only call `updatePlay` to sync the legacy `team_id` when the user owns the play. Skip it for non-owners.
-3. In the play card, build the picker's pre-checked state only from the coach's own teams. That way foreign teams like Test Tem never appear or get submitted.
-4. Verify: as the Aliso coach, add Dog to Aliso Niguel. The row inserts, the Sophomores link stays, and Test Tem's link and the original play are untouched. As the owner, team edits still work.
+## Data and security changes
+- Add a `player_coaches` conversation type and player identity on conversations, with a unique player/team thread.
+- Add a security-definer function to ensure that thread and a membership-sync trigger for active player/head-coach/assistant-coach changes. Tighten conversation read/post checks to active team membership and explicit participants.
+- Add message pin fields plus a narrow coach-authorized pin function so coaches can pin without gaining permission to edit another sender’s message.
+- Expand allowed attachment types and add an `assignment_attachments` table for multiple Plan attachments. Include explicit grants, RLS, same-team validation, and service-role access in the migration.
+- Add `play_folder_memberships` with unique `(folder_id, play_id)`, same-team integrity, explicit grants, and RLS: team members read; team coaches manage. Backfill the existing `play_team_assignments.folder_id` links and switch app reads/writes to the join table.
+- Preserve strict existing team/play/event RLS. Players cannot manage events, folders, team play assignments, or plans; parents/public users receive no chat, Playbook, or Plans access.
+- Keep old announcements, resources, legacy direct conversations, and assignment links readable; remove only their separate top-level navigation.
 
-No RLS or database change is recommended. Loosening the policy would let coaches attach plays to other programs' teams.
+## Notifications
+- Send one deduplicated notification per relevant recipient for new team-chat/direct coaching messages, new or updated Plans, shared play/folder review, and event creation/change/cancellation.
+- Respect existing notification preferences and push availability.
+- Target selected Plan players instead of notifying unrelated teammates; exclude the sender; use item-specific Locker Room deep links.
+- Keep database-triggered in-app notifications and server push/email delivery coordinated so one action does not create duplicate alerts.
+
+## Implementation structure
+- Split the current oversized Locker Room page into focused landing, chat, schedule, playbook, and plans components while retaining `/lockerroom` as the authenticated entry.
+- Share the current calendar form/month view and attachment-card logic between existing screens and Locker Room.
+- Extend the existing Locker Room data helpers instead of introducing parallel services.
+- Record the new folder-membership and coaching-thread architecture in `AGENTS.md`; update the roadmap for this refactor.
+
+## Verification
+- Apply and inspect the migration, then verify RLS with coach, player, parent, and unrelated-coach access paths.
+- Exercise coach Team Chat/Messages, player Team Chat/Message Coaches, assistant membership changes, pinning, and every attachment type.
+- Verify high-contrast Upcoming/Calendar views, native event CRUD, Google read-only events, and player read-only behavior.
+- Verify one play can belong to Dana Hills and ATO simultaneously without cloning, folder deletion is non-destructive, and players can run assigned plays.
+- Verify whole-team and selected-player Plans, folder attachments, completion reporting, retained history, and notification deep links/deduplication.
+- Confirm the public parent route remains stats + schedule only.
+- Run focused tests, type checking, preview build, and Playwright checks at phone, iPad portrait, iPad landscape, and desktop widths.
+
+## Assumptions
+- “Head coach and active assistants” means active team membership rows with those roles; inactive/removed staff are removed from player coaching threads.
+- Historical announcements/resources remain accessible contextually in Team Chat or attachment pickers, but cannot reappear as primary navigation.
