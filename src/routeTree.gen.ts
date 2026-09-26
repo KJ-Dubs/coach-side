@@ -36,6 +36,8 @@ import { Route as LockerTokenRouteImport } from './routes/locker.$token'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedDrillsIndexRouteImport } from './routes/_authenticated/drills.index'
 import { Route as AuthenticatedDrillsNewRouteImport } from './routes/_authenticated/drills.new'
+import { Route as AuthenticatedFilmIndexRouteImport } from './routes/_authenticated/film.index'
+import { Route as AuthenticatedFilmNewRouteImport } from './routes/_authenticated/film.new'
 import { Route as AuthenticatedGameGameIdRouteImport } from './routes/_authenticated/game.$gameId'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games.index'
 import { Route as AuthenticatedGamesNewRouteImport } from './routes/_authenticated/games.new'
@@ -196,6 +198,16 @@ const AuthenticatedDrillsNewRoute = AuthenticatedDrillsNewRouteImport.update({
   path: '/drills/new',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFilmIndexRoute = AuthenticatedFilmIndexRouteImport.update({
+  id: '/film/',
+  path: '/film/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFilmNewRoute = AuthenticatedFilmNewRouteImport.update({
+  id: '/film/new',
+  path: '/film/new',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedGameGameIdRoute = AuthenticatedGameGameIdRouteImport.update({
   id: '/game/$gameId',
   path: '/game/$gameId',
@@ -346,6 +358,7 @@ export interface FileRoutesByFullPath {
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
   '/drills/new': typeof AuthenticatedDrillsNewRoute
+  '/film/new': typeof AuthenticatedFilmNewRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
   '/plays/new': typeof AuthenticatedPlaysNewRoute
@@ -355,6 +368,7 @@ export interface FileRoutesByFullPath {
   '/stats/team': typeof AuthenticatedStatsTeamRoute
   '/share/play/$token': typeof SharePlayTokenRoute
   '/drills/': typeof AuthenticatedDrillsIndexRoute
+  '/film/': typeof AuthenticatedFilmIndexRoute
   '/games/': typeof AuthenticatedGamesIndexRoute
   '/plays/': typeof AuthenticatedPlaysIndexRoute
   '/practice/': typeof AuthenticatedPracticeIndexRoute
@@ -397,6 +411,7 @@ export interface FileRoutesByTo {
   '/share/$token': typeof ShareTokenRoute
   '/library': typeof LibraryIndexRoute
   '/drills/new': typeof AuthenticatedDrillsNewRoute
+  '/film/new': typeof AuthenticatedFilmNewRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
   '/plays/new': typeof AuthenticatedPlaysNewRoute
@@ -406,6 +421,7 @@ export interface FileRoutesByTo {
   '/stats/team': typeof AuthenticatedStatsTeamRoute
   '/share/play/$token': typeof SharePlayTokenRoute
   '/drills': typeof AuthenticatedDrillsIndexRoute
+  '/film': typeof AuthenticatedFilmIndexRoute
   '/games': typeof AuthenticatedGamesIndexRoute
   '/plays': typeof AuthenticatedPlaysIndexRoute
   '/practice': typeof AuthenticatedPracticeIndexRoute
@@ -450,6 +466,7 @@ export interface FileRoutesById {
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
   '/_authenticated/drills/new': typeof AuthenticatedDrillsNewRoute
+  '/_authenticated/film/new': typeof AuthenticatedFilmNewRoute
   '/_authenticated/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/_authenticated/games/new': typeof AuthenticatedGamesNewRoute
   '/_authenticated/plays/new': typeof AuthenticatedPlaysNewRoute
@@ -459,6 +476,7 @@ export interface FileRoutesById {
   '/_authenticated/stats/team': typeof AuthenticatedStatsTeamRoute
   '/share/play/$token': typeof SharePlayTokenRoute
   '/_authenticated/drills/': typeof AuthenticatedDrillsIndexRoute
+  '/_authenticated/film/': typeof AuthenticatedFilmIndexRoute
   '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
   '/_authenticated/plays/': typeof AuthenticatedPlaysIndexRoute
   '/_authenticated/practice/': typeof AuthenticatedPracticeIndexRoute
@@ -503,6 +521,7 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/library/'
     | '/drills/new'
+    | '/film/new'
     | '/game/$gameId'
     | '/games/new'
     | '/plays/new'
@@ -512,6 +531,7 @@ export interface FileRouteTypes {
     | '/stats/team'
     | '/share/play/$token'
     | '/drills/'
+    | '/film/'
     | '/games/'
     | '/plays/'
     | '/practice/'
@@ -554,6 +574,7 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/library'
     | '/drills/new'
+    | '/film/new'
     | '/game/$gameId'
     | '/games/new'
     | '/plays/new'
@@ -563,6 +584,7 @@ export interface FileRouteTypes {
     | '/stats/team'
     | '/share/play/$token'
     | '/drills'
+    | '/film'
     | '/games'
     | '/plays'
     | '/practice'
@@ -606,6 +628,7 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/library/'
     | '/_authenticated/drills/new'
+    | '/_authenticated/film/new'
     | '/_authenticated/game/$gameId'
     | '/_authenticated/games/new'
     | '/_authenticated/plays/new'
@@ -615,6 +638,7 @@ export interface FileRouteTypes {
     | '/_authenticated/stats/team'
     | '/share/play/$token'
     | '/_authenticated/drills/'
+    | '/_authenticated/film/'
     | '/_authenticated/games/'
     | '/_authenticated/plays/'
     | '/_authenticated/practice/'
@@ -847,6 +871,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDrillsNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/film/': {
+      id: '/_authenticated/film/'
+      path: '/film'
+      fullPath: '/film/'
+      preLoaderRoute: typeof AuthenticatedFilmIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/film/new': {
+      id: '/_authenticated/film/new'
+      path: '/film/new'
+      fullPath: '/film/new'
+      preLoaderRoute: typeof AuthenticatedFilmNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/game/$gameId': {
       id: '/_authenticated/game/$gameId'
       path: '/game/$gameId'
@@ -1027,6 +1065,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
   AuthenticatedDrillsNewRoute: typeof AuthenticatedDrillsNewRoute
+  AuthenticatedFilmNewRoute: typeof AuthenticatedFilmNewRoute
   AuthenticatedGameGameIdRoute: typeof AuthenticatedGameGameIdRoute
   AuthenticatedGamesNewRoute: typeof AuthenticatedGamesNewRoute
   AuthenticatedPlaysNewRoute: typeof AuthenticatedPlaysNewRoute
@@ -1035,6 +1074,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStatsPlayersRoute: typeof AuthenticatedStatsPlayersRoute
   AuthenticatedStatsTeamRoute: typeof AuthenticatedStatsTeamRoute
   AuthenticatedDrillsIndexRoute: typeof AuthenticatedDrillsIndexRoute
+  AuthenticatedFilmIndexRoute: typeof AuthenticatedFilmIndexRoute
   AuthenticatedGamesIndexRoute: typeof AuthenticatedGamesIndexRoute
   AuthenticatedPlaysIndexRoute: typeof AuthenticatedPlaysIndexRoute
   AuthenticatedPracticeIndexRoute: typeof AuthenticatedPracticeIndexRoute
@@ -1059,6 +1099,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedToolsRoute: AuthenticatedToolsRoute,
   AuthenticatedDrillsNewRoute: AuthenticatedDrillsNewRoute,
+  AuthenticatedFilmNewRoute: AuthenticatedFilmNewRoute,
   AuthenticatedGameGameIdRoute: AuthenticatedGameGameIdRoute,
   AuthenticatedGamesNewRoute: AuthenticatedGamesNewRoute,
   AuthenticatedPlaysNewRoute: AuthenticatedPlaysNewRoute,
@@ -1067,6 +1108,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStatsPlayersRoute: AuthenticatedStatsPlayersRoute,
   AuthenticatedStatsTeamRoute: AuthenticatedStatsTeamRoute,
   AuthenticatedDrillsIndexRoute: AuthenticatedDrillsIndexRoute,
+  AuthenticatedFilmIndexRoute: AuthenticatedFilmIndexRoute,
   AuthenticatedGamesIndexRoute: AuthenticatedGamesIndexRoute,
   AuthenticatedPlaysIndexRoute: AuthenticatedPlaysIndexRoute,
   AuthenticatedPracticeIndexRoute: AuthenticatedPracticeIndexRoute,

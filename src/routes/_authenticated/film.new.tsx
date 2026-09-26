@@ -12,7 +12,6 @@ import {
   Pill,
   SelectInput,
   TextInput,
-  inputCls,
 } from "@/components/Bubbles";
 import { createFilmJob, getFilmUploadUrl, markFilmUploaded } from "@/lib/film.functions";
 import { createGame, fetchGames, fetchPlayers } from "@/lib/data";
@@ -306,7 +305,6 @@ function NewFilmJobPage() {
             )}
           </div>
         </Panel>
-        <style>{`.${inputCls.split(" ")[0]}{}`}</style>
       </div>
     </AppShell>
   );
