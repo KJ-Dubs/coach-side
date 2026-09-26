@@ -602,10 +602,13 @@ function PlayCard({
 
   const [menu, setMenu] = useState(false);
   const [teamsOpen, setTeamsOpen] = useState(false);
-  const [picked, setPicked] = useState<string[]>(assignedTeams);
+  // Only the coach's own teams are ever pre-checked or submitted — a source
+  // play's foreign legacy team_id must never leak into the picker state.
+  const ownAssigned = assignedTeams.filter((id) => allTeams.some((t) => t.id === id));
+  const [picked, setPicked] = useState<string[]>(ownAssigned);
 
   const openTeams = () => {
-    setPicked(assignedTeams);
+    setPicked(ownAssigned);
     setTeamsOpen(true);
     setMenu(false);
   };

@@ -349,20 +349,31 @@ export async function fetchTeamsForPlay(playId: string): Promise<string[]> {
   return (data ?? []).map((r) => (r as { team_id: string }).team_id);
 }
 
-/** Replace the set of teams a play is shared with. */
+/**
+ * Replace the set of the caller's own teams a play is linked to. Teams the
+ * caller does not coach are never inserted or deleted, and the source play
+ * row is only touched when the caller owns it.
+ */
 export async function setPlayTeams(playId: string, teamIds: string[]) {
-  const current = await fetchTeamsForPlay(playId);
-  const add = teamIds.filter((t) => !current.includes(t));
-  const remove = current.filter((t) => !teamIds.includes(t));
   const { data: auth } = await supabase.auth.getUser();
+  const userId = auth.user?.id ?? null;
+  if (!userId) throw new Error("Sign in first");
+  const { getCurrentUserAccess, resolveRole } = await import("./access");
+  const role = resolveRole(await getCurrentUserAccess());
+  const { data: visibleTeams, error: tErr } = await supabase.from("teams").select("id");
+  if (tErr) throw tErr;
+  const manageable = new Set(
+    (visibleTeams ?? []).map((t) => (t as { id: string }).id).filter((id) => role.canCoachTeam(id)),
+  );
+
+  const wanted = teamIds.filter((t) => manageable.has(t));
+  const current = (await fetchTeamsForPlay(playId)).filter((t) => manageable.has(t));
+  const add = wanted.filter((t) => !current.includes(t));
+  const remove = current.filter((t) => !wanted.includes(t));
 
   if (add.length) {
     const { error } = await supabase.from("play_team_assignments").insert(
-      add.map((team_id) => ({
-        play_id: playId,
-        team_id,
-        assigned_by: auth.user?.id ?? null,
-      })) as never,
+      add.map((team_id) => ({ play_id: playId, team_id, assigned_by: userId })) as never,
     );
     if (error) throw error;
   }
@@ -374,8 +385,18 @@ export async function setPlayTeams(playId: string, teamIds: string[]) {
       .in("team_id", remove);
     if (error) throw error;
   }
-  // Keep the legacy single column pointing at one of the assigned teams.
-  await updatePlay(playId, { team_id: teamIds[0] ?? null } as Partial<Play>);
+
+  // Legacy single column: only the owner may touch the source play.
+  const { data: play } = await supabase
+    .from("plays")
+    .select("created_by,team_id")
+    .eq("id", playId)
+    .maybeSingle();
+  const p = play as { created_by: string | null; team_id: string | null } | null;
+  if (p && p.created_by === userId) {
+    const keep = p.team_id && (wanted.includes(p.team_id) || !manageable.has(p.team_id));
+    if (!keep) await updatePlay(playId, { team_id: wanted[0] ?? null } as Partial<Play>);
+  }
 }
 
 export async function createPlay(input: {
