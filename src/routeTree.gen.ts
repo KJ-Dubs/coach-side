@@ -37,6 +37,7 @@ import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedDrillsIndexRouteImport } from './routes/_authenticated/drills.index'
 import { Route as AuthenticatedDrillsNewRouteImport } from './routes/_authenticated/drills.new'
 import { Route as AuthenticatedFilmIndexRouteImport } from './routes/_authenticated/film.index'
+import { Route as AuthenticatedFilmJobIdRouteImport } from './routes/_authenticated/film.$jobId'
 import { Route as AuthenticatedFilmNewRouteImport } from './routes/_authenticated/film.new'
 import { Route as AuthenticatedGameGameIdRouteImport } from './routes/_authenticated/game.$gameId'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games.index'
@@ -203,6 +204,11 @@ const AuthenticatedFilmIndexRoute = AuthenticatedFilmIndexRouteImport.update({
   path: '/film/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFilmJobIdRoute = AuthenticatedFilmJobIdRouteImport.update({
+  id: '/film/$jobId',
+  path: '/film/$jobId',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedFilmNewRoute = AuthenticatedFilmNewRouteImport.update({
   id: '/film/new',
   path: '/film/new',
@@ -358,6 +364,7 @@ export interface FileRoutesByFullPath {
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
   '/drills/new': typeof AuthenticatedDrillsNewRoute
+  '/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/film/new': typeof AuthenticatedFilmNewRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
@@ -411,6 +418,7 @@ export interface FileRoutesByTo {
   '/share/$token': typeof ShareTokenRoute
   '/library': typeof LibraryIndexRoute
   '/drills/new': typeof AuthenticatedDrillsNewRoute
+  '/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/film/new': typeof AuthenticatedFilmNewRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
@@ -466,6 +474,7 @@ export interface FileRoutesById {
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
   '/_authenticated/drills/new': typeof AuthenticatedDrillsNewRoute
+  '/_authenticated/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/_authenticated/film/new': typeof AuthenticatedFilmNewRoute
   '/_authenticated/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/_authenticated/games/new': typeof AuthenticatedGamesNewRoute
@@ -521,6 +530,7 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/library/'
     | '/drills/new'
+    | '/film/$jobId'
     | '/film/new'
     | '/game/$gameId'
     | '/games/new'
@@ -574,6 +584,7 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/library'
     | '/drills/new'
+    | '/film/$jobId'
     | '/film/new'
     | '/game/$gameId'
     | '/games/new'
@@ -628,6 +639,7 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/library/'
     | '/_authenticated/drills/new'
+    | '/_authenticated/film/$jobId'
     | '/_authenticated/film/new'
     | '/_authenticated/game/$gameId'
     | '/_authenticated/games/new'
@@ -878,6 +890,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFilmIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/film/$jobId': {
+      id: '/_authenticated/film/$jobId'
+      path: '/film/$jobId'
+      fullPath: '/film/$jobId'
+      preLoaderRoute: typeof AuthenticatedFilmJobIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/film/new': {
       id: '/_authenticated/film/new'
       path: '/film/new'
@@ -1065,6 +1084,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
   AuthenticatedDrillsNewRoute: typeof AuthenticatedDrillsNewRoute
+  AuthenticatedFilmJobIdRoute: typeof AuthenticatedFilmJobIdRoute
   AuthenticatedFilmNewRoute: typeof AuthenticatedFilmNewRoute
   AuthenticatedGameGameIdRoute: typeof AuthenticatedGameGameIdRoute
   AuthenticatedGamesNewRoute: typeof AuthenticatedGamesNewRoute
@@ -1099,6 +1119,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedToolsRoute: AuthenticatedToolsRoute,
   AuthenticatedDrillsNewRoute: AuthenticatedDrillsNewRoute,
+  AuthenticatedFilmJobIdRoute: AuthenticatedFilmJobIdRoute,
   AuthenticatedFilmNewRoute: AuthenticatedFilmNewRoute,
   AuthenticatedGameGameIdRoute: AuthenticatedGameGameIdRoute,
   AuthenticatedGamesNewRoute: AuthenticatedGamesNewRoute,
