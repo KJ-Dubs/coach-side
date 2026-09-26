@@ -104,7 +104,7 @@ export const Route = createFileRoute("/api/public/film/results")({
           }));
           const { error } = await supabaseAdmin
             .from("film_job_events")
-            .upsert(rows, { onConflict: "job_id,external_id", ignoreDuplicates: true });
+            .upsert(rows as never, { onConflict: "job_id,external_id", ignoreDuplicates: true });
           if (error) return Response.json({ error: error.message }, { status: 500 });
         }
         if (body.substitutions.length) {
@@ -123,7 +123,7 @@ export const Route = createFileRoute("/api/public/film/results")({
           }));
           const { error } = await supabaseAdmin
             .from("film_job_substitutions")
-            .upsert(rows, { onConflict: "job_id,external_id", ignoreDuplicates: true });
+            .upsert(rows as never, { onConflict: "job_id,external_id", ignoreDuplicates: true });
           if (error) return Response.json({ error: error.message }, { status: 500 });
         }
 
