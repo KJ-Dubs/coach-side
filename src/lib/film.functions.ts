@@ -154,7 +154,7 @@ export const markFilmUploaded = createServerFn({ method: "POST" })
             oppColor: job.opp_color,
             attackBasketFirstHalf: job.attack_basket_first_half,
             periods: job.periods,
-            roster: job.roster_snapshot,
+            roster: job.roster_snapshot as { jersey: string; player_id: string; name?: string }[],
           },
           callbackBase: origin,
         });
@@ -240,6 +240,7 @@ export const reviewFilmEvent = createServerFn({ method: "POST" })
         ...(data.patch ?? {}),
         review_state: state,
         reviewed_by: context.userId,
+      } as never)
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", data.id);
