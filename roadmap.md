@@ -132,3 +132,4 @@
 - [x] Finalize reviewed events into real game stats (review-first, never auto)
 - [ ] Real CV worker service (separate Python/GPU) — interface ready, not connected
 - [x] Fix play team-access save (RLS error adding library play to own team)
+- [x] Canonical cross-coach play sharing: Locker Room reads adopted plays, recipient UI
