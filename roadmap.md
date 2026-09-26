@@ -39,11 +39,11 @@
 - [ ] Build/typecheck + Playwright verification
 
 ## Four-part Locker Room refactor
-- [ ] Add secure player-to-coaching-staff threads and message pinning
-- [ ] Add many-to-many Playbook folders and rich Plan attachments
-- [ ] Replace Locker Room tabs with Team Chat, Schedule, Playbook, and Plans
-- [ ] Add targeted/deep-linked notifications and preserve legacy content
-- [ ] Verify coach, player, parent, responsive, typecheck, and build behavior
+- [x] Add secure player-to-coaching-staff threads and message pinning
+- [x] Add many-to-many Playbook folders and rich Plan attachments
+- [x] Replace Locker Room tabs with Team Chat, Schedule, Playbook, and Plans
+- [x] Add targeted/deep-linked notifications and preserve legacy content
+- [x] Verify coach, player, parent, responsive, typecheck, and build behavior
 
 ## Locker Room
 - [x] Team logo beside the dashboard welcome
