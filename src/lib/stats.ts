@@ -93,6 +93,17 @@ export function emptyTeamLine(): TeamLine {
 
 /* ---------------- shot classification ---------------- */
 
+/** Opponent (team-level) events all use the OPP_ prefix. */
+export function isOppEvent(e: Pick<GameEvent, "event_type">) {
+  return String(e.event_type).startsWith("OPP_");
+}
+
+/** Strip the OPP_ prefix so both sides share one classification. */
+function baseType(e: Pick<GameEvent, "event_type">) {
+  const t = String(e.event_type);
+  return t.startsWith("OPP_") ? t.slice(4) : t;
+}
+
 export function isFieldGoal(e: GameEvent) {
   return e.event_type === "MADE" || e.event_type === "MISS";
 }
@@ -101,12 +112,42 @@ export function isFreeThrow(e: GameEvent) {
   return e.event_type === "FT_MADE" || e.event_type === "FT_MISS";
 }
 
+function explicitShotValue(e: GameEvent): 2 | 3 | null {
+  const v = (e.context as { shot_value?: unknown } | null)?.shot_value;
+  return v === 2 || v === 3 ? v : null;
+}
+
+/**
+ * Canonical field-goal value: explicit coach override, else court location
+ * (nearest basket), else stored points/result. Never 1 or 0 for a field goal.
+ */
+export function shotValueOf(e: GameEvent): 2 | 3 {
+  const ex = explicitShotValue(e);
+  if (ex) return ex;
+  if (e.x != null && e.y != null) return isThree(e.x, e.y) ? 3 : 2;
+  if (e.points === 3 || e.result === "3PT") return 3;
+  return 2;
+}
+
 export function isThreeAttempt(e: GameEvent) {
-  if (e.event_type === "MADE" && e.points) return e.points === 3;
-  if (e.result === "3PT") return true;
-  if (e.result === "2PT") return false;
-  if (e.x != null && e.y != null) return isThree(e.x, e.y);
-  return false;
+  return shotValueOf(e) === 3;
+}
+
+/**
+ * The ONLY scoring rule. Scoreboard, box scores, player lines and opponent
+ * totals all derive points from this, so they can never drift apart.
+ */
+export function eventPoints(e: GameEvent): number {
+  switch (baseType(e)) {
+    case "MADE":
+      return shotValueOf(e);
+    case "FT_MADE":
+      return 1;
+    case "SCORE": // legacy OPP_SCORE quick buttons
+      return Math.max(0, Math.min(3, e.points || 0));
+    default:
+      return 0;
+  }
 }
 
 /** Layup / rim attempts: inside ~6ft of the basket. */

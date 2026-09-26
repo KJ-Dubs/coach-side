@@ -19,8 +19,14 @@ export type Zone =
   | "top3"
   | "deep3";
 
+/**
+ * Stored x runs 0..2 across the whole floor (1 = half line). Shots near the
+ * FAR basket (x > 1) are mirrored so distance/arc/zone are measured from the
+ * nearest basket — otherwise a layup at the far rim reads as a 40ft three.
+ */
 export function toFeet(x: number, y: number) {
-  return { fx: x * HALF_W_FT, fy: y * HALF_H_FT };
+  const hx = x > 1 ? 2 - x : x;
+  return { fx: hx * HALF_W_FT, fy: y * HALF_H_FT };
 }
 
 export function distanceFt(x: number, y: number) {
