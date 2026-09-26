@@ -340,6 +340,38 @@ export async function movePlayToFolder(playId: string, teamId: string, folderId:
   if (error) throw error;
 }
 
+/**
+ * A team's Playbook: plays whose source team is this team plus every canonical
+ * play explicitly adopted by it (play_team_assignments). Never infers adoption
+ * from Library publication alone.
+ */
+export async function fetchTeamPlays(teamId: string): Promise<Play[]> {
+  const { data: links, error: lErr } = await supabase
+    .from("play_team_assignments")
+    .select("play_id,is_visible")
+    .eq("team_id", teamId);
+  if (lErr) throw lErr;
+  const hidden = new Set(
+    (links ?? []).filter((l) => (l as { is_visible: boolean }).is_visible === false).map((l) => (l as { play_id: string }).play_id),
+  );
+  const assigned = (links ?? [])
+    .map((l) => (l as { play_id: string }).play_id)
+    .filter((id) => !hidden.has(id));
+  const [own, adopted] = await Promise.all([
+    supabase.from("plays").select("*").eq("team_id", teamId),
+    assigned.length
+      ? supabase.from("plays").select("*").in("id", assigned)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (own.error) throw own.error;
+  if (adopted.error) throw adopted.error;
+  const byId = new Map<string, Play>();
+  for (const p of [...(own.data ?? []), ...(adopted.data ?? [])] as unknown as Play[]) {
+    if (!hidden.has(p.id)) byId.set(p.id, p);
+  }
+  return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export async function fetchTeamsForPlay(playId: string): Promise<string[]> {
   const { data, error } = await supabase
     .from("play_team_assignments")

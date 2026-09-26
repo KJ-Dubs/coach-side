@@ -19,7 +19,7 @@ import {
 } from "@/components/Bubbles";
 import { Chat } from "@/components/locker/Chat";
 import { AttachmentCard, AttachmentPicker } from "@/components/locker/Attachments";
-import { fetchPlayers, fetchPlays, fetchTeamEvents, logoSignedUrl } from "@/lib/data";
+import { fetchPlayers, fetchTeamPlays, fetchTeamEvents, logoSignedUrl } from "@/lib/data";
 import {
   AUDIENCES,
   createAnnouncement,
@@ -151,8 +151,8 @@ function LockerRoomPage() {
   });
 
   const plays = useQuery({
-    queryKey: ["plays"],
-    queryFn: fetchPlays,
+    queryKey: ["team-plays", teamId],
+    queryFn: () => fetchTeamPlays(teamId),
     enabled: !!teamId && !locker.isParent,
   });
 
@@ -202,7 +202,8 @@ function LockerRoomPage() {
     return !mine || mine.status !== "completed";
   }).length;
 
-  const teamPlays = (plays.data ?? []).filter((p) => p.team_id === teamId || p.team_id === null);
+  // Source-team plays plus canonical plays this team adopted (assignment rows).
+  const teamPlays = plays.data ?? [];
 
   const TABS: { id: Tab; label: string; show: boolean }[] = [
     { id: "today", label: "Today", show: true },
