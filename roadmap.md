@@ -74,6 +74,7 @@
 - [x] Use a direct user-click download with stable object URL and CoachSide MP4 filename
 - [x] Validate MIME type and MP4 file signature before enabling download
 - [x] Verify 320–430px layout, genuine MP4 output, TypeScript, and production build
+- [ ] Add title-safe play/drill composition and a baked-in CoachSide logo outro
 
 ## Membership / billing foundation (built, enforcement OFF)
 - [x] team_billing, complimentary_grants, access_codes, access_code_redemptions + RLS

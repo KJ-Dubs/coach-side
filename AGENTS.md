@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Play and drill MP4 exports share `src/lib/playVideo.ts` so title, court, timing, branding, and encoder behavior cannot drift.
