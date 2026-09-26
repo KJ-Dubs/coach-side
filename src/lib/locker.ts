@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { alertTeam } from "./teamAlerts";
-import { notifyConversationMessage, notifyPlanRecipients } from "./notifications.functions";
+import { notifyAnnouncementRecipients, notifyConversationMessage, notifyPlanRecipients } from "./notifications.functions";
 
 /* =============== types =============== */
 
@@ -485,14 +484,7 @@ export async function createAnnouncement(input: {
     );
     if (aErr) throw aErr;
   }
-  alertTeam({
-    teamId: input.team_id,
-    kind: "announcement",
-    title: input.title,
-    body: input.body.slice(0, 200),
-    link: "/lockerroom",
-    relatedId: id,
-  });
+  void notifyAnnouncementRecipients({ data: { announcementId: id } }).catch(() => undefined);
   return id;
 }
 

@@ -228,6 +228,48 @@ export const notifyPlanRecipients = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const notifyAnnouncementRecipients = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ announcementId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { data: announcement } = await context.supabase
+      .from("announcements" as never)
+      .select("id, team_id, title, body, audience")
+      .eq("id", data.announcementId)
+      .maybeSingle();
+    if (!announcement) throw new Error("Announcement not found.");
+    const row = announcement as unknown as { team_id: string; title: string; body: string; audience: string };
+    const { data: isCoach } = await (context.supabase as unknown as { rpc: (name: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown }> }).rpc("is_team_coach", { _team: row.team_id });
+    if (isCoach !== true) throw new Error("Only a team coach can notify members.");
+
+    const { adminDb, dispatchNotification } = await import("./notify.server");
+    const db = await adminDb();
+    const { data: members } = await db.from("team_members").select("user_id, role").eq("team_id", row.team_id).eq("active", true);
+    const allowedRoles = row.audience === "everyone"
+      ? null
+      : row.audience === "coaches"
+        ? new Set(["head_coach", "assistant_coach"])
+        : new Set([row.audience === "parents" ? "parent" : "player"]);
+    const recipients = [...new Set(((members ?? []) as { user_id: string; role: string }[])
+      .filter((m) => !allowedRoles || allowedRoles.has(m.role))
+      .map((m) => m.user_id))];
+    if (recipients.length) {
+      await dispatchNotification({
+        audience: { kind: "users", userIds: recipients },
+        teamId: row.team_id,
+        type: "team_announcement",
+        title: row.title,
+        body: row.body.slice(0, 200),
+        link: "/lockerroom?area=chat",
+        relatedType: "announcement",
+        relatedId: data.announcementId,
+        prefColumn: "announcement_notifications",
+        dedupeKey: `announcement:${data.announcementId}`,
+      });
+    }
+    return { ok: true };
+  });
+
 /**
  * Pushes/emails a team alert. The in-app row is created by the existing
  * database triggers, so this only adds the device and email channels and never
