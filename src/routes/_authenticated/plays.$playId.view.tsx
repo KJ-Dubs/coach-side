@@ -118,13 +118,7 @@ function PlayViewPage() {
   /** Turns on the public link if needed, then copies it. */
   const sharePlay = async () => {
     try {
-      const current = sequence.find((p) => p.id === playId) ?? (await fetchPlay(playId));
-      if (!current) return;
-      let token = current.share_token;
-      if (!current.is_shared || !token) {
-        await updatePlay(playId, { is_shared: true });
-        token = (await fetchPlay(playId))?.share_token ?? null;
-      }
+      const token = await createPlayShareLink(playId);
       if (!token) {
         toast.error("Could not create a share link");
         return;
@@ -150,7 +144,7 @@ function PlayViewPage() {
         <>
           {access.isCoach ? (
             <>
-              {canEdit || currentPlay?.is_shared ? (
+              {currentPlay ? (
                 <BubbleButton size="sm" tone="neutral" onClick={() => void sharePlay()}>
                   Share
                 </BubbleButton>

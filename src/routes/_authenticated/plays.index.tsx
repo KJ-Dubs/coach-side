@@ -1,4 +1,5 @@
-import { TipInterstitial } from "@/components/TipInterstitial";
+import {
+  createPlayShareLink, TipInterstitial } from "@/components/TipInterstitial";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -239,10 +240,7 @@ function PlaybookPage() {
   });
 
   const share = useMutation({
-    mutationFn: async (p: Play) => {
-      if (!p.is_shared) await updatePlay(p.id, { is_shared: true });
-      return p.share_token;
-    },
+    mutationFn: (p: Play) => createPlayShareLink(p.id),
     onSuccess: async (token) => {
       void invalidate();
       if (!token) {
