@@ -526,14 +526,14 @@ function paintFrame(
   ctx.restore();
   ctx.restore();
 
-  // Sequence pill above court
+  // Sequence status stays in the footer so the title band remains unobstructed.
   if (opts.showSequenceNumbers && totalSteps > 0) {
     const s = Math.round(w * 0.03);
     ctx.save();
     ctx.font = `800 ${s}px system-ui, sans-serif`;
     const label = `SEQUENCE ${state.seqIndex + 1} / ${totalSteps}`;
     const tw = ctx.measureText(label).width + s * 1.4;
-    const by = Math.max(pad, courtY - s * 2.6);
+    const by = h - pad - s * 1.9;
     roundedBubble(ctx, pad, by, tw, s * 1.9, withAlpha(p.flame, 0.22), p.flame);
     ctx.fillStyle = p.text;
     ctx.textAlign = "left";
