@@ -188,8 +188,8 @@ export function scoreFromEvents(events: GameEvent[]) {
   let team = 0;
   let opp = 0;
   for (const e of events) {
-    if (e.event_type === "OPP_SCORE") opp += e.points || 0;
-    else team += e.points || 0;
+    if (isOppEvent(e)) opp += eventPoints(e);
+    else team += eventPoints(e);
   }
   return { team, opp };
 }
@@ -340,7 +340,8 @@ export function aggregatePlayers(
     for (const e of ev) {
       if (!e.player_id) continue;
       const l = get(e.player_id);
-      if (e.event_type !== "OPP_SCORE") l.pts += e.points || 0;
+      if (isOppEvent(e)) continue;
+      l.pts += eventPoints(e);
       switch (e.event_type) {
         case "REBOUND":
           l.reb++;
@@ -413,6 +414,69 @@ export function aggregateTeam(games: Game[], events: GameEvent[]): TeamLine {
     }
   }
   return line;
+}
+
+export type OppLine = {
+  pts: number;
+  fg: Split;
+  two: Split;
+  three: Split;
+  ft: Split;
+  oreb: number;
+  dreb: number;
+  to: number;
+  pf: number;
+};
+
+/** Team-level opponent totals (no opponent roster needed). */
+export function opponentLine(events: GameEvent[]): OppLine {
+  const l: OppLine = {
+    pts: 0,
+    fg: emptySplit(),
+    two: emptySplit(),
+    three: emptySplit(),
+    ft: emptySplit(),
+    oreb: 0,
+    dreb: 0,
+    to: 0,
+    pf: 0,
+  };
+  for (const e of events) {
+    if (!isOppEvent(e)) {
+      if (e.event_type === "STEAL") l.to++; // a steal is an opponent turnover
+      continue;
+    }
+    l.pts += eventPoints(e);
+    const t = baseType(e);
+    if (t === "MADE" || t === "MISS") {
+      const made = t === "MADE";
+      l.fg.att++;
+      if (made) l.fg.made++;
+      const s = shotValueOf(e) === 3 ? l.three : l.two;
+      s.att++;
+      if (made) s.made++;
+    } else if (t === "FT_MADE" || t === "FT_MISS") {
+      l.ft.att++;
+      if (t === "FT_MADE") l.ft.made++;
+    } else if (t === "SCORE") {
+      const p = eventPoints(e);
+      if (p === 1) {
+        l.ft.att++;
+        l.ft.made++;
+      } else if (p > 1) {
+        l.fg.att++;
+        l.fg.made++;
+        const s = p === 3 ? l.three : l.two;
+        s.att++;
+        s.made++;
+      }
+    } else if (t === "REBOUND") {
+      if (e.result === "OFF") l.oreb++;
+      else l.dreb++; // legacy rows were logged after our misses = defensive
+    } else if (t === "TURNOVER") l.to++;
+    else if (t === "FOUL") l.pf++;
+  }
+  return l;
 }
 
 /** One player's line for one game (box score row). */
