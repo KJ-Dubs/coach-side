@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Signed-in read potd" ON public.play_of_the_day;
