@@ -26,10 +26,10 @@ export const Route = createFileRoute("/api/public/film/status")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const patch: Record<string, unknown> = {};
-        if (parsed.data.status) patch.status = parsed.data.status;
-        if (parsed.data.progress !== undefined) patch.progress = parsed.data.progress;
-        if (parsed.data.detail) patch.status_detail = parsed.data.detail;
-        await supabaseAdmin.from("film_jobs").update(patch).eq("id", parsed.data.job_id);
+        if (parsed.data.status) patch["status"] = parsed.data.status;
+        if (parsed.data.progress !== undefined) patch["progress"] = parsed.data.progress;
+        if (parsed.data.detail) patch["status_detail"] = parsed.data.detail;
+        await supabaseAdmin.from("film_jobs").update(patch as never).eq("id", parsed.data.job_id);
         return Response.json({ ok: true });
       },
     },
