@@ -240,9 +240,8 @@ export const reviewFilmEvent = createServerFn({ method: "POST" })
         ...(data.patch ?? {}),
         review_state: state,
         reviewed_by: context.userId,
-      } as never)
         reviewed_at: new Date().toISOString(),
-      })
+      } as never)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
