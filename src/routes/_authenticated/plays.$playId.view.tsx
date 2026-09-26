@@ -8,7 +8,7 @@ import { PlayPresenter } from "@/components/court/PlayPresenter";
 import { PresenterNav } from "@/components/court/PresenterNav";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
 import { toast } from "sonner";
-import { fetchFrames, fetchPlay, fetchPlayAssignments, fetchPlays, updatePlay } from "@/lib/data";
+import { createPlayShareLink, fetchFrames, fetchPlay, fetchPlayAssignments, fetchPlays, updatePlay } from "@/lib/data";
 import { normalizeCategory } from "@/lib/types";
 import { useAccess } from "@/lib/access";
 import { useMe } from "@/lib/useMe";
