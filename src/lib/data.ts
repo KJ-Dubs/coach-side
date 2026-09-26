@@ -289,6 +289,13 @@ export type TeamPlaybookFolder = {
   updated_at: string;
 };
 
+export type PlayFolderMembership = {
+  id: string;
+  folder_id: string;
+  play_id: string;
+  team_id: string;
+};
+
 /** Every play↔team link the signed-in coach can see. Source of truth for team playbooks. */
 export async function fetchPlayAssignments(): Promise<PlayTeamAssignment[]> {
   const { data, error } = await supabase
@@ -328,6 +335,40 @@ export async function renamePlaybookFolder(folderId: string, name: string) {
 
 export async function deletePlaybookFolder(folderId: string) {
   const { error } = await supabase.from("team_playbook_folders").delete().eq("id", folderId);
+  if (error) throw error;
+}
+
+export async function fetchPlayFolderMemberships(teamId: string): Promise<PlayFolderMembership[]> {
+  const { data, error } = await supabase
+    .from("play_folder_memberships")
+    .select("id,folder_id,play_id,team_id")
+    .eq("team_id", teamId);
+  if (error) throw error;
+  return (data ?? []) as PlayFolderMembership[];
+}
+
+export async function setPlayFolderMembership(
+  playId: string,
+  teamId: string,
+  folderId: string,
+  included: boolean,
+) {
+  if (included) {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) throw new Error("Sign in first");
+    const { error } = await supabase.from("play_folder_memberships").upsert(
+      { play_id: playId, team_id: teamId, folder_id: folderId, created_by: auth.user.id },
+      { onConflict: "folder_id,play_id" },
+    );
+    if (error) throw error;
+    return;
+  }
+  const { error } = await supabase
+    .from("play_folder_memberships")
+    .delete()
+    .eq("play_id", playId)
+    .eq("team_id", teamId)
+    .eq("folder_id", folderId);
   if (error) throw error;
 }
 
@@ -783,7 +824,7 @@ export async function createTeamEvent(input: NewTeamEvent): Promise<TeamEvent> {
     kind: created.event_type === "game" ? "game" : "schedule",
     title: `New on the schedule: ${created.title}`,
     body: `${new Date(created.starts_at).toLocaleString()}${created.location ? ` · ${created.location}` : ""}`,
-    link: "/calendar",
+    link: `/lockerroom?area=schedule&item=${created.id}`,
     relatedId: created.id,
   });
   return created;
@@ -821,7 +862,7 @@ export async function updateTeamEvent(id: string, patch: Partial<TeamEvent>) {
       (patch.status ?? prev.status) === "cancelled"
         ? "This has been cancelled."
         : `Now ${when}${patch.location ?? prev.location ? ` · ${patch.location ?? prev.location}` : ""}`,
-    link: "/calendar",
+    link: `/lockerroom?area=schedule&item=${id}`,
   });
 }
 
@@ -840,7 +881,7 @@ export async function deleteTeamEvent(id: string) {
       kind: "schedule",
       title: `Removed from the schedule: ${prev.title}`,
       body: "Check the CoachSide calendar for the latest schedule.",
-      link: "/calendar",
+      link: "/lockerroom?area=schedule",
     });
   }
 }

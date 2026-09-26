@@ -44,8 +44,13 @@ export type DirectoryEntry = {
  *  data model already so clips can be attached later with no schema change. */
 export type AttachmentType =
   | "play"
+  | "playbook_folder"
+  | "drill"
+  | "practice_plan"
   | "event"
   | "game"
+  | "plan"
+  | "url"
   | "stat"
   | "resource"
   | "full_game_video"
@@ -77,11 +82,13 @@ export type Message = {
   created_at: string;
   edited_at: string | null;
   deleted_at: string | null;
+  pinned_at: string | null;
+  pinned_by: string | null;
   attachments: Attachment[];
   reactions: Reaction[];
 };
 
-export type ConversationType = "team" | "staff" | "direct";
+export type ConversationType = "team" | "staff" | "direct" | "player_coaches";
 
 export type Announcement = {
   id: string;
@@ -118,6 +125,7 @@ export type Assignment = {
   linked_type: string | null;
   linked_id: string | null;
   created_at: string;
+  attachments: Attachment[];
 };
 
 export type AssignmentStatus = "not_viewed" | "viewed" | "acknowledged" | "completed";
@@ -292,6 +300,23 @@ export async function ensureDirectConversation(teamId: string, otherUserId: stri
   });
   if (error) throw error;
   return data as unknown as string;
+}
+
+export async function ensurePlayerCoachesConversation(teamId: string, playerId: string) {
+  const { data, error } = await supabase.rpc("ensure_player_coaches_conversation" as never, {
+    _team: teamId,
+    _player: playerId,
+  } as never);
+  if (error) throw error;
+  return data as unknown as string;
+}
+
+export async function setMessagePinned(messageId: string, pinned: boolean) {
+  const { error } = await supabase.rpc("set_team_message_pinned" as never, {
+    _message: messageId,
+    _pinned: pinned,
+  } as never);
+  if (error) throw error;
 }
 
 export async function fetchDirectConversations(teamId: string) {
@@ -512,11 +537,14 @@ export async function markAnnouncement(
 export async function fetchAssignments(teamId: string): Promise<Assignment[]> {
   const { data, error } = await supabase
     .from("assignments")
-    .select("*")
+    .select("*, assignment_attachments(*)")
     .eq("team_id", teamId)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as unknown as Assignment[];
+  return ((data ?? []) as unknown as Record<string, unknown>[]).map((row) => ({
+    ...(row as unknown as Assignment),
+    attachments: (row["assignment_attachments"] ?? []) as Attachment[],
+  }));
 }
 
 export async function fetchAssignmentTargets(ids: string[]): Promise<AssignmentTarget[]> {
@@ -539,6 +567,7 @@ export async function createAssignment(input: {
   linked_id: string | null;
   /** roster players the task is for; empty = whole team */
   player_ids: string[];
+  attachments?: NewAttachment[];
 }) {
   const me = await uid();
   const { data, error } = await supabase
@@ -563,12 +592,23 @@ export async function createAssignment(input: {
       .insert(input.player_ids.map((p) => ({ assignment_id: id, player_id: p })));
     if (tErr) throw tErr;
   }
+  if (input.attachments?.length) {
+    const { error: aErr } = await supabase.from("assignment_attachments").insert(
+      input.attachments.map((a) => ({
+        assignment_id: id,
+        attachment_type: a.attachment_type,
+        related_id: a.related_id,
+        metadata: (a.metadata ?? {}) as never,
+      })),
+    );
+    if (aErr) throw aErr;
+  }
   alertTeam({
     teamId: input.team_id,
     kind: "assignment",
-    title: `New assignment: ${input.title}`,
+    title: `New plan: ${input.title}`,
     body: input.instructions?.slice(0, 200) || "Open CoachSide to see what your coach assigned.",
-    link: "/lockerroom",
+    link: `/lockerroom?area=plans&item=${id}`,
     relatedId: id,
   });
   return id;

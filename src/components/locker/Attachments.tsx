@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { BubbleButton, Label, Pill, SelectInput } from "@/components/Bubbles";
-import { fetchTeamEvents, fetchTeamPlays } from "@/lib/data";
+import { fetchPlaybookFolders, fetchTeamEvents, fetchTeamPlays } from "@/lib/data";
+import { fetchMyDrills } from "@/lib/drills";
+import { fetchPracticePlans } from "@/lib/practice";
 import type { Attachment, NewAttachment } from "@/lib/locker";
 import { EVENT_TYPE_LABEL } from "@/lib/types";
 
@@ -22,9 +24,15 @@ export function useTeamAttachmentSources(teamId: string | null) {
     queryFn: () => fetchTeamEvents(teamId as string),
     enabled: !!teamId,
   });
+  const folders = useQuery({ queryKey: ["playbook-folders", teamId], queryFn: () => fetchPlaybookFolders(teamId as string), enabled: !!teamId });
+  const drills = useQuery({ queryKey: ["my-drills"], queryFn: fetchMyDrills, enabled: !!teamId });
+  const plans = useQuery({ queryKey: ["practice-plans", teamId], queryFn: () => fetchPracticePlans(teamId), enabled: !!teamId });
   return {
     plays: plays.data ?? [],
     events: events.data ?? [],
+    folders: folders.data ?? [],
+    drills: drills.data ?? [],
+    practicePlans: plans.data ?? [],
   };
 }
 
@@ -70,7 +78,8 @@ export function AttachmentCard({
     const ev = events.find((e) => e.id === attachment.related_id);
     return (
       <Link
-        to="/calendar"
+        to="/lockerroom"
+        search={attachment.related_id ? { area: "schedule", item: attachment.related_id } : { area: "schedule" }}
         className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-flame/60 bg-flame/15 px-3 py-2 transition-colors hover:bg-flame/25"
       >
         <Pill tone="flame">{EVENT_TYPE_LABEL[ev?.event_type ?? "event"] ?? "Event"}</Pill>
@@ -83,6 +92,23 @@ export function AttachmentCard({
         {ev?.arrival_at ? <Pill tone="muted">Arrive {fmtWhen(ev.arrival_at)}</Pill> : null}
       </Link>
     );
+  }
+
+  if (attachment.attachment_type === "playbook_folder") {
+    return <Link to="/lockerroom" search={attachment.related_id ? { area: "playbook", folder: attachment.related_id } : { area: "playbook" }} className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-grape/60 bg-grape/15 px-3 py-2"><Pill tone="grape">Playbook Folder</Pill><span className="text-base font-black text-foreground">{(attachment.metadata["name"] as string) ?? "Open folder"}</span></Link>;
+  }
+  if (attachment.attachment_type === "drill") {
+    return <Link to="/drills" className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-flame/60 bg-flame/15 px-3 py-2"><Pill tone="flame">Drill</Pill><span className="text-base font-black text-foreground">{(attachment.metadata["name"] as string) ?? "Open drill"}</span></Link>;
+  }
+  if (attachment.attachment_type === "practice_plan") {
+    return <Link to="/practice/$planId" params={{ planId: attachment.related_id ?? "" }} className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-2/80 px-3 py-2"><Pill tone="neutral">Practice Plan</Pill><span className="text-base font-black text-foreground">{(attachment.metadata["name"] as string) ?? "Open practice plan"}</span></Link>;
+  }
+  if (attachment.attachment_type === "plan") {
+    return <Link to="/lockerroom" search={attachment.related_id ? { area: "plans", item: attachment.related_id } : { area: "plans" }} className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-2/80 px-3 py-2"><Pill tone="neutral">Plan</Pill><span className="text-base font-black text-foreground">{(attachment.metadata["name"] as string) ?? "Open plan"}</span></Link>;
+  }
+  if (attachment.attachment_type === "url") {
+    const href = String(attachment.metadata["url"] ?? "");
+    return <a href={href} target="_blank" rel="noreferrer" className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-2/80 px-3 py-2"><Pill tone="muted">Link</Pill><span className="text-base font-black text-foreground">{(attachment.metadata["label"] as string) ?? "Open link"}</span></a>;
   }
 
   if (attachment.attachment_type === "game") {
@@ -115,14 +141,20 @@ export function AttachmentPicker({
   teamId,
   value,
   onChange,
+  compact = false,
 }: {
   teamId: string | null;
   value: NewAttachment[];
   onChange: (next: NewAttachment[]) => void;
+  compact?: boolean;
 }) {
-  const { plays, events } = useTeamAttachmentSources(teamId);
+  const { plays, events, folders, drills, practicePlans } = useTeamAttachmentSources(teamId);
   const [playId, setPlayId] = useState("");
   const [eventId, setEventId] = useState("");
+  const [kind, setKind] = useState("play");
+  const [otherId, setOtherId] = useState("");
+  const [url, setUrl] = useState("");
+  const [open, setOpen] = useState(!compact);
 
   const add = (a: NewAttachment) => {
     if (value.some((v) => v.related_id === a.related_id)) return;
@@ -131,9 +163,14 @@ export function AttachmentPicker({
 
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-surface-2/50 p-2">
+      <BubbleButton size="sm" tone="neutral" className="w-fit" onClick={() => setOpen((v) => !v)}>{open ? "Close attachments" : "+ Attach"}</BubbleButton>
+      {open ? <>
       <Label>Attach</Label>
+      <SelectInput value={kind} onChange={(e) => { setKind(e.target.value); setOtherId(""); }}>
+        <option value="play">Play</option><option value="playbook_folder">Playbook Folder</option><option value="drill">Drill</option><option value="practice_plan">Practice Plan</option><option value="event">Event</option><option value="url">Resource / Link</option>
+      </SelectInput>
       <div className="grid gap-2 sm:grid-cols-2">
-        <div className="flex gap-2">
+        {kind === "play" ? <div className="flex gap-2">
           <SelectInput value={playId} onChange={(e) => setPlayId(e.target.value)}>
             <option value="">Choose a play…</option>
             {plays.map((p) => (
@@ -154,8 +191,8 @@ export function AttachmentPicker({
           >
             Add play
           </BubbleButton>
-        </div>
-        <div className="flex gap-2">
+        </div> : null}
+        {kind === "event" ? <div className="flex gap-2">
           <SelectInput value={eventId} onChange={(e) => setEventId(e.target.value)}>
             <option value="">Choose an event…</option>
             {events.map((e) => (
@@ -176,8 +213,14 @@ export function AttachmentPicker({
           >
             Add event
           </BubbleButton>
-        </div>
+        </div> : null}
+        {kind === "playbook_folder" || kind === "drill" || kind === "practice_plan" ? <div className="flex gap-2">
+          <SelectInput value={otherId} onChange={(e) => setOtherId(e.target.value)}><option value="">Choose…</option>{(kind === "playbook_folder" ? folders : kind === "drill" ? drills : practicePlans).map((x) => <option key={x.id} value={x.id}>{"name" in x ? x.name : x.title}</option>)}</SelectInput>
+          <BubbleButton size="sm" tone="grape" disabled={!otherId} onClick={() => { const source = kind === "playbook_folder" ? folders : kind === "drill" ? drills : practicePlans; const item = source.find((x) => x.id === otherId); add({ attachment_type: kind as NewAttachment["attachment_type"], related_id: otherId, metadata: { name: item && ("name" in item ? item.name : item.title) } }); setOtherId(""); }}>Add</BubbleButton>
+        </div> : null}
+        {kind === "url" ? <div className="flex gap-2"><input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" className="min-h-11 min-w-0 flex-1 rounded-2xl border border-input bg-surface px-3 text-foreground"/><BubbleButton size="sm" tone="flame" disabled={!/^https:\/\//i.test(url)} onClick={() => { add({ attachment_type: "url", related_id: null, metadata: { url, label: url } }); setUrl(""); }}>Add</BubbleButton></div> : null}
       </div>
+      </> : null}
       {value.length ? (
         <div className="flex flex-wrap gap-2">
           {value.map((a) => (
