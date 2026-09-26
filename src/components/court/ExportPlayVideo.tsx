@@ -41,6 +41,7 @@ function ExportPlayVideoInner({
   );
 
   const empty = model.steps.length === 0;
+  const contentLabel = model.kind === "drill" ? "drill" : "play";
 
   const reset = () => {
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
@@ -116,7 +117,7 @@ function ExportPlayVideoInner({
           <div className="flex min-w-0 flex-col gap-3">
             {empty ? (
               <div className="flex justify-center rounded-2xl border border-border bg-surface-2/50 p-3">
-                <Label>This play has no actions yet, so there is nothing to animate. Add actions first.</Label>
+                <Label>This {contentLabel} has no actions yet, so there is nothing to animate. Add actions first.</Label>
               </div>
             ) : (
               <>
@@ -154,14 +155,6 @@ function ExportPlayVideoInner({
 
                 <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-2/50 p-3">
                   <Pill tone="muted">Include</Pill>
-                  <BubbleButton
-                    size="sm"
-                    tone={opts.showTitle ? "grape" : "neutral"}
-                    aria-pressed={opts.showTitle}
-                    onClick={() => toggle("showTitle", !opts.showTitle)}
-                  >
-                    {opts.showTitle ? "✓ Title" : "Title off"}
-                  </BubbleButton>
                   <BubbleButton
                     size="sm"
                     tone={opts.showWatermark ? "grape" : "neutral"}
