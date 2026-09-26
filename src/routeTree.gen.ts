@@ -36,6 +36,9 @@ import { Route as LockerTokenRouteImport } from './routes/locker.$token'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedDrillsIndexRouteImport } from './routes/_authenticated/drills.index'
 import { Route as AuthenticatedDrillsNewRouteImport } from './routes/_authenticated/drills.new'
+import { Route as AuthenticatedFilmIndexRouteImport } from './routes/_authenticated/film.index'
+import { Route as AuthenticatedFilmJobIdRouteImport } from './routes/_authenticated/film.$jobId'
+import { Route as AuthenticatedFilmNewRouteImport } from './routes/_authenticated/film.new'
 import { Route as AuthenticatedGameGameIdRouteImport } from './routes/_authenticated/game.$gameId'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games.index'
 import { Route as AuthenticatedGamesNewRouteImport } from './routes/_authenticated/games.new'
@@ -51,6 +54,10 @@ import { Route as SharePlayTokenRouteImport } from './routes/share.play.$token'
 import { Route as AuthenticatedPlaysPlayIdIndexRouteImport } from './routes/_authenticated/plays.$playId.index'
 import { Route as AuthenticatedPlaysPlayIdViewRouteImport } from './routes/_authenticated/plays.$playId.view'
 import { Route as ApiPublicCronDailyRouteImport } from './routes/api/public/cron.daily'
+import { Route as ApiPublicFilmClaimRouteImport } from './routes/api/public/film/claim'
+import { Route as ApiPublicFilmFailRouteImport } from './routes/api/public/film/fail'
+import { Route as ApiPublicFilmResultsRouteImport } from './routes/api/public/film/results'
+import { Route as ApiPublicFilmStatusRouteImport } from './routes/api/public/film/status'
 import { Route as ApiPublicSquareWebhookRouteImport } from './routes/api/public/square.webhook'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe.webhook'
 import { Route as ApiPublicGoogleCalendarCallbackRouteImport } from './routes/api/public/google.calendar.callback'
@@ -192,6 +199,21 @@ const AuthenticatedDrillsNewRoute = AuthenticatedDrillsNewRouteImport.update({
   path: '/drills/new',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFilmIndexRoute = AuthenticatedFilmIndexRouteImport.update({
+  id: '/film/',
+  path: '/film/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFilmJobIdRoute = AuthenticatedFilmJobIdRouteImport.update({
+  id: '/film/$jobId',
+  path: '/film/$jobId',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFilmNewRoute = AuthenticatedFilmNewRouteImport.update({
+  id: '/film/new',
+  path: '/film/new',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedGameGameIdRoute = AuthenticatedGameGameIdRouteImport.update({
   id: '/game/$gameId',
   path: '/game/$gameId',
@@ -273,6 +295,26 @@ const ApiPublicCronDailyRoute = ApiPublicCronDailyRouteImport.update({
   path: '/api/public/cron/daily',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicFilmClaimRoute = ApiPublicFilmClaimRouteImport.update({
+  id: '/api/public/film/claim',
+  path: '/api/public/film/claim',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicFilmFailRoute = ApiPublicFilmFailRouteImport.update({
+  id: '/api/public/film/fail',
+  path: '/api/public/film/fail',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicFilmResultsRoute = ApiPublicFilmResultsRouteImport.update({
+  id: '/api/public/film/results',
+  path: '/api/public/film/results',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicFilmStatusRoute = ApiPublicFilmStatusRouteImport.update({
+  id: '/api/public/film/status',
+  path: '/api/public/film/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSquareWebhookRoute = ApiPublicSquareWebhookRouteImport.update({
   id: '/api/public/square/webhook',
   path: '/api/public/square/webhook',
@@ -322,6 +364,8 @@ export interface FileRoutesByFullPath {
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
   '/drills/new': typeof AuthenticatedDrillsNewRoute
+  '/film/$jobId': typeof AuthenticatedFilmJobIdRoute
+  '/film/new': typeof AuthenticatedFilmNewRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
   '/plays/new': typeof AuthenticatedPlaysNewRoute
@@ -331,12 +375,17 @@ export interface FileRoutesByFullPath {
   '/stats/team': typeof AuthenticatedStatsTeamRoute
   '/share/play/$token': typeof SharePlayTokenRoute
   '/drills/': typeof AuthenticatedDrillsIndexRoute
+  '/film/': typeof AuthenticatedFilmIndexRoute
   '/games/': typeof AuthenticatedGamesIndexRoute
   '/plays/': typeof AuthenticatedPlaysIndexRoute
   '/practice/': typeof AuthenticatedPracticeIndexRoute
   '/stats/': typeof AuthenticatedStatsIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
+  '/api/public/film/claim': typeof ApiPublicFilmClaimRoute
+  '/api/public/film/fail': typeof ApiPublicFilmFailRoute
+  '/api/public/film/results': typeof ApiPublicFilmResultsRoute
+  '/api/public/film/status': typeof ApiPublicFilmStatusRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
@@ -369,6 +418,8 @@ export interface FileRoutesByTo {
   '/share/$token': typeof ShareTokenRoute
   '/library': typeof LibraryIndexRoute
   '/drills/new': typeof AuthenticatedDrillsNewRoute
+  '/film/$jobId': typeof AuthenticatedFilmJobIdRoute
+  '/film/new': typeof AuthenticatedFilmNewRoute
   '/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/games/new': typeof AuthenticatedGamesNewRoute
   '/plays/new': typeof AuthenticatedPlaysNewRoute
@@ -378,12 +429,17 @@ export interface FileRoutesByTo {
   '/stats/team': typeof AuthenticatedStatsTeamRoute
   '/share/play/$token': typeof SharePlayTokenRoute
   '/drills': typeof AuthenticatedDrillsIndexRoute
+  '/film': typeof AuthenticatedFilmIndexRoute
   '/games': typeof AuthenticatedGamesIndexRoute
   '/plays': typeof AuthenticatedPlaysIndexRoute
   '/practice': typeof AuthenticatedPracticeIndexRoute
   '/stats': typeof AuthenticatedStatsIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
+  '/api/public/film/claim': typeof ApiPublicFilmClaimRoute
+  '/api/public/film/fail': typeof ApiPublicFilmFailRoute
+  '/api/public/film/results': typeof ApiPublicFilmResultsRoute
+  '/api/public/film/status': typeof ApiPublicFilmStatusRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/plays/$playId': typeof AuthenticatedPlaysPlayIdIndexRoute
@@ -418,6 +474,8 @@ export interface FileRoutesById {
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
   '/_authenticated/drills/new': typeof AuthenticatedDrillsNewRoute
+  '/_authenticated/film/$jobId': typeof AuthenticatedFilmJobIdRoute
+  '/_authenticated/film/new': typeof AuthenticatedFilmNewRoute
   '/_authenticated/game/$gameId': typeof AuthenticatedGameGameIdRoute
   '/_authenticated/games/new': typeof AuthenticatedGamesNewRoute
   '/_authenticated/plays/new': typeof AuthenticatedPlaysNewRoute
@@ -427,12 +485,17 @@ export interface FileRoutesById {
   '/_authenticated/stats/team': typeof AuthenticatedStatsTeamRoute
   '/share/play/$token': typeof SharePlayTokenRoute
   '/_authenticated/drills/': typeof AuthenticatedDrillsIndexRoute
+  '/_authenticated/film/': typeof AuthenticatedFilmIndexRoute
   '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
   '/_authenticated/plays/': typeof AuthenticatedPlaysIndexRoute
   '/_authenticated/practice/': typeof AuthenticatedPracticeIndexRoute
   '/_authenticated/stats/': typeof AuthenticatedStatsIndexRoute
   '/_authenticated/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
+  '/api/public/film/claim': typeof ApiPublicFilmClaimRoute
+  '/api/public/film/fail': typeof ApiPublicFilmFailRoute
+  '/api/public/film/results': typeof ApiPublicFilmResultsRoute
+  '/api/public/film/status': typeof ApiPublicFilmStatusRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/_authenticated/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
@@ -467,6 +530,8 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/library/'
     | '/drills/new'
+    | '/film/$jobId'
+    | '/film/new'
     | '/game/$gameId'
     | '/games/new'
     | '/plays/new'
@@ -476,12 +541,17 @@ export interface FileRouteTypes {
     | '/stats/team'
     | '/share/play/$token'
     | '/drills/'
+    | '/film/'
     | '/games/'
     | '/plays/'
     | '/practice/'
     | '/stats/'
     | '/plays/$playId/view'
     | '/api/public/cron/daily'
+    | '/api/public/film/claim'
+    | '/api/public/film/fail'
+    | '/api/public/film/results'
+    | '/api/public/film/status'
     | '/api/public/square/webhook'
     | '/api/public/stripe/webhook'
     | '/plays/$playId/'
@@ -514,6 +584,8 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/library'
     | '/drills/new'
+    | '/film/$jobId'
+    | '/film/new'
     | '/game/$gameId'
     | '/games/new'
     | '/plays/new'
@@ -523,12 +595,17 @@ export interface FileRouteTypes {
     | '/stats/team'
     | '/share/play/$token'
     | '/drills'
+    | '/film'
     | '/games'
     | '/plays'
     | '/practice'
     | '/stats'
     | '/plays/$playId/view'
     | '/api/public/cron/daily'
+    | '/api/public/film/claim'
+    | '/api/public/film/fail'
+    | '/api/public/film/results'
+    | '/api/public/film/status'
     | '/api/public/square/webhook'
     | '/api/public/stripe/webhook'
     | '/plays/$playId'
@@ -562,6 +639,8 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/library/'
     | '/_authenticated/drills/new'
+    | '/_authenticated/film/$jobId'
+    | '/_authenticated/film/new'
     | '/_authenticated/game/$gameId'
     | '/_authenticated/games/new'
     | '/_authenticated/plays/new'
@@ -571,12 +650,17 @@ export interface FileRouteTypes {
     | '/_authenticated/stats/team'
     | '/share/play/$token'
     | '/_authenticated/drills/'
+    | '/_authenticated/film/'
     | '/_authenticated/games/'
     | '/_authenticated/plays/'
     | '/_authenticated/practice/'
     | '/_authenticated/stats/'
     | '/_authenticated/plays/$playId/view'
     | '/api/public/cron/daily'
+    | '/api/public/film/claim'
+    | '/api/public/film/fail'
+    | '/api/public/film/results'
+    | '/api/public/film/status'
     | '/api/public/square/webhook'
     | '/api/public/stripe/webhook'
     | '/_authenticated/plays/$playId/'
@@ -598,6 +682,10 @@ export interface RootRouteChildren {
   LibraryIndexRoute: typeof LibraryIndexRoute
   SharePlayTokenRoute: typeof SharePlayTokenRoute
   ApiPublicCronDailyRoute: typeof ApiPublicCronDailyRoute
+  ApiPublicFilmClaimRoute: typeof ApiPublicFilmClaimRoute
+  ApiPublicFilmFailRoute: typeof ApiPublicFilmFailRoute
+  ApiPublicFilmResultsRoute: typeof ApiPublicFilmResultsRoute
+  ApiPublicFilmStatusRoute: typeof ApiPublicFilmStatusRoute
   ApiPublicSquareWebhookRoute: typeof ApiPublicSquareWebhookRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
   ApiPublicGoogleCalendarCallbackRoute: typeof ApiPublicGoogleCalendarCallbackRoute
@@ -795,6 +883,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDrillsNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/film/': {
+      id: '/_authenticated/film/'
+      path: '/film'
+      fullPath: '/film/'
+      preLoaderRoute: typeof AuthenticatedFilmIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/film/$jobId': {
+      id: '/_authenticated/film/$jobId'
+      path: '/film/$jobId'
+      fullPath: '/film/$jobId'
+      preLoaderRoute: typeof AuthenticatedFilmJobIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/film/new': {
+      id: '/_authenticated/film/new'
+      path: '/film/new'
+      fullPath: '/film/new'
+      preLoaderRoute: typeof AuthenticatedFilmNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/game/$gameId': {
       id: '/_authenticated/game/$gameId'
       path: '/game/$gameId'
@@ -900,6 +1009,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronDailyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/film/claim': {
+      id: '/api/public/film/claim'
+      path: '/api/public/film/claim'
+      fullPath: '/api/public/film/claim'
+      preLoaderRoute: typeof ApiPublicFilmClaimRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/film/fail': {
+      id: '/api/public/film/fail'
+      path: '/api/public/film/fail'
+      fullPath: '/api/public/film/fail'
+      preLoaderRoute: typeof ApiPublicFilmFailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/film/results': {
+      id: '/api/public/film/results'
+      path: '/api/public/film/results'
+      fullPath: '/api/public/film/results'
+      preLoaderRoute: typeof ApiPublicFilmResultsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/film/status': {
+      id: '/api/public/film/status'
+      path: '/api/public/film/status'
+      fullPath: '/api/public/film/status'
+      preLoaderRoute: typeof ApiPublicFilmStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/square/webhook': {
       id: '/api/public/square/webhook'
       path: '/api/public/square/webhook'
@@ -947,6 +1084,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
   AuthenticatedDrillsNewRoute: typeof AuthenticatedDrillsNewRoute
+  AuthenticatedFilmJobIdRoute: typeof AuthenticatedFilmJobIdRoute
+  AuthenticatedFilmNewRoute: typeof AuthenticatedFilmNewRoute
   AuthenticatedGameGameIdRoute: typeof AuthenticatedGameGameIdRoute
   AuthenticatedGamesNewRoute: typeof AuthenticatedGamesNewRoute
   AuthenticatedPlaysNewRoute: typeof AuthenticatedPlaysNewRoute
@@ -955,6 +1094,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStatsPlayersRoute: typeof AuthenticatedStatsPlayersRoute
   AuthenticatedStatsTeamRoute: typeof AuthenticatedStatsTeamRoute
   AuthenticatedDrillsIndexRoute: typeof AuthenticatedDrillsIndexRoute
+  AuthenticatedFilmIndexRoute: typeof AuthenticatedFilmIndexRoute
   AuthenticatedGamesIndexRoute: typeof AuthenticatedGamesIndexRoute
   AuthenticatedPlaysIndexRoute: typeof AuthenticatedPlaysIndexRoute
   AuthenticatedPracticeIndexRoute: typeof AuthenticatedPracticeIndexRoute
@@ -979,6 +1119,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedToolsRoute: AuthenticatedToolsRoute,
   AuthenticatedDrillsNewRoute: AuthenticatedDrillsNewRoute,
+  AuthenticatedFilmJobIdRoute: AuthenticatedFilmJobIdRoute,
+  AuthenticatedFilmNewRoute: AuthenticatedFilmNewRoute,
   AuthenticatedGameGameIdRoute: AuthenticatedGameGameIdRoute,
   AuthenticatedGamesNewRoute: AuthenticatedGamesNewRoute,
   AuthenticatedPlaysNewRoute: AuthenticatedPlaysNewRoute,
@@ -987,6 +1129,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStatsPlayersRoute: AuthenticatedStatsPlayersRoute,
   AuthenticatedStatsTeamRoute: AuthenticatedStatsTeamRoute,
   AuthenticatedDrillsIndexRoute: AuthenticatedDrillsIndexRoute,
+  AuthenticatedFilmIndexRoute: AuthenticatedFilmIndexRoute,
   AuthenticatedGamesIndexRoute: AuthenticatedGamesIndexRoute,
   AuthenticatedPlaysIndexRoute: AuthenticatedPlaysIndexRoute,
   AuthenticatedPracticeIndexRoute: AuthenticatedPracticeIndexRoute,
@@ -1012,6 +1155,10 @@ const rootRouteChildren: RootRouteChildren = {
   LibraryIndexRoute: LibraryIndexRoute,
   SharePlayTokenRoute: SharePlayTokenRoute,
   ApiPublicCronDailyRoute: ApiPublicCronDailyRoute,
+  ApiPublicFilmClaimRoute: ApiPublicFilmClaimRoute,
+  ApiPublicFilmFailRoute: ApiPublicFilmFailRoute,
+  ApiPublicFilmResultsRoute: ApiPublicFilmResultsRoute,
+  ApiPublicFilmStatusRoute: ApiPublicFilmStatusRoute,
   ApiPublicSquareWebhookRoute: ApiPublicSquareWebhookRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
   ApiPublicGoogleCalendarCallbackRoute: ApiPublicGoogleCalendarCallbackRoute,

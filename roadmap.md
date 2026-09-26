@@ -114,3 +114,20 @@
 ## Dashboard notification cleanup
 - [x] Combine install and push setup into one compact, state-aware card
 - [x] Simplify dashboard Help copy while preserving the Help destination
+
+## Film Room: AI game-film stat analysis (Stages 1-3, no CV model)
+- [ ] Private `game-film` storage bucket + RLS policies
+- [ ] Migration: film_jobs, film_job_events, film_job_substitutions, film_job_logs + finalize_film_job RPC
+- [ ] film.functions.ts: create job, signed upload/playback URLs, review/accept/edit/reject, finalize, delete, cancel
+- [ ] Provider interface + dormant signed worker API routes (/api/public/film/*)
+- [ ] Routes: /film, /film/new wizard, /film/$jobId status + review workspace + manual tagging
+- [ ] Tools launcher Film Room card; game review Film pill
+- [ ] stats.ts plus/minus
+- [ ] AGENTS.md rule; typecheck/build; verify flows
+
+## Film Room (staged rollout)
+- [x] Private game-film storage + film job/event/sub/log tables with coach-only RLS
+- [x] Film provider interface (none | HTTP worker) + HMAC-signed worker API routes
+- [x] Film Room screens: list, new-job wizard, review workspace with manual tagging
+- [x] Finalize reviewed events into real game stats (review-first, never auto)
+- [ ] Real CV worker service (separate Python/GPU) — interface ready, not connected

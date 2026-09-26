@@ -168,6 +168,9 @@ function ReviewPage() {
       subtitle={game.data?.game_date}
       actions={
         <>
+          <BubbleButton size="sm" tone="neutral" onClick={() => navigate({ to: "/film" })}>
+            Film Room
+          </BubbleButton>
           <BubbleButton size="sm" tone="grape" onClick={() => exportPdf("team")}>
             PDF · Whole team
           </BubbleButton>
