@@ -75,19 +75,19 @@ export function EventEditor({
 
   const save = () => {
     if (kind === "OTHER") return onClose();
-    const [m, sec] = clock.split(":").map((n) => parseInt(n, 10));
+    const [m = NaN, sec = 0] = clock.split(":").map((n) => parseInt(n, 10));
     const clockSeconds = Number.isFinite(m) ? m * 60 + (Number.isFinite(sec) ? sec : 0) : event.clock_seconds;
     let type: string;
     let points = 0;
     let result: string | null = null;
     const context: Record<string, unknown> = { ...(event.context ?? {}) };
-    delete context.shot_value;
+    delete context["shot_value"];
     if (kind === "SHOT") {
       type = made ? "MADE" : "MISS";
       const v = value === 3 ? 3 : 2;
       points = made ? v : 0;
       result = `${v}PT`;
-      context.shot_value = v;
+      context["shot_value"] = v;
     } else if (kind === "FT") {
       type = made ? "FT_MADE" : "FT_MISS";
       points = made ? 1 : 0;
