@@ -7,7 +7,7 @@ import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles
 import { Court } from "@/components/court/Court";
 import { fetchEvents, fetchGame, fetchPlayers, fetchSubs } from "@/lib/data";
 import { cacheGet, pendingOps } from "@/lib/offline";
-import { gameResult } from "@/lib/stats";
+import { fmtSplit, gameResult, opponentLine, scoreFromEvents } from "@/lib/stats";
 import { formatClock, ZONE_LABEL, type Zone } from "@/lib/court";
 import { statColor, STAT_LABELS } from "@/lib/statColors";
 import { buildGamePdf, boxRow } from "@/lib/pdf";
@@ -121,12 +121,8 @@ function ReviewPage() {
     return { z, made, att: shots.length };
   });
 
-  const teamScore = events
-    .filter((e) => e.event_type !== "OPP_SCORE")
-    .reduce((s, e) => s + (e.points || 0), 0);
-  const oppScore = events
-    .filter((e) => e.event_type === "OPP_SCORE")
-    .reduce((s, e) => s + (e.points || 0), 0);
+  const { team: teamScore, opp: oppScore } = scoreFromEvents(events);
+  const opp = opponentLine(events);
   const oppFouls = events.filter((e) => e.event_type === "OPP_FOUL").length;
   const isFinal = game.data?.status === "final";
   const result = game.data ? gameResult(game.data, eventsQ.data ?? []) : null;
@@ -202,6 +198,15 @@ function ReviewPage() {
         </>
       }
     >
+      <Panel className="mb-3 flex flex-wrap items-center gap-2">
+        <Label>Opponent</Label>
+        <Pill tone="flame">FG {fmtSplit(opp.fg)}</Pill>
+        <Pill tone="muted">3PT {fmtSplit(opp.three)}</Pill>
+        <Pill tone="muted">FT {fmtSplit(opp.ft)}</Pill>
+        <Pill tone="flame">OREB {opp.oreb}</Pill>
+        <Pill tone="muted">DREB {opp.dreb}</Pill>
+        <Pill tone="muted">TO {opp.to}</Pill>
+      </Panel>
       <Panel className="mb-3 flex flex-wrap items-center gap-2">
         <Pill tone={isFinal ? "grape" : "flame"}>{isFinal ? "FINAL — saved" : "In progress"}</Pill>
         {result ? (
