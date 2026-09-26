@@ -26,11 +26,13 @@ import { EventForm } from "./calendar";
 type Area = "chat" | "schedule" | "playbook" | "plans";
 
 export const Route = createFileRoute("/_authenticated/lockerroom")({
-  validateSearch: (s: Record<string, unknown>) => ({
-    area: (["chat", "schedule", "playbook", "plans"] as string[]).includes(String(s.area)) ? s.area as Area : undefined,
-    item: typeof s.item === "string" ? s.item : undefined,
-    folder: typeof s.folder === "string" ? s.folder : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): { area?: Area; item?: string; folder?: string } => {
+    const parsed: { area?: Area; item?: string; folder?: string } = {};
+    if ((["chat", "schedule", "playbook", "plans"] as string[]).includes(String(s["area"]))) parsed.area = s["area"] as Area;
+    if (typeof s["item"] === "string") parsed.item = s["item"];
+    if (typeof s["folder"] === "string") parsed.folder = s["folder"];
+    return parsed;
+  },
   head: () => ({ meta: [
     { title: "Locker Room Team Hub — CoachSide" },
     { name: "description", content: "Team Chat, Schedule, Playbook and Plans for your basketball team." },
@@ -122,7 +124,7 @@ function ScheduleArea({ teamId, team, events, isCoach }: { teamId: string; team:
   </div>;
 }
 
-function PlaybookArea({ teamId, plays, isCoach, initialFolder }: { teamId: string; plays: Awaited<ReturnType<typeof fetchTeamPlays>>; isCoach: boolean; initialFolder?: string }) {
+function PlaybookArea({ teamId, plays, isCoach, initialFolder }: { teamId: string; plays: Awaited<ReturnType<typeof fetchTeamPlays>>; isCoach: boolean; initialFolder?: string | undefined }) {
   const qc = useQueryClient(); const [sub, setSub] = useState<"all" | "folders">(initialFolder ? "folders" : "all"); const [folder, setFolder] = useState(initialFolder ?? ""); const [name, setName] = useState("");
   const folders = useQuery({ queryKey: ["playbook-folders", teamId], queryFn: () => fetchPlaybookFolders(teamId), enabled: !!teamId });
   const memberships = useQuery({ queryKey: ["play-folder-memberships", teamId], queryFn: () => fetchPlayFolderMemberships(teamId), enabled: !!teamId });
@@ -135,7 +137,7 @@ function PlaybookArea({ teamId, plays, isCoach, initialFolder }: { teamId: strin
   </div>;
 }
 
-function PlansArea({ teamId, assignments, targets, players, isCoach, userId, playerId, focusId, onChanged }: { teamId: string; assignments: Awaited<ReturnType<typeof fetchAssignments>>; targets: Awaited<ReturnType<typeof fetchAssignmentTargets>>; players: Awaited<ReturnType<typeof fetchTeamDirectory>>; isCoach: boolean; userId: string | null; playerId: string | null; focusId?: string; onChanged: () => void }) {
+function PlansArea({ teamId, assignments, targets, players, isCoach, userId, playerId, focusId, onChanged }: { teamId: string; assignments: Awaited<ReturnType<typeof fetchAssignments>>; targets: Awaited<ReturnType<typeof fetchAssignmentTargets>>; players: Awaited<ReturnType<typeof fetchTeamDirectory>>; isCoach: boolean; userId: string | null; playerId: string | null; focusId?: string | undefined; onChanged: () => void }) {
   const [compose, setCompose] = useState(false); const [title, setTitle] = useState(""); const [instructions, setInstructions] = useState(""); const [due, setDue] = useState(""); const [picked, setPicked] = useState<string[]>([]); const [attachments, setAttachments] = useState<NewAttachment[]>([]);
   const create = useMutation({ mutationFn: () => createAssignment({ team_id: teamId, assignment_type: "task", title, instructions: instructions || null, due_at: due ? new Date(due).toISOString() : null, linked_type: null, linked_id: null, player_ids: picked, attachments }), onSuccess: () => { setTitle(""); setInstructions(""); setDue(""); setPicked([]); setAttachments([]); setCompose(false); toast.success("Plan sent"); onChanged(); }, onError: (e: Error) => toast.error(e.message) });
   const relevant = assignments.filter((a) => { const list = targets.filter((t) => t.assignment_id === a.id); return isCoach || !list.length || list.some((t) => t.user_id === userId || t.player_id === playerId); }).sort((a, b) => a.id === focusId ? -1 : b.id === focusId ? 1 : b.created_at.localeCompare(a.created_at));

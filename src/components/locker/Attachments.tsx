@@ -215,8 +215,8 @@ export function AttachmentPicker({
           </BubbleButton>
         </div> : null}
         {kind === "playbook_folder" || kind === "drill" || kind === "practice_plan" ? <div className="flex gap-2">
-          <SelectInput value={otherId} onChange={(e) => setOtherId(e.target.value)}><option value="">Choose…</option>{(kind === "playbook_folder" ? folders : kind === "drill" ? drills : practicePlans).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</SelectInput>
-          <BubbleButton size="sm" tone="grape" disabled={!otherId} onClick={() => { const source = kind === "playbook_folder" ? folders : kind === "drill" ? drills : practicePlans; const item = source.find((x) => x.id === otherId); add({ attachment_type: kind as NewAttachment["attachment_type"], related_id: otherId, metadata: { name: item?.name } }); setOtherId(""); }}>Add</BubbleButton>
+          <SelectInput value={otherId} onChange={(e) => setOtherId(e.target.value)}><option value="">Choose…</option>{(kind === "playbook_folder" ? folders : kind === "drill" ? drills : practicePlans).map((x) => <option key={x.id} value={x.id}>{"name" in x ? x.name : x.title}</option>)}</SelectInput>
+          <BubbleButton size="sm" tone="grape" disabled={!otherId} onClick={() => { const source = kind === "playbook_folder" ? folders : kind === "drill" ? drills : practicePlans; const item = source.find((x) => x.id === otherId); add({ attachment_type: kind as NewAttachment["attachment_type"], related_id: otherId, metadata: { name: item && ("name" in item ? item.name : item.title) } }); setOtherId(""); }}>Add</BubbleButton>
         </div> : null}
         {kind === "url" ? <div className="flex gap-2"><input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" className="min-h-11 min-w-0 flex-1 rounded-2xl border border-input bg-surface px-3 text-foreground"/><BubbleButton size="sm" tone="flame" disabled={!/^https:\/\//i.test(url)} onClick={() => { add({ attachment_type: "url", related_id: null, metadata: { url, label: url } }); setUrl(""); }}>Add</BubbleButton></div> : null}
       </div>
