@@ -503,7 +503,7 @@ function CalendarPage() {
   );
 }
 
-function EventForm({
+export function EventForm({
   teamId,
   defaults,
   editing,

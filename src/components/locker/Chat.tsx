@@ -9,6 +9,7 @@ import {
   fetchMessages,
   markConversationRead,
   sendMessage,
+  setMessagePinned,
   toggleReaction,
   TEAM_ROLE_LABEL,
   type DirectoryEntry,
@@ -37,6 +38,7 @@ export function Chat({
   disabledNote,
   meName,
   meRoleLabel,
+  canPin = false,
 }: {
   conversationId: string;
   teamId: string | null;
@@ -47,6 +49,7 @@ export function Chat({
   disabledNote?: string;
   meName?: string;
   meRoleLabel?: string;
+  canPin?: boolean;
 }) {
   const qc = useQueryClient();
   const [body, setBody] = useState("");
@@ -102,6 +105,12 @@ export function Chat({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const pin = useMutation({
+    mutationFn: (v: { id: string; pinned: boolean }) => setMessagePinned(v.id, v.pinned),
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const who = (userId: string) => directory.find((d) => d.user_id === userId) ?? null;
 
   return (
@@ -112,7 +121,10 @@ export function Chat({
         ) : (messages.data ?? []).length === 0 ? (
           <EmptyState>No messages yet — say something to the team</EmptyState>
         ) : (
-          (messages.data ?? []).map((m) => {
+          [...(messages.data ?? [])].sort((a, b) => {
+            if (!!a.pinned_at !== !!b.pinned_at) return a.pinned_at ? -1 : 1;
+            return a.created_at.localeCompare(b.created_at);
+          }).map((m) => {
             const person = who(m.sender_id);
             const mine = m.sender_id === meId;
             const coach = person?.role === "head_coach" || person?.role === "assistant_coach";
@@ -143,6 +155,7 @@ export function Chat({
                         : (mine ? (meRoleLabel ?? "Coach") : "Member")}
                     </Pill>
                     <Pill tone="muted">{fmtTime(m.created_at)}</Pill>
+                    {m.pinned_at ? <Pill tone="flame">Pinned</Pill> : null}
                     {m.edited_at && !m.deleted_at ? <Pill tone="muted">Edited</Pill> : null}
                   </div>
 
@@ -212,6 +225,11 @@ export function Chat({
                         </BubbleButton>
                       </>
                     ) : null}
+                    {canPin && !m.deleted_at ? (
+                      <BubbleButton size="sm" tone={m.pinned_at ? "flame" : "ghost"} onClick={() => pin.mutate({ id: m.id, pinned: !m.pinned_at })}>
+                        {m.pinned_at ? "Unpin" : "Pin"}
+                      </BubbleButton>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -230,9 +248,7 @@ export function Chat({
             aria-label="Message"
             className="min-h-20 w-full rounded-2xl border border-input bg-surface-2/70 px-4 py-3 text-base font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-grape"
           />
-          {canAttach ? (
-            <AttachmentPicker teamId={teamId} value={attachments} onChange={setAttachments} />
-          ) : null}
+          {canAttach ? <AttachmentPicker teamId={teamId} value={attachments} onChange={setAttachments} compact /> : null}
           <BubbleButton
             tone="grape"
             size="lg"
