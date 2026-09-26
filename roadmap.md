@@ -38,6 +38,13 @@
 - [ ] Rebrand text to CourtSide Coach; bubble-wrap root not-found/error screens
 - [ ] Build/typecheck + Playwright verification
 
+## Four-part Locker Room refactor
+- [ ] Add secure player-to-coaching-staff threads and message pinning
+- [ ] Add many-to-many Playbook folders and rich Plan attachments
+- [ ] Replace Locker Room tabs with Team Chat, Schedule, Playbook, and Plans
+- [ ] Add targeted/deep-linked notifications and preserve legacy content
+- [ ] Verify coach, player, parent, responsive, typecheck, and build behavior
+
 ## Locker Room
 - [x] Team logo beside the dashboard welcome
 - [x] Shareable Locker Room link (stats, playbook, schedule) with Google Calendar feed
