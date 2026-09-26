@@ -273,6 +273,7 @@ function PlaybookPage() {
     onSuccess: () => {
       void invalidate();
       void queryClient.invalidateQueries({ queryKey: ["play-assignments"] });
+      void queryClient.invalidateQueries({ queryKey: ["team-plays"] });
       toast.success("Team access updated");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -631,12 +632,19 @@ function PlayCard({
 
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Pill tone="neutral">Attack {play.attack_basket === "left" ? "left" : "right"}</Pill>
-        <Pill tone={play.is_shared ? "success" : "muted"}>
-          {play.is_shared ? "Shared link on" : "Private"}
-        </Pill>
-        {play.published_to_library ? <Pill tone="grape">In CoachSide Library</Pill> : null}
-        {assignedTeams.length ? (
-          assignedTeams.map((t) => (
+        {canEdit ? (
+          <Pill tone={play.is_shared ? "success" : "muted"}>
+            {play.is_shared ? "Shared link on" : "Private"}
+          </Pill>
+        ) : (
+          <Pill tone="grape">
+            {play.published_to_library ? "From CoachSide Library" : "Shared play"}
+            {play.library_author_name && !play.publish_anonymous ? ` · ${play.library_author_name}` : ""}
+          </Pill>
+        )}
+        {canEdit && play.published_to_library ? <Pill tone="grape">In CoachSide Library</Pill> : null}
+        {ownAssigned.length ? (
+          ownAssigned.map((t) => (
             <Pill key={t} tone="muted">
               {teamName(t)}
             </Pill>
@@ -673,7 +681,7 @@ function PlayCard({
               </BubbleButton>
             </Link>
           ) : (
-            <CreateMyVersion play={play} teamIds={assignedTeams} label="Edit as My Version" />
+            <CreateMyVersion play={play} teamIds={ownAssigned} label="Edit as My Version" />
           )}
           <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onShareLink}>
             {play.is_shared ? "Copy link" : "Share"}

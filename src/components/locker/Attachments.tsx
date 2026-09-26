@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { BubbleButton, Label, Pill, SelectInput } from "@/components/Bubbles";
-import { fetchPlays, fetchTeamEvents } from "@/lib/data";
+import { fetchTeamEvents, fetchTeamPlays } from "@/lib/data";
 import type { Attachment, NewAttachment } from "@/lib/locker";
 import { EVENT_TYPE_LABEL } from "@/lib/types";
 
@@ -12,14 +12,18 @@ import { EVENT_TYPE_LABEL } from "@/lib/types";
  */
 
 export function useTeamAttachmentSources(teamId: string | null) {
-  const plays = useQuery({ queryKey: ["plays"], queryFn: fetchPlays, enabled: !!teamId });
+  const plays = useQuery({
+    queryKey: ["team-plays", teamId],
+    queryFn: () => fetchTeamPlays(teamId as string),
+    enabled: !!teamId,
+  });
   const events = useQuery({
     queryKey: ["team-events", teamId],
     queryFn: () => fetchTeamEvents(teamId as string),
     enabled: !!teamId,
   });
   return {
-    plays: (plays.data ?? []).filter((p) => !teamId || p.team_id === teamId || p.team_id === null),
+    plays: plays.data ?? [],
     events: events.data ?? [],
   };
 }
