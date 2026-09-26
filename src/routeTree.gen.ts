@@ -51,6 +51,10 @@ import { Route as SharePlayTokenRouteImport } from './routes/share.play.$token'
 import { Route as AuthenticatedPlaysPlayIdIndexRouteImport } from './routes/_authenticated/plays.$playId.index'
 import { Route as AuthenticatedPlaysPlayIdViewRouteImport } from './routes/_authenticated/plays.$playId.view'
 import { Route as ApiPublicCronDailyRouteImport } from './routes/api/public/cron.daily'
+import { Route as ApiPublicFilmClaimRouteImport } from './routes/api/public/film/claim'
+import { Route as ApiPublicFilmFailRouteImport } from './routes/api/public/film/fail'
+import { Route as ApiPublicFilmResultsRouteImport } from './routes/api/public/film/results'
+import { Route as ApiPublicFilmStatusRouteImport } from './routes/api/public/film/status'
 import { Route as ApiPublicSquareWebhookRouteImport } from './routes/api/public/square.webhook'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe.webhook'
 import { Route as ApiPublicGoogleCalendarCallbackRouteImport } from './routes/api/public/google.calendar.callback'
@@ -273,6 +277,26 @@ const ApiPublicCronDailyRoute = ApiPublicCronDailyRouteImport.update({
   path: '/api/public/cron/daily',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicFilmClaimRoute = ApiPublicFilmClaimRouteImport.update({
+  id: '/api/public/film/claim',
+  path: '/api/public/film/claim',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicFilmFailRoute = ApiPublicFilmFailRouteImport.update({
+  id: '/api/public/film/fail',
+  path: '/api/public/film/fail',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicFilmResultsRoute = ApiPublicFilmResultsRouteImport.update({
+  id: '/api/public/film/results',
+  path: '/api/public/film/results',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicFilmStatusRoute = ApiPublicFilmStatusRouteImport.update({
+  id: '/api/public/film/status',
+  path: '/api/public/film/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSquareWebhookRoute = ApiPublicSquareWebhookRouteImport.update({
   id: '/api/public/square/webhook',
   path: '/api/public/square/webhook',
@@ -337,6 +361,10 @@ export interface FileRoutesByFullPath {
   '/stats/': typeof AuthenticatedStatsIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
+  '/api/public/film/claim': typeof ApiPublicFilmClaimRoute
+  '/api/public/film/fail': typeof ApiPublicFilmFailRoute
+  '/api/public/film/results': typeof ApiPublicFilmResultsRoute
+  '/api/public/film/status': typeof ApiPublicFilmStatusRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
@@ -384,6 +412,10 @@ export interface FileRoutesByTo {
   '/stats': typeof AuthenticatedStatsIndexRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
+  '/api/public/film/claim': typeof ApiPublicFilmClaimRoute
+  '/api/public/film/fail': typeof ApiPublicFilmFailRoute
+  '/api/public/film/results': typeof ApiPublicFilmResultsRoute
+  '/api/public/film/status': typeof ApiPublicFilmStatusRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/plays/$playId': typeof AuthenticatedPlaysPlayIdIndexRoute
@@ -433,6 +465,10 @@ export interface FileRoutesById {
   '/_authenticated/stats/': typeof AuthenticatedStatsIndexRoute
   '/_authenticated/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
+  '/api/public/film/claim': typeof ApiPublicFilmClaimRoute
+  '/api/public/film/fail': typeof ApiPublicFilmFailRoute
+  '/api/public/film/results': typeof ApiPublicFilmResultsRoute
+  '/api/public/film/status': typeof ApiPublicFilmStatusRoute
   '/api/public/square/webhook': typeof ApiPublicSquareWebhookRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
   '/_authenticated/plays/$playId/': typeof AuthenticatedPlaysPlayIdIndexRoute
@@ -482,6 +518,10 @@ export interface FileRouteTypes {
     | '/stats/'
     | '/plays/$playId/view'
     | '/api/public/cron/daily'
+    | '/api/public/film/claim'
+    | '/api/public/film/fail'
+    | '/api/public/film/results'
+    | '/api/public/film/status'
     | '/api/public/square/webhook'
     | '/api/public/stripe/webhook'
     | '/plays/$playId/'
@@ -529,6 +569,10 @@ export interface FileRouteTypes {
     | '/stats'
     | '/plays/$playId/view'
     | '/api/public/cron/daily'
+    | '/api/public/film/claim'
+    | '/api/public/film/fail'
+    | '/api/public/film/results'
+    | '/api/public/film/status'
     | '/api/public/square/webhook'
     | '/api/public/stripe/webhook'
     | '/plays/$playId'
@@ -577,6 +621,10 @@ export interface FileRouteTypes {
     | '/_authenticated/stats/'
     | '/_authenticated/plays/$playId/view'
     | '/api/public/cron/daily'
+    | '/api/public/film/claim'
+    | '/api/public/film/fail'
+    | '/api/public/film/results'
+    | '/api/public/film/status'
     | '/api/public/square/webhook'
     | '/api/public/stripe/webhook'
     | '/_authenticated/plays/$playId/'
@@ -598,6 +646,10 @@ export interface RootRouteChildren {
   LibraryIndexRoute: typeof LibraryIndexRoute
   SharePlayTokenRoute: typeof SharePlayTokenRoute
   ApiPublicCronDailyRoute: typeof ApiPublicCronDailyRoute
+  ApiPublicFilmClaimRoute: typeof ApiPublicFilmClaimRoute
+  ApiPublicFilmFailRoute: typeof ApiPublicFilmFailRoute
+  ApiPublicFilmResultsRoute: typeof ApiPublicFilmResultsRoute
+  ApiPublicFilmStatusRoute: typeof ApiPublicFilmStatusRoute
   ApiPublicSquareWebhookRoute: typeof ApiPublicSquareWebhookRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
   ApiPublicGoogleCalendarCallbackRoute: typeof ApiPublicGoogleCalendarCallbackRoute
@@ -900,6 +952,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronDailyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/film/claim': {
+      id: '/api/public/film/claim'
+      path: '/api/public/film/claim'
+      fullPath: '/api/public/film/claim'
+      preLoaderRoute: typeof ApiPublicFilmClaimRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/film/fail': {
+      id: '/api/public/film/fail'
+      path: '/api/public/film/fail'
+      fullPath: '/api/public/film/fail'
+      preLoaderRoute: typeof ApiPublicFilmFailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/film/results': {
+      id: '/api/public/film/results'
+      path: '/api/public/film/results'
+      fullPath: '/api/public/film/results'
+      preLoaderRoute: typeof ApiPublicFilmResultsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/film/status': {
+      id: '/api/public/film/status'
+      path: '/api/public/film/status'
+      fullPath: '/api/public/film/status'
+      preLoaderRoute: typeof ApiPublicFilmStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/square/webhook': {
       id: '/api/public/square/webhook'
       path: '/api/public/square/webhook'
@@ -1012,6 +1092,10 @@ const rootRouteChildren: RootRouteChildren = {
   LibraryIndexRoute: LibraryIndexRoute,
   SharePlayTokenRoute: SharePlayTokenRoute,
   ApiPublicCronDailyRoute: ApiPublicCronDailyRoute,
+  ApiPublicFilmClaimRoute: ApiPublicFilmClaimRoute,
+  ApiPublicFilmFailRoute: ApiPublicFilmFailRoute,
+  ApiPublicFilmResultsRoute: ApiPublicFilmResultsRoute,
+  ApiPublicFilmStatusRoute: ApiPublicFilmStatusRoute,
   ApiPublicSquareWebhookRoute: ApiPublicSquareWebhookRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
   ApiPublicGoogleCalendarCallbackRoute: ApiPublicGoogleCalendarCallbackRoute,
