@@ -157,14 +157,6 @@ function ExportPlayVideoInner({
                   <Pill tone="muted">Include</Pill>
                   <BubbleButton
                     size="sm"
-                    tone={opts.showTitle ? "grape" : "neutral"}
-                    aria-pressed={opts.showTitle}
-                    onClick={() => toggle("showTitle", !opts.showTitle)}
-                  >
-                    {opts.showTitle ? "✓ Title" : "Title off"}
-                  </BubbleButton>
-                  <BubbleButton
-                    size="sm"
                     tone={opts.showWatermark ? "grape" : "neutral"}
                     aria-pressed={opts.showWatermark}
                     onClick={() => toggle("showWatermark", !opts.showWatermark)}
