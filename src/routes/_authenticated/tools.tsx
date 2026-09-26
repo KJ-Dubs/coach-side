@@ -68,6 +68,10 @@ function BookPreview() {
   return <div className="grid min-h-36 grid-cols-2 gap-2 rounded-xl border border-border/70 bg-surface-2/70 p-2">{[["Horns Flare","Offense"],["Box BLOB","BLOB"]].map(([name,cat], i) => <div key={name} className="overflow-hidden rounded-lg border border-border bg-surface"><div className="p-1"><MiniCourt>{player("left-[55%] top-[48%]", "1")}<span className={cn("absolute left-[58%] top-[48%] h-0 w-[25%] origin-left border-t-2", i ? "rotate-[35deg] border-dashed border-flame" : "-rotate-[20deg] border-grape")} /></MiniCourt></div><div className="px-2 pb-2"><div className="text-[10px] font-black text-foreground">{name}</div><div className="text-[8px] font-bold text-muted-foreground">{cat} · Run Play</div></div></div>)}</div>;
 }
 
+function FilmPreview() {
+  return <div className="space-y-1.5 rounded-xl border border-border/70 bg-surface-2/70 p-2"><div className="flex h-20 items-center justify-center rounded-lg border border-border bg-background"><span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-grape bg-grape/25 text-sm text-foreground">▶</span></div><div className="space-y-1">{[["12:34","#24 MADE","90%"],["12:31","#3 REBOUND","Review"],["12:20","#1 ASSIST","85%"]].map(([time,label,conf], i) => <div key={time} className="grid grid-cols-[36px_1fr_auto] items-center gap-2 rounded-lg border border-border bg-surface px-2 py-1"><span className="text-[8px] font-black text-muted-foreground">{time}</span><span className="truncate text-[9px] font-bold text-foreground">{label}</span><span className={cn("rounded-full px-1.5 py-0.5 text-[7px] font-black", i === 1 ? "bg-flame/20 text-flame" : "bg-grape/20 text-foreground")}>{conf}</span></div>)}</div></div>;
+}
+
 function Preview({ type }: { type: PreviewType }) {
   if (type === "board") return <BoardPreview />;
   if (type === "drill") return <ActionCourt drill />;
@@ -75,6 +79,7 @@ function Preview({ type }: { type: PreviewType }) {
   if (type === "plan") return <PlannerPreview />;
   if (type === "game") return <GamePreview />;
   if (type === "stats") return <StatsPreview />;
+  if (type === "film") return <FilmPreview />;
   return <BookPreview />;
 }
 
