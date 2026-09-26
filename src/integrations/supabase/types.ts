@@ -1079,6 +1079,336 @@ export type Database = {
           },
         ]
       }
+      film_job_events: {
+        Row: {
+          clock_seconds: number
+          confidence: number | null
+          created_at: string
+          event_type: string
+          external_id: string | null
+          id: string
+          jersey_detected: string | null
+          job_id: string
+          lineup_guess: Json
+          player_id: string | null
+          points: number
+          promoted_event_id: string | null
+          quarter: number
+          raw: Json
+          related_proposed_id: string | null
+          result: string | null
+          review_state: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          side: string
+          updated_at: string
+          video_ts_ms: number
+          x: number | null
+          y: number | null
+        }
+        Insert: {
+          clock_seconds?: number
+          confidence?: number | null
+          created_at?: string
+          event_type: string
+          external_id?: string | null
+          id?: string
+          jersey_detected?: string | null
+          job_id: string
+          lineup_guess?: Json
+          player_id?: string | null
+          points?: number
+          promoted_event_id?: string | null
+          quarter?: number
+          raw?: Json
+          related_proposed_id?: string | null
+          result?: string | null
+          review_state?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          side?: string
+          updated_at?: string
+          video_ts_ms?: number
+          x?: number | null
+          y?: number | null
+        }
+        Update: {
+          clock_seconds?: number
+          confidence?: number | null
+          created_at?: string
+          event_type?: string
+          external_id?: string | null
+          id?: string
+          jersey_detected?: string | null
+          job_id?: string
+          lineup_guess?: Json
+          player_id?: string | null
+          points?: number
+          promoted_event_id?: string | null
+          quarter?: number
+          raw?: Json
+          related_proposed_id?: string | null
+          result?: string | null
+          review_state?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          side?: string
+          updated_at?: string
+          video_ts_ms?: number
+          x?: number | null
+          y?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "film_job_events_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "film_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "film_job_events_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "film_job_events_promoted_event_id_fkey"
+            columns: ["promoted_event_id"]
+            isOneToOne: false
+            referencedRelation: "game_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "film_job_events_related_proposed_id_fkey"
+            columns: ["related_proposed_id"]
+            isOneToOne: false
+            referencedRelation: "film_job_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      film_job_logs: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          job_id: string
+          level: string
+          message: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          job_id: string
+          level?: string
+          message: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          job_id?: string
+          level?: string
+          message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "film_job_logs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "film_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      film_job_substitutions: {
+        Row: {
+          clock_seconds: number
+          confidence: number | null
+          created_at: string
+          external_id: string | null
+          id: string
+          job_id: string
+          lineup_after: Json
+          player_in: string | null
+          player_out: string | null
+          promoted_sub_id: string | null
+          quarter: number
+          raw: Json
+          review_state: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          video_ts_ms: number
+        }
+        Insert: {
+          clock_seconds?: number
+          confidence?: number | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          job_id: string
+          lineup_after?: Json
+          player_in?: string | null
+          player_out?: string | null
+          promoted_sub_id?: string | null
+          quarter?: number
+          raw?: Json
+          review_state?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          video_ts_ms?: number
+        }
+        Update: {
+          clock_seconds?: number
+          confidence?: number | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          job_id?: string
+          lineup_after?: Json
+          player_in?: string | null
+          player_out?: string | null
+          promoted_sub_id?: string | null
+          quarter?: number
+          raw?: Json
+          review_state?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          video_ts_ms?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "film_job_substitutions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "film_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "film_job_substitutions_player_in_fkey"
+            columns: ["player_in"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "film_job_substitutions_player_out_fkey"
+            columns: ["player_out"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "film_job_substitutions_promoted_sub_id_fkey"
+            columns: ["promoted_sub_id"]
+            isOneToOne: false
+            referencedRelation: "substitutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      film_jobs: {
+        Row: {
+          attack_basket_first_half: string
+          consent_acknowledged_at: string | null
+          consent_acknowledged_by: string | null
+          created_at: string
+          created_by: string
+          duration_seconds: number | null
+          error: string | null
+          finalized_at: string | null
+          game_id: string | null
+          id: string
+          opp_color: string | null
+          our_color: string | null
+          periods: number
+          progress: number
+          provider: string
+          provider_job_id: string | null
+          retention_until: string
+          roster_snapshot: Json
+          source_type: string
+          source_url: string | null
+          status: string
+          status_detail: string | null
+          storage_path: string | null
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          attack_basket_first_half?: string
+          consent_acknowledged_at?: string | null
+          consent_acknowledged_by?: string | null
+          created_at?: string
+          created_by: string
+          duration_seconds?: number | null
+          error?: string | null
+          finalized_at?: string | null
+          game_id?: string | null
+          id?: string
+          opp_color?: string | null
+          our_color?: string | null
+          periods?: number
+          progress?: number
+          provider?: string
+          provider_job_id?: string | null
+          retention_until?: string
+          roster_snapshot?: Json
+          source_type?: string
+          source_url?: string | null
+          status?: string
+          status_detail?: string | null
+          storage_path?: string | null
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          attack_basket_first_half?: string
+          consent_acknowledged_at?: string | null
+          consent_acknowledged_by?: string | null
+          created_at?: string
+          created_by?: string
+          duration_seconds?: number | null
+          error?: string | null
+          finalized_at?: string | null
+          game_id?: string | null
+          id?: string
+          opp_color?: string | null
+          our_color?: string | null
+          periods?: number
+          progress?: number
+          provider?: string
+          provider_job_id?: string | null
+          retention_until?: string
+          roster_snapshot?: Json
+          source_type?: string
+          source_url?: string | null
+          status?: string
+          status_detail?: string | null
+          storage_path?: string | null
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "film_jobs_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "film_jobs_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_events: {
         Row: {
           clock_seconds: number
@@ -2928,6 +3258,10 @@ export type Database = {
       ensure_team_conversation: {
         Args: { _team: string; _type: string }
         Returns: string
+      }
+      finalize_film_job: {
+        Args: { _job: string; _mode?: string }
+        Returns: Json
       }
       game_visible: { Args: { _game: string }; Returns: boolean }
       get_invite: {
