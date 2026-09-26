@@ -21,7 +21,7 @@ export function ShotChart({ events, compact }: { events: GameEvent[]; compact?: 
   const [zoom, setZoom] = useState<CourtZoom>("left");
 
   const located = useMemo(
-    () => events.filter((e) => e.x != null && e.y != null && e.event_type !== "OPP_SCORE"),
+    () => events.filter((e) => e.x != null && e.y != null && !String(e.event_type).startsWith("OPP_")),
     [events],
   );
   const plotted = useMemo(

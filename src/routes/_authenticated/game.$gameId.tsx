@@ -18,6 +18,8 @@ import {
 } from "@/lib/offline";
 import type { GameEvent, Player } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { fmtSplit, opponentLine, scoreFromEvents } from "@/lib/stats";
+import { EventEditor } from "@/components/court/EventEditor";
 
 export const Route = createFileRoute("/_authenticated/game/$gameId")({
   head: () => ({
@@ -48,7 +50,9 @@ type Step =
   | { kind: "miss"; eventId: string }
   | { kind: "foul" }
   | { kind: "turnover" }
-  | { kind: "reboundLoc"; playerId: string; eventId: string };
+  | { kind: "reboundLoc"; playerId: string; eventId: string }
+  | { kind: "oppStat" }
+  | { kind: "oppMiss"; eventId: string };
 
 const STAT_CHOICES: Choice[] = [
   { key: "MADE", label: "MAKE", tone: "flame" },
@@ -90,8 +94,12 @@ function LiveGamePage() {
   const [ftPlayer, setFtPlayer] = useState<string | null>(null);
   const [finalized, setFinalized] = useState(false);
   const [endPrompt, setEndPrompt] = useState(false);
-  const [courtZoom, setCourtZoom] = useState<CourtZoom>("left");
+  const [courtZoom, setCourtZoom] = useState<CourtZoom>("full");
   const [orientLocked, setOrientLocked] = useState(false);
+  // Bench player who just got a stat while five are already on the floor.
+  const [pendingSubIn, setPendingSubIn] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [locPick, setLocPick] = useState(false);
 
   const toggleOrientationLock = useCallback(async () => {
     try {
@@ -137,6 +145,7 @@ function LiveGamePage() {
         lineup: string[];
         quarter: number;
         clock: number;
+        courtZoom?: CourtZoom;
       }>(stateKey);
       let serverEvents: GameEvent[] = [];
       try {
@@ -160,6 +169,8 @@ function LiveGamePage() {
       setQuarter(cachedState?.quarter ?? g?.quarter ?? 1);
       setClock(cachedState?.clock ?? (g?.period_minutes ?? 8) * 60);
       setFinalized(g?.status === "final");
+      // Full court is the default; keep whatever the coach picked this game.
+      setCourtZoom(cachedState?.courtZoom ?? "full");
       setLoaded(true);
     })();
     return () => {
@@ -176,8 +187,8 @@ function LiveGamePage() {
 
   useEffect(() => {
     if (!loaded) return;
-    void cacheSet(stateKey, { lineup, quarter, clock });
-  }, [lineup, quarter, clock, loaded, stateKey]);
+    void cacheSet(stateKey, { lineup, quarter, clock, courtZoom });
+  }, [lineup, quarter, clock, courtZoom, loaded, stateKey]);
 
   useEffect(() => {
     setOnline(navigator.onLine);
@@ -210,12 +221,9 @@ function LiveGamePage() {
   const onFloor = lineup.map((id) => byId.get(id)).filter(Boolean) as Player[];
   const bench = roster.filter((p) => p.active && !lineup.includes(p.id));
 
-  const teamScore = events
-    .filter((e) => e.event_type !== "OPP_SCORE")
-    .reduce((s, e) => s + (e.points || 0), 0);
-  const oppScore = events
-    .filter((e) => e.event_type === "OPP_SCORE")
-    .reduce((s, e) => s + (e.points || 0), 0);
+  // One canonical scoring rule (src/lib/stats.ts eventPoints) for everything.
+  const { team: teamScore, opp: oppScore } = useMemo(() => scoreFromEvents(events), [events]);
+  const opp = useMemo(() => opponentLine(events), [events]);
   const teamFouls = events.filter((e) => e.event_type === "FOUL" && e.quarter === quarter).length;
   const oppFouls = events.filter((e) => e.event_type === "OPP_FOUL" && e.quarter === quarter).length;
   const periods = game.data?.periods ?? 4;
@@ -249,6 +257,61 @@ function LiveGamePage() {
     },
     [gameId, quarter, lineup],
   );
+
+  const updateEvent = useCallback((id: string, patch: Partial<GameEvent>) => {
+    setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+    void enqueue({ id: opId(), kind: "update_event", payload: { id, ...patch } }).then(() =>
+      flushQueue().then(setPending),
+    );
+  }, []);
+
+  /* ---------------- self-correcting lineup ---------------- */
+  const lineupRef = useRef(lineup);
+  lineupRef.current = lineup;
+  const logSub = useCallback(
+    (out: string | null, inId: string, after: string[]) => {
+      void enqueue({
+        id: opId(),
+        kind: "insert_sub",
+        payload: {
+          id: uuid(),
+          game_id: gameId,
+          quarter,
+          clock_seconds: clockRef.current,
+          player_out: out,
+          player_in: inId,
+          lineup_after: after,
+          created_at: new Date().toISOString(),
+        },
+      }).then(() => flushQueue().then(setPending));
+    },
+    [gameId, quarter],
+  );
+  /** A US player who gets a stat is on the floor. Never discards the stat. */
+  const ensureOnFloor = useCallback(
+    (pid: string | null | undefined) => {
+      if (!pid) return;
+      const cur = lineupRef.current;
+      if (cur.includes(pid)) return;
+      if (cur.length < 5) {
+        const after = [...cur, pid];
+        lineupRef.current = after;
+        setLineup(after);
+        logSub(null, pid, after);
+        return;
+      }
+      setPendingSubIn(pid);
+    },
+    [logSub],
+  );
+  const resolveSubOut = (outId: string) => {
+    if (!pendingSubIn) return;
+    const after = lineupRef.current.map((id) => (id === outId ? pendingSubIn : id));
+    lineupRef.current = after;
+    setLineup(after);
+    logSub(outId, pendingSubIn, after);
+    setPendingSubIn(null);
+  };
 
   const deleteEvent = useCallback((id: string) => {
     setEvents((prev) => prev.filter((e) => e.id !== id));
@@ -351,6 +414,19 @@ function LiveGamePage() {
     // The surface reports full-court coordinates 0..1; stats are stored in
     // half-court units (1 = half line) so backcourt taps land in 1..2.
     const p = { x: Math.min(2, Math.max(0, raw.x * 2)), y: raw.y };
+    if (editingId && locPick) {
+      updateEvent(editingId, { x: p.x, y: p.y, zone: zoneOf(p.x, p.y) });
+      setLocPick(false);
+      return;
+    }
+    // A new court tap while an optional follow-up is open skips the follow-up
+    // and starts the next event — rapid entries are never dropped.
+    if (step.kind === "assist" || step.kind === "miss" || step.kind === "oppMiss") {
+      setActivePlayer(null);
+      setPoint(p);
+      setStep({ kind: "player" });
+      return;
+    }
     if (step.kind === "reboundLoc") {
       addEvent({
         event_type: "REBOUND",
@@ -358,7 +434,7 @@ function LiveGamePage() {
         x: p.x,
         y: p.y,
         zone: zoneOf(p.x, p.y),
-        result: "OFF/DEF",
+        result: "OFF",
         related_event_id: step.eventId,
       });
       reset();
@@ -371,7 +447,13 @@ function LiveGamePage() {
 
   /* ---------------- flow handlers ---------------- */
   const pickPlayer = (playerId: string) => {
+    if (playerId === "__opp") {
+      setActivePlayer(null);
+      setStep({ kind: "oppStat" });
+      return;
+    }
     setActivePlayer(playerId);
+    ensureOnFloor(playerId);
     setStep({ kind: "stat" });
   };
 
@@ -447,6 +529,7 @@ function LiveGamePage() {
     choices.push(
       ...bench.map((p) => ({ key: p.id, label: `#${p.jersey}`, tone: "neutral" as const })),
     );
+    choices.push({ key: "__opp", label: "OPP", tone: "flame" });
     choices.push({ key: "__cancel", label: "✕", tone: "ghost" });
     onPick = (k) => (k === "__cancel" ? reset() : pickPlayer(k));
   } else if (step.kind === "stat") {
@@ -463,6 +546,7 @@ function LiveGamePage() {
     choices.push({ key: "__skip", label: "SKIP", tone: "ghost" });
     onPick = (k) => {
       if (k !== "__skip" && k !== "__unassisted") {
+        ensureOnFloor(k);
         addEvent({
           event_type: "ASSIST",
           player_id: k,
@@ -484,7 +568,7 @@ function LiveGamePage() {
     choices.push({ key: "__skip", label: "SKIP", tone: "ghost" });
     onPick = (k) => {
       if (k === "__opp") {
-        addEvent({ event_type: "OPP_REBOUND", related_event_id: step.eventId });
+        addEvent({ event_type: "OPP_REBOUND", result: "DEF", related_event_id: step.eventId });
         reset();
       } else if (k === "__oob") {
         addEvent({
@@ -497,6 +581,7 @@ function LiveGamePage() {
       } else if (k === "__skip") {
         reset();
       } else {
+        ensureOnFloor(k);
         setPoint(null);
         setStep({ kind: "reboundLoc", playerId: k, eventId: step.eventId });
       }
@@ -509,7 +594,55 @@ function LiveGamePage() {
         event_type: "REBOUND",
         player_id: step.playerId,
         related_event_id: step.eventId,
+        result: "OFF",
       });
+      reset();
+    };
+  } else if (step.kind === "oppStat") {
+    const zone = point ? ZONE_LABEL[zoneOf(point.x, point.y)] : "";
+    const value = point ? shotValue(point.x, point.y) : 2;
+    overlayTitle = `OPP${zone ? ` · ${zone}` : ""} · what happened?`;
+    choices = [
+      { key: "MADE", label: `MAKE ${value}`, tone: "flame" },
+      { key: "MISS", label: "MISS", tone: "grape" },
+      { key: "TURNOVER", label: "TO" },
+      { key: "FOUL", label: "FOUL" },
+      { key: "__cancel", label: "✕", tone: "ghost" },
+    ];
+    onPick = (k) => {
+      if (k === "__cancel" || !point) return reset();
+      const loc = { x: point.x, y: point.y, zone: zoneOf(point.x, point.y) };
+      if (k === "MADE") {
+        addEvent({ event_type: "OPP_MADE", ...loc, points: value, result: `${value}PT` });
+        return reset();
+      }
+      if (k === "MISS") {
+        const e = addEvent({ event_type: "OPP_MISS", ...loc, result: `${value}PT` });
+        setStep({ kind: "oppMiss", eventId: e.id });
+        return;
+      }
+      addEvent({ event_type: `OPP_${k}`, ...loc });
+      reset();
+    };
+  } else if (step.kind === "oppMiss") {
+    overlayTitle = "Rebound?";
+    choices = [
+      { key: "__oreb", label: "OPP OFF REB", tone: "flame" },
+      ...onFloor.map((p) => ({ key: p.id, label: `#${p.jersey} DREB`, tone: "grape" as const })),
+      { key: "__usreb", label: "US DREB (team)", tone: "neutral" },
+      { key: "__oob", label: "OUT OF BOUNDS", tone: "neutral" },
+      { key: "__skip", label: "SKIP", tone: "ghost" },
+    ];
+    onPick = (k) => {
+      if (k === "__oreb") {
+        addEvent({ event_type: "OPP_REBOUND", result: "OFF", related_event_id: step.eventId });
+      } else if (k === "__oob") {
+        addEvent({ event_type: "OUT_OF_BOUNDS", related_event_id: step.eventId });
+      } else if (k === "__usreb") {
+        addEvent({ event_type: "REBOUND", result: "DEF", related_event_id: step.eventId });
+      } else if (k !== "__skip") {
+        addEvent({ event_type: "REBOUND", player_id: k, result: "DEF", related_event_id: step.eventId });
+      }
       reset();
     };
   } else if (step.kind === "foul") {
@@ -568,27 +701,21 @@ function LiveGamePage() {
   const doSub = (inId: string) => {
     if (!subOut) return;
     const after = lineup.map((id) => (id === subOut ? inId : id));
+    lineupRef.current = after;
     setLineup(after);
-    void enqueue({
-      id: opId(),
-      kind: "insert_sub",
-      payload: {
-        id: uuid(),
-        game_id: gameId,
-        quarter,
-        clock_seconds: clockRef.current,
-        player_out: subOut,
-        player_in: inId,
-        lineup_after: after,
-        created_at: new Date().toISOString(),
-      },
-    }).then(() => flushQueue().then(setPending));
+    logSub(subOut, inId, after);
     setSubOut(null);
     setShowBench(false);
   };
 
   const lastEvent = events[events.length - 1];
-  const jersey = (id: string | null) => (id ? `#${byId.get(id)?.jersey ?? "?"}` : "OPP");
+  const editingEvent = editingId ? events.find((e) => e.id === editingId) ?? null : null;
+  const jersey = (e: GameEvent) =>
+    e.player_id
+      ? `#${byId.get(e.player_id)?.jersey ?? "?"}`
+      : String(e.event_type).startsWith("OPP_")
+        ? "OPP"
+        : "TEAM";
 
   return (
     <div className="min-h-screen p-2 sm:p-3">
@@ -682,19 +809,50 @@ function LiveGamePage() {
                   </div>
                 ) : null}
 
+                {pendingSubIn ? (
+                  <div className="absolute left-1/2 top-2 z-30 w-[min(92%,520px)] -translate-x-1/2 bubble-pop">
+                    <div className="rounded-3xl border border-flame/70 bg-background/95 p-2 shadow-2xl shadow-black/60 backdrop-blur">
+                      <div className="mb-2 inline-flex rounded-full bg-flame/25 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-foreground">
+                        #{byId.get(pendingSubIn)?.jersey ?? "?"} is in · who came out?
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {onFloor.map((p) => (
+                          <BubbleButton
+                            key={p.id}
+                            size="lg"
+                            tone="grape"
+                            className="min-w-[72px]"
+                            onClick={() => resolveSubOut(p.id)}
+                          >
+                            #{p.jersey}
+                          </BubbleButton>
+                        ))}
+                        <BubbleButton size="sm" tone="ghost" onClick={() => setPendingSubIn(null)}>
+                          Keep lineup
+                        </BubbleButton>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+                {locPick ? (
+                  <div className="pointer-events-none absolute left-1/2 top-2 z-30 -translate-x-1/2 rounded-full border border-flame bg-background/90 px-4 py-2 text-sm font-black">
+                    Tap the new spot for this event
+                  </div>
+                ) : null}
+
                 {/* location markers for the current game */}
                 <svg className="pointer-events-none absolute inset-0 h-full w-full">
                   {events
                     .filter((e) => e.x != null)
                     .slice(-60)
                     .map((e) => {
-                      const hollow = e.event_type === "MISS" || e.event_type === "FT_MISS";
+                      const hollow = String(e.event_type).endsWith("MISS");
                       const c = statColor(String(e.event_type));
                       return (
                         <circle
                           key={e.id}
                           cx={`${halfToLocal({ x: e.x as number, y: e.y as number }).x * 100}%`}
-                          cy={`${(e.y as number) * 100}%`}
+                          cy={`${halfToLocal({ x: e.x as number, y: e.y as number }).y * 100}%`}
                           r={5}
                           fill={hollow ? "transparent" : c}
                           stroke={c}
@@ -747,20 +905,44 @@ function LiveGamePage() {
               </BubbleButton>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Pill tone="muted">Opponent scored</Pill>
-              {[1, 2, 3].map((n) => (
+              <Pill tone="muted">OPP</Pill>
+              {[2, 3].map((n) => (
                 <BubbleButton
                   key={n}
                   size="sm"
                   tone="flame"
-                  onClick={() => addEvent({ event_type: "OPP_SCORE", points: n })}
+                  onClick={() =>
+                    addEvent({ event_type: "OPP_MADE", points: n, result: `${n}PT`, context: { shot_value: n } })
+                  }
                 >
                   +{n}
                 </BubbleButton>
               ))}
+              <BubbleButton size="sm" tone="flame" onClick={() => addEvent({ event_type: "OPP_FT_MADE", points: 1, result: "FT" })}>
+                FT ✓
+              </BubbleButton>
+              <BubbleButton size="sm" tone="neutral" onClick={() => addEvent({ event_type: "OPP_FT_MISS", result: "FT" })}>
+                FT ✗
+              </BubbleButton>
+              <BubbleButton size="sm" tone="neutral" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "OFF" })}>
+                OREB
+              </BubbleButton>
+              <BubbleButton size="sm" tone="neutral" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "DEF" })}>
+                DREB
+              </BubbleButton>
+              <BubbleButton size="sm" tone="neutral" onClick={() => addEvent({ event_type: "OPP_TURNOVER" })}>
+                TO
+              </BubbleButton>
               <Pill tone={online ? (pending ? "flame" : "grape") : "flame"}>
                 {online ? (pending ? `Syncing ${pending}` : "Synced") : `Offline · ${pending} queued`}
               </Pill>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Pill tone="muted">OPP FG {fmtSplit(opp.fg)}</Pill>
+              <Pill tone="muted">3PT {fmtSplit(opp.three)}</Pill>
+              <Pill tone="muted">FT {fmtSplit(opp.ft)}</Pill>
+              <Pill tone="flame">OREB {opp.oreb}</Pill>
+              <Pill tone="muted">TO {opp.to}</Pill>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Pill tone="muted">Team fouls {teamFouls}</Pill>
@@ -814,6 +996,7 @@ function LiveGamePage() {
                 disabled={!ftPlayer}
                 onClick={() =>
                   ftPlayer &&
+                  (ensureOnFloor(ftPlayer),
                   addEvent({
                     event_type: "FT_MADE",
                     player_id: ftPlayer,
@@ -822,7 +1005,7 @@ function LiveGamePage() {
                     y: 0.5,
                     zone: "freethrow",
                     result: "FT",
-                  })
+                  }))
                 }
               >
                 FT MAKE
@@ -833,6 +1016,7 @@ function LiveGamePage() {
                 disabled={!ftPlayer}
                 onClick={() =>
                   ftPlayer &&
+                  (ensureOnFloor(ftPlayer),
                   addEvent({
                     event_type: "FT_MISS",
                     player_id: ftPlayer,
@@ -840,7 +1024,7 @@ function LiveGamePage() {
                     y: 0.5,
                     zone: "freethrow",
                     result: "FT",
-                  })
+                  }))
                 }
               >
                 FT MISS
@@ -961,25 +1145,65 @@ function LiveGamePage() {
                 Review
               </BubbleButton>
             </div>
-            <Label>Recent events</Label>
+            {editingEvent ? (
+              <EventEditor
+                key={editingEvent.id}
+                event={editingEvent}
+                roster={roster}
+                picking={locPick}
+                onPickLocation={() => setLocPick((v) => !v)}
+                onSave={(patch) => {
+                  updateEvent(editingEvent.id, patch);
+                  if (patch.player_id) ensureOnFloor(patch.player_id);
+                  setEditingId(null);
+                  setLocPick(false);
+                }}
+                onDelete={() => {
+                  deleteEvent(editingEvent.id);
+                  setEditingId(null);
+                  setLocPick(false);
+                }}
+                onClose={() => {
+                  setEditingId(null);
+                  setLocPick(false);
+                }}
+              />
+            ) : null}
+            <Label>Events · tap one to edit</Label>
             <div className="flex max-h-[30vh] flex-col gap-1.5 overflow-y-auto">
               {[...events]
                 .reverse()
-                .slice(0, 12)
+                .slice(0, 40)
                 .map((e) => (
                   <div
                     key={e.id}
-                    className="flex items-center gap-2 rounded-2xl border border-border bg-surface-2/70 px-2 py-1.5"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      setEditingId(e.id);
+                      setLocPick(false);
+                    }}
+                    className={cn(
+                      "flex min-h-11 cursor-pointer items-center gap-2 rounded-2xl border bg-surface-2/70 px-2 py-1.5",
+                      editingId === e.id ? "border-flame" : "border-border",
+                    )}
                   >
                     <Pill tone="muted">Q{e.quarter}</Pill>
                     <span className="rounded-full bg-grape/25 px-2 py-0.5 text-xs font-black">
-                      {jersey(e.player_id)}
+                      {jersey(e)}
                     </span>
                     <span className="flex-1 truncate rounded-full bg-surface/70 px-2 py-0.5 text-xs font-bold">
                       {e.event_type}
                       {e.result ? ` · ${e.result}` : ""}
                     </span>
-                    <BubbleButton size="sm" tone="ghost" onClick={() => deleteEvent(e.id)}>
+                    <BubbleButton
+                      size="sm"
+                      tone="ghost"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        deleteEvent(e.id);
+                      }}
+                    >
                       ✕
                     </BubbleButton>
                   </div>

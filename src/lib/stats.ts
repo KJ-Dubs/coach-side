@@ -93,6 +93,17 @@ export function emptyTeamLine(): TeamLine {
 
 /* ---------------- shot classification ---------------- */
 
+/** Opponent (team-level) events all use the OPP_ prefix. */
+export function isOppEvent(e: Pick<GameEvent, "event_type">) {
+  return String(e.event_type).startsWith("OPP_");
+}
+
+/** Strip the OPP_ prefix so both sides share one classification. */
+function baseType(e: Pick<GameEvent, "event_type">) {
+  const t = String(e.event_type);
+  return t.startsWith("OPP_") ? t.slice(4) : t;
+}
+
 export function isFieldGoal(e: GameEvent) {
   return e.event_type === "MADE" || e.event_type === "MISS";
 }
@@ -101,12 +112,42 @@ export function isFreeThrow(e: GameEvent) {
   return e.event_type === "FT_MADE" || e.event_type === "FT_MISS";
 }
 
+function explicitShotValue(e: GameEvent): 2 | 3 | null {
+  const v = (e.context as { shot_value?: unknown } | null)?.shot_value;
+  return v === 2 || v === 3 ? v : null;
+}
+
+/**
+ * Canonical field-goal value: explicit coach override, else court location
+ * (nearest basket), else stored points/result. Never 1 or 0 for a field goal.
+ */
+export function shotValueOf(e: GameEvent): 2 | 3 {
+  const ex = explicitShotValue(e);
+  if (ex) return ex;
+  if (e.x != null && e.y != null) return isThree(e.x, e.y) ? 3 : 2;
+  if (e.points === 3 || e.result === "3PT") return 3;
+  return 2;
+}
+
 export function isThreeAttempt(e: GameEvent) {
-  if (e.event_type === "MADE" && e.points) return e.points === 3;
-  if (e.result === "3PT") return true;
-  if (e.result === "2PT") return false;
-  if (e.x != null && e.y != null) return isThree(e.x, e.y);
-  return false;
+  return shotValueOf(e) === 3;
+}
+
+/**
+ * The ONLY scoring rule. Scoreboard, box scores, player lines and opponent
+ * totals all derive points from this, so they can never drift apart.
+ */
+export function eventPoints(e: GameEvent): number {
+  switch (baseType(e)) {
+    case "MADE":
+      return shotValueOf(e);
+    case "FT_MADE":
+      return 1;
+    case "SCORE": // legacy OPP_SCORE quick buttons
+      return Math.max(0, Math.min(3, e.points || 0));
+    default:
+      return 0;
+  }
 }
 
 /** Layup / rim attempts: inside ~6ft of the basket. */
@@ -147,8 +188,8 @@ export function scoreFromEvents(events: GameEvent[]) {
   let team = 0;
   let opp = 0;
   for (const e of events) {
-    if (e.event_type === "OPP_SCORE") opp += e.points || 0;
-    else team += e.points || 0;
+    if (isOppEvent(e)) opp += eventPoints(e);
+    else team += eventPoints(e);
   }
   return { team, opp };
 }
@@ -299,7 +340,8 @@ export function aggregatePlayers(
     for (const e of ev) {
       if (!e.player_id) continue;
       const l = get(e.player_id);
-      if (e.event_type !== "OPP_SCORE") l.pts += e.points || 0;
+      if (isOppEvent(e)) continue;
+      l.pts += eventPoints(e);
       switch (e.event_type) {
         case "REBOUND":
           l.reb++;
@@ -372,6 +414,69 @@ export function aggregateTeam(games: Game[], events: GameEvent[]): TeamLine {
     }
   }
   return line;
+}
+
+export type OppLine = {
+  pts: number;
+  fg: Split;
+  two: Split;
+  three: Split;
+  ft: Split;
+  oreb: number;
+  dreb: number;
+  to: number;
+  pf: number;
+};
+
+/** Team-level opponent totals (no opponent roster needed). */
+export function opponentLine(events: GameEvent[]): OppLine {
+  const l: OppLine = {
+    pts: 0,
+    fg: emptySplit(),
+    two: emptySplit(),
+    three: emptySplit(),
+    ft: emptySplit(),
+    oreb: 0,
+    dreb: 0,
+    to: 0,
+    pf: 0,
+  };
+  for (const e of events) {
+    if (!isOppEvent(e)) {
+      if (e.event_type === "STEAL") l.to++; // a steal is an opponent turnover
+      continue;
+    }
+    l.pts += eventPoints(e);
+    const t = baseType(e);
+    if (t === "MADE" || t === "MISS") {
+      const made = t === "MADE";
+      l.fg.att++;
+      if (made) l.fg.made++;
+      const s = shotValueOf(e) === 3 ? l.three : l.two;
+      s.att++;
+      if (made) s.made++;
+    } else if (t === "FT_MADE" || t === "FT_MISS") {
+      l.ft.att++;
+      if (t === "FT_MADE") l.ft.made++;
+    } else if (t === "SCORE") {
+      const p = eventPoints(e);
+      if (p === 1) {
+        l.ft.att++;
+        l.ft.made++;
+      } else if (p > 1) {
+        l.fg.att++;
+        l.fg.made++;
+        const s = p === 3 ? l.three : l.two;
+        s.att++;
+        s.made++;
+      }
+    } else if (t === "REBOUND") {
+      if (e.result === "OFF") l.oreb++;
+      else l.dreb++; // legacy rows were logged after our misses = defensive
+    } else if (t === "TURNOVER") l.to++;
+    else if (t === "FOUL") l.pf++;
+  }
+  return l;
 }
 
 /** One player's line for one game (box score row). */

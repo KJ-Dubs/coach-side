@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import { statColor } from "./statColors";
 import { ZONE_LABEL, type Zone } from "./court";
 import type { GameEvent, Player } from "./types";
+import { eventPoints, isThreeAttempt } from "./stats";
 
 type BoxRow = {
   jersey: string;
@@ -25,10 +26,10 @@ export function boxRow(p: Player, events: GameEvent[]): BoxRow {
   return {
     jersey: p.jersey,
     name: p.name,
-    pts: own.reduce((s, e) => s + (e.points || 0), 0),
+    pts: own.reduce((s, e) => s + eventPoints(e), 0),
     fgm: own.filter((e) => e.event_type === "MADE").length,
     fga: own.filter((e) => e.event_type === "MADE" || e.event_type === "MISS").length,
-    threes: own.filter((e) => e.event_type === "MADE" && e.points === 3).length,
+    threes: own.filter((e) => e.event_type === "MADE" && isThreeAttempt(e)).length,
     ftm: own.filter((e) => e.event_type === "FT_MADE").length,
     fta: own.filter((e) => e.event_type === "FT_MADE" || e.event_type === "FT_MISS").length,
     reb: own.filter((e) => e.event_type === "REBOUND").length,
