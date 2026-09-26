@@ -372,15 +372,6 @@ export async function setPlayFolderMembership(
   if (error) throw error;
 }
 
-export async function movePlayToFolder(playId: string, teamId: string, folderId: string | null) {
-  const { error } = await supabase
-    .from("play_team_assignments")
-    .update({ folder_id: folderId })
-    .eq("play_id", playId)
-    .eq("team_id", teamId);
-  if (error) throw error;
-}
-
 /**
  * A team's Playbook: plays whose source team is this team plus every canonical
  * play explicitly adopted by it (play_team_assignments). Never infers adoption
@@ -451,6 +442,12 @@ export async function setPlayTeams(playId: string, teamIds: string[]) {
     if (error) throw error;
   }
   if (remove.length) {
+    const { error: folderError } = await supabase
+      .from("play_folder_memberships")
+      .delete()
+      .eq("play_id", playId)
+      .in("team_id", remove);
+    if (folderError) throw folderError;
     const { error } = await supabase
       .from("play_team_assignments")
       .delete()
