@@ -72,7 +72,7 @@ function LockerRoomPage() {
   const go = (next?: Area) => navigate({ to: "/lockerroom", search: next ? { area: next } : {} });
   return <AppShell title="Locker Room" subtitle={area ? ({ chat: "Team Chat", schedule: "Schedule", playbook: "Playbook", plans: "Plans" }[area]) : "Your team hub"} logoUrl={logo.data ?? null} wide>
     <Panel className="mb-3 flex flex-wrap items-center gap-2">
-      <Label>Team</Label><SelectInput value={teamId} onChange={(e) => { const next = e.target.value; setTeamId(next); void navigate({ to: "/lockerroom", search: (prev) => ({ ...prev, team: next }) }); }} className="max-w-xs">{locker.teams.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.season}</option>)}</SelectInput>
+      <Label>Team</Label><SelectInput value={teamId} onChange={(e) => { const next = e.target.value; setTeamId(next); void navigate({ to: "/lockerroom", search: { ...(search.area ? { area: search.area } : {}), ...(search.item ? { item: search.item } : {}), ...(search.folder ? { folder: search.folder } : {}), team: next } }); }} className="max-w-xs">{locker.teams.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.season}</option>)}</SelectInput>
       {locker.role ? <Pill tone="flame">{TEAM_ROLE_LABEL[locker.role]}</Pill> : null}
       {locker.isCoach ? <Link to="/settings" className="inline-flex min-h-11 items-center rounded-full border border-grape/60 bg-grape/20 px-4 text-sm font-black text-foreground">Invite links &amp; access</Link> : null}
     </Panel>

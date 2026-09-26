@@ -9,11 +9,11 @@ export type PlaySource = "library" | "playbook" | "lockerroom" | "home" | "share
 export const PLAY_SOURCES: PlaySource[] = ["library", "playbook", "lockerroom", "home", "share"];
 
 export type PresenterReturnContext = {
-  category?: string;
-  team?: string;
-  folder?: string;
-  tab?: "mine" | "library";
-  content?: "plays" | "drills";
+  category?: string | undefined;
+  team?: string | undefined;
+  folder?: string | undefined;
+  tab?: "mine" | "library" | undefined;
+  content?: "plays" | "drills" | undefined;
 };
 
 export function PresenterBackButton({
@@ -85,7 +85,7 @@ export function PresenterBackButton({
   };
 
   return (
-    <BubbleButton tone="ghost" size={bottom ? undefined : "sm"} onClick={goBack}>
+    <BubbleButton tone="ghost" {...(!bottom ? { size: "sm" as const } : {})} onClick={goBack}>
       {bottom ? "✕ " : "← "}{canGoBack ? "Back" : fallbackLabel}
     </BubbleButton>
   );
