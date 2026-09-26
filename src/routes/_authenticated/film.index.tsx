@@ -68,7 +68,7 @@ function FilmRoomPage() {
           </EmptyState>
         ) : (
           <div className="flex w-full max-w-3xl flex-col gap-2">
-            {(jobs as FilmJob[]).map((job) => (
+            {(jobs as unknown as FilmJob[]).map((job) => (
               <Link key={job.id} to="/film/$jobId" params={{ jobId: job.id }} className="block">
                 <Panel className="flex flex-wrap items-center gap-2 transition-all hover:border-grape/70">
                   <Pill tone={statusTone(job.status)}>{FILM_STATUS_LABEL[job.status] ?? job.status}</Pill>

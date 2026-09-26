@@ -103,10 +103,14 @@ function NewFilmJobPage() {
       let gid = gameId || null;
       if (!gid) {
         const g = await createGame({
-          teamId,
+          team_id: teamId,
           opponent: newOpponent.trim(),
-          gameDate: new Date().toISOString().slice(0, 10),
-          startingFive: [],
+          game_date: new Date().toISOString().slice(0, 10),
+          periods: team?.default_periods ?? 4,
+          period_minutes: team?.default_period_minutes ?? 8,
+          starting_five: [],
+          home_away: "home",
+          overtime_minutes: team?.default_overtime_minutes ?? 4,
         });
         gid = g.id;
       }

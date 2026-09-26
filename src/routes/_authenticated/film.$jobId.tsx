@@ -141,7 +141,7 @@ function FilmJobPage() {
     }
   };
 
-  const act = async (id: string, action: "accept" | "reject", patch?: Record<string, unknown>) => {
+  const act = async (id: string, action: "accept" | "reject" | "edit", patch?: Record<string, unknown>) => {
     await reviewEvent({ data: { id, action, patch: patch as never } });
     refresh();
   };
