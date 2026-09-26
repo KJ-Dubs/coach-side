@@ -7,6 +7,9 @@
 import { curlGeom, dribbleD, polyD, PW, PH, type Point } from "./playPath";
 import { sampleStep, SHOW_MS, DO_MS, type PlayStep } from "./playAnimation";
 import type { PlayAction, PlayFrame, PlayToken } from "./types";
+import type { DrillFrame, DrillObject } from "./drills";
+import { drillStateAtSequenceStart, sampleDrillBalls } from "./drillBalls";
+import coachsideMark from "@/assets/coachside-mark.jpg.asset.json";
 
 export type ExportFormat = "vertical" | "landscape" | "square";
 export type ExportSpeed = "slow" | "normal" | "fast";
@@ -41,8 +44,10 @@ export type ExportModel = {
   name: string;
   category: string;
   flip: boolean;
+  kind?: "play" | "drill";
   frames: PlayFrame[];
   steps: { step: PlayStep; frameIdx: number; note: string | null }[];
+  drillFrames?: DrillFrame[];
 };
 
 export function canExportVideo() {
@@ -293,6 +298,48 @@ function drawBall(ctx: CanvasRenderingContext2D, q: Point, p: Palette) {
   ctx.restore();
 }
 
+function drawDrillObject(ctx: CanvasRenderingContext2D, object: DrillObject, flip: boolean, p: Palette) {
+  if (object.type === "ball" || object.type === "line") return;
+  const q = xf(object, flip);
+  ctx.save();
+  ctx.strokeStyle = p.flame;
+  ctx.fillStyle = p.flame;
+  ctx.lineWidth = 5;
+  if (object.type === "cone") {
+    ctx.beginPath();
+    ctx.moveTo(q.x, q.y - 16);
+    ctx.lineTo(q.x - 13, q.y + 12);
+    ctx.lineTo(q.x + 13, q.y + 12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = p.bg;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  } else if (object.type === "chair") {
+    ctx.beginPath();
+    ctx.roundRect(q.x - 14, q.y - 14, 28, 28, 5);
+    ctx.stroke();
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(q.x - 14, q.y - 14);
+    ctx.lineTo(q.x + 14, q.y - 14);
+    ctx.stroke();
+  } else if (object.type === "text") {
+    ctx.fillStyle = p.text;
+    ctx.font = "800 22px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(object.label ?? "", q.x, q.y + 7);
+  } else {
+    ctx.strokeStyle = p.line;
+    ctx.lineWidth = 4;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    ctx.arc(q.x, q.y, 9, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 /* ---------------- full frame composition ---------------- */
 
 function roundedBubble(
@@ -330,6 +377,8 @@ type FrameState = {
   seqIndex: number;
   reveal: number;
   note: string | null;
+  balls?: { id: string; point: Point; ownerId: string | null }[];
+  objects?: DrillObject[];
 };
 
 const viewCache = new WeakMap<ExportModel, { x: number; w: number }>();
@@ -346,6 +395,9 @@ function courtView(model: ExportModel) {
     for (const t of f.tokens) xs.push(xf(t, model.flip).x);
     for (const a of f.actions) for (const q of a.points ?? []) xs.push(xf(q, model.flip).x);
   }
+  for (const frame of model.drillFrames ?? []) {
+    for (const object of frame.objects) xs.push(xf(object, model.flip).x);
+  }
   let view = { x: 0, w: PW };
   if (xs.length) {
     const min = Math.min(...xs);
@@ -355,6 +407,72 @@ function courtView(model: ExportModel) {
   }
   viewCache.set(model, view);
   return view;
+}
+
+type TitleLayout = { lines: string[]; size: number };
+
+function ellipsize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  let value = text.trim();
+  while (value.length > 1 && ctx.measureText(`${value}…`).width > maxWidth) value = value.slice(0, -1).trimEnd();
+  return `${value}…`;
+}
+
+function titleLayout(ctx: CanvasRenderingContext2D, title: string, maxWidth: number, preferred: number, minimum: number): TitleLayout {
+  const words = title.trim().split(/\s+/).filter(Boolean);
+  const source = words.length ? words : ["Untitled"];
+  for (let size = preferred; size >= minimum; size -= 2) {
+    ctx.font = `900 ${size}px system-ui, sans-serif`;
+    const lines = [""];
+    for (const word of source) {
+      const index = lines.length - 1;
+      const candidate = `${lines[index]} ${word}`.trim();
+      if (ctx.measureText(candidate).width <= maxWidth || !lines[index]) lines[index] = candidate;
+      else if (lines.length < 2) lines.push(word);
+      else lines[1] = `${lines[1]} ${word}`;
+    }
+    if (lines.length <= 2 && lines.every((line) => ctx.measureText(line).width <= maxWidth)) return { lines, size };
+  }
+  ctx.font = `900 ${minimum}px system-ui, sans-serif`;
+  const first: string[] = [];
+  const second: string[] = [];
+  for (const word of source) {
+    const target = second.length || ctx.measureText([...first, word].join(" ")).width > maxWidth ? second : first;
+    target.push(word);
+  }
+  return {
+    lines: [ellipsize(ctx, first.join(" "), maxWidth), ellipsize(ctx, second.join(" "), maxWidth)].filter(Boolean),
+    size: minimum,
+  };
+}
+
+function drawTitleBand(ctx: CanvasRenderingContext2D, model: ExportModel, p: Palette, w: number, headerH: number, pad: number) {
+  const kind = model.kind === "drill" ? "DRILL" : "PLAY";
+  const label = model.category ? `${kind}  •  ${model.category.toUpperCase()}` : kind;
+  const labelSize = Math.round(w * 0.025);
+  const preferred = Math.round(w * (w > 1300 ? 0.046 : 0.06));
+  const minimum = Math.round(w * 0.034);
+  const top = Math.round(pad * 0.8);
+  ctx.save();
+  ctx.fillStyle = p.panel;
+  ctx.fillRect(0, 0, w, headerH);
+  ctx.strokeStyle = withAlpha(p.grape, 0.55);
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(pad, headerH - 2);
+  ctx.lineTo(w - pad, headerH - 2);
+  ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.font = `900 ${labelSize}px system-ui, sans-serif`;
+  ctx.fillStyle = p.flame;
+  ctx.fillText(label, w / 2, top + labelSize);
+  const fitted = titleLayout(ctx, model.name, w - pad * 2.5, preferred, minimum);
+  ctx.font = `900 ${fitted.size}px system-ui, sans-serif`;
+  ctx.fillStyle = p.text;
+  const lineHeight = fitted.size * 1.08;
+  const titleTop = top + labelSize + Math.round(labelSize * 0.75);
+  fitted.lines.forEach((line, index) => ctx.fillText(line, w / 2, titleTop + fitted.size + index * lineHeight));
+  ctx.restore();
 }
 
 function paintFrame(
@@ -370,31 +488,8 @@ function paintFrame(
   ctx.fillRect(0, 0, w, h);
 
   const pad = Math.round(w * 0.04);
-  const headerH = opts.showTitle ? Math.round(h * (opts.format === "vertical" ? 0.13 : 0.16)) : pad;
-
-  if (opts.showTitle) {
-    ctx.save();
-    ctx.textAlign = "left";
-    const brandSize = Math.round(w * 0.038);
-    ctx.font = `900 ${brandSize}px system-ui, sans-serif`;
-    const brandW = ctx.measureText("COACHSIDE").width + brandSize * 1.2;
-    roundedBubble(ctx, pad, pad, brandW, brandSize * 1.9, withAlpha(p.grape, 0.25), p.grape);
-    ctx.fillStyle = p.text;
-    ctx.fillText("COACHSIDE", pad + brandSize * 0.6, pad + brandSize * 1.33);
-
-    const nameSize = Math.round(w * 0.055);
-    ctx.font = `900 ${nameSize}px system-ui, sans-serif`;
-    ctx.fillStyle = p.text;
-    ctx.fillText(model.name, pad, pad + brandSize * 1.9 + nameSize * 1.15);
-
-    if (model.category) {
-      const catSize = Math.round(w * 0.028);
-      ctx.font = `800 ${catSize}px system-ui, sans-serif`;
-      ctx.fillStyle = p.flame;
-      ctx.fillText(model.category.toUpperCase(), pad, pad + brandSize * 1.9 + nameSize * 1.15 + catSize * 1.6);
-    }
-    ctx.restore();
-  }
+  const headerH = Math.round(h * (opts.format === "vertical" ? 0.16 : opts.format === "square" ? 0.22 : 0.24));
+  drawTitleBand(ctx, model, p, w, headerH, pad);
 
   const footerH = Math.round(h * (opts.format === "vertical" ? 0.09 : 0.11));
   const view = courtView(model);
@@ -415,12 +510,18 @@ function paintFrame(
   ctx.clip();
   ctx.translate(-view.x, 0);
   drawCourt(ctx, p);
+  for (const object of state.objects ?? []) drawDrillObject(ctx, object, model.flip, p);
   for (const a of state.actions)
     drawAction(ctx, a, model.flip, p, a.seq !== state.activeSeq, opts.showSequenceNumbers, state.reveal);
   for (const t of state.tokens) drawToken(ctx, t, model.flip, p);
   if (state.ball) {
     const bp = xf(state.ball, model.flip);
     drawBall(ctx, state.ballAttached ? { x: bp.x + 22, y: bp.y - 20 } : bp, p);
+  }
+  for (const [index, ball] of (state.balls ?? []).entries()) {
+    const bp = xf(ball.point, model.flip);
+    const spread = index % 3;
+    drawBall(ctx, ball.ownerId ? { x: bp.x + 22 + spread * 7, y: bp.y - 20 + spread * 5 } : bp, p);
   }
   ctx.restore();
   ctx.restore();
@@ -460,6 +561,8 @@ function paintFrame(
 /* ---------------- frame timeline ---------------- */
 
 const FPS = 30;
+const OUTRO_SECONDS = 1.8;
+const OUTRO_FRAMES = Math.round(FPS * OUTRO_SECONDS);
 
 function frameCounts(model: ExportModel, opts: ExportOptions) {
   const factor = SPEED_FACTOR[opts.speed];
@@ -470,8 +573,69 @@ function frameCounts(model: ExportModel, opts: ExportOptions) {
     showFrames,
     doFrames,
     holdFrames,
-    total: model.steps.length * (showFrames + doFrames) + holdFrames,
+    outroFrames: OUTRO_FRAMES,
+    total: model.steps.length * (showFrames + doFrames) + holdFrames + OUTRO_FRAMES,
   };
+}
+
+function drillFrameState(model: ExportModel, entryIndex: number, sampleTokens: PlayToken[], progress: number) {
+  const entry = model.steps[entryIndex];
+  const frame = entry ? model.drillFrames?.[entry.frameIdx] : undefined;
+  if (!entry || !frame) return {};
+  const localIndex = model.steps.slice(0, entryIndex).filter((item) => item.frameIdx === entry.frameIdx).length;
+  const start = drillStateAtSequenceStart(frame, localIndex);
+  const balls = sampleDrillBalls(start.balls, entry.step.actions, sampleTokens, progress).map((ball) => ({
+    id: ball.id,
+    point: ball.point,
+    ownerId: ball.ownerTokenId,
+  }));
+  return { balls, objects: frame.objects.filter((object) => object.type !== "ball") };
+}
+
+function paintOutro(
+  ctx: CanvasRenderingContext2D,
+  opts: ExportOptions,
+  p: Palette,
+  mark: CanvasImageSource,
+  progress: number,
+) {
+  const { w, h } = FORMAT_SIZE[opts.format];
+  const fade = Math.min(1, progress / 0.22, (1 - progress) / 0.16);
+  const eased = 1 - Math.pow(1 - Math.min(1, progress / 0.7), 3);
+  const logoSize = Math.min(w * 0.34, h * 0.34);
+  const scale = 0.94 + eased * 0.06;
+  ctx.fillStyle = p.bg;
+  ctx.fillRect(0, 0, w, h);
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, fade);
+  ctx.translate(w / 2, h / 2 - logoSize * 0.14);
+  ctx.scale(scale, scale);
+  ctx.drawImage(mark, -logoSize / 2, -logoSize / 2, logoSize, logoSize);
+  ctx.restore();
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, fade);
+  ctx.fillStyle = p.text;
+  ctx.textAlign = "center";
+  const textSize = Math.round(Math.min(w * 0.04, h * 0.045));
+  ctx.font = `800 ${textSize}px system-ui, sans-serif`;
+  ctx.fillText("Made with CoachSide", w / 2, h / 2 + logoSize * 0.68);
+  ctx.restore();
+}
+
+async function loadOutroMark(): Promise<CanvasImageSource> {
+  const response = await fetch(coachsideMark.url);
+  if (!response.ok) throw new Error("Could not load the CoachSide logo for the video outro.");
+  const blob = await response.blob();
+  if (typeof createImageBitmap === "function") return createImageBitmap(blob);
+  const url = URL.createObjectURL(blob);
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    return image;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 /** Paint every frame of the play in order, awaiting the encoder between frames. */
@@ -480,9 +644,10 @@ async function eachFrame(
   model: ExportModel,
   opts: ExportOptions,
   p: Palette,
+  mark: CanvasImageSource,
   emit: () => Promise<void>,
 ) {
-  const { showFrames, doFrames, holdFrames } = frameCounts(model, opts);
+  const { showFrames, doFrames, holdFrames, outroFrames } = frameCounts(model, opts);
   const totalSteps = model.steps.length;
 
   for (let s = 0; s < totalSteps; s++) {
@@ -490,6 +655,7 @@ async function eachFrame(
     const step = entry.step;
     for (let f = 0; f < showFrames; f++) {
       const sample = sampleStep(step, "show", 0);
+      const drill = drillFrameState(model, s, sample.tokens, 0);
       paintFrame(
         ctx,
         model,
@@ -504,6 +670,7 @@ async function eachFrame(
           seqIndex: s,
           reveal: Math.min(1, (f + 1) / Math.max(1, showFrames - 2)),
           note: entry.note,
+          ...drill,
         },
         totalSteps,
       );
@@ -511,6 +678,7 @@ async function eachFrame(
     }
     for (let f = 0; f < doFrames; f++) {
       const sample = sampleStep(step, "do", (f + 1) / doFrames);
+      const drill = drillFrameState(model, s, sample.tokens, (f + 1) / doFrames);
       paintFrame(
         ctx,
         model,
@@ -525,6 +693,7 @@ async function eachFrame(
           seqIndex: s,
           reveal: 1,
           note: entry.note,
+          ...drill,
         },
         totalSteps,
       );
@@ -535,6 +704,7 @@ async function eachFrame(
   if (holdFrames > 0 && totalSteps > 0) {
     const last = model.steps[totalSteps - 1]!;
     const sample = sampleStep(last.step, "do", 1);
+    const drill = drillFrameState(model, totalSteps - 1, sample.tokens, 1);
     for (let f = 0; f < holdFrames; f++) {
       paintFrame(
         ctx,
@@ -550,11 +720,16 @@ async function eachFrame(
           seqIndex: totalSteps - 1,
           reveal: 1,
           note: last.note,
+          ...drill,
         },
         totalSteps,
       );
       await emit();
     }
+  }
+  for (let f = 0; f < outroFrames; f++) {
+    paintOutro(ctx, opts, p, mark, (f + 1) / outroFrames);
+    await emit();
   }
 }
 
@@ -581,6 +756,7 @@ async function encodeWithWebCodecs(
   const { w, h } = FORMAT_SIZE[opts.format];
   const { canvas, ctx } = makeCanvas(w, h, 1);
   const total = frameCounts(model, opts).total;
+  const mark = await loadOutroMark();
 
   const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
   const source = new CanvasSource(canvas, { codec: "avc", bitrate: QUALITY_HIGH });
@@ -588,7 +764,7 @@ async function encodeWithWebCodecs(
   await output.start();
 
   let i = 0;
-  await eachFrame(ctx, model, opts, p, async () => {
+  await eachFrame(ctx, model, opts, p, mark, async () => {
     await source.add(i / FPS, 1 / FPS);
     i++;
     onProgress?.(Math.min(0.99, i / total));
@@ -650,6 +826,7 @@ async function encodeWithWasm(
   const scale = 2 / 3; // 720p-class output keeps WASM encoding fast enough
   const { canvas, ctx } = makeCanvas(w, h, scale);
   const total = frameCounts(model, opts).total;
+  const mark = await loadOutroMark();
 
   const enc = (await HME.createH264MP4Encoder()) as unknown as WasmEncoder;
   enc.width = canvas.width;
@@ -660,7 +837,7 @@ async function encodeWithWasm(
   enc.initialize();
 
   let i = 0;
-  await eachFrame(ctx, model, opts, p, async () => {
+  await eachFrame(ctx, model, opts, p, mark, async () => {
     const img = ctx.getImageData(0, 0, canvas.width, canvas.height, { colorSpace: "srgb" } as ImageDataSettings);
     enc.addFrameRgba(new Uint8Array(img.data.buffer.slice(0)));
     i++;
