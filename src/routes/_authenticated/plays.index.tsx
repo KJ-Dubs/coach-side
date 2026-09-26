@@ -681,7 +681,7 @@ function PlayCard({
               </BubbleButton>
             </Link>
           ) : (
-            <CreateMyVersion play={play} teamIds={assignedTeams} label="Edit as My Version" />
+            <CreateMyVersion play={play} teamIds={ownAssigned} label="Edit as My Version" />
           )}
           <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onShareLink}>
             {play.is_shared ? "Copy link" : "Share"}
