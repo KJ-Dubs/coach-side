@@ -1874,6 +1874,8 @@ export type Database = {
           library_version: number | null
           notes: string | null
           play_id: string
+          share_enabled: boolean
+          share_token: string | null
           team_id: string
           updated_at: string
         }
@@ -1887,6 +1889,8 @@ export type Database = {
           library_version?: number | null
           notes?: string | null
           play_id: string
+          share_enabled?: boolean
+          share_token?: string | null
           team_id: string
           updated_at?: string
         }
@@ -1900,6 +1904,8 @@ export type Database = {
           library_version?: number | null
           notes?: string | null
           play_id?: string
+          share_enabled?: boolean
+          share_token?: string | null
           team_id?: string
           updated_at?: string
         }
@@ -3008,6 +3014,7 @@ export type Database = {
       play_author_label: { Args: { _user: string }; Returns: string }
       play_owned: { Args: { _play: string }; Returns: boolean }
       play_published: { Args: { _play: string }; Returns: boolean }
+      play_share_link: { Args: { _play: string }; Returns: string }
       play_visible: { Args: { _play: string }; Returns: boolean }
       practice_plan_coach: { Args: { _plan: string }; Returns: boolean }
       practice_plan_visible: { Args: { _plan: string }; Returns: boolean }

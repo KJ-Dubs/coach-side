@@ -12,14 +12,27 @@ export const getSharedPlay = createServerFn({ method: "GET" })
   .handler(async ({ data }): Promise<string | null> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: play } = await supabaseAdmin
+    let { data: play } = await supabaseAdmin
       .from("plays")
       .select("*")
       .eq("share_token", data.token)
       .eq("is_shared", true)
       .maybeSingle();
 
-    if (!play) return null;
+    if (!play) {
+      // Team-scoped link: only valid while the play stays in that team's playbook.
+      const { data: a } = await supabaseAdmin
+        .from("play_team_assignments")
+        .select("play_id")
+        .eq("share_token" as never, data.token)
+        .eq("share_enabled" as never, true)
+        .maybeSingle();
+      if (!a) return null;
+      const { data: p2 } = await supabaseAdmin.from("plays").select("*").eq("id", (a as { play_id: string }).play_id).maybeSingle();
+      if (!p2) return null;
+      // Read-only presentation fields only; never the source team or token.
+      play = { ...p2, team_id: null, share_token: data.token, is_shared: true } as typeof p2;
+    }
 
     const { data: frames } = await supabaseAdmin
       .from("play_frames")

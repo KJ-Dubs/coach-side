@@ -220,6 +220,14 @@ export async function fetchPlay(id: string): Promise<Play> {
   return data as unknown as Play;
 }
 
+/** Owner or a coach of a team with this play in its playbook gets a read-only link token. */
+export async function createPlayShareLink(playId: string): Promise<string> {
+  const { data, error } = await supabase.rpc("play_share_link" as never, { _play: playId } as never);
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Could not create a share link");
+  return data as unknown as string;
+}
+
 export async function fetchPlayByToken(token: string): Promise<Play | null> {
   const { data, error } = await supabase
     .from("plays")

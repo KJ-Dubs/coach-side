@@ -19,6 +19,7 @@ import {
 } from "@/components/Bubbles";
 import {
   createPlay,
+  createPlayShareLink,
   deletePlay,
   duplicatePlay,
   fetchPlayAssignments,
@@ -239,10 +240,7 @@ function PlaybookPage() {
   });
 
   const share = useMutation({
-    mutationFn: async (p: Play) => {
-      if (!p.is_shared) await updatePlay(p.id, { is_shared: true });
-      return p.share_token;
-    },
+    mutationFn: (p: Play) => createPlayShareLink(p.id),
     onSuccess: async (token) => {
       void invalidate();
       if (!token) {
@@ -674,11 +672,9 @@ function PlayCard({
           ) : (
             <CreateMyVersion play={play} teamIds={assignedTeams} label="Edit as My Version" />
           )}
-          {canEdit ? (
-            <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onShareLink}>
-              {play.is_shared ? "Copy link" : "Share"}
-            </BubbleButton>
-          ) : null}
+          <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onShareLink}>
+            {play.is_shared ? "Copy link" : "Share"}
+          </BubbleButton>
           <BubbleButton size="sm" tone="neutral" onClick={openTeams}>
             Teams
           </BubbleButton>
