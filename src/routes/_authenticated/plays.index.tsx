@@ -39,6 +39,7 @@ import { publishPlay, setPlayAnonymous, unpublishPlay } from "@/lib/library";
 import { LibraryFeed } from "@/components/community/LibraryFeed";
 import { DrillFeed } from "@/components/drills/DrillFeed";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
+import { PlayThumb } from "@/components/community/PlayThumb";
 import { isPlayOwner } from "@/lib/playOwnership";
 import { useMe } from "@/lib/useMe";
 
@@ -515,8 +516,10 @@ function PlaybookPage() {
                 play={p}
                 viewSearch={{
                   from: "playbook",
+                  tab: "mine",
                   ...(selected ? { category: selected } : {}),
                   ...(teamFilter !== "ALL" ? { team: teamFilter } : {}),
+                  ...(folderFilter !== "ALL" ? { folder: folderFilter } : {}),
                 }}
                 assignedTeams={teamsByPlay.get(p.id) ?? []}
                 canEdit={isPlayOwner(p, myUserId)}
@@ -587,7 +590,7 @@ function PlayCard({
   play: Play;
   canEdit: boolean;
 
-  viewSearch: { category?: string; team?: string; from?: "playbook" };
+  viewSearch: { category?: string; team?: string; folder?: string; tab?: "mine"; from?: "playbook" };
   assignedTeams: string[];
   allTeams: Team[];
   teamName: (id: string | null) => string;
@@ -635,6 +638,16 @@ function PlayCard({
           •••
         </BubbleButton>
       </div>
+
+      <Link
+        to="/plays/$playId/view"
+        params={{ playId: play.id }}
+        search={viewSearch}
+        aria-label={`Run play ${play.name}`}
+        className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grape"
+      >
+        <PlayThumb playId={play.id} attackBasket={play.attack_basket} authenticated />
+      </Link>
 
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Pill tone="neutral">Attack {play.attack_basket === "left" ? "left" : "right"}</Pill>

@@ -26,11 +26,12 @@ import { EventForm } from "./calendar";
 type Area = "chat" | "schedule" | "playbook" | "plans";
 
 export const Route = createFileRoute("/_authenticated/lockerroom")({
-  validateSearch: (s: Record<string, unknown>): { area?: Area; item?: string; folder?: string } => {
-    const parsed: { area?: Area; item?: string; folder?: string } = {};
+  validateSearch: (s: Record<string, unknown>): { area?: Area; item?: string; folder?: string; team?: string } => {
+    const parsed: { area?: Area; item?: string; folder?: string; team?: string } = {};
     if ((["chat", "schedule", "playbook", "plans"] as string[]).includes(String(s["area"]))) parsed.area = s["area"] as Area;
     if (typeof s["item"] === "string") parsed.item = s["item"];
     if (typeof s["folder"] === "string") parsed.folder = s["folder"];
+    if (typeof s["team"] === "string") parsed.team = s["team"];
     return parsed;
   },
   head: () => ({ meta: [
@@ -49,7 +50,7 @@ function LockerRoomPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [teamId, setTeamId] = useState("");
+  const [teamId, setTeamId] = useState(search.team ?? "");
   const locker = useLocker(teamId || null);
   useEffect(() => { if (!teamId && locker.teams.length) setTeamId(locker.teams[0]?.id ?? ""); }, [locker.teams, teamId]);
   const team = locker.teams.find((t) => t.id === teamId) ?? null;
@@ -71,7 +72,7 @@ function LockerRoomPage() {
   const go = (next?: Area) => navigate({ to: "/lockerroom", search: next ? { area: next } : {} });
   return <AppShell title="Locker Room" subtitle={area ? ({ chat: "Team Chat", schedule: "Schedule", playbook: "Playbook", plans: "Plans" }[area]) : "Your team hub"} logoUrl={logo.data ?? null} wide>
     <Panel className="mb-3 flex flex-wrap items-center gap-2">
-      <Label>Team</Label><SelectInput value={teamId} onChange={(e) => setTeamId(e.target.value)} className="max-w-xs">{locker.teams.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.season}</option>)}</SelectInput>
+      <Label>Team</Label><SelectInput value={teamId} onChange={(e) => { const next = e.target.value; setTeamId(next); void navigate({ to: "/lockerroom", search: (prev) => ({ ...prev, team: next }) }); }} className="max-w-xs">{locker.teams.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.season}</option>)}</SelectInput>
       {locker.role ? <Pill tone="flame">{TEAM_ROLE_LABEL[locker.role]}</Pill> : null}
       {locker.isCoach ? <Link to="/settings" className="inline-flex min-h-11 items-center rounded-full border border-grape/60 bg-grape/20 px-4 text-sm font-black text-foreground">Invite links &amp; access</Link> : null}
     </Panel>
@@ -138,7 +139,7 @@ function PlaybookArea({ teamId, plays, isCoach, initialFolder }: { teamId: strin
   const visible = folder ? plays.filter((p) => memberships.data?.some((m) => m.folder_id === folder && m.play_id === p.id)) : plays;
   return <div className="flex flex-col gap-3"><Panel className="flex flex-wrap gap-2"><BubbleButton tone={sub === "all" ? "grape" : "neutral"} onClick={() => setSub("all")}>All Plays</BubbleButton><BubbleButton tone={sub === "folders" ? "flame" : "neutral"} onClick={() => setSub("folders")}>Folders</BubbleButton></Panel>
     {sub === "folders" ? <Panel className="flex flex-col gap-2"><div className="flex flex-wrap gap-2"><BubbleButton tone={!folder ? "grape" : "neutral"} onClick={() => setFolder("")}>All folders</BubbleButton>{(folders.data ?? []).map((f) => <BubbleButton key={f.id} tone={folder === f.id ? "flame" : "neutral"} onClick={() => setFolder(f.id)}>{f.name}</BubbleButton>)}</div>{isCoach ? <div className="flex gap-2"><TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="New folder name"/><BubbleButton tone="grape" disabled={!name.trim()} onClick={async () => { await createPlaybookFolder(teamId, name); setName(""); await refresh(); }}>Create</BubbleButton>{folder ? <><BubbleButton tone="neutral" onClick={async () => { const next = prompt("Folder name", folders.data?.find((f) => f.id === folder)?.name); if (next?.trim()) { await renamePlaybookFolder(folder, next); await refresh(); } }}>Rename</BubbleButton><BubbleButton tone="ghost" onClick={async () => { await deletePlaybookFolder(folder); setFolder(""); await refresh(); }}>Delete</BubbleButton></> : null}</div> : null}</Panel> : null}
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{visible.map((p) => <Panel key={p.id} className="flex flex-col gap-2"><div className="flex flex-wrap gap-2"><span className="rounded-2xl border border-border/60 bg-background/50 px-3 py-2 text-lg font-black text-foreground">{p.name}</span><Pill tone="muted">{p.category}</Pill>{p.team_id !== teamId ? <Pill tone="grape">From CoachSide Library</Pill> : null}</div><Link to="/plays/$playId/view" params={{ playId: p.id }} search={{ from: "lockerroom" }}><BubbleButton tone="flame" className="w-full">▶ Run Play</BubbleButton></Link>{sub === "folders" && isCoach ? <div className="flex flex-wrap gap-1">{(folders.data ?? []).map((f) => { const checked = !!memberships.data?.some((m) => m.folder_id === f.id && m.play_id === p.id); return <BubbleButton key={f.id} size="sm" tone={checked ? "grape" : "neutral"} disabled={membership.isPending} onClick={() => membership.mutate({ playId: p.id, folderId: f.id, included: !checked })}>{checked ? "✓ " : "+ "}{f.name}</BubbleButton>; })}</div> : null}</Panel>)}</div>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{visible.map((p) => <Panel key={p.id} className="flex flex-col gap-2"><div className="flex flex-wrap gap-2"><span className="rounded-2xl border border-border/60 bg-background/50 px-3 py-2 text-lg font-black text-foreground">{p.name}</span><Pill tone="muted">{p.category}</Pill>{p.team_id !== teamId ? <Pill tone="grape">From CoachSide Library</Pill> : null}</div><Link to="/plays/$playId/view" params={{ playId: p.id }} search={{ from: "lockerroom", team: teamId, ...(folder ? { folder } : {}) }}><BubbleButton tone="flame" className="w-full">▶ Run Play</BubbleButton></Link>{sub === "folders" && isCoach ? <div className="flex flex-wrap gap-1">{(folders.data ?? []).map((f) => { const checked = !!memberships.data?.some((m) => m.folder_id === f.id && m.play_id === p.id); return <BubbleButton key={f.id} size="sm" tone={checked ? "grape" : "neutral"} disabled={membership.isPending} onClick={() => membership.mutate({ playId: p.id, folderId: f.id, included: !checked })}>{checked ? "✓ " : "+ "}{f.name}</BubbleButton>; })}</div> : null}</Panel>)}</div>
     {!visible.length ? <Panel><EmptyState>No plays in this view yet</EmptyState></Panel> : null}
   </div>;
 }
