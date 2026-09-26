@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { alertTeam } from "./teamAlerts";
+import { notifyAnnouncementRecipients, notifyConversationMessage, notifyPlanRecipients } from "./notifications.functions";
 
 /* =============== types =============== */
 
@@ -373,6 +373,7 @@ export async function sendMessage(input: {
     );
     if (aErr) throw aErr;
   }
+  void notifyConversationMessage({ data: { conversationId: input.conversationId, messageId } }).catch(() => undefined);
   return messageId;
 }
 
@@ -483,14 +484,7 @@ export async function createAnnouncement(input: {
     );
     if (aErr) throw aErr;
   }
-  alertTeam({
-    teamId: input.team_id,
-    kind: "announcement",
-    title: input.title,
-    body: input.body.slice(0, 200),
-    link: "/lockerroom",
-    relatedId: id,
-  });
+  void notifyAnnouncementRecipients({ data: { announcementId: id } }).catch(() => undefined);
   return id;
 }
 
@@ -603,14 +597,7 @@ export async function createAssignment(input: {
     );
     if (aErr) throw aErr;
   }
-  alertTeam({
-    teamId: input.team_id,
-    kind: "assignment",
-    title: `New plan: ${input.title}`,
-    body: input.instructions?.slice(0, 200) || "Open CoachSide to see what your coach assigned.",
-    link: `/lockerroom?area=plans&item=${id}`,
-    relatedId: id,
-  });
+  void notifyPlanRecipients({ data: { assignmentId: id } }).catch(() => undefined);
   return id;
 }
 

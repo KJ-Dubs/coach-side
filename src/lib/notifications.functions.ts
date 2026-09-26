@@ -124,6 +124,152 @@ const PREF_FOR: Record<string, PrefColumn> = {
   game: "game_reminders",
 };
 
+const messageAlertSchema = z.object({
+  conversationId: z.string().uuid(),
+  messageId: z.string().uuid(),
+});
+
+export const notifyConversationMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => messageAlertSchema.parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { data: message } = await context.supabase
+      .from("messages" as never)
+      .select("id, sender_id, body, conversation_id")
+      .eq("id", data.messageId)
+      .eq("conversation_id", data.conversationId)
+      .eq("sender_id", context.userId)
+      .maybeSingle();
+    if (!message) throw new Error("Message not found.");
+
+    const { data: conversation } = await context.supabase
+      .from("conversations" as never)
+      .select("id, team_id, type")
+      .eq("id", data.conversationId)
+      .maybeSingle();
+    if (!conversation) throw new Error("Conversation not found.");
+
+    const row = conversation as unknown as { team_id: string; type: string };
+    const { adminDb, dispatchNotification } = await import("./notify.server");
+    const db = await adminDb();
+    let recipientIds: string[] = [];
+    if (row.type === "team" || row.type === "staff") {
+      const { data: members } = await db.from("team_members").select("user_id, role").eq("team_id", row.team_id).eq("active", true);
+      recipientIds = ((members ?? []) as { user_id: string; role: string }[])
+        .filter((m) => row.type === "team" ? m.role !== "parent" : ["head_coach", "assistant_coach"].includes(m.role))
+        .map((m) => m.user_id);
+    } else {
+      const { data: members } = await db.from("conversation_members").select("user_id").eq("conversation_id", data.conversationId);
+      recipientIds = ((members ?? []) as { user_id: string }[]).map((m) => m.user_id);
+    }
+    recipientIds = [...new Set(recipientIds)].filter((id) => id !== context.userId);
+    if (recipientIds.length) {
+      const body = String((message as unknown as { body: string }).body).slice(0, 200) || "A teammate sent an attachment.";
+      await dispatchNotification({
+        audience: { kind: "users", userIds: recipientIds },
+        teamId: row.team_id,
+        type: "team_message",
+        title: row.type === "team" ? "New Team Chat message" : "New private message",
+        body,
+        link: `/lockerroom?area=chat`,
+        relatedType: "message",
+        relatedId: data.messageId,
+        dedupeKey: `message:${data.messageId}`,
+      });
+    }
+    return { ok: true };
+  });
+
+export const notifyPlanRecipients = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ assignmentId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { data: assignment } = await context.supabase
+      .from("assignments" as never)
+      .select("id, team_id, title, instructions")
+      .eq("id", data.assignmentId)
+      .maybeSingle();
+    if (!assignment) throw new Error("Plan not found.");
+    const row = assignment as unknown as { team_id: string; title: string; instructions: string | null };
+    const { data: isCoach } = await (context.supabase as unknown as { rpc: (name: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown }> }).rpc("is_team_coach", { _team: row.team_id });
+    if (isCoach !== true) throw new Error("Only a team coach can notify players.");
+
+    const { adminDb, dispatchNotification } = await import("./notify.server");
+    const db = await adminDb();
+    const { data: targets } = await db.from("assignment_targets").select("user_id, player_id").eq("assignment_id", data.assignmentId);
+    const targetRows = (targets ?? []) as { user_id: string | null; player_id: string | null }[];
+    let recipients: string[];
+    if (targetRows.length) {
+      const direct = targetRows.map((t) => t.user_id).filter((id): id is string => Boolean(id));
+      const playerIds = targetRows.map((t) => t.player_id).filter((id): id is string => Boolean(id));
+      const { data: members } = playerIds.length
+        ? await db.from("team_members").select("user_id").eq("team_id", row.team_id).eq("active", true).in("player_id", playerIds)
+        : { data: [] };
+      recipients = [...direct, ...((members ?? []) as { user_id: string }[]).map((m) => m.user_id)];
+    } else {
+      const { data: members } = await db.from("team_members").select("user_id").eq("team_id", row.team_id).eq("active", true).eq("role", "player");
+      recipients = ((members ?? []) as { user_id: string }[]).map((m) => m.user_id);
+    }
+    recipients = [...new Set(recipients)].filter((id) => id !== context.userId);
+    if (recipients.length) {
+      await dispatchNotification({
+        audience: { kind: "users", userIds: recipients },
+        teamId: row.team_id,
+        type: "team_assignment",
+        title: `New plan: ${row.title}`,
+        body: row.instructions?.slice(0, 200) || "Open CoachSide to see what your coach assigned.",
+        link: `/lockerroom?area=plans&item=${data.assignmentId}`,
+        relatedType: "assignment",
+        relatedId: data.assignmentId,
+        prefColumn: "assignment_notifications",
+        dedupeKey: `assignment:${data.assignmentId}`,
+      });
+    }
+    return { ok: true };
+  });
+
+export const notifyAnnouncementRecipients = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ announcementId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { data: announcement } = await context.supabase
+      .from("announcements" as never)
+      .select("id, team_id, title, body, audience")
+      .eq("id", data.announcementId)
+      .maybeSingle();
+    if (!announcement) throw new Error("Announcement not found.");
+    const row = announcement as unknown as { team_id: string; title: string; body: string; audience: string };
+    const { data: isCoach } = await (context.supabase as unknown as { rpc: (name: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown }> }).rpc("is_team_coach", { _team: row.team_id });
+    if (isCoach !== true) throw new Error("Only a team coach can notify members.");
+
+    const { adminDb, dispatchNotification } = await import("./notify.server");
+    const db = await adminDb();
+    const { data: members } = await db.from("team_members").select("user_id, role").eq("team_id", row.team_id).eq("active", true);
+    const allowedRoles = row.audience === "everyone"
+      ? null
+      : row.audience === "coaches"
+        ? new Set(["head_coach", "assistant_coach"])
+        : new Set([row.audience === "parents" ? "parent" : "player"]);
+    const recipients = [...new Set(((members ?? []) as { user_id: string; role: string }[])
+      .filter((m) => !allowedRoles || allowedRoles.has(m.role))
+      .map((m) => m.user_id))];
+    if (recipients.length) {
+      await dispatchNotification({
+        audience: { kind: "users", userIds: recipients },
+        teamId: row.team_id,
+        type: "team_announcement",
+        title: row.title,
+        body: row.body.slice(0, 200),
+        link: "/lockerroom?area=chat",
+        relatedType: "announcement",
+        relatedId: data.announcementId,
+        prefColumn: "announcement_notifications",
+        dedupeKey: `announcement:${data.announcementId}`,
+      });
+    }
+    return { ok: true };
+  });
+
 /**
  * Pushes/emails a team alert. The in-app row is created by the existing
  * database triggers, so this only adds the device and email channels and never

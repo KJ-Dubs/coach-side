@@ -30,7 +30,8 @@ import {
   createPlaybookFolder,
   deletePlaybookFolder,
   fetchPlaybookFolders,
-  movePlayToFolder,
+  fetchPlayFolderMemberships,
+  setPlayFolderMembership,
   renamePlaybookFolder,
   type TeamPlaybookFolder,
 } from "@/lib/data";
@@ -119,6 +120,11 @@ function PlaybookPage() {
     queryFn: () => fetchPlaybookFolders(teamFilter),
     enabled: teamFilter !== "ALL" && tab === "mine",
   });
+  const folderMemberships = useQuery({
+    queryKey: ["play-folder-memberships", teamFilter],
+    queryFn: () => fetchPlayFolderMemberships(teamFilter),
+    enabled: teamFilter !== "ALL" && tab === "mine",
+  });
 
   const myUserId = me.user?.id ?? null;
 
@@ -154,10 +160,10 @@ function PlaybookPage() {
         if (teamFilter === "ALL") return true;
         if (!(teamsByPlay.get(p.id) ?? []).includes(teamFilter)) return false;
         if (folderFilter === "ALL") return true;
-        const assignment = assignments.data?.find((a) => a.play_id === p.id && a.team_id === teamFilter);
-        return folderFilter === "UNFILED" ? !assignment?.folder_id : assignment?.folder_id === folderFilter;
+        const memberships = (folderMemberships.data ?? []).filter((m) => m.play_id === p.id);
+        return folderFilter === "UNFILED" ? memberships.length === 0 : memberships.some((m) => m.folder_id === folderFilter);
       }),
-    [myPlays, teamFilter, teamsByPlay, folderFilter, assignments.data],
+    [myPlays, teamFilter, teamsByPlay, folderFilter, folderMemberships.data],
   );
 
 
@@ -331,12 +337,12 @@ function PlaybookPage() {
   });
   const folderDelete = useMutation({
     mutationFn: deletePlaybookFolder,
-    onSuccess: () => { setFolder("ALL"); void queryClient.invalidateQueries({ queryKey: ["playbook-folders", teamFilter] }); void queryClient.invalidateQueries({ queryKey: ["play-assignments"] }); toast.success("Folder deleted; plays moved to Unfiled"); },
+    onSuccess: () => { setFolder("ALL"); void queryClient.invalidateQueries({ queryKey: ["playbook-folders", teamFilter] }); void queryClient.invalidateQueries({ queryKey: ["play-folder-memberships", teamFilter] }); toast.success("Folder deleted; plays moved to Unfiled"); },
     onError: (e: Error) => toast.error(e.message),
   });
-  const moveFolder = useMutation({
-    mutationFn: ({ playId, folderId }: { playId: string; folderId: string | null }) => movePlayToFolder(playId, teamFilter, folderId),
-    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ["play-assignments"] }); toast.success("Play moved"); },
+  const toggleFolder = useMutation({
+    mutationFn: ({ playId, folderId, included }: { playId: string; folderId: string; included: boolean }) => setPlayFolderMembership(playId, teamFilter, folderId, included),
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ["play-folder-memberships", teamFilter] }); toast.success("Folders updated"); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -531,8 +537,8 @@ function PlaybookPage() {
                 savingTeams={assignTeams.isPending}
                 activeTeamId={teamFilter !== "ALL" ? teamFilter : null}
                 folders={folders.data ?? []}
-                folderId={assignments.data?.find((a) => a.play_id === p.id && a.team_id === teamFilter)?.folder_id ?? null}
-                onMoveFolder={(folderId) => moveFolder.mutate({ playId: p.id, folderId })}
+                folderIds={(folderMemberships.data ?? []).filter((m) => m.play_id === p.id).map((m) => m.folder_id)}
+                onToggleFolder={(folderId, included) => toggleFolder.mutate({ playId: p.id, folderId, included })}
                 onPublish={(anonymous) =>
                   publish.mutate({
                     p,
@@ -575,8 +581,8 @@ function PlayCard({
   onAnonymous,
   activeTeamId,
   folders,
-  folderId,
-  onMoveFolder,
+  folderIds,
+  onToggleFolder,
 }: {
   play: Play;
   canEdit: boolean;
@@ -597,8 +603,8 @@ function PlayCard({
   onAnonymous: (anonymous: boolean) => void;
   activeTeamId: string | null;
   folders: TeamPlaybookFolder[];
-  folderId: string | null;
-  onMoveFolder: (folderId: string | null) => void;
+  folderIds: string[];
+  onToggleFolder: (folderId: string, included: boolean) => void;
 }) {
 
   const [menu, setMenu] = useState(false);
@@ -689,17 +695,10 @@ function PlayCard({
           <BubbleButton size="sm" tone="neutral" onClick={openTeams}>
             Teams
           </BubbleButton>
-          {activeTeamId ? (
-            <select
-              aria-label={`Move ${play.name} to folder`}
-              className="min-h-11 rounded-full border border-border bg-surface-2 px-3 text-xs font-bold text-foreground"
-              value={folderId ?? ""}
-              onChange={(e) => onMoveFolder(e.target.value || null)}
-            >
-              <option value="">Unfiled</option>
-              {folders.map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
-            </select>
-          ) : null}
+          {activeTeamId && folders.length ? folders.map((folder) => {
+            const included = folderIds.includes(folder.id);
+            return <BubbleButton key={folder.id} size="sm" tone={included ? "grape" : "neutral"} onClick={() => onToggleFolder(folder.id, !included)}>{included ? "✓ " : "+ "}{folder.name}</BubbleButton>;
+          }) : null}
           {canEdit && play.is_shared ? (
             <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onUnshare}>
               Stop sharing
