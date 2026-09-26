@@ -320,7 +320,17 @@ function LiveGamePage() {
     );
   }, []);
 
+  // Mirror of the current step, updated synchronously so a finished sequence
+  // can never commit again (double taps) or fall back into another prompt.
+  const stepRef = useRef<Step>(step);
+  stepRef.current = step;
+  const goStep = (next: Step) => {
+    stepRef.current = next;
+    setStep(next);
+  };
+  /** Finish an event sequence: clears every temporary selection, keeps events. */
   const reset = () => {
+    stepRef.current = { kind: "idle" };
     setPoint(null);
     setStep({ kind: "idle" });
     setActivePlayer(null);
@@ -419,12 +429,11 @@ function LiveGamePage() {
       setLocPick(false);
       return;
     }
-    // A new court tap while an optional follow-up is open skips the follow-up
-    // and starts the next event — rapid entries are never dropped.
+    // A court tap while an optional follow-up is open ends the sequence (the
+    // parent event is already saved). It never reopens "Who?"; the court is
+    // idle and the next tap starts a fresh event.
     if (step.kind === "assist" || step.kind === "miss" || step.kind === "oppMiss") {
-      setActivePlayer(null);
-      setPoint(p);
-      setStep({ kind: "player" });
+      reset();
       return;
     }
     if (step.kind === "reboundLoc") {
@@ -442,19 +451,19 @@ function LiveGamePage() {
     }
     if (step.kind !== "idle") return;
     setPoint(p);
-    setStep({ kind: "player" });
+    goStep({ kind: "player" });
   };
 
   /* ---------------- flow handlers ---------------- */
   const pickPlayer = (playerId: string) => {
     if (playerId === "__opp") {
       setActivePlayer(null);
-      setStep({ kind: "oppStat" });
+      goStep({ kind: "oppStat" });
       return;
     }
     setActivePlayer(playerId);
     ensureOnFloor(playerId);
-    setStep({ kind: "stat" });
+    goStep({ kind: "stat" });
   };
 
   const pickStat = (statKey: string) => {
@@ -472,7 +481,7 @@ function LiveGamePage() {
         points: value,
         result: `${value}PT`,
       });
-      setStep({ kind: "assist", eventId: e.id });
+      goStep({ kind: "assist", eventId: e.id });
       return;
     }
     if (statKey === "MISS") {
@@ -484,15 +493,15 @@ function LiveGamePage() {
         zone,
         result: `${value}PT`,
       });
-      setStep({ kind: "miss", eventId: e.id });
+      goStep({ kind: "miss", eventId: e.id });
       return;
     }
     if (statKey === "FOUL") {
-      setStep({ kind: "foul" });
+      goStep({ kind: "foul" });
       return;
     }
     if (statKey === "TURNOVER") {
-      setStep({ kind: "turnover" });
+      goStep({ kind: "turnover" });
       return;
     }
     if (statKey === "STEAL") {
@@ -558,7 +567,7 @@ function LiveGamePage() {
       reset();
     };
   } else if (step.kind === "miss") {
-    overlayTitle = "What happened next?";
+    overlayTitle = "Rebound?";
     choices = onFloor.map((p) => ({ key: p.id, label: `#${p.jersey}`, tone: "grape" as const }));
     choices.push(
       ...bench.map((p) => ({ key: p.id, label: `#${p.jersey}`, tone: "neutral" as const })),
@@ -583,7 +592,7 @@ function LiveGamePage() {
       } else {
         ensureOnFloor(k);
         setPoint(null);
-        setStep({ kind: "reboundLoc", playerId: k, eventId: step.eventId });
+        goStep({ kind: "reboundLoc", playerId: k, eventId: step.eventId });
       }
     };
   } else if (step.kind === "reboundLoc") {
@@ -618,7 +627,7 @@ function LiveGamePage() {
       }
       if (k === "MISS") {
         const e = addEvent({ event_type: "OPP_MISS", ...loc, result: `${value}PT` });
-        setStep({ kind: "oppMiss", eventId: e.id });
+        goStep({ kind: "oppMiss", eventId: e.id });
         return;
       }
       addEvent({ event_type: `OPP_${k}`, ...loc });
@@ -686,6 +695,16 @@ function LiveGamePage() {
         result: k === "__skip" ? null : k,
       });
       reset();
+    };
+  }
+
+  // Guard: a pick only applies to the step it was rendered for.
+  {
+    const renderedStep = step;
+    const inner = onPick;
+    onPick = (k) => {
+      if (stepRef.current !== renderedStep) return;
+      inner(k);
     };
   }
 
