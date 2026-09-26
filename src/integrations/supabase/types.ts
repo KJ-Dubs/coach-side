@@ -260,6 +260,44 @@ export type Database = {
         }
         Relationships: []
       }
+      assignment_attachments: {
+        Row: {
+          assignment_id: string
+          attachment_type: string
+          created_at: string
+          id: string
+          metadata: Json
+          related_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          assignment_id: string
+          attachment_type: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          related_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          attachment_type?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          related_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_attachments_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignment_targets: {
         Row: {
           assignment_id: string
@@ -713,6 +751,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          player_id: string | null
           team_id: string
           title: string | null
           type: string
@@ -722,6 +761,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          player_id?: string | null
           team_id: string
           title?: string | null
           type: string
@@ -731,12 +771,20 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          player_id?: string | null
           team_id?: string
           title?: string | null
           type?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "conversations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "conversations_team_id_fkey"
             columns: ["team_id"]
@@ -1727,6 +1775,8 @@ export type Database = {
           deleted_at: string | null
           edited_at: string | null
           id: string
+          pinned_at: string | null
+          pinned_by: string | null
           sender_id: string
         }
         Insert: {
@@ -1736,6 +1786,8 @@ export type Database = {
           deleted_at?: string | null
           edited_at?: string | null
           id?: string
+          pinned_at?: string | null
+          pinned_by?: string | null
           sender_id: string
         }
         Update: {
@@ -1745,6 +1797,8 @@ export type Database = {
           deleted_at?: string | null
           edited_at?: string | null
           id?: string
+          pinned_at?: string | null
+          pinned_by?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -2087,6 +2141,58 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      play_folder_memberships: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          folder_id: string
+          id: string
+          play_id: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          folder_id: string
+          id?: string
+          play_id: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          folder_id?: string
+          id?: string
+          play_id?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "play_folder_memberships_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "team_playbook_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "play_folder_memberships_play_id_fkey"
+            columns: ["play_id"]
+            isOneToOne: false
+            referencedRelation: "plays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "play_folder_memberships_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       play_frames: {
         Row: {
@@ -3255,6 +3361,10 @@ export type Database = {
         Args: { _other: string; _team: string }
         Returns: string
       }
+      ensure_player_coaches_conversation: {
+        Args: { _player: string; _team: string }
+        Returns: string
+      }
       ensure_team_conversation: {
         Args: { _team: string; _type: string }
         Returns: string
@@ -3388,6 +3498,14 @@ export type Database = {
         Returns: undefined
       }
       set_play_of_the_day: { Args: { _play: string }; Returns: undefined }
+      set_team_message_pinned: {
+        Args: { _message: string; _pinned: boolean }
+        Returns: undefined
+      }
+      sync_player_coaches_conversation: {
+        Args: { _conversation: string }
+        Returns: undefined
+      }
       team_directory: {
         Args: { _team: string }
         Returns: {
