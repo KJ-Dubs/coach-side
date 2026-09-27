@@ -20,6 +20,7 @@ import type { GameEvent, Player } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { fmtSplit, opponentLine, scoreFromEvents } from "@/lib/stats";
 import { EventEditor } from "@/components/court/EventEditor";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/_authenticated/game/$gameId")({
   head: () => ({
@@ -35,6 +36,8 @@ export const Route = createFileRoute("/_authenticated/game/$gameId")({
         property: "og:description",
         content: "Courtside basketball stat entry that never leaves the court.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: LiveGamePage,
@@ -52,17 +55,18 @@ type Step =
   | { kind: "turnover" }
   | { kind: "reboundLoc"; playerId: string; eventId: string }
   | { kind: "oppStat" }
-  | { kind: "oppMiss"; eventId: string };
+  | { kind: "oppMiss"; eventId: string }
+  | { kind: "ft"; made: boolean };
 
 const STAT_CHOICES: Choice[] = [
   { key: "MADE", label: "MAKE", tone: "flame" },
   { key: "MISS", label: "MISS", tone: "grape" },
-  { key: "REBOUND", label: "REB" },
-  { key: "ASSIST", label: "AST" },
-  { key: "STEAL", label: "STL" },
-  { key: "TURNOVER", label: "TO" },
-  { key: "BLOCK", label: "BLK" },
-  { key: "FOUL", label: "FOUL" },
+  { key: "REBOUND", label: "Rebound", tone: "grape" },
+  { key: "ASSIST", label: "Assist", tone: "grape" },
+  { key: "STEAL", label: "Steal", tone: "grape" },
+  { key: "TURNOVER", label: "Turnover", tone: "grape" },
+  { key: "BLOCK", label: "Block", tone: "grape" },
+  { key: "FOUL", label: "Foul", tone: "grape" },
 ];
 
 function LiveGamePage() {
@@ -91,7 +95,8 @@ function LiveGamePage() {
   const [activePlayer, setActivePlayer] = useState<string | null>(null);
   const [subOut, setSubOut] = useState<string | null>(null);
   const [showBench, setShowBench] = useState(false);
-  const [ftPlayer, setFtPlayer] = useState<string | null>(null);
+  const [showOtherPlayers, setShowOtherPlayers] = useState(false);
+  const [opponentExpanded, setOpponentExpanded] = useState(true);
   const [finalized, setFinalized] = useState(false);
   const [endPrompt, setEndPrompt] = useState(false);
   const [courtZoom, setCourtZoom] = useState<CourtZoom>("full");
@@ -100,6 +105,11 @@ function LiveGamePage() {
   const [pendingSubIn, setPendingSubIn] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [locPick, setLocPick] = useState(false);
+  const isMobile = useIsMobile();
+
+  useEffect(() => {
+    setOpponentExpanded(!isMobile);
+  }, [isMobile]);
 
   const toggleOrientationLock = useCallback(async () => {
     try {
@@ -326,6 +336,7 @@ function LiveGamePage() {
   stepRef.current = step;
   const goStep = (next: Step) => {
     stepRef.current = next;
+    setShowOtherPlayers(false);
     setStep(next);
   };
   /** Finish an event sequence: clears every temporary selection, keeps events. */
@@ -334,6 +345,7 @@ function LiveGamePage() {
     setPoint(null);
     setStep({ kind: "idle" });
     setActivePlayer(null);
+    setShowOtherPlayers(false);
   };
 
   /* ---------------- end of game ---------------- */
@@ -527,6 +539,14 @@ function LiveGamePage() {
     reset();
   };
 
+  const playerChoiceLabel = (player: Player) => {
+    const shortName = player.name.trim().split(/\s+/)[0] ?? "";
+    return `#${player.jersey}${shortName ? ` · ${shortName}` : ""}`;
+  };
+  const playerChoices = (list: Player[], tone: Choice["tone"] = "grape") =>
+    list.map((player) => ({ key: player.id, label: playerChoiceLabel(player), tone }));
+  const revealOtherChoice: Choice = { key: "__other", label: "Other Player", tone: "neutral" };
+
   /* ---------------- overlay content per step ---------------- */
   let overlayTitle = "";
   let choices: Choice[] = [];
@@ -534,26 +554,56 @@ function LiveGamePage() {
 
   if (step.kind === "player") {
     overlayTitle = "Who?";
-    choices = onFloor.map((p) => ({ key: p.id, label: `#${p.jersey}`, tone: "grape" as const }));
-    choices.push(
-      ...bench.map((p) => ({ key: p.id, label: `#${p.jersey}`, tone: "neutral" as const })),
-    );
-    choices.push({ key: "__opp", label: "OPP", tone: "flame" });
-    choices.push({ key: "__cancel", label: "✕", tone: "ghost" });
-    onPick = (k) => (k === "__cancel" ? reset() : pickPlayer(k));
+    choices = playerChoices(onFloor);
+    if (bench.length) {
+      choices.push(...(showOtherPlayers ? playerChoices(bench, "neutral") : [revealOtherChoice]));
+    }
+    choices.push({ key: "__opp", label: "Opponent", tone: "neutral" });
+    choices.push({ key: "__cancel", label: "Cancel", tone: "ghost" });
+    onPick = (k) => {
+      if (k === "__other") return setShowOtherPlayers(true);
+      if (k === "__cancel") return reset();
+      pickPlayer(k);
+    };
   } else if (step.kind === "stat") {
     const zone = point ? ZONE_LABEL[zoneOf(point.x, point.y)] : "";
     overlayTitle = zone ? `${zone} · what happened?` : "What happened?";
-    choices = [...STAT_CHOICES, { key: "__cancel", label: "✕", tone: "ghost" }];
+    choices = [...STAT_CHOICES, { key: "__cancel", label: "Cancel", tone: "ghost" }];
     onPick = (k) => (k === "__cancel" ? reset() : pickStat(k));
+  } else if (step.kind === "ft") {
+    overlayTitle = "Who shot it?";
+    choices = playerChoices(onFloor);
+    if (bench.length) {
+      choices.push(...(showOtherPlayers ? playerChoices(bench, "neutral") : [revealOtherChoice]));
+    }
+    choices.push({ key: "__cancel", label: "Cancel", tone: "ghost" });
+    onPick = (k) => {
+      if (k === "__other") return setShowOtherPlayers(true);
+      if (k === "__cancel") return reset();
+      ensureOnFloor(k);
+      addEvent({
+        event_type: step.made ? "FT_MADE" : "FT_MISS",
+        player_id: k,
+        points: step.made ? 1 : 0,
+        x: 0.404,
+        y: 0.5,
+        zone: "freethrow",
+        result: "FT",
+      });
+      reset();
+    };
   } else if (step.kind === "assist") {
     overlayTitle = "Assist?";
-    choices = onFloor
-      .filter((p) => p.id !== activePlayer)
-      .map((p) => ({ key: p.id, label: `#${p.jersey}`, tone: "grape" as const }));
-    choices.push({ key: "__unassisted", label: "UNASSISTED", tone: "neutral" });
-    choices.push({ key: "__skip", label: "SKIP", tone: "ghost" });
+    const eligibleFloor = onFloor.filter((p) => p.id !== activePlayer);
+    const eligibleBench = bench.filter((p) => p.id !== activePlayer);
+    choices = playerChoices(eligibleFloor);
+    if (eligibleBench.length) {
+      choices.push(...(showOtherPlayers ? playerChoices(eligibleBench, "neutral") : [revealOtherChoice]));
+    }
+    choices.push({ key: "__unassisted", label: "Unassisted", tone: "neutral" });
+    choices.push({ key: "__skip", label: "Skip", tone: "ghost" });
     onPick = (k) => {
+      if (k === "__other") return setShowOtherPlayers(true);
       if (k !== "__skip" && k !== "__unassisted") {
         ensureOnFloor(k);
         addEvent({
@@ -568,14 +618,15 @@ function LiveGamePage() {
     };
   } else if (step.kind === "miss") {
     overlayTitle = "Rebound?";
-    choices = onFloor.map((p) => ({ key: p.id, label: `#${p.jersey}`, tone: "grape" as const }));
-    choices.push(
-      ...bench.map((p) => ({ key: p.id, label: `#${p.jersey}`, tone: "neutral" as const })),
-    );
-    choices.push({ key: "__opp", label: "OPP REB", tone: "flame" });
-    choices.push({ key: "__oob", label: "OUT OF BOUNDS", tone: "neutral" });
-    choices.push({ key: "__skip", label: "SKIP", tone: "ghost" });
+    choices = playerChoices(onFloor);
+    if (bench.length) {
+      choices.push(...(showOtherPlayers ? playerChoices(bench, "neutral") : [revealOtherChoice]));
+    }
+    choices.push({ key: "__opp", label: "Opponent rebound", tone: "grape" });
+    choices.push({ key: "__oob", label: "Out of bounds", tone: "neutral" });
+    choices.push({ key: "__skip", label: "Skip", tone: "ghost" });
     onPick = (k) => {
+      if (k === "__other") return setShowOtherPlayers(true);
       if (k === "__opp") {
         addEvent({ event_type: "OPP_REBOUND", result: "DEF", related_event_id: step.eventId });
         reset();
@@ -597,7 +648,7 @@ function LiveGamePage() {
     };
   } else if (step.kind === "reboundLoc") {
     overlayTitle = `Tap the rebound spot for #${byId.get(step.playerId)?.jersey ?? ""}`;
-    choices = [{ key: "__skip", label: "SKIP LOCATION", tone: "ghost" }];
+    choices = [{ key: "__skip", label: "Skip location", tone: "ghost" }];
     onPick = () => {
       addEvent({
         event_type: "REBOUND",
@@ -610,13 +661,13 @@ function LiveGamePage() {
   } else if (step.kind === "oppStat") {
     const zone = point ? ZONE_LABEL[zoneOf(point.x, point.y)] : "";
     const value = point ? shotValue(point.x, point.y) : 2;
-    overlayTitle = `OPP${zone ? ` · ${zone}` : ""} · what happened?`;
+    overlayTitle = `Opponent${zone ? ` · ${zone}` : ""} · what happened?`;
     choices = [
-      { key: "MADE", label: `MAKE ${value}`, tone: "flame" },
-      { key: "MISS", label: "MISS", tone: "grape" },
-      { key: "TURNOVER", label: "TO" },
-      { key: "FOUL", label: "FOUL" },
-      { key: "__cancel", label: "✕", tone: "ghost" },
+      { key: "MADE", label: `Make ${value}`, tone: "flame" },
+      { key: "MISS", label: "Miss", tone: "grape" },
+      { key: "TURNOVER", label: "Turnover", tone: "grape" },
+      { key: "FOUL", label: "Foul", tone: "grape" },
+      { key: "__cancel", label: "Cancel", tone: "ghost" },
     ];
     onPick = (k) => {
       if (k === "__cancel" || !point) return reset();
@@ -636,13 +687,17 @@ function LiveGamePage() {
   } else if (step.kind === "oppMiss") {
     overlayTitle = "Rebound?";
     choices = [
-      { key: "__oreb", label: "OPP OFF REB", tone: "flame" },
-      ...onFloor.map((p) => ({ key: p.id, label: `#${p.jersey} DREB`, tone: "grape" as const })),
-      { key: "__usreb", label: "US DREB (team)", tone: "neutral" },
-      { key: "__oob", label: "OUT OF BOUNDS", tone: "neutral" },
-      { key: "__skip", label: "SKIP", tone: "ghost" },
+      { key: "__oreb", label: "Opponent Off. Reb", tone: "grape" },
+      ...playerChoices(onFloor),
     ];
+    if (bench.length) {
+      choices.push(...(showOtherPlayers ? playerChoices(bench, "neutral") : [revealOtherChoice]));
+    }
+    choices.push({ key: "__usreb", label: "US Def. Reb · team", tone: "neutral" });
+    choices.push({ key: "__oob", label: "Out of bounds", tone: "neutral" });
+    choices.push({ key: "__skip", label: "Skip", tone: "ghost" });
     onPick = (k) => {
+      if (k === "__other") return setShowOtherPlayers(true);
       if (k === "__oreb") {
         addEvent({ event_type: "OPP_REBOUND", result: "OFF", related_event_id: step.eventId });
       } else if (k === "__oob") {
@@ -650,6 +705,7 @@ function LiveGamePage() {
       } else if (k === "__usreb") {
         addEvent({ event_type: "REBOUND", result: "DEF", related_event_id: step.eventId });
       } else if (k !== "__skip") {
+        ensureOnFloor(k);
         addEvent({ event_type: "REBOUND", player_id: k, result: "DEF", related_event_id: step.eventId });
       }
       reset();
@@ -657,12 +713,12 @@ function LiveGamePage() {
   } else if (step.kind === "foul") {
     overlayTitle = "Foul type";
     choices = [
-      { key: "SHOOTING", label: "SHOOTING", tone: "flame" },
-      { key: "OFFENSIVE", label: "OFFENSIVE" },
-      { key: "DEFENSIVE", label: "DEFENSIVE" },
-      { key: "LOOSE BALL", label: "LOOSE BALL" },
-      { key: "OTHER", label: "OTHER" },
-      { key: "__skip", label: "SKIP", tone: "ghost" },
+      { key: "SHOOTING", label: "Shooting", tone: "grape" },
+      { key: "OFFENSIVE", label: "Offensive", tone: "grape" },
+      { key: "DEFENSIVE", label: "Defensive", tone: "grape" },
+      { key: "LOOSE BALL", label: "Loose ball", tone: "grape" },
+      { key: "OTHER", label: "Other", tone: "grape" },
+      { key: "__skip", label: "Skip", tone: "ghost" },
     ];
     onPick = (k) => {
       addEvent({
@@ -678,12 +734,12 @@ function LiveGamePage() {
   } else if (step.kind === "turnover") {
     overlayTitle = "Turnover type";
     choices = [
-      { key: "BAD PASS", label: "BAD PASS", tone: "flame" },
-      { key: "TRAVEL", label: "TRAVEL" },
-      { key: "OFFENSIVE FOUL", label: "OFF FOUL" },
-      { key: "LOST BALL", label: "LOST BALL" },
-      { key: "OTHER", label: "OTHER" },
-      { key: "__skip", label: "SKIP", tone: "ghost" },
+      { key: "BAD PASS", label: "Bad pass", tone: "grape" },
+      { key: "TRAVEL", label: "Travel", tone: "grape" },
+      { key: "OFFENSIVE FOUL", label: "Offensive foul", tone: "grape" },
+      { key: "LOST BALL", label: "Lost ball", tone: "grape" },
+      { key: "OTHER", label: "Other", tone: "grape" },
+      { key: "__skip", label: "Skip", tone: "ghost" },
     ];
     onPick = (k) => {
       addEvent({
@@ -738,500 +794,284 @@ function LiveGamePage() {
 
   return (
     <div className="min-h-screen p-2 sm:p-3">
-      <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-2 lg:flex-row">
-        {/* COURT — always visible, never replaced */}
-        <div className="flex flex-1 flex-col items-center gap-2">
-          <Panel className="flex w-full flex-wrap items-center gap-2 p-2">
+      <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-2">
+        {/* SCORE + CLOCK — compact and sticky */}
+        <Panel className="sticky top-1 z-40 flex flex-col gap-2 border-grape/50 bg-background/95 p-2 backdrop-blur">
+          <div className="grid grid-cols-3 gap-2">
+            <StatTile label={game.data ? "Us" : "Team"} value={teamScore} tone="grape" className="py-2 [&>div:nth-child(2)]:text-3xl" />
+            <StatTile label="Opp" value={oppScore} tone="flame" className="py-2 [&>div:nth-child(2)]:text-3xl" />
+            <StatTile label="Period" value={isOvertime ? `OT${quarter - periods}` : `Q${quarter}`} className="py-2" />
+          </div>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:grid-cols-[auto_minmax(160px,1fr)_auto_auto_auto]">
+            <Pill tone="neutral" className="justify-center px-4 py-2 text-xl font-black tabular-nums sm:text-2xl">
+              {formatClock(clock)}
+            </Pill>
             <BubbleButton
-              size="sm"
-              tone="grape"
-              onClick={() => navigate({ to: "/dashboard" })}
+              size="lg"
+              tone="neutral"
+              className="min-h-14 min-w-28 text-lg sm:order-none"
+              onClick={() => setRunning((r) => !r)}
             >
-              ⌂ Home
+              {running ? "Pause" : "Start"}
+            </BubbleButton>
+            <BubbleButton size="sm" tone="neutral" className="min-h-11" onClick={() => setClock((c) => Math.max(0, c - 10))}>
+              −10s
+            </BubbleButton>
+            <BubbleButton size="sm" tone="neutral" className="min-h-11" onClick={() => setClock((c) => c + 10)}>
+              +10s
             </BubbleButton>
             <BubbleButton
-              size="sm"
-              tone="flame"
-              onClick={() => navigate({ to: "/board" })}
+              size="md"
+              tone="neutral"
+              className="col-span-2 min-h-12 sm:col-span-1"
+              disabled={quarter >= periods}
+              onClick={() => {
+                setQuarter((q) => q + 1);
+                setClock((game.data?.period_minutes ?? 8) * 60);
+                setRunning(false);
+              }}
             >
-              ✎ Timeout Board
+              Next Period
             </BubbleButton>
-            <Pill tone="muted">Court view</Pill>
-            <BubbleButton
-              size="sm"
-              tone={courtZoom === "left" ? "grape" : "neutral"}
-              onClick={() => setCourtZoom("left")}
-            >
-              Half Court
+          </div>
+        </Panel>
+
+        <Panel className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-2 sm:flex sm:flex-wrap">
+          <div className="flex min-w-0 flex-wrap gap-2">
+            <BubbleButton size="sm" tone="neutral" onClick={() => navigate({ to: "/dashboard" })}>⌂ Home</BubbleButton>
+            <BubbleButton size="sm" tone="grape" onClick={() => navigate({ to: "/board" })}>✎ Timeout Board</BubbleButton>
+          </div>
+          <div className="flex shrink-0 gap-1.5 sm:ml-auto">
+            <BubbleButton size="sm" tone={courtZoom === "left" ? "grape" : "neutral"} onClick={() => setCourtZoom("left")}>Half</BubbleButton>
+            <BubbleButton size="sm" tone={courtZoom === "full" ? "grape" : "neutral"} onClick={() => setCourtZoom("full")}>Full</BubbleButton>
+            <BubbleButton size="sm" tone={orientLocked ? "grape" : "neutral"} onClick={() => void toggleOrientationLock()}>
+              {orientLocked ? "🔒" : "⟳"}
+              <span className="sr-only sm:not-sr-only">Landscape</span>
             </BubbleButton>
-            <BubbleButton
-              size="sm"
-              tone={courtZoom === "full" ? "flame" : "neutral"}
-              onClick={() => setCourtZoom("full")}
-            >
-              Full Court
-            </BubbleButton>
-            <BubbleButton
-              size="sm"
-              tone={orientLocked ? "flame" : "neutral"}
-              onClick={() => void toggleOrientationLock()}
-            >
-              {orientLocked ? "🔒 Landscape" : "⟳ Lock Landscape"}
-            </BubbleButton>
-          </Panel>
-          <Court
-            variant="full"
-            zoom={courtZoom}
-            className="mx-auto w-full"
-            style={
-              courtZoom === "full"
-                ? { maxWidth: "100%" }
-                : { maxWidth: "min(100%, calc((100dvh - 5rem) * 0.94))" }
-            }
+          </div>
+        </Panel>
 
-            onCourtPoint={onCourtPoint}
-            overlay={
-              <>
-                {point ? (
-                  <div
-                    className="pointer-events-none absolute z-10 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-flame bg-flame/40 bubble-pop"
-                    style={{
-                      left: `${halfToLocal(point).x * 100}%`,
-                      top: `${halfToLocal(point).y * 100}%`,
-                    }}
-                  />
-                ) : null}
-
-                {step.kind !== "idle" ? (
-                  <div
-                    className="absolute z-20 w-[54%] max-w-[420px] -translate-x-1/2 -translate-y-1/2 bubble-pop"
-                    style={{ left: `${clusterX * 100}%`, top: `${clusterY * 100}%` }}
-                  >
-                    <div className="rounded-3xl border border-grape/60 bg-background/90 p-2 shadow-2xl shadow-black/60 backdrop-blur">
-                      <div className="mb-2 inline-flex rounded-full bg-grape/25 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-foreground">
-                        {overlayTitle}
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {choices.map((c) => (
-                          <BubbleButton
-                            key={c.key}
-                            size="sm"
-                            tone={c.tone ?? "neutral"}
-                            className="min-w-[52px]"
-                            onClick={() => onPick(c.key)}
-                          >
-                            {c.label}
-                          </BubbleButton>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-
-                {pendingSubIn ? (
-                  <div className="absolute left-1/2 top-2 z-30 w-[min(92%,520px)] -translate-x-1/2 bubble-pop">
-                    <div className="rounded-3xl border border-flame/70 bg-background/95 p-2 shadow-2xl shadow-black/60 backdrop-blur">
-                      <div className="mb-2 inline-flex rounded-full bg-flame/25 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-foreground">
-                        #{byId.get(pendingSubIn)?.jersey ?? "?"} is in · who came out?
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {onFloor.map((p) => (
-                          <BubbleButton
-                            key={p.id}
-                            size="lg"
-                            tone="grape"
-                            className="min-w-[72px]"
-                            onClick={() => resolveSubOut(p.id)}
-                          >
-                            #{p.jersey}
-                          </BubbleButton>
-                        ))}
-                        <BubbleButton size="sm" tone="ghost" onClick={() => setPendingSubIn(null)}>
-                          Keep lineup
-                        </BubbleButton>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-                {locPick ? (
-                  <div className="pointer-events-none absolute left-1/2 top-2 z-30 -translate-x-1/2 rounded-full border border-flame bg-background/90 px-4 py-2 text-sm font-black">
-                    Tap the new spot for this event
-                  </div>
-                ) : null}
-
-                {/* location markers for the current game */}
-                <svg className="pointer-events-none absolute inset-0 h-full w-full">
-                  {events
-                    .filter((e) => e.x != null)
-                    .slice(-60)
-                    .map((e) => {
-                      const hollow = String(e.event_type).endsWith("MISS");
-                      const c = statColor(String(e.event_type));
-                      return (
-                        <circle
-                          key={e.id}
-                          cx={`${halfToLocal({ x: e.x as number, y: e.y as number }).x * 100}%`}
-                          cy={`${halfToLocal({ x: e.x as number, y: e.y as number }).y * 100}%`}
-                          r={5}
-                          fill={hollow ? "transparent" : c}
-                          stroke={c}
-                          strokeWidth={2}
-                          opacity={0.8}
-                        />
-                      );
-                    })}
-                </svg>
-              </>
-            }
-          />
-        </div>
-
-        {/* CONTROL RAIL */}
-        <div className="flex w-full flex-col gap-2 lg:w-[340px] xl:w-[380px]">
-          <Panel className="flex flex-col gap-2 p-2">
-            <div className="grid grid-cols-3 gap-2">
-              <StatTile label={game.data ? "Us" : "Team"} value={teamScore} tone="grape" />
-              <StatTile label="Opp" value={oppScore} tone="flame" />
-              <StatTile
-                label="Period"
-                value={isOvertime ? `OT${quarter - periods}` : `Q${quarter}`}
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Pill tone="neutral" className="text-sm">
-                {formatClock(clock)}
-              </Pill>
-              <BubbleButton size="sm" tone={running ? "flame" : "grape"} onClick={() => setRunning((r) => !r)}>
-                {running ? "Pause" : "Start"}
-              </BubbleButton>
-              <BubbleButton size="sm" tone="neutral" onClick={() => setClock((c) => c + 10)}>
-                +10s
-              </BubbleButton>
-              <BubbleButton size="sm" tone="neutral" onClick={() => setClock((c) => Math.max(0, c - 10))}>
-                −10s
-              </BubbleButton>
-              <BubbleButton
-                size="sm"
-                tone="neutral"
-                disabled={quarter >= periods}
-                onClick={() => {
-                  setQuarter((q) => q + 1);
-                  setClock((game.data?.period_minutes ?? 8) * 60);
-                  setRunning(false);
-                }}
-              >
-                Next Period
-              </BubbleButton>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Pill tone="muted">OPP</Pill>
-              {[2, 3].map((n) => (
-                <BubbleButton
-                  key={n}
-                  size="sm"
-                  tone="flame"
-                  onClick={() =>
-                    addEvent({ event_type: "OPP_MADE", points: n, result: `${n}PT`, context: { shot_value: n } })
-                  }
-                >
-                  +{n}
-                </BubbleButton>
-              ))}
-              <BubbleButton size="sm" tone="flame" onClick={() => addEvent({ event_type: "OPP_FT_MADE", points: 1, result: "FT" })}>
-                FT ✓
-              </BubbleButton>
-              <BubbleButton size="sm" tone="neutral" onClick={() => addEvent({ event_type: "OPP_FT_MISS", result: "FT" })}>
-                FT ✗
-              </BubbleButton>
-              <BubbleButton size="sm" tone="neutral" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "OFF" })}>
-                OREB
-              </BubbleButton>
-              <BubbleButton size="sm" tone="neutral" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "DEF" })}>
-                DREB
-              </BubbleButton>
-              <BubbleButton size="sm" tone="neutral" onClick={() => addEvent({ event_type: "OPP_TURNOVER" })}>
-                TO
-              </BubbleButton>
-              <Pill tone={online ? (pending ? "flame" : "grape") : "flame"}>
-                {online ? (pending ? `Syncing ${pending}` : "Synced") : `Offline · ${pending} queued`}
-              </Pill>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Pill tone="muted">OPP FG {fmtSplit(opp.fg)}</Pill>
-              <Pill tone="muted">3PT {fmtSplit(opp.three)}</Pill>
-              <Pill tone="muted">FT {fmtSplit(opp.ft)}</Pill>
-              <Pill tone="flame">OREB {opp.oreb}</Pill>
-              <Pill tone="muted">TO {opp.to}</Pill>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Pill tone="muted">Team fouls {teamFouls}</Pill>
-              <Pill tone="muted">Opponent fouls {oppFouls}</Pill>
-              <BubbleButton
-                size="sm"
-                tone="flame"
-                onClick={() => addEvent({ event_type: "OPP_FOUL" })}
-              >
-                + Opp foul
-              </BubbleButton>
-            </div>
-          </Panel>
-
-          {/* FREE THROWS */}
-          <Panel className="flex flex-col gap-2 p-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Label>Free throws</Label>
-              {ftPlayer ? (
-                <Pill tone="grape">Shooter #{byId.get(ftPlayer)?.jersey ?? "?"}</Pill>
-              ) : (
-                <Pill tone="muted">Tap a shooter</Pill>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {onFloor.map((p) => (
-                <BubbleButton
-                  key={p.id}
-                  size="sm"
-                  tone={ftPlayer === p.id ? "grape" : "neutral"}
-                  onClick={() => setFtPlayer(p.id)}
-                >
-                  #{p.jersey}
-                </BubbleButton>
-              ))}
-              {bench.map((p) => (
-                <BubbleButton
-                  key={p.id}
-                  size="sm"
-                  tone={ftPlayer === p.id ? "grape" : "ghost"}
-                  onClick={() => setFtPlayer(p.id)}
-                >
-                  #{p.jersey}
-                </BubbleButton>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <BubbleButton
-                size="sm"
-                tone="grape"
-                disabled={!ftPlayer}
-                onClick={() =>
-                  ftPlayer &&
-                  (ensureOnFloor(ftPlayer),
-                  addEvent({
-                    event_type: "FT_MADE",
-                    player_id: ftPlayer,
-                    points: 1,
-                    x: 0.404,
-                    y: 0.5,
-                    zone: "freethrow",
-                    result: "FT",
-                  }))
-                }
-              >
-                FT MAKE
-              </BubbleButton>
-              <BubbleButton
-                size="sm"
-                tone="flame"
-                disabled={!ftPlayer}
-                onClick={() =>
-                  ftPlayer &&
-                  (ensureOnFloor(ftPlayer),
-                  addEvent({
-                    event_type: "FT_MISS",
-                    player_id: ftPlayer,
-                    x: 0.404,
-                    y: 0.5,
-                    zone: "freethrow",
-                    result: "FT",
-                  }))
-                }
-              >
-                FT MISS
-              </BubbleButton>
-              <BubbleButton size="sm" tone="ghost" disabled={!ftPlayer} onClick={() => setFtPlayer(null)}>
-                Done
-              </BubbleButton>
-            </div>
-          </Panel>
-
-          {/* END OF GAME */}
-          <Panel className={cn("flex flex-col gap-2 p-2", endPrompt && "border-flame/60")}>
-            <div className="flex flex-wrap items-center gap-2">
-              <Label>Game status</Label>
-              <Pill tone={finalized ? "muted" : "grape"}>{finalized ? "Final — saved" : "In progress"}</Pill>
-              {isOvertime ? <Pill tone="flame">OT{quarter - periods > 1 ? quarter - periods : ""}</Pill> : null}
-            </div>
-            {endPrompt ? (
-              <Pill tone="flame">
-                {teamScore === oppScore
-                  ? "Time expired — tied. Start overtime or end the game."
-                  : "Time expired — saved as final. Open the review or add overtime."}
-              </Pill>
-            ) : null}
-            <div className="flex flex-wrap gap-1.5">
-              <BubbleButton
-                size="sm"
-                tone="danger"
-                disabled={ending}
-                onClick={() => void finishGame()}
-              >
-                {ending ? "Saving…" : finalized ? "Save & open review" : "End Game & Save"}
-              </BubbleButton>
-              <BubbleButton
-                size="sm"
-                tone="grape"
-                disabled={quarter < periods}
-                onClick={startOvertime}
-              >
-                + Overtime ({overtimeMinutes} min)
-              </BubbleButton>
-              <BubbleButton
-                size="sm"
-                tone="neutral"
-                onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}
-              >
-                Review so far
-              </BubbleButton>
-            </div>
-          </Panel>
-
-          <Panel className="flex flex-col gap-2 p-2">
-            <div className="flex items-center gap-2">
-              <Label>On the floor</Label>
-              <BubbleButton
-                size="sm"
-                tone={showBench ? "flame" : "neutral"}
-                onClick={() => {
-                  setShowBench((s) => !s);
-                  setSubOut(null);
-                }}
-              >
-                Sub
-              </BubbleButton>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {onFloor.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => showBench && setSubOut(p.id)}
-                  className={cn(
-                    "flex items-center gap-1 rounded-full border px-3 py-2 text-sm font-black transition-all",
-                    subOut === p.id
-                      ? "border-flame bg-flame/30 text-foreground"
-                      : "border-grape/60 bg-grape/20 text-foreground",
-                  )}
-                >
-                  #{p.jersey}
-                </button>
-              ))}
-            </div>
-            {showBench ? (
-              <div className="flex flex-col gap-1.5 rounded-2xl border border-border bg-surface-2/60 p-2">
-                <Label>{subOut ? "Tap the player coming IN" : "Tap the player coming OUT"}</Label>
-                <div className="flex flex-wrap gap-1.5">
-                  {bench.map((p) => (
-                    <BubbleButton
-                      key={p.id}
-                      size="sm"
-                      tone={subOut ? "flame" : "ghost"}
-                      disabled={!subOut}
-                      onClick={() => doSub(p.id)}
+        <div className="grid min-w-0 gap-2 lg:grid-cols-[minmax(0,1fr)_380px]">
+          {/* COURT — always visible, never replaced */}
+          <div className="flex min-w-0 flex-col items-center gap-2">
+            <Court
+              variant="full"
+              zoom={courtZoom}
+              className="mx-auto w-full"
+              style={courtZoom === "full" ? { maxWidth: "100%" } : { maxWidth: "min(100%, calc((100dvh - 5rem) * 0.94))" }}
+              onCourtPoint={onCourtPoint}
+              overlay={
+                <>
+                  {point ? (
+                    <div
+                      className="pointer-events-none absolute z-10 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-flame bg-flame/40 bubble-pop"
+                      style={{ left: `${halfToLocal(point).x * 100}%`, top: `${halfToLocal(point).y * 100}%` }}
+                    />
+                  ) : null}
+                  {step.kind !== "idle" ? (
+                    <div
+                      className="absolute z-20 w-[72%] max-w-[520px] -translate-x-1/2 -translate-y-1/2 bubble-pop sm:w-[60%]"
+                      style={{ left: `${clusterX * 100}%`, top: `${clusterY * 100}%` }}
                     >
-                      #{p.jersey}
-                    </BubbleButton>
-                  ))}
-                </div>
-              </div>
+                      <div className="rounded-2xl border border-grape/60 bg-background/95 p-2 shadow-2xl shadow-black/60 backdrop-blur">
+                        <div className="mb-2 flex justify-center">
+                          <Label className="bg-grape/25 text-sm text-foreground">{overlayTitle}</Label>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-center">
+                          {choices.map((choice) => {
+                            const primary = choice.key === "MADE" || choice.key === "MISS" || (!choice.key.startsWith("__") && ["player", "ft"].includes(step.kind));
+                            return (
+                              <BubbleButton
+                                key={choice.key}
+                                size={primary ? "lg" : "md"}
+                                tone={choice.tone ?? "neutral"}
+                                className={cn("min-w-0", primary ? "min-h-14 text-base" : "min-h-12", choice.key === "__cancel" && "col-span-2 sm:col-span-1")}
+                                onClick={() => onPick(choice.key)}
+                              >
+                                {choice.label}
+                              </BubbleButton>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                  {pendingSubIn ? (
+                    <div className="absolute left-1/2 top-2 z-30 w-[min(94%,560px)] -translate-x-1/2 bubble-pop">
+                      <div className="rounded-2xl border border-flame/70 bg-background/95 p-2 shadow-2xl shadow-black/60 backdrop-blur">
+                        <Label className="mb-2 bg-flame/25 text-sm text-foreground">
+                          {playerChoiceLabel(byId.get(pendingSubIn) ?? { id: "", team_id: "", jersey: "?", name: "Player", position: null, active: true })} is in · who came out?
+                        </Label>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                          {onFloor.map((p) => (
+                            <BubbleButton key={p.id} size="lg" tone="grape" className="min-h-14" onClick={() => resolveSubOut(p.id)}>
+                              {playerChoiceLabel(p)}
+                            </BubbleButton>
+                          ))}
+                          <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={() => setPendingSubIn(null)}>Keep lineup</BubbleButton>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                  {locPick ? (
+                    <div className="pointer-events-none absolute left-1/2 top-2 z-30 -translate-x-1/2 rounded-full border border-flame bg-background/90 px-4 py-2 text-sm font-black">Tap the new spot for this event</div>
+                  ) : null}
+                  <svg className="pointer-events-none absolute inset-0 h-full w-full">
+                    {events.filter((e) => e.x != null).slice(-60).map((e) => {
+                      const hollow = String(e.event_type).endsWith("MISS");
+                      const color = statColor(String(e.event_type));
+                      return <circle key={e.id} cx={`${halfToLocal({ x: e.x as number, y: e.y as number }).x * 100}%`} cy={`${halfToLocal({ x: e.x as number, y: e.y as number }).y * 100}%`} r={5} fill={hollow ? "transparent" : color} stroke={color} strokeWidth={2} opacity={0.8} />;
+                    })}
+                  </svg>
+                </>
+              }
+            />
+            {step.kind === "idle" ? (
+              <Pill tone="muted" className="justify-center">Tap a court location to start the next event</Pill>
             ) : null}
-          </Panel>
+          </div>
 
-          <Panel className="flex flex-col gap-2 p-2">
-            <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-col gap-2">
+            {/* OUR FREE THROWS — player list appears only after a result is chosen */}
+            <Panel className="flex flex-col gap-2 p-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                <Label>Our free throws</Label>
+                <Pill tone="muted">Choose result</Pill>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <BubbleButton size="lg" tone="flame" className="min-h-14 text-base" onClick={() => goStep({ kind: "ft", made: true })}>FT Made</BubbleButton>
+                <BubbleButton size="md" tone="grape" className="min-h-12" onClick={() => goStep({ kind: "ft", made: false })}>FT Miss</BubbleButton>
+              </div>
+            </Panel>
+
+            {/* OPPONENT */}
+            <Panel className="flex flex-col gap-2 p-2">
               <BubbleButton
-                tone="danger"
-                size="lg"
-                className="flex-1"
-                disabled={!lastEvent}
-                onClick={() => lastEvent && deleteEvent(lastEvent.id)}
-              >
-                ↺ Undo Last
-              </BubbleButton>
-              <BubbleButton
-                tone="neutral"
                 size="sm"
-                onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}
+                tone="neutral"
+                className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl px-3 text-left sm:pointer-events-none"
+                onClick={() => setOpponentExpanded((v) => !v)}
+                aria-expanded={opponentExpanded}
               >
-                Review
+                <span className="min-w-0 truncate text-sm font-black text-foreground">Opponent</span>
+                <span className="shrink-0 text-xs font-bold text-muted-foreground">
+                  FG {fmtSplit(opp.fg)} · TO {opp.to} · OREB {opp.oreb}<span className="sm:hidden"> · {opponentExpanded ? "Hide" : "Track"}</span>
+                </span>
               </BubbleButton>
-            </div>
-            {editingEvent ? (
-              <EventEditor
-                key={editingEvent.id}
-                event={editingEvent}
-                roster={roster}
-                picking={locPick}
-                onPickLocation={() => setLocPick((v) => !v)}
-                onSave={(patch) => {
-                  updateEvent(editingEvent.id, patch);
-                  if (patch.player_id) ensureOnFloor(patch.player_id);
-                  setEditingId(null);
-                  setLocPick(false);
-                }}
-                onDelete={() => {
-                  deleteEvent(editingEvent.id);
-                  setEditingId(null);
-                  setLocPick(false);
-                }}
-                onClose={() => {
-                  setEditingId(null);
-                  setLocPick(false);
-                }}
-              />
-            ) : null}
-            <Label>Events · tap one to edit</Label>
-            <div className="flex max-h-[30vh] flex-col gap-1.5 overflow-y-auto">
-              {[...events]
-                .reverse()
-                .slice(0, 40)
-                .map((e) => (
+              {opponentExpanded ? (
+                <div className="flex flex-col gap-2 bubble-pop">
+                  <div>
+                    <Label>Scoring</Label>
+                    <div className="mt-1.5 grid grid-cols-2 gap-2">
+                      {[2, 3].map((n) => (
+                        <BubbleButton key={n} size="lg" tone="flame" className="min-h-14 text-lg" onClick={() => addEvent({ event_type: "OPP_MADE", points: n, result: `${n}PT`, context: { shot_value: n } })}>+{n}</BubbleButton>
+                      ))}
+                      <BubbleButton size="lg" tone="flame" className="min-h-14" onClick={() => addEvent({ event_type: "OPP_FT_MADE", points: 1, result: "FT" })}>FT Made</BubbleButton>
+                      <BubbleButton size="md" tone="grape" className="min-h-12" onClick={() => addEvent({ event_type: "OPP_FT_MISS", result: "FT" })}>FT Miss</BubbleButton>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Possession</Label>
+                    <div className="mt-1.5 grid grid-cols-3 gap-2">
+                      <BubbleButton size="md" tone="grape" className="min-h-12 px-2" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "OFF" })}>Off. Reb</BubbleButton>
+                      <BubbleButton size="md" tone="grape" className="min-h-12 px-2" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "DEF" })}>Def. Reb</BubbleButton>
+                      <BubbleButton size="md" tone="grape" className="min-h-12 px-2" onClick={() => addEvent({ event_type: "OPP_TURNOVER" })}>Turnover</BubbleButton>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Foul</Label>
+                    <BubbleButton size="md" tone="grape" className="mt-1.5 min-h-12 w-full" onClick={() => addEvent({ event_type: "OPP_FOUL" })}>+ Opp Foul</BubbleButton>
+                  </div>
+                </div>
+              ) : null}
+              <div className={cn("rounded-2xl border border-border/70 bg-surface-2/60 px-3 py-2 text-center text-xs font-bold text-muted-foreground", !opponentExpanded && "hidden sm:block")}>
+                FG {fmtSplit(opp.fg)} · 3PT {fmtSplit(opp.three)} · FT {fmtSplit(opp.ft)} · OREB {opp.oreb} · TO {opp.to} · Fouls {oppFouls}
+              </div>
+            </Panel>
+
+            {/* LINEUP */}
+            <Panel className="flex flex-col gap-2 p-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                <Label>On the floor</Label>
+                <BubbleButton size="md" tone={showBench ? "grape" : "neutral"} className="min-h-12" onClick={() => { setShowBench((value) => !value); setSubOut(null); }}>Sub</BubbleButton>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {onFloor.map((p) => (
+                  <BubbleButton key={p.id} size="md" tone={subOut === p.id ? "flame" : "grape"} className="min-h-12 min-w-0" onClick={() => showBench && setSubOut(p.id)}>
+                    {playerChoiceLabel(p)}
+                  </BubbleButton>
+                ))}
+              </div>
+              {showBench ? (
+                <div className="flex flex-col gap-2 rounded-2xl border border-border bg-surface-2/60 p-2">
+                  <Label>{subOut ? "Who came in?" : "Who came out?"}</Label>
+                  {subOut ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {bench.map((p) => <BubbleButton key={p.id} size="md" tone="grape" className="min-h-12" onClick={() => doSub(p.id)}>{playerChoiceLabel(p)}</BubbleButton>)}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </Panel>
+
+            {/* EVENT / REVIEW / UNDO */}
+            <Panel className="flex flex-col gap-2 p-2">
+              <div className="grid grid-cols-2 gap-2">
+                <BubbleButton tone="neutral" size="md" className="min-h-12" disabled={!lastEvent} onClick={() => lastEvent && deleteEvent(lastEvent.id)}>↺ Undo Last</BubbleButton>
+                <BubbleButton tone="neutral" size="md" className="min-h-12" onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}>Review</BubbleButton>
+              </div>
+              {editingEvent ? (
+                <EventEditor
+                  key={editingEvent.id}
+                  event={editingEvent}
+                  roster={roster}
+                  picking={locPick}
+                  onPickLocation={() => setLocPick((v) => !v)}
+                  onSave={(patch) => { updateEvent(editingEvent.id, patch); if (patch.player_id) ensureOnFloor(patch.player_id); setEditingId(null); setLocPick(false); }}
+                  onDelete={() => { deleteEvent(editingEvent.id); setEditingId(null); setLocPick(false); }}
+                  onClose={() => { setEditingId(null); setLocPick(false); }}
+                />
+              ) : null}
+              <Label>Events · tap one to edit</Label>
+              <div className="flex max-h-[30vh] flex-col gap-1.5 overflow-y-auto">
+                {[...events].reverse().slice(0, 40).map((event) => (
                   <div
-                    key={e.id}
+                    key={event.id}
                     role="button"
                     tabIndex={0}
-                    onClick={() => {
-                      setEditingId(e.id);
-                      setLocPick(false);
-                    }}
-                    className={cn(
-                      "flex min-h-11 cursor-pointer items-center gap-2 rounded-2xl border bg-surface-2/70 px-2 py-1.5",
-                      editingId === e.id ? "border-flame" : "border-border",
-                    )}
+                    onClick={() => { setEditingId(event.id); setLocPick(false); }}
+                    onKeyDown={(keyEvent) => { if (keyEvent.key === "Enter" || keyEvent.key === " ") { setEditingId(event.id); setLocPick(false); } }}
+                    className={cn("grid min-h-11 cursor-pointer grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border bg-surface-2/70 px-2 py-1.5", editingId === event.id ? "border-flame" : "border-border")}
                   >
-                    <Pill tone="muted">Q{e.quarter}</Pill>
-                    <span className="rounded-full bg-grape/25 px-2 py-0.5 text-xs font-black">
-                      {jersey(e)}
-                    </span>
-                    <span className="flex-1 truncate rounded-full bg-surface/70 px-2 py-0.5 text-xs font-bold">
-                      {e.event_type}
-                      {e.result ? ` · ${e.result}` : ""}
-                    </span>
-                    <BubbleButton
-                      size="sm"
-                      tone="ghost"
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        deleteEvent(e.id);
-                      }}
-                    >
-                      ✕
-                    </BubbleButton>
+                    <Pill tone="muted">Q{event.quarter}</Pill>
+                    <span className="rounded-full bg-grape/25 px-2 py-0.5 text-xs font-black">{jersey(event)}</span>
+                    <span className="min-w-0 truncate rounded-full bg-surface/70 px-2 py-0.5 text-xs font-bold">{event.event_type}{event.result ? ` · ${event.result}` : ""}</span>
+                    <BubbleButton size="sm" tone="ghost" aria-label="Delete event" onClick={(clickEvent) => { clickEvent.stopPropagation(); deleteEvent(event.id); }}>✕</BubbleButton>
                   </div>
                 ))}
-              {events.length === 0 ? (
-                <Pill tone="muted">Tap the court to record your first event</Pill>
-              ) : null}
-            </div>
-          </Panel>
+                {events.length === 0 ? <Pill tone="muted">Tap the court to record your first event</Pill> : null}
+              </div>
+            </Panel>
+
+            {/* GAME STATUS */}
+            <Panel className={cn("flex flex-col gap-2 p-2", endPrompt && "border-flame/60")}>
+              <div className="flex flex-wrap items-center gap-2">
+                <Label>Game status</Label>
+                <Pill tone={finalized ? "muted" : "grape"}>{finalized ? "Final — saved" : "In progress"}</Pill>
+                <Pill tone={online ? (pending ? "flame" : "grape") : "flame"}>{online ? (pending ? `Syncing ${pending}` : "Synced") : `Offline · ${pending} queued`}</Pill>
+                <Pill tone="muted">Team fouls {teamFouls}</Pill>
+                {isOvertime ? <Pill tone="flame">OT{quarter - periods > 1 ? quarter - periods : ""}</Pill> : null}
+              </div>
+              {endPrompt ? <Pill tone="flame">{teamScore === oppScore ? "Time expired — tied. Start overtime or end the game." : "Time expired — saved as final. Open the review or add overtime."}</Pill> : null}
+              <div className="grid gap-2 sm:grid-cols-2">
+                <BubbleButton size="lg" tone="danger" className="min-h-16 text-base sm:col-span-2" disabled={ending} onClick={() => void finishGame()}>
+                  {ending ? "Saving…" : finalized ? "Save & open review" : "End Game & Save"}
+                </BubbleButton>
+                <BubbleButton size="lg" tone="grape" className="min-h-14" disabled={quarter < periods} onClick={startOvertime}>+ Overtime ({overtimeMinutes} min)</BubbleButton>
+                <BubbleButton size="md" tone="neutral" className="min-h-12" onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}>Review so far</BubbleButton>
+              </div>
+            </Panel>
+          </div>
         </div>
       </div>
     </div>
