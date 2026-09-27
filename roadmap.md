@@ -146,3 +146,5 @@
 - [x] Compact sticky scoreboard and preserve court-first tracking
 - [x] Add progressive player/free-throw disclosure and grouped opponent controls
 - [x] Verify scoring tests, type safety, build, and phone/iPad interactions
+- [x] Remove visible clock controls, compact court prompts, and add reliable prompt dismissal
+- [x] Verify the no-scroll-focused phone layout and unchanged scoring behavior
