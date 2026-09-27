@@ -148,3 +148,4 @@
 - [x] Verify scoring tests, type safety, build, and phone/iPad interactions
 - [x] Remove visible clock controls, compact court prompts, and add reliable prompt dismissal
 - [x] Verify the no-scroll-focused phone layout and unchanged scoring behavior
+- [x] Restore rebound-location court taps and keep every compact prompt within court bounds
