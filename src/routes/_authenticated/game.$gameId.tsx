@@ -863,7 +863,7 @@ function LiveGamePage() {
                   ) : null}
                   {step.kind !== "idle" && step.kind !== "reboundLoc" ? (
                     <div
-                      className="absolute bottom-2 left-1/2 z-20 max-h-[calc(100%-1rem)] w-[calc(100%-1rem)] max-w-[540px] -translate-x-1/2 overflow-y-auto overscroll-contain bubble-pop sm:w-[min(68%,540px)]"
+                      className="absolute bottom-2 left-1/2 z-20 max-h-[calc(100%_-_1rem)] w-[calc(100%_-_1rem)] max-w-[540px] -translate-x-1/2 overflow-y-auto overscroll-contain bubble-pop sm:w-[min(68%,540px)]"
                       onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}
                     >
                       <div className="rounded-2xl border border-grape/60 bg-background/95 p-1 shadow-2xl shadow-black/60 backdrop-blur">
@@ -919,7 +919,7 @@ function LiveGamePage() {
                     </div>
                   ) : null}
                   {pendingSubIn ? (
-                    <div className="absolute bottom-2 left-1/2 z-30 max-h-[calc(100%-1rem)] w-[calc(100%-1rem)] max-w-[560px] -translate-x-1/2 overflow-y-auto overscroll-contain bubble-pop" onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}>
+                    <div className="absolute bottom-2 left-1/2 z-30 max-h-[calc(100%_-_1rem)] w-[calc(100%_-_1rem)] max-w-[560px] -translate-x-1/2 overflow-y-auto overscroll-contain bubble-pop" onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}>
                       <div className="rounded-2xl border border-flame/70 bg-background/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur">
                         <div className="mb-1.5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1">
                           <Label className="truncate bg-flame/25 px-2 text-xs text-foreground">
