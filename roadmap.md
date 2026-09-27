@@ -145,4 +145,4 @@
 ## Live Game layout cleanup
 - [x] Compact sticky scoreboard and preserve court-first tracking
 - [x] Add progressive player/free-throw disclosure and grouped opponent controls
-- [ ] Verify scoring tests, type safety, build, and phone/iPad interactions
+- [x] Verify scoring tests, type safety, build, and phone/iPad interactions

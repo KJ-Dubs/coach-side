@@ -36,6 +36,8 @@ export const Route = createFileRoute("/_authenticated/game/$gameId")({
         property: "og:description",
         content: "Courtside basketball stat entry that never leaves the court.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: LiveGamePage,
