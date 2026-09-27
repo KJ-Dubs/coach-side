@@ -556,7 +556,7 @@ function LiveGamePage() {
     if (bench.length) {
       choices.push(...(showOtherPlayers ? playerChoices(bench, "neutral") : [revealOtherChoice]));
     }
-    choices.push({ key: "__opp", label: "Opponent", tone: "flame" });
+    choices.push({ key: "__opp", label: "Opponent", tone: "neutral" });
     choices.push({ key: "__cancel", label: "Cancel", tone: "ghost" });
     onPick = (k) => {
       if (k === "__other") return setShowOtherPlayers(true);
@@ -806,7 +806,7 @@ function LiveGamePage() {
             </Pill>
             <BubbleButton
               size="lg"
-              tone={running ? "neutral" : "grape"}
+              tone="neutral"
               className="min-h-14 min-w-28 text-lg sm:order-none"
               onClick={() => setRunning((r) => !r)}
             >
@@ -944,9 +944,10 @@ function LiveGamePage() {
 
             {/* OPPONENT */}
             <Panel className="flex flex-col gap-2 p-2">
-              <button
-                type="button"
-                className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-border bg-surface-2/70 px-3 text-left sm:pointer-events-none"
+              <BubbleButton
+                size="sm"
+                tone="neutral"
+                className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl px-3 text-left sm:pointer-events-none"
                 onClick={() => setOpponentExpanded((v) => !v)}
                 aria-expanded={opponentExpanded}
               >
@@ -954,7 +955,7 @@ function LiveGamePage() {
                 <span className="shrink-0 text-xs font-bold text-muted-foreground">
                   FG {fmtSplit(opp.fg)} · TO {opp.to} · OREB {opp.oreb}<span className="sm:hidden"> · {opponentExpanded ? "Hide" : "Track"}</span>
                 </span>
-              </button>
+              </BubbleButton>
               {opponentExpanded ? (
                 <div className="flex flex-col gap-2 bubble-pop">
                   <div>
@@ -981,7 +982,7 @@ function LiveGamePage() {
                   </div>
                 </div>
               ) : null}
-              <div className="rounded-2xl border border-border/70 bg-surface-2/60 px-3 py-2 text-center text-xs font-bold text-muted-foreground">
+              <div className={cn("rounded-2xl border border-border/70 bg-surface-2/60 px-3 py-2 text-center text-xs font-bold text-muted-foreground", !opponentExpanded && "hidden sm:block")}>
                 FG {fmtSplit(opp.fg)} · 3PT {fmtSplit(opp.three)} · FT {fmtSplit(opp.ft)} · OREB {opp.oreb} · TO {opp.to} · Fouls {oppFouls}
               </div>
             </Panel>
