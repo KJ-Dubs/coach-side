@@ -449,19 +449,20 @@ function LiveGamePage() {
     // A court tap while an optional follow-up is open ends the sequence (the
     // parent event is already saved). It never reopens "Who?"; the court is
     // idle and the next tap starts a fresh event.
-    if (step.kind === "assist" || step.kind === "miss" || step.kind === "oppMiss") {
+    const currentStep = stepRef.current;
+    if (currentStep.kind === "assist" || currentStep.kind === "miss" || currentStep.kind === "oppMiss") {
       reset();
       return;
     }
-    if (step.kind === "reboundLoc") {
+    if (currentStep.kind === "reboundLoc") {
       addEvent({
         event_type: "REBOUND",
-        player_id: step.playerId,
+        player_id: currentStep.playerId,
         x: p.x,
         y: p.y,
         zone: zoneOf(p.x, p.y),
         result: "OFF",
-        related_event_id: step.eventId,
+        related_event_id: currentStep.eventId,
       });
       reset();
       return;
@@ -469,7 +470,7 @@ function LiveGamePage() {
     // While a chooser is open, a tap on the exposed court edge dismisses it.
     // Choice controls stop propagation, and rebound-location mode still uses
     // the court tap above to save its requested location.
-    if (step.kind !== "idle") {
+    if (currentStep.kind !== "idle") {
       reset();
       return;
     }
@@ -779,9 +780,6 @@ function LiveGamePage() {
   // full court, so half-court points are mapped into the visible slice.
   const halfToLocal = (p: { x: number; y: number }) =>
     toLocal(courtZoom, { x: p.x * 0.5, y: p.y });
-  const overlayPoint = halfToLocal(point ?? { x: 0.5, y: 0.5 });
-  const clusterX = Math.min(0.82, Math.max(0.2, overlayPoint.x < 0.5 ? overlayPoint.x + 0.24 : overlayPoint.x - 0.24));
-  const clusterY = Math.min(0.82, Math.max(0.18, overlayPoint.y));
 
   /* ---------------- substitutions ---------------- */
   const doSub = (inId: string) => {
@@ -849,7 +847,7 @@ function LiveGamePage() {
                       style={{ left: `${halfToLocal(point).x * 100}%`, top: `${halfToLocal(point).y * 100}%` }}
                     />
                   ) : null}
-                  {step.kind !== "idle" || pendingSubIn ? (
+                  {(step.kind !== "idle" && step.kind !== "reboundLoc") || pendingSubIn ? (
                     <div
                       className="absolute inset-0 z-[15] rounded-[1.25rem] bg-background/15"
                       aria-label="Dismiss current prompt"
@@ -863,19 +861,18 @@ function LiveGamePage() {
                       }}
                     />
                   ) : null}
-                  {step.kind !== "idle" ? (
+                  {step.kind !== "idle" && step.kind !== "reboundLoc" ? (
                     <div
-                      className="absolute z-20 w-[84%] max-w-[540px] -translate-x-1/2 -translate-y-1/2 bubble-pop sm:w-[68%]"
-                      style={{ left: `${clusterX * 100}%`, top: `${clusterY * 100}%` }}
+                      className="absolute bottom-2 left-1/2 z-20 max-h-[calc(100%_-_1rem)] w-[calc(100%_-_1rem)] max-w-[540px] -translate-x-1/2 overflow-y-auto overscroll-contain bubble-pop sm:w-[min(68%,540px)]"
                       onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}
                     >
-                      <div className="rounded-2xl border border-grape/60 bg-background/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur">
-                        <div className="mb-1.5 grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-1">
+                      <div className="rounded-2xl border border-grape/60 bg-background/95 p-1 shadow-2xl shadow-black/60 backdrop-blur">
+                        <div className="mb-1 grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-1">
                           <span aria-hidden />
                           <Label className="justify-self-center truncate bg-grape/25 px-2 text-xs text-foreground">{overlayTitle}</Label>
                           <BubbleButton size="sm" tone="ghost" className="h-11 min-h-11 w-11 px-0 text-lg" aria-label="Cancel current prompt" onClick={dismissCourtPrompt}>×</BubbleButton>
                         </div>
-                        <div className={cn("grid gap-1.5", ["player", "ft", "assist", "miss", "oppMiss"].includes(step.kind) ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-3")}>
+                        <div className={cn("grid gap-1", ["player", "ft", "assist", "miss", "oppMiss"].includes(step.kind) ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-3")}>
                           {choices.map((choice) => {
                             const isPlayerChoice = !choice.key.startsWith("__") && ["player", "ft", "assist", "miss", "oppMiss"].includes(step.kind);
                             const primary = choice.key === "MADE" || choice.key === "MISS";
@@ -884,7 +881,7 @@ function LiveGamePage() {
                                 key={choice.key}
                                 size="sm"
                                 tone={choice.tone ?? "neutral"}
-                                className={cn("min-h-11 min-w-0 px-2 text-xs sm:text-sm", primary && "text-sm", isPlayerChoice && "whitespace-nowrap", choice.key === "__cancel" && "hidden")}
+                                className={cn("min-h-11 min-w-0 px-1.5 text-[11px] sm:px-2 sm:text-xs", primary && "text-xs sm:text-sm", isPlayerChoice && "whitespace-nowrap", choice.key === "__cancel" && "hidden")}
                                 onClick={() => onPick(choice.key)}
                               >
                                 {choice.label}
@@ -895,8 +892,34 @@ function LiveGamePage() {
                       </div>
                     </div>
                   ) : null}
+                  {step.kind === "reboundLoc" ? (
+                    <div className="pointer-events-none absolute inset-x-1 top-1 z-30 flex justify-center bubble-pop">
+                      <div className="grid max-w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1 rounded-2xl border border-flame/70 bg-background/95 p-1 shadow-2xl shadow-black/60 backdrop-blur">
+                        <Label className="min-w-0 truncate bg-flame/25 px-2 text-[11px] text-foreground">{overlayTitle}</Label>
+                        <BubbleButton
+                          size="sm"
+                          tone="ghost"
+                          className="pointer-events-auto min-h-11 px-2 text-[11px]"
+                          onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}
+                          onClick={() => onPick("__skip")}
+                        >
+                          Skip location
+                        </BubbleButton>
+                        <BubbleButton
+                          size="sm"
+                          tone="ghost"
+                          className="pointer-events-auto h-11 min-h-11 w-11 px-0 text-lg"
+                          aria-label="Cancel rebound location"
+                          onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}
+                          onClick={reset}
+                        >
+                          ×
+                        </BubbleButton>
+                      </div>
+                    </div>
+                  ) : null}
                   {pendingSubIn ? (
-                    <div className="absolute left-1/2 top-2 z-30 w-[min(88%,560px)] -translate-x-1/2 bubble-pop" onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}>
+                    <div className="absolute bottom-2 left-1/2 z-30 max-h-[calc(100%_-_1rem)] w-[calc(100%_-_1rem)] max-w-[560px] -translate-x-1/2 overflow-y-auto overscroll-contain bubble-pop" onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}>
                       <div className="rounded-2xl border border-flame/70 bg-background/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur">
                         <div className="mb-1.5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1">
                           <Label className="truncate bg-flame/25 px-2 text-xs text-foreground">
@@ -904,9 +927,9 @@ function LiveGamePage() {
                           </Label>
                           <BubbleButton size="sm" tone="ghost" className="h-11 min-h-11 w-11 px-0 text-lg" aria-label="Cancel lineup correction" onClick={dismissCourtPrompt}>×</BubbleButton>
                         </div>
-                        <div className="grid grid-cols-3 gap-1.5">
+                        <div className="grid grid-cols-3 gap-1">
                           {onFloor.map((p) => (
-                            <BubbleButton key={p.id} size="sm" tone="grape" className="min-h-11 min-w-0 px-2 text-xs sm:text-sm" onClick={() => resolveSubOut(p.id)}>
+                            <BubbleButton key={p.id} size="sm" tone="grape" className="min-h-11 min-w-0 px-1.5 text-[11px] sm:px-2 sm:text-xs" onClick={() => resolveSubOut(p.id)}>
                               {playerChoiceLabel(p)}
                             </BubbleButton>
                           ))}
