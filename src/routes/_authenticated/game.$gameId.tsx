@@ -6,7 +6,7 @@ import { statColor } from "@/lib/statColors";
 import { Court, toLocal, type CourtZoom } from "@/components/court/Court";
 import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
 import { fetchEvents, fetchGame, fetchPlayers } from "@/lib/data";
-import { formatClock, shotValue, zoneOf, ZONE_LABEL } from "@/lib/court";
+import { shotValue, zoneOf, ZONE_LABEL } from "@/lib/court";
 import {
   cacheGet,
   cacheSet,
@@ -97,6 +97,7 @@ function LiveGamePage() {
   const [showBench, setShowBench] = useState(false);
   const [showOtherPlayers, setShowOtherPlayers] = useState(false);
   const [opponentExpanded, setOpponentExpanded] = useState(true);
+  const [eventsExpanded, setEventsExpanded] = useState(false);
   const [finalized, setFinalized] = useState(false);
   const [endPrompt, setEndPrompt] = useState(false);
   const [courtZoom, setCourtZoom] = useState<CourtZoom>("full");
@@ -346,6 +347,10 @@ function LiveGamePage() {
     setStep({ kind: "idle" });
     setActivePlayer(null);
     setShowOtherPlayers(false);
+  };
+  const dismissCourtPrompt = () => {
+    reset();
+    setPendingSubIn(null);
   };
 
   /* ---------------- end of game ---------------- */
@@ -795,48 +800,18 @@ function LiveGamePage() {
   return (
     <div className="min-h-screen p-2 sm:p-3">
       <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-2">
-        {/* SCORE + CLOCK — compact and sticky */}
-        <Panel className="sticky top-1 z-40 flex flex-col gap-2 border-grape/50 bg-background/95 p-2 backdrop-blur">
-          <div className="grid grid-cols-3 gap-2">
-            <StatTile label={game.data ? "Us" : "Team"} value={teamScore} tone="grape" className="py-2 [&>div:nth-child(2)]:text-3xl" />
-            <StatTile label="Opp" value={oppScore} tone="flame" className="py-2 [&>div:nth-child(2)]:text-3xl" />
-            <StatTile label="Period" value={isOvertime ? `OT${quarter - periods}` : `Q${quarter}`} className="py-2" />
-          </div>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:grid-cols-[auto_minmax(160px,1fr)_auto_auto_auto]">
-            <Pill tone="neutral" className="justify-center px-4 py-2 text-xl font-black tabular-nums sm:text-2xl">
-              {formatClock(clock)}
-            </Pill>
-            <BubbleButton
-              size="lg"
-              tone="neutral"
-              className="min-h-14 min-w-28 text-lg sm:order-none"
-              onClick={() => setRunning((r) => !r)}
-            >
-              {running ? "Pause" : "Start"}
-            </BubbleButton>
-            <BubbleButton size="sm" tone="neutral" className="min-h-11" onClick={() => setClock((c) => Math.max(0, c - 10))}>
-              −10s
-            </BubbleButton>
-            <BubbleButton size="sm" tone="neutral" className="min-h-11" onClick={() => setClock((c) => c + 10)}>
-              +10s
-            </BubbleButton>
-            <BubbleButton
-              size="md"
-              tone="neutral"
-              className="col-span-2 min-h-12 sm:col-span-1"
-              disabled={quarter >= periods}
-              onClick={() => {
-                setQuarter((q) => q + 1);
-                setClock((game.data?.period_minutes ?? 8) * 60);
-                setRunning(false);
-              }}
-            >
-              Next Period
-            </BubbleButton>
+        {/* SCORE + PERIOD + FOULS — compact and sticky */}
+        <Panel className="sticky top-1 z-40 border-grape/50 bg-background/95 p-1.5 backdrop-blur">
+          <div className="grid grid-cols-5 gap-1.5">
+            <StatTile label={game.data ? "Us" : "Team"} value={teamScore} tone="grape" className="px-1.5 py-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-2xl" />
+            <StatTile label="Opp" value={oppScore} tone="flame" className="px-1.5 py-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-2xl" />
+            <StatTile label="Period" value={isOvertime ? `OT${quarter - periods}` : `Q${quarter}`} className="px-1 py-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-lg" />
+            <StatTile label="Team fouls" value={teamFouls} className="px-1 py-1.5 [&>div:first-child]:text-[9px] [&>div:nth-child(2)]:text-lg" />
+            <StatTile label="Opp fouls" value={oppFouls} className="px-1 py-1.5 [&>div:first-child]:text-[9px] [&>div:nth-child(2)]:text-lg" />
           </div>
         </Panel>
 
-        <Panel className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-2 sm:flex sm:flex-wrap">
+        <Panel className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 p-1.5 sm:flex sm:flex-wrap">
           <div className="flex min-w-0 flex-wrap gap-2">
             <BubbleButton size="sm" tone="neutral" onClick={() => navigate({ to: "/dashboard" })}>⌂ Home</BubbleButton>
             <BubbleButton size="sm" tone="grape" onClick={() => navigate({ to: "/board" })}>✎ Timeout Board</BubbleButton>
@@ -851,9 +826,9 @@ function LiveGamePage() {
           </div>
         </Panel>
 
-        <div className="grid min-w-0 gap-2 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid min-w-0 gap-1.5 lg:grid-cols-[minmax(0,1fr)_380px]">
           {/* COURT — always visible, never replaced */}
-          <div className="flex min-w-0 flex-col items-center gap-2">
+          <div className="flex min-w-0 flex-col items-center gap-1.5">
             <Court
               variant="full"
               zoom={courtZoom}
@@ -868,24 +843,38 @@ function LiveGamePage() {
                       style={{ left: `${halfToLocal(point).x * 100}%`, top: `${halfToLocal(point).y * 100}%` }}
                     />
                   ) : null}
+                  {step.kind !== "idle" || pendingSubIn ? (
+                    <div
+                      className="absolute inset-1 z-[15] rounded-[1.25rem] bg-background/15"
+                      aria-label="Dismiss current prompt"
+                      onPointerDown={(pointerEvent) => {
+                        pointerEvent.stopPropagation();
+                        dismissCourtPrompt();
+                      }}
+                    />
+                  ) : null}
                   {step.kind !== "idle" ? (
                     <div
-                      className="absolute z-20 w-[72%] max-w-[520px] -translate-x-1/2 -translate-y-1/2 bubble-pop sm:w-[60%]"
+                      className="absolute z-20 w-[84%] max-w-[540px] -translate-x-1/2 -translate-y-1/2 bubble-pop sm:w-[68%]"
                       style={{ left: `${clusterX * 100}%`, top: `${clusterY * 100}%` }}
+                      onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}
                     >
-                      <div className="rounded-2xl border border-grape/60 bg-background/95 p-2 shadow-2xl shadow-black/60 backdrop-blur">
-                        <div className="mb-2 flex justify-center">
-                          <Label className="bg-grape/25 text-sm text-foreground">{overlayTitle}</Label>
+                      <div className="rounded-2xl border border-grape/60 bg-background/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur">
+                        <div className="mb-1.5 grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-1">
+                          <span aria-hidden />
+                          <Label className="justify-self-center truncate bg-grape/25 px-2 text-xs text-foreground">{overlayTitle}</Label>
+                          <BubbleButton size="sm" tone="ghost" className="h-11 min-h-11 w-11 px-0 text-lg" aria-label="Cancel current prompt" onClick={dismissCourtPrompt}>×</BubbleButton>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-center">
+                        <div className={cn("grid gap-1.5", ["player", "ft", "assist", "miss", "oppMiss"].includes(step.kind) ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-3")}>
                           {choices.map((choice) => {
-                            const primary = choice.key === "MADE" || choice.key === "MISS" || (!choice.key.startsWith("__") && ["player", "ft"].includes(step.kind));
+                            const isPlayerChoice = !choice.key.startsWith("__") && ["player", "ft", "assist", "miss", "oppMiss"].includes(step.kind);
+                            const primary = choice.key === "MADE" || choice.key === "MISS";
                             return (
                               <BubbleButton
                                 key={choice.key}
-                                size={primary ? "lg" : "md"}
+                                size="sm"
                                 tone={choice.tone ?? "neutral"}
-                                className={cn("min-w-0", primary ? "min-h-14 text-base" : "min-h-12", choice.key === "__cancel" && "col-span-2 sm:col-span-1")}
+                                className={cn("min-h-11 min-w-0 px-2 text-xs sm:text-sm", primary && "text-sm", isPlayerChoice && "whitespace-nowrap", choice.key === "__cancel" && "hidden")}
                                 onClick={() => onPick(choice.key)}
                               >
                                 {choice.label}
@@ -897,18 +886,21 @@ function LiveGamePage() {
                     </div>
                   ) : null}
                   {pendingSubIn ? (
-                    <div className="absolute left-1/2 top-2 z-30 w-[min(94%,560px)] -translate-x-1/2 bubble-pop">
-                      <div className="rounded-2xl border border-flame/70 bg-background/95 p-2 shadow-2xl shadow-black/60 backdrop-blur">
-                        <Label className="mb-2 bg-flame/25 text-sm text-foreground">
-                          {playerChoiceLabel(byId.get(pendingSubIn) ?? { id: "", team_id: "", jersey: "?", name: "Player", position: null, active: true })} is in · who came out?
-                        </Label>
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    <div className="absolute left-1/2 top-2 z-30 w-[min(88%,560px)] -translate-x-1/2 bubble-pop" onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}>
+                      <div className="rounded-2xl border border-flame/70 bg-background/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur">
+                        <div className="mb-1.5 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1">
+                          <Label className="truncate bg-flame/25 px-2 text-xs text-foreground">
+                            {playerChoiceLabel(byId.get(pendingSubIn) ?? { id: "", team_id: "", jersey: "?", name: "Player", position: null, active: true })} in · who came out?
+                          </Label>
+                          <BubbleButton size="sm" tone="ghost" className="h-11 min-h-11 w-11 px-0 text-lg" aria-label="Cancel lineup correction" onClick={dismissCourtPrompt}>×</BubbleButton>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5">
                           {onFloor.map((p) => (
-                            <BubbleButton key={p.id} size="lg" tone="grape" className="min-h-14" onClick={() => resolveSubOut(p.id)}>
+                            <BubbleButton key={p.id} size="sm" tone="grape" className="min-h-11 min-w-0 px-2 text-xs sm:text-sm" onClick={() => resolveSubOut(p.id)}>
                               {playerChoiceLabel(p)}
                             </BubbleButton>
                           ))}
-                          <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={() => setPendingSubIn(null)}>Keep lineup</BubbleButton>
+                          <BubbleButton size="sm" tone="ghost" className="min-h-11 px-2 text-xs" onClick={() => setPendingSubIn(null)}>Keep lineup</BubbleButton>
                         </div>
                       </div>
                     </div>
@@ -926,26 +918,20 @@ function LiveGamePage() {
                 </>
               }
             />
-            {step.kind === "idle" ? (
-              <Pill tone="muted" className="justify-center">Tap a court location to start the next event</Pill>
-            ) : null}
           </div>
 
-          <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex min-w-0 flex-col gap-1.5">
             {/* OUR FREE THROWS — player list appears only after a result is chosen */}
-            <Panel className="flex flex-col gap-2 p-2">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-                <Label>Our free throws</Label>
-                <Pill tone="muted">Choose result</Pill>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <BubbleButton size="lg" tone="flame" className="min-h-14 text-base" onClick={() => goStep({ kind: "ft", made: true })}>FT Made</BubbleButton>
-                <BubbleButton size="md" tone="grape" className="min-h-12" onClick={() => goStep({ kind: "ft", made: false })}>FT Miss</BubbleButton>
+            <Panel className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 p-1.5">
+              <Label className="px-2">Our FT</Label>
+              <div className="grid grid-cols-2 gap-1.5">
+                <BubbleButton size="sm" tone="flame" className="min-h-11" onClick={() => goStep({ kind: "ft", made: true })}>FT Made</BubbleButton>
+                <BubbleButton size="sm" tone="grape" className="min-h-11" onClick={() => goStep({ kind: "ft", made: false })}>FT Miss</BubbleButton>
               </div>
             </Panel>
 
             {/* OPPONENT */}
-            <Panel className="flex flex-col gap-2 p-2">
+            <Panel className="flex flex-col gap-1.5 p-1.5">
               <BubbleButton
                 size="sm"
                 tone="neutral"
@@ -959,38 +945,35 @@ function LiveGamePage() {
                 </span>
               </BubbleButton>
               {opponentExpanded ? (
-                <div className="flex flex-col gap-2 bubble-pop">
+                <div className="flex flex-col gap-1.5 bubble-pop">
                   <div>
                     <Label>Scoring</Label>
-                    <div className="mt-1.5 grid grid-cols-2 gap-2">
+                    <div className="mt-1 grid grid-cols-4 gap-1.5">
                       {[2, 3].map((n) => (
-                        <BubbleButton key={n} size="lg" tone="flame" className="min-h-14 text-lg" onClick={() => addEvent({ event_type: "OPP_MADE", points: n, result: `${n}PT`, context: { shot_value: n } })}>+{n}</BubbleButton>
+                        <BubbleButton key={n} size="sm" tone="flame" className="min-h-11 px-2" onClick={() => addEvent({ event_type: "OPP_MADE", points: n, result: `${n}PT`, context: { shot_value: n } })}>+{n}</BubbleButton>
                       ))}
-                      <BubbleButton size="lg" tone="flame" className="min-h-14" onClick={() => addEvent({ event_type: "OPP_FT_MADE", points: 1, result: "FT" })}>FT Made</BubbleButton>
-                      <BubbleButton size="md" tone="grape" className="min-h-12" onClick={() => addEvent({ event_type: "OPP_FT_MISS", result: "FT" })}>FT Miss</BubbleButton>
+                      <BubbleButton size="sm" tone="flame" className="min-h-11 px-1.5 text-xs" onClick={() => addEvent({ event_type: "OPP_FT_MADE", points: 1, result: "FT" })}>FT Made</BubbleButton>
+                      <BubbleButton size="sm" tone="grape" className="min-h-11 px-1.5 text-xs" onClick={() => addEvent({ event_type: "OPP_FT_MISS", result: "FT" })}>FT Miss</BubbleButton>
                     </div>
                   </div>
                   <div>
                     <Label>Possession</Label>
-                    <div className="mt-1.5 grid grid-cols-3 gap-2">
-                      <BubbleButton size="md" tone="grape" className="min-h-12 px-2" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "OFF" })}>Off. Reb</BubbleButton>
-                      <BubbleButton size="md" tone="grape" className="min-h-12 px-2" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "DEF" })}>Def. Reb</BubbleButton>
-                      <BubbleButton size="md" tone="grape" className="min-h-12 px-2" onClick={() => addEvent({ event_type: "OPP_TURNOVER" })}>Turnover</BubbleButton>
+                    <div className="mt-1 grid grid-cols-4 gap-1.5">
+                      <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "OFF" })}>Off. Reb</BubbleButton>
+                      <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "DEF" })}>Def. Reb</BubbleButton>
+                      <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_TURNOVER" })}>Turnover</BubbleButton>
+                      <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_FOUL" })}>Opp Foul</BubbleButton>
                     </div>
-                  </div>
-                  <div>
-                    <Label>Foul</Label>
-                    <BubbleButton size="md" tone="grape" className="mt-1.5 min-h-12 w-full" onClick={() => addEvent({ event_type: "OPP_FOUL" })}>+ Opp Foul</BubbleButton>
                   </div>
                 </div>
               ) : null}
-              <div className={cn("rounded-2xl border border-border/70 bg-surface-2/60 px-3 py-2 text-center text-xs font-bold text-muted-foreground", !opponentExpanded && "hidden sm:block")}>
+              <div className="rounded-2xl border border-border/70 bg-surface-2/60 px-2 py-1 text-center text-[11px] font-bold text-muted-foreground">
                 FG {fmtSplit(opp.fg)} · 3PT {fmtSplit(opp.three)} · FT {fmtSplit(opp.ft)} · OREB {opp.oreb} · TO {opp.to} · Fouls {oppFouls}
               </div>
             </Panel>
 
             {/* LINEUP */}
-            <Panel className="flex flex-col gap-2 p-2">
+            <Panel className="flex flex-col gap-1.5 p-1.5">
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                 <Label>On the floor</Label>
                 <BubbleButton size="md" tone={showBench ? "grape" : "neutral"} className="min-h-12" onClick={() => { setShowBench((value) => !value); setSubOut(null); }}>Sub</BubbleButton>
@@ -1015,7 +998,7 @@ function LiveGamePage() {
             </Panel>
 
             {/* EVENT / REVIEW / UNDO */}
-            <Panel className="flex flex-col gap-2 p-2">
+            <Panel className="flex flex-col gap-1.5 p-1.5">
               <div className="grid grid-cols-2 gap-2">
                 <BubbleButton tone="neutral" size="md" className="min-h-12" disabled={!lastEvent} onClick={() => lastEvent && deleteEvent(lastEvent.id)}>↺ Undo Last</BubbleButton>
                 <BubbleButton tone="neutral" size="md" className="min-h-12" onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}>Review</BubbleButton>
@@ -1032,8 +1015,10 @@ function LiveGamePage() {
                   onClose={() => { setEditingId(null); setLocPick(false); }}
                 />
               ) : null}
-              <Label>Events · tap one to edit</Label>
-              <div className="flex max-h-[30vh] flex-col gap-1.5 overflow-y-auto">
+              <BubbleButton size="sm" tone="ghost" className="min-h-11 w-full" aria-expanded={eventsExpanded} onClick={() => setEventsExpanded((value) => !value)}>
+                {eventsExpanded ? "Hide recent events" : `Recent events (${events.length})`}
+              </BubbleButton>
+              {eventsExpanded ? <div className="flex max-h-[30vh] flex-col gap-1.5 overflow-y-auto bubble-pop">
                 {[...events].reverse().slice(0, 40).map((event) => (
                   <div
                     key={event.id}
@@ -1050,25 +1035,38 @@ function LiveGamePage() {
                   </div>
                 ))}
                 {events.length === 0 ? <Pill tone="muted">Tap the court to record your first event</Pill> : null}
-              </div>
+              </div> : null}
             </Panel>
 
             {/* GAME STATUS */}
-            <Panel className={cn("flex flex-col gap-2 p-2", endPrompt && "border-flame/60")}>
+            <Panel className={cn("flex flex-col gap-1.5 p-1.5", endPrompt && "border-flame/60")}>
               <div className="flex flex-wrap items-center gap-2">
                 <Label>Game status</Label>
                 <Pill tone={finalized ? "muted" : "grape"}>{finalized ? "Final — saved" : "In progress"}</Pill>
                 <Pill tone={online ? (pending ? "flame" : "grape") : "flame"}>{online ? (pending ? `Syncing ${pending}` : "Synced") : `Offline · ${pending} queued`}</Pill>
-                <Pill tone="muted">Team fouls {teamFouls}</Pill>
                 {isOvertime ? <Pill tone="flame">OT{quarter - periods > 1 ? quarter - periods : ""}</Pill> : null}
               </div>
               {endPrompt ? <Pill tone="flame">{teamScore === oppScore ? "Time expired — tied. Start overtime or end the game." : "Time expired — saved as final. Open the review or add overtime."}</Pill> : null}
-              <div className="grid gap-2 sm:grid-cols-2">
-                <BubbleButton size="lg" tone="danger" className="min-h-16 text-base sm:col-span-2" disabled={ending} onClick={() => void finishGame()}>
+              <div className="grid grid-cols-2 gap-1.5">
+                <BubbleButton
+                  size="sm"
+                  tone="neutral"
+                  className="min-h-11"
+                  disabled={quarter >= periods}
+                  onClick={() => {
+                    setQuarter((q) => q + 1);
+                    setClock((game.data?.period_minutes ?? 8) * 60);
+                    setRunning(false);
+                  }}
+                >
+                  Next Period
+                </BubbleButton>
+                <BubbleButton size="sm" tone="grape" className="min-h-11" disabled={quarter < periods} onClick={startOvertime}>+ Overtime</BubbleButton>
+                <BubbleButton tone="neutral" size="sm" className="min-h-11" disabled={!lastEvent} onClick={() => lastEvent && deleteEvent(lastEvent.id)}>↺ Undo Last</BubbleButton>
+                <BubbleButton size="sm" tone="neutral" className="min-h-11" onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}>Review</BubbleButton>
+                <BubbleButton size="lg" tone="danger" className="col-span-2 min-h-14 text-base" disabled={ending} onClick={() => void finishGame()}>
                   {ending ? "Saving…" : finalized ? "Save & open review" : "End Game & Save"}
                 </BubbleButton>
-                <BubbleButton size="lg" tone="grape" className="min-h-14" disabled={quarter < periods} onClick={startOvertime}>+ Overtime ({overtimeMinutes} min)</BubbleButton>
-                <BubbleButton size="md" tone="neutral" className="min-h-12" onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}>Review so far</BubbleButton>
               </div>
             </Panel>
           </div>
