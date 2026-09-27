@@ -466,7 +466,13 @@ function LiveGamePage() {
       reset();
       return;
     }
-    if (step.kind !== "idle") return;
+    // While a chooser is open, a tap on the exposed court edge dismisses it.
+    // Choice controls stop propagation, and rebound-location mode still uses
+    // the court tap above to save its requested location.
+    if (step.kind !== "idle") {
+      reset();
+      return;
+    }
     setPoint(p);
     goStep({ kind: "player" });
   };
