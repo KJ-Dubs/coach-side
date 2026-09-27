@@ -845,10 +845,14 @@ function LiveGamePage() {
                   ) : null}
                   {step.kind !== "idle" || pendingSubIn ? (
                     <div
-                      className="absolute inset-1 z-[15] rounded-[1.25rem] bg-background/15"
+                      className="absolute inset-0 z-[15] rounded-[1.25rem] bg-background/15"
                       aria-label="Dismiss current prompt"
                       onPointerDown={(pointerEvent) => {
                         pointerEvent.stopPropagation();
+                        dismissCourtPrompt();
+                      }}
+                      onClick={(clickEvent) => {
+                        clickEvent.stopPropagation();
                         dismissCourtPrompt();
                       }}
                     />
@@ -978,9 +982,9 @@ function LiveGamePage() {
                 <Label>On the floor</Label>
                 <BubbleButton size="md" tone={showBench ? "grape" : "neutral"} className="min-h-12" onClick={() => { setShowBench((value) => !value); setSubOut(null); }}>Sub</BubbleButton>
               </div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
                 {onFloor.map((p) => (
-                  <BubbleButton key={p.id} size="md" tone={subOut === p.id ? "flame" : "grape"} className="min-h-12 min-w-0" onClick={() => showBench && setSubOut(p.id)}>
+                  <BubbleButton key={p.id} size="sm" tone={subOut === p.id ? "flame" : "grape"} className="min-h-11 min-w-0 truncate px-2 text-xs" onClick={() => showBench && setSubOut(p.id)}>
                     {playerChoiceLabel(p)}
                   </BubbleButton>
                 ))}
@@ -998,11 +1002,7 @@ function LiveGamePage() {
             </Panel>
 
             {/* EVENT / REVIEW / UNDO */}
-            <Panel className="flex flex-col gap-1.5 p-1.5">
-              <div className="grid grid-cols-2 gap-2">
-                <BubbleButton tone="neutral" size="md" className="min-h-12" disabled={!lastEvent} onClick={() => lastEvent && deleteEvent(lastEvent.id)}>↺ Undo Last</BubbleButton>
-                <BubbleButton tone="neutral" size="md" className="min-h-12" onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}>Review</BubbleButton>
-              </div>
+            {eventsExpanded || editingEvent ? <Panel className="flex flex-col gap-1.5 p-1.5">
               {editingEvent ? (
                 <EventEditor
                   key={editingEvent.id}
@@ -1015,10 +1015,11 @@ function LiveGamePage() {
                   onClose={() => { setEditingId(null); setLocPick(false); }}
                 />
               ) : null}
-              <BubbleButton size="sm" tone="ghost" className="min-h-11 w-full" aria-expanded={eventsExpanded} onClick={() => setEventsExpanded((value) => !value)}>
-                {eventsExpanded ? "Hide recent events" : `Recent events (${events.length})`}
-              </BubbleButton>
-              {eventsExpanded ? <div className="flex max-h-[30vh] flex-col gap-1.5 overflow-y-auto bubble-pop">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5">
+                <Label>Events · tap one to edit</Label>
+                <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={() => setEventsExpanded(false)}>Close</BubbleButton>
+              </div>
+              <div className="flex max-h-[30vh] flex-col gap-1.5 overflow-y-auto bubble-pop">
                 {[...events].reverse().slice(0, 40).map((event) => (
                   <div
                     key={event.id}
@@ -1035,8 +1036,8 @@ function LiveGamePage() {
                   </div>
                 ))}
                 {events.length === 0 ? <Pill tone="muted">Tap the court to record your first event</Pill> : null}
-              </div> : null}
-            </Panel>
+              </div>
+            </Panel> : null}
 
             {/* GAME STATUS */}
             <Panel className={cn("flex flex-col gap-1.5 p-1.5", endPrompt && "border-flame/60")}>
@@ -1047,7 +1048,7 @@ function LiveGamePage() {
                 {isOvertime ? <Pill tone="flame">OT{quarter - periods > 1 ? quarter - periods : ""}</Pill> : null}
               </div>
               {endPrompt ? <Pill tone="flame">{teamScore === oppScore ? "Time expired — tied. Start overtime or end the game." : "Time expired — saved as final. Open the review or add overtime."}</Pill> : null}
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5">
                 <BubbleButton
                   size="sm"
                   tone="neutral"
@@ -1061,10 +1062,11 @@ function LiveGamePage() {
                 >
                   Next Period
                 </BubbleButton>
-                <BubbleButton size="sm" tone="grape" className="min-h-11" disabled={quarter < periods} onClick={startOvertime}>+ Overtime</BubbleButton>
                 <BubbleButton tone="neutral" size="sm" className="min-h-11" disabled={!lastEvent} onClick={() => lastEvent && deleteEvent(lastEvent.id)}>↺ Undo Last</BubbleButton>
                 <BubbleButton size="sm" tone="neutral" className="min-h-11" onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}>Review</BubbleButton>
-                <BubbleButton size="lg" tone="danger" className="col-span-2 min-h-14 text-base" disabled={ending} onClick={() => void finishGame()}>
+                <BubbleButton size="sm" tone="grape" className="min-h-11" disabled={quarter < periods} onClick={startOvertime}>+ Overtime</BubbleButton>
+                <BubbleButton size="sm" tone="ghost" className="col-span-2 min-h-11" onClick={() => setEventsExpanded((value) => !value)}>Recent events ({events.length})</BubbleButton>
+                <BubbleButton size="lg" tone="danger" className="col-span-3 min-h-14 text-base" disabled={ending} onClick={() => void finishGame()}>
                   {ending ? "Saving…" : finalized ? "Save & open review" : "End Game & Save"}
                 </BubbleButton>
               </div>
