@@ -141,3 +141,8 @@
 - [ ] Real CV worker service (separate Python/GPU) — interface ready, not connected
 - [x] Fix play team-access save (RLS error adding library play to own team)
 - [x] Canonical cross-coach play sharing: Locker Room reads adopted plays, recipient UI
+
+## Live Game layout cleanup
+- [x] Compact sticky scoreboard and preserve court-first tracking
+- [x] Add progressive player/free-throw disclosure and grouped opponent controls
+- [ ] Verify scoring tests, type safety, build, and phone/iPad interactions
