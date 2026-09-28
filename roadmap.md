@@ -149,3 +149,7 @@
 - [x] Remove visible clock controls, compact court prompts, and add reliable prompt dismissal
 - [x] Verify the no-scroll-focused phone layout and unchanged scoring behavior
 - [x] Restore rebound-location court taps and keep every compact prompt within court bounds
+
+## Game Report mobile stability
+- [x] Move report actions below the centered title and eliminate document-level horizontal drift
+- [x] Constrain report panels, filters, map, timelines, and box-score overflow on phone and iPad widths
