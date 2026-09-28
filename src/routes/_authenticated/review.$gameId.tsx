@@ -157,13 +157,12 @@ function ReviewPage() {
 
   return (
     <AppShell
-      backTo="/games"
-      backLabel="Game History"
       wide
+      balancedTitle
       title={game.data ? `${game.data.opponent} — Report` : "Game Report"}
       subtitle={game.data?.game_date}
-      actions={
-        <>
+    >
+      <Panel className="mb-3 grid min-w-0 max-w-full grid-cols-2 gap-1.5 p-1.5 sm:grid-cols-4">
           <BubbleButton size="sm" tone="neutral" onClick={() => navigate({ to: "/film" })}>
             Film Room
           </BubbleButton>
@@ -195,10 +194,8 @@ function ReviewPage() {
               Back To Live Court
             </BubbleButton>
           )}
-        </>
-      }
-    >
-      <Panel className="mb-3 flex flex-wrap items-center gap-2">
+      </Panel>
+      <Panel className="mb-3 flex min-w-0 max-w-full flex-wrap items-center gap-2">
         <Label>Opponent</Label>
         <Pill tone="flame">FG {fmtSplit(opp.fg)}</Pill>
         <Pill tone="muted">3PT {fmtSplit(opp.three)}</Pill>
@@ -207,7 +204,7 @@ function ReviewPage() {
         <Pill tone="muted">DREB {opp.dreb}</Pill>
         <Pill tone="muted">TO {opp.to}</Pill>
       </Panel>
-      <Panel className="mb-3 flex flex-wrap items-center gap-2">
+      <Panel className="mb-3 flex min-w-0 max-w-full flex-wrap items-center gap-2">
         <Pill tone={isFinal ? "grape" : "flame"}>{isFinal ? "FINAL — saved" : "In progress"}</Pill>
         {result ? (
           <Pill tone={result === "W" ? "success" : result === "L" ? "danger" : "muted"}>
@@ -234,7 +231,7 @@ function ReviewPage() {
           </BubbleButton>
         ) : null}
       </Panel>
-      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+      <div className="mb-3 grid min-w-0 max-w-full grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         <StatTile label="Us" value={teamScore} tone="grape" />
         <StatTile label="Opponent" value={oppScore} tone="flame" />
         <StatTile label="Opp fouls" value={oppFouls} />
@@ -242,7 +239,7 @@ function ReviewPage() {
         <StatTile label="Subs" value={subsQ.data?.length ?? 0} />
       </div>
 
-      <Panel className="mb-3 flex flex-wrap items-center gap-2">
+      <Panel className="mb-3 flex min-w-0 max-w-full flex-wrap items-center gap-2 overflow-hidden">
         <Label>Filters</Label>
         <BubbleButton
           size="sm"
@@ -261,7 +258,7 @@ function ReviewPage() {
             #{p.jersey}
           </BubbleButton>
         ))}
-        <span className="mx-1 h-6 w-px bg-border" />
+        <span className="mx-1 hidden h-6 w-px bg-border sm:block" />
         <BubbleButton
           size="sm"
           tone={quarterFilter === "ALL" ? "flame" : "neutral"}
@@ -281,9 +278,9 @@ function ReviewPage() {
         ))}
       </Panel>
 
-      <div className="grid gap-3 xl:grid-cols-[1fr_420px]">
-        <Panel className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-2">
+      <div className="grid min-w-0 max-w-full grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
+        <Panel className="flex min-w-0 max-w-full flex-col gap-2 overflow-hidden">
+          <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
             <Label>Location map</Label>
             {MAP_TYPES.map((c) => (
               <BubbleButton
@@ -298,6 +295,7 @@ function ReviewPage() {
             <Pill tone="muted">{mapEvents.length} plotted</Pill>
           </div>
           <Court
+            className="max-w-full"
             cursor="default"
             overlay={
               <svg className="pointer-events-none absolute inset-0 h-full w-full">
@@ -320,7 +318,7 @@ function ReviewPage() {
               </svg>
             }
           />
-          <div className="flex flex-wrap gap-2">
+          <div className="flex min-w-0 max-w-full flex-wrap gap-2">
             {["MADE", "MISS", "REBOUND", "ASSIST", "STEAL", "TURNOVER", "BLOCK", "FOUL"].map((t) => (
               <span
                 key={t}
@@ -334,7 +332,7 @@ function ReviewPage() {
               </span>
             ))}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex min-w-0 max-w-full flex-wrap gap-2">
             {zoneRows.map((r) => (
               <Pill key={r.z} tone={r.att ? "grape" : "muted"}>
                 {ZONE_LABEL[r.z]}: {r.made}/{r.att}
@@ -344,11 +342,11 @@ function ReviewPage() {
           </div>
         </Panel>
 
-        <div className="flex flex-col gap-3">
-          <Panel className="flex flex-col gap-2">
+        <div className="flex min-w-0 max-w-full flex-col gap-3">
+          <Panel className="flex min-w-0 max-w-full flex-col gap-2 overflow-hidden">
             <Label>Box score</Label>
-            <div className="overflow-x-auto rounded-2xl border border-border bg-surface-2/60 p-2">
-              <table className="w-full text-xs font-bold">
+            <div className="max-w-full overflow-x-auto overscroll-x-contain rounded-2xl border border-border bg-surface-2/60 p-2">
+              <table className="w-full min-w-[520px] text-xs font-bold">
                 <thead>
                   <tr className="text-muted-foreground">
                     {["#", "PTS", "FG", "3", "FT", "REB", "AST", "STL", "TO", "BLK", "PF"].map((h) => (
@@ -385,13 +383,13 @@ function ReviewPage() {
             </div>
           </Panel>
 
-          <Panel className="flex flex-col gap-2">
+          <Panel className="flex min-w-0 max-w-full flex-col gap-2 overflow-hidden">
             <Label>Substitution timeline</Label>
             <div className="flex max-h-52 flex-col gap-1.5 overflow-y-auto">
               {subsQ.data?.map((s) => (
                 <div
                   key={s.id}
-                  className="flex items-center gap-2 rounded-2xl border border-border bg-surface-2/70 px-2 py-1.5 text-xs font-bold"
+                  className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5 rounded-2xl border border-border bg-surface-2/70 px-2 py-1.5 text-xs font-bold"
                 >
                   <Pill tone="muted">Q{s.quarter}</Pill>
                   <Pill tone="muted">{formatClock(s.clock_seconds)}</Pill>
@@ -407,18 +405,18 @@ function ReviewPage() {
             </div>
           </Panel>
 
-          <Panel className="flex flex-col gap-2">
+          <Panel className="flex min-w-0 max-w-full flex-col gap-2 overflow-hidden">
             <Label>Event timeline ({filtered.length})</Label>
             <div className="flex max-h-72 flex-col gap-1.5 overflow-y-auto">
               {[...filtered].reverse().map((e) => (
                 <div
                   key={e.id}
-                  className="flex items-center gap-2 rounded-2xl border border-border bg-surface-2/70 px-2 py-1.5 text-xs font-bold"
+                  className="grid min-w-0 max-w-full grid-cols-[auto_auto_auto_minmax(0,1fr)_auto] items-center gap-1.5 rounded-2xl border border-border bg-surface-2/70 px-2 py-1.5 text-xs font-bold"
                 >
                   <Pill tone="muted">Q{e.quarter}</Pill>
                   <Pill tone="muted">{formatClock(e.clock_seconds)}</Pill>
                   <span className="rounded-full bg-grape/25 px-2 py-0.5">{jersey(e.player_id)}</span>
-                  <span className="flex-1 truncate rounded-full bg-surface/70 px-2 py-0.5">
+                  <span className="min-w-0 truncate rounded-full bg-surface/70 px-2 py-0.5">
                     {e.event_type}
                     {e.result ? ` · ${e.result}` : ""}
                     {e.zone ? ` · ${e.zone}` : ""}

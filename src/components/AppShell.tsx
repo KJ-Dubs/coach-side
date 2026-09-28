@@ -140,10 +140,10 @@ export function AppShell({
 
 
   return (
-    <div className="min-h-screen px-3 py-3 sm:px-5 sm:py-5">
-      <div className={cn("mx-auto w-full", wide ? "max-w-[1600px]" : "max-w-6xl")}>
+    <div className="min-h-screen max-w-full overflow-x-clip px-3 py-3 sm:px-5 sm:py-5">
+      <div className={cn("mx-auto w-full min-w-0 max-w-full", wide ? "max-w-[1600px]" : "max-w-6xl")}>
         <header className="mb-4 rounded-3xl border border-border/70 bg-surface/85 p-2.5 shadow-lg shadow-black/30 backdrop-blur">
-          <div className="grid grid-cols-[1fr_auto] items-center gap-3 lg:grid-cols-[1fr_minmax(520px,auto)_1fr]">
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 lg:grid-cols-[1fr_minmax(520px,auto)_1fr]">
             <Link
               to="/dashboard"
               aria-label="CoachSide home dashboard"
@@ -179,7 +179,7 @@ export function AppShell({
               })}
             </nav>
 
-            <div className="flex items-center justify-end gap-1.5">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-1.5">
               {actions}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
