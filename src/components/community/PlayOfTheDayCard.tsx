@@ -21,7 +21,7 @@ export function PlayOfTheDayCard({ canAdd = true }: { canAdd?: boolean }) {
         className="block w-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grape sm:w-1/2"
         aria-label={`Open Play of the Day ${play.name}`}
       >
-        <PlayThumb playId={play.id} attackBasket={play.attack_basket} />
+        <PlayThumb playId={play.id} attackBasket={play.attack_basket} category={play.category} />
       </Link>
       <div className="flex flex-1 flex-col gap-2">
         <Label>Play of the Day</Label>

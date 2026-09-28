@@ -276,7 +276,7 @@ function LibraryCard({
         className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grape"
         aria-label={`Open ${play.name}`}
       >
-        <PlayThumb playId={play.id} attackBasket={play.attack_basket} />
+        <PlayThumb playId={play.id} attackBasket={play.attack_basket} category={play.category} />
       </Link>
 
       <h3 className="text-center text-xl font-black leading-tight text-foreground">
