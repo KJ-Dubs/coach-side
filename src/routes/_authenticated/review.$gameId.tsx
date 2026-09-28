@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
-import { Court } from "@/components/court/Court";
+import { Court, toLocal, type CourtZoom } from "@/components/court/Court";
 import { fetchEvents, fetchGame, fetchPlayers, fetchSubs } from "@/lib/data";
 import { cacheGet, pendingOps } from "@/lib/offline";
 import { fmtSplit, gameResult, opponentLine, scoreFromEvents } from "@/lib/stats";
@@ -82,6 +82,7 @@ function ReviewPage() {
   const [playerFilter, setPlayerFilter] = useState<string | "ALL">("ALL");
   const [quarterFilter, setQuarterFilter] = useState<number | "ALL">("ALL");
   const [mapType, setMapType] = useState<(typeof MAP_TYPES)[number]>("ALL");
+  const [mapZoom, setMapZoom] = useState<CourtZoom>("left");
 
   const events = eventsQ.data ?? [];
   const roster = players.data ?? [];
