@@ -1,17 +1,7 @@
 import { TipInterstitial } from "@/components/TipInterstitial";
 import { createFileRoute, Link, type LinkProps } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  BarChart3,
-  BookOpen,
-  CalendarDays,
-  ClipboardPenLine,
-  KeyRound,
-  MessagesSquare,
-  PenLine,
-  Swords,
-  type LucideIcon,
-} from "lucide-react";
+import { KeyRound } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, EmptyState, InfoList, InfoPanel, Label, Panel, PrimaryCTA } from "@/components/Bubbles";
 import { fetchTeamEvents, fetchGames, logoSignedUrl } from "@/lib/data";
@@ -19,9 +9,7 @@ import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { fetchMyMemberships, isCoachRole } from "@/lib/locker";
 import { useMe } from "@/lib/useMe";
-import { cn } from "@/lib/utils";
 import { PlayerQrPanel } from "@/components/PlayerQrPanel";
-import { CoachNotes } from "@/components/CoachNotes";
 import { useAccess, resolveRole } from "@/lib/access";
 import { consumePendingInvite } from "@/lib/pendingInvite";
 import { TrialStatus } from "@/components/billing/TrialStatus";
@@ -79,26 +67,6 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   }),
   component: Dashboard,
 });
-
-type Action = {
-  to: NonNullable<LinkProps["to"]>;
-  title: string;
-  blurb?: string;
-  icon: LucideIcon;
-};
-
-const PRIMARY: Action[] = [
-  { to: "/plays", title: "Playbook", blurb: "Run, present and organize every play.", icon: BookOpen },
-  { to: "/plays/new", title: "Playmaker", blurb: "Design an animated play frame by frame.", icon: ClipboardPenLine },
-  { to: "/lockerroom", title: "Locker Room", blurb: "Team chat, announcements and assignments.", icon: MessagesSquare },
-  { to: "/games/new", title: "Live Game", blurb: "Game-day stat capture on the court.", icon: Swords },
-];
-
-const SECONDARY: Action[] = [
-  { to: "/stats", title: "Stats", icon: BarChart3 },
-  { to: "/calendar", title: "Calendar", icon: CalendarDays },
-  { to: "/board", title: "Timeout Board", icon: PenLine },
-];
 
 function UpNext({ teamId }: { teamId: string | null }) {
   const events = useQuery({
