@@ -21,12 +21,11 @@ export const Route = createFileRoute("/_authenticated/tools")({
   component: ToolsPage,
 });
 
-type PreviewType = "board" | "plan" | "drill" | "play" | "book" | "game" | "stats" | "film";
-type ToolCard = { name: string; description: string; cta: string; to: "/board" | "/practice" | "/drills/new" | "/plays/new" | "/plays" | "/games/new" | "/stats" | "/film"; icon: LucideIcon; preview: PreviewType; tone: "grape" | "flame" };
+type PreviewType = "board" | "plan" | "drill" | "play" | "book" | "game" | "stats";
+type ToolCard = { name: string; description: string; cta: string; to: "/board" | "/practice" | "/drills/new" | "/plays/new" | "/plays" | "/games/new" | "/stats"; icon: LucideIcon; preview: PreviewType; tone: "grape" | "flame" };
 
 const TOOLS: ToolCard[] = [
   { name: "Playmaker", description: "Build, sequence, and animate every action.", cta: "Create a Play", to: "/plays/new", icon: ClipboardPenLine, preview: "play", tone: "grape" },
-  { name: "Film Room", description: "Upload game film and review every tagged event.", cta: "Open Film Room", to: "/film", icon: Clapperboard, preview: "film", tone: "grape" },
   { name: "Coach's Board", description: "Draw a timeout adjustment in seconds.", cta: "Open Board", to: "/board", icon: PenLine, preview: "board", tone: "flame" },
   { name: "Drill Maker", description: "Design movement with players and equipment.", cta: "Build a Drill", to: "/drills/new", icon: Dumbbell, preview: "drill", tone: "flame" },
   { name: "Practice Planner", description: "Order every block and keep practice on time.", cta: "Plan Practice", to: "/practice", icon: ListChecks, preview: "plan", tone: "grape" },
