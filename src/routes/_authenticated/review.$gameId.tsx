@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
-import { Court } from "@/components/court/Court";
+import { Court, toLocal, type CourtZoom } from "@/components/court/Court";
 import { fetchEvents, fetchGame, fetchPlayers, fetchSubs } from "@/lib/data";
 import { cacheGet, pendingOps } from "@/lib/offline";
 import { fmtSplit, gameResult, opponentLine, scoreFromEvents } from "@/lib/stats";
@@ -82,6 +82,7 @@ function ReviewPage() {
   const [playerFilter, setPlayerFilter] = useState<string | "ALL">("ALL");
   const [quarterFilter, setQuarterFilter] = useState<number | "ALL">("ALL");
   const [mapType, setMapType] = useState<(typeof MAP_TYPES)[number]>("ALL");
+  const [mapZoom, setMapZoom] = useState<CourtZoom>("left");
 
   const events = eventsQ.data ?? [];
   const roster = players.data ?? [];
@@ -100,7 +101,6 @@ function ReviewPage() {
 
   const mapEvents = filtered.filter((e) => {
     if (e.x == null || e.y == null) return false;
-    if ((e.x as number) > 1) return false; // backcourt actions: see the full-court shot chart
     if (mapType === "ALL")
       return ["MADE", "MISS", "FT_MADE", "FT_MISS", "REBOUND", "ASSIST", "STEAL", "TURNOVER", "BLOCK", "FOUL"].includes(
         String(e.event_type),
@@ -109,6 +109,18 @@ function ReviewPage() {
     if (mapType === "MISS") return e.event_type === "MISS" || e.event_type === "FT_MISS";
     return e.event_type === mapType;
   });
+
+  // Stored x is in half-court units (1 = half line, up to 2 in the backcourt);
+  // project into the visible slice so Full Court shows everything and Half
+  // Court shows just the attacking end.
+  const plotted = useMemo(
+    () =>
+      mapEvents.map((e) => ({
+        e,
+        p: toLocal(mapZoom, { x: (e.x as number) / 2, y: e.y as number }),
+      })).filter((m) => m.p.x >= -0.02 && m.p.x <= 1.02),
+    [mapEvents, mapZoom],
+  );
 
   const box = roster.map((p) => ({ p, ...boxRow(p, events) }));
 
@@ -294,19 +306,37 @@ function ReviewPage() {
             ))}
             <Pill tone="muted">{mapEvents.length} plotted</Pill>
           </div>
+          <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
+            <BubbleButton
+              size="sm"
+              tone={mapZoom === "left" ? "flame" : "neutral"}
+              onClick={() => setMapZoom("left")}
+            >
+              Half Court
+            </BubbleButton>
+            <BubbleButton
+              size="sm"
+              tone={mapZoom === "full" ? "flame" : "neutral"}
+              onClick={() => setMapZoom("full")}
+            >
+              Full Court
+            </BubbleButton>
+          </div>
           <Court
             className="max-w-full"
+            variant="full"
+            zoom={mapZoom}
             cursor="default"
             overlay={
               <svg className="pointer-events-none absolute inset-0 h-full w-full">
-                {mapEvents.map((e) => {
+                {plotted.map(({ e, p }) => {
                   const c = statColor(String(e.event_type));
                   const hollow = e.event_type === "MISS" || e.event_type === "FT_MISS";
                   return (
                     <circle
                       key={e.id}
-                      cx={`${Math.min(1, e.x as number) * 100}%`}
-                      cy={`${(e.y as number) * 100}%`}
+                      cx={`${p.x * 100}%`}
+                      cy={`${p.y * 100}%`}
                       r={7}
                       fill={hollow ? "transparent" : c}
                       stroke={c}
