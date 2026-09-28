@@ -646,7 +646,7 @@ function PlayCard({
         aria-label={`Run play ${play.name}`}
         className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grape"
       >
-        <PlayThumb playId={play.id} attackBasket={play.attack_basket} authenticated />
+        <PlayThumb playId={play.id} attackBasket={play.attack_basket} category={play.category} authenticated />
       </Link>
 
       <div className="flex flex-wrap items-center justify-center gap-2">
