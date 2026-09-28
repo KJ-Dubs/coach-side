@@ -248,51 +248,7 @@ function Dashboard() {
       <EnablePushCard />
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        {PRIMARY.map((c) => {
-          const Icon = c.icon;
-          return (
-            <Link
-              key={c.title}
-              to={c.to}
-              className={cn(
-                "group flex min-h-[128px] flex-col justify-between rounded-3xl border border-border/70 bg-surface/80 p-4 shadow-lg shadow-black/30 transition-all hover:-translate-y-0.5 hover:border-grape/70 active:scale-[0.99]",
-              )}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-2 text-xl font-black leading-tight text-foreground sm:text-2xl">
-                  {c.title}
-                </span>
-                <span
-                  aria-hidden
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-grape/60 bg-grape/20 text-grape-bright"
-                >
-                  <Icon className="h-5 w-5 transition-transform group-hover:scale-110" />
-                </span>
-              </div>
-              {c.blurb ? <InfoPanel className="mt-3">{c.blurb}</InfoPanel> : null}
-            </Link>
-          );
-        })}
-      </div>
-
-      <Panel className="mt-4 flex flex-wrap items-center justify-center gap-2">
-        <Label>More tools</Label>
-        {SECONDARY.map((c) => {
-          const Icon = c.icon;
-          return (
-            <Link key={c.title} to={c.to}>
-              <BubbleButton tone="neutral">
-                <Icon className="h-4 w-4" aria-hidden />
-                {c.title}
-              </BubbleButton>
-            </Link>
-          );
-        })}
-      </Panel>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <CoachNotes />
+      <div className="mt-4">
         <MembershipCard teamId={teamId} />
       </div>
 
