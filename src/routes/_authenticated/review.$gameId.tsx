@@ -174,10 +174,7 @@ function ReviewPage() {
       title={game.data ? `${game.data.opponent} — Report` : "Game Report"}
       subtitle={game.data?.game_date}
     >
-      <Panel className="mb-3 grid min-w-0 max-w-full grid-cols-2 gap-1.5 p-1.5 sm:grid-cols-4">
-          <BubbleButton size="sm" tone="neutral" onClick={() => navigate({ to: "/film" })}>
-            Film Room
-          </BubbleButton>
+      <Panel className="mb-3 grid min-w-0 max-w-full grid-cols-2 gap-1.5 p-1.5 sm:grid-cols-3">
           <BubbleButton size="sm" tone="grape" onClick={() => exportPdf("team")}>
             PDF · Whole team
           </BubbleButton>
