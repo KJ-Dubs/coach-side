@@ -1,5 +1,5 @@
 import { TipInterstitial } from "@/components/TipInterstitial";
-import { createFileRoute, Link, type LinkProps } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { KeyRound } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
