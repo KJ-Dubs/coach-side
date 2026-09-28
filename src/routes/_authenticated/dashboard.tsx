@@ -1,17 +1,7 @@
 import { TipInterstitial } from "@/components/TipInterstitial";
-import { createFileRoute, Link, type LinkProps } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  BarChart3,
-  BookOpen,
-  CalendarDays,
-  ClipboardPenLine,
-  KeyRound,
-  MessagesSquare,
-  PenLine,
-  Swords,
-  type LucideIcon,
-} from "lucide-react";
+import { KeyRound } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, EmptyState, InfoList, InfoPanel, Label, Panel, PrimaryCTA } from "@/components/Bubbles";
 import { fetchTeamEvents, fetchGames, logoSignedUrl } from "@/lib/data";
@@ -19,9 +9,7 @@ import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { fetchMyMemberships, isCoachRole } from "@/lib/locker";
 import { useMe } from "@/lib/useMe";
-import { cn } from "@/lib/utils";
 import { PlayerQrPanel } from "@/components/PlayerQrPanel";
-import { CoachNotes } from "@/components/CoachNotes";
 import { useAccess, resolveRole } from "@/lib/access";
 import { consumePendingInvite } from "@/lib/pendingInvite";
 import { TrialStatus } from "@/components/billing/TrialStatus";
@@ -79,26 +67,6 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   }),
   component: Dashboard,
 });
-
-type Action = {
-  to: NonNullable<LinkProps["to"]>;
-  title: string;
-  blurb?: string;
-  icon: LucideIcon;
-};
-
-const PRIMARY: Action[] = [
-  { to: "/plays", title: "Playbook", blurb: "Run, present and organize every play.", icon: BookOpen },
-  { to: "/plays/new", title: "Playmaker", blurb: "Design an animated play frame by frame.", icon: ClipboardPenLine },
-  { to: "/lockerroom", title: "Locker Room", blurb: "Team chat, announcements and assignments.", icon: MessagesSquare },
-  { to: "/games/new", title: "Live Game", blurb: "Game-day stat capture on the court.", icon: Swords },
-];
-
-const SECONDARY: Action[] = [
-  { to: "/stats", title: "Stats", icon: BarChart3 },
-  { to: "/calendar", title: "Calendar", icon: CalendarDays },
-  { to: "/board", title: "Timeout Board", icon: PenLine },
-];
 
 function UpNext({ teamId }: { teamId: string | null }) {
   const events = useQuery({
@@ -280,51 +248,7 @@ function Dashboard() {
       <EnablePushCard />
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        {PRIMARY.map((c) => {
-          const Icon = c.icon;
-          return (
-            <Link
-              key={c.title}
-              to={c.to}
-              className={cn(
-                "group flex min-h-[128px] flex-col justify-between rounded-3xl border border-border/70 bg-surface/80 p-4 shadow-lg shadow-black/30 transition-all hover:-translate-y-0.5 hover:border-grape/70 active:scale-[0.99]",
-              )}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="rounded-2xl border border-border bg-surface-2/80 px-3 py-2 text-xl font-black leading-tight text-foreground sm:text-2xl">
-                  {c.title}
-                </span>
-                <span
-                  aria-hidden
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-grape/60 bg-grape/20 text-grape-bright"
-                >
-                  <Icon className="h-5 w-5 transition-transform group-hover:scale-110" />
-                </span>
-              </div>
-              {c.blurb ? <InfoPanel className="mt-3">{c.blurb}</InfoPanel> : null}
-            </Link>
-          );
-        })}
-      </div>
-
-      <Panel className="mt-4 flex flex-wrap items-center justify-center gap-2">
-        <Label>More tools</Label>
-        {SECONDARY.map((c) => {
-          const Icon = c.icon;
-          return (
-            <Link key={c.title} to={c.to}>
-              <BubbleButton tone="neutral">
-                <Icon className="h-4 w-4" aria-hidden />
-                {c.title}
-              </BubbleButton>
-            </Link>
-          );
-        })}
-      </Panel>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <CoachNotes />
+      <div className="mt-4">
         <MembershipCard teamId={teamId} />
       </div>
 
