@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BubbleButton, EmptyState, InfoPanel, Label, Panel, Pill, TextInput } from "@/components/Bubbles";
 import { AddToPlaybook } from "@/components/AddToPlaybook";
-import { CreateMyVersion } from "@/components/CreateMyVersion";
+import { LibraryCardMenu } from "@/components/community/LibraryCardMenu";
 import { HeartButton } from "@/components/community/HeartButton";
 import { PlayThumb } from "@/components/community/PlayThumb";
 import { useAuth } from "@/lib/auth";
