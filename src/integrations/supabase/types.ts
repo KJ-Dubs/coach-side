@@ -3085,6 +3085,7 @@ export type Database = {
           sort_order: number
           team_id: string
           updated_at: string
+          visibility: string
         }
         Insert: {
           created_at?: string
@@ -3095,6 +3096,7 @@ export type Database = {
           sort_order?: number
           team_id: string
           updated_at?: string
+          visibility?: string
         }
         Update: {
           created_at?: string
@@ -3105,6 +3107,7 @@ export type Database = {
           sort_order?: number
           team_id?: string
           updated_at?: string
+          visibility?: string
         }
         Relationships: [
           {
