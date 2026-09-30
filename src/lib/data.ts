@@ -278,11 +278,14 @@ export type PlayTeamAssignment = {
   folder_id: string | null;
 };
 
+export type FolderVisibility = "team" | "coaches_only";
+
 export type TeamPlaybookFolder = {
   id: string;
   team_id: string;
   name: string;
   description: string | null;
+  visibility: FolderVisibility | string;
   created_by: string | null;
   sort_order: number;
   created_at: string;
@@ -316,12 +319,22 @@ export async function fetchPlaybookFolders(teamId: string): Promise<TeamPlaybook
   return (data ?? []) as TeamPlaybookFolder[];
 }
 
-export async function createPlaybookFolder(teamId: string, name: string) {
+export async function createPlaybookFolder(
+  teamId: string,
+  name: string,
+  opts: { description?: string | null; visibility?: FolderVisibility } = {},
+) {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error("Sign in first");
   const { data, error } = await supabase
     .from("team_playbook_folders")
-    .insert({ team_id: teamId, name: name.trim(), created_by: auth.user.id })
+    .insert({
+      team_id: teamId,
+      name: name.trim(),
+      description: opts.description?.trim() || null,
+      visibility: opts.visibility ?? "team",
+      created_by: auth.user.id,
+    } as never)
     .select("*")
     .single();
   if (error) throw error;
@@ -333,9 +346,47 @@ export async function renamePlaybookFolder(folderId: string, name: string) {
   if (error) throw error;
 }
 
+export async function updatePlaybookFolder(
+  folderId: string,
+  patch: { name?: string; description?: string | null; visibility?: FolderVisibility },
+) {
+  const { error } = await supabase.from("team_playbook_folders").update(patch as never).eq("id", folderId);
+  if (error) throw error;
+}
+
+/** Deletes only the folder and its memberships — never plays or team access. */
 export async function deletePlaybookFolder(folderId: string) {
   const { error } = await supabase.from("team_playbook_folders").delete().eq("id", folderId);
   if (error) throw error;
+}
+
+/** Replace a folder's play set in one save; only touches that folder's rows. */
+export async function setFolderPlays(folderId: string, teamId: string, playIds: string[]) {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error("Sign in first");
+  const { data: cur, error: cErr } = await supabase
+    .from("play_folder_memberships")
+    .select("play_id")
+    .eq("folder_id", folderId);
+  if (cErr) throw cErr;
+  const have = new Set((cur ?? []).map((r) => (r as { play_id: string }).play_id));
+  const want = new Set(playIds);
+  const add = [...want].filter((id) => !have.has(id));
+  const remove = [...have].filter((id) => !want.has(id));
+  if (add.length) {
+    const { error } = await supabase.from("play_folder_memberships").insert(
+      add.map((play_id) => ({ play_id, team_id: teamId, folder_id: folderId, created_by: auth.user!.id })),
+    );
+    if (error) throw error;
+  }
+  if (remove.length) {
+    const { error } = await supabase
+      .from("play_folder_memberships")
+      .delete()
+      .eq("folder_id", folderId)
+      .in("play_id", remove);
+    if (error) throw error;
+  }
 }
 
 export async function fetchPlayFolderMemberships(teamId: string): Promise<PlayFolderMembership[]> {
