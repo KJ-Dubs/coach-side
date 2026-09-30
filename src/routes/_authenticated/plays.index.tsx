@@ -666,15 +666,14 @@ function PlayCard({
             <CreateMyVersion play={play} teamIds={ownAssigned} label="Edit as My Version" />
           )}
           <BubbleButton size="sm" tone="neutral" disabled={busy} onClick={onShareLink}>
-            {play.is_shared ? "Copy link" : "Share"}
+            {canEdit && play.is_shared ? "Copy Share Link" : "Share"}
           </BubbleButton>
           <BubbleButton size="sm" tone="neutral" onClick={openTeams}>
             Teams
           </BubbleButton>
-          {activeTeamId && folders.length ? folders.map((folder) => {
-            const included = folderIds.includes(folder.id);
-            return <BubbleButton key={folder.id} size="sm" tone={included ? "grape" : "neutral"} onClick={() => onToggleFolder(folder.id, !included)}>{included ? "✓ " : "+ "}{folder.name}</BubbleButton>;
-          }) : null}
+          <BubbleButton size="sm" tone="grape" onClick={() => { setFoldersOpen(true); setMenu(false); }}>
+            Add to Folder
+          </BubbleButton>
           {canEdit && play.is_shared ? (
             <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onUnshare}>
               Stop sharing
