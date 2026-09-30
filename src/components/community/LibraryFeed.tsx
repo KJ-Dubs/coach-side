@@ -224,7 +224,6 @@ function LibraryCard({
   isAdmin: boolean;
 }) {
   const qc = useQueryClient();
-  const [menu, setMenu] = useState(false);
   const feature = useMutation({
     mutationFn: () => setPlayOfTheDayAndNotify({ data: { playId: play.id } }),
     onSuccess: (r) => {
