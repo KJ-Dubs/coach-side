@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BubbleButton, EmptyState, InfoPanel, Label, Panel, Pill, TextInput } from "@/components/Bubbles";
 import { AddToPlaybook } from "@/components/AddToPlaybook";
-import { CreateMyVersion } from "@/components/CreateMyVersion";
+import { LibraryCardMenu } from "@/components/community/LibraryCardMenu";
 import { HeartButton } from "@/components/community/HeartButton";
 import { PlayThumb } from "@/components/community/PlayThumb";
 import { useAuth } from "@/lib/auth";
@@ -224,7 +224,6 @@ function LibraryCard({
   isAdmin: boolean;
 }) {
   const qc = useQueryClient();
-  const [menu, setMenu] = useState(false);
   const feature = useMutation({
     mutationFn: () => setPlayOfTheDayAndNotify({ data: { playId: play.id } }),
     onSuccess: (r) => {
@@ -272,6 +271,13 @@ function LibraryCard({
 
   return (
     <Panel className="flex flex-col gap-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+        <h3 className="min-w-0 truncate text-center text-xl font-black leading-tight text-foreground">
+          {play.name}
+        </h3>
+        <LibraryCardMenu play={play} isCoach={isCoach} />
+      </div>
+
       <Link
         to="/library/$playId"
         params={{ playId: play.id }}
@@ -281,36 +287,6 @@ function LibraryCard({
         <PlayThumb playId={play.id} attackBasket={play.attack_basket} category={play.category} />
       </Link>
 
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-        <h3 className="min-w-0 truncate text-center text-xl font-black leading-tight text-foreground">
-          {play.name}
-        </h3>
-        {variant === "app" ? (
-          <BubbleButton size="sm" tone={menu ? "grape" : "neutral"} className="min-h-11 min-w-11 text-lg" aria-label={`Actions for ${play.name}`} onClick={() => setMenu((m) => !m)}>
-            •••
-          </BubbleButton>
-        ) : null}
-      </div>
-      {menu && variant === "app" ? (
-        <div className="flex flex-wrap gap-2 rounded-2xl border border-border bg-surface-2/70 p-2">
-          <BubbleButton
-            size="sm"
-            tone="neutral"
-            onClick={async () => {
-              const url = `${window.location.origin}/library/${play.id}`;
-              try { await navigator.clipboard.writeText(url); toast.success("Library link copied"); } catch { toast.success(url); }
-            }}
-          >
-            Share Library play
-          </BubbleButton>
-          {isCoach ? <CreateMyVersion play={libraryPlayAsPlay(play)} label="Edit as My Version" /> : null}
-          {play.creator_username ? (
-            <Link to="/coach/$username" params={{ username: play.creator_username }}>
-              <BubbleButton size="sm" tone="neutral">View creator</BubbleButton>
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
 
       <InfoPanel className="py-2 text-center text-xs">{meta}</InfoPanel>
 
