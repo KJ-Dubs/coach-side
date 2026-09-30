@@ -761,14 +761,17 @@ function PlayCard({
           </div>
         </div>
       ) : null}
+
+      {foldersOpen ? (
+        <AddToFolderPanel
+          playId={play.id}
+          teams={folderTeams}
+          defaultTeamId={activeTeamId}
+          onClose={() => setFoldersOpen(false)}
+        />
+      ) : null}
     </Panel>
   );
-}
-
-function FolderRename({ folder, onCancel, onSave }: { folder: TeamPlaybookFolder | null; onCancel: () => void; onSave: (name: string) => void }) {
-  const [name, setName] = useState(folder?.name ?? "");
-  if (!folder) return null;
-  return <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-grape/50 bg-grape/10 p-2"><TextInput className="max-w-xs" value={name} onChange={(e) => setName(e.target.value)} /><BubbleButton size="sm" tone="grape" disabled={!name.trim()} onClick={() => onSave(name)}>Save name</BubbleButton><BubbleButton size="sm" tone="ghost" onClick={onCancel}>Cancel</BubbleButton></div>;
 }
 
 /** Inline quick-create: name + teams, then straight into the designer. */
