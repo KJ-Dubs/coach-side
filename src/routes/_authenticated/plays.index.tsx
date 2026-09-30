@@ -546,9 +546,7 @@ function PlayCard({
   onUnpublish,
   onAnonymous,
   activeTeamId,
-  folders,
-  folderIds,
-  onToggleFolder,
+  coachTeams,
 }: {
   play: Play;
   canEdit: boolean;
@@ -556,6 +554,7 @@ function PlayCard({
   viewSearch: { category?: string; team?: string; folder?: string; tab?: "mine"; from?: "playbook" };
   assignedTeams: string[];
   allTeams: Team[];
+  coachTeams: Team[];
   teamName: (id: string | null) => string;
   busy: boolean;
   onShareLink: () => void;
@@ -568,16 +567,15 @@ function PlayCard({
   onUnpublish: () => void;
   onAnonymous: (anonymous: boolean) => void;
   activeTeamId: string | null;
-  folders: TeamPlaybookFolder[];
-  folderIds: string[];
-  onToggleFolder: (folderId: string, included: boolean) => void;
 }) {
 
   const [menu, setMenu] = useState(false);
   const [teamsOpen, setTeamsOpen] = useState(false);
+  const [foldersOpen, setFoldersOpen] = useState(false);
   // Only the coach's own teams are ever pre-checked or submitted — a source
   // play's foreign legacy team_id must never leak into the picker state.
   const ownAssigned = assignedTeams.filter((id) => allTeams.some((t) => t.id === id));
+  const folderTeams = coachTeams.filter((t) => assignedTeams.includes(t.id));
   const [picked, setPicked] = useState<string[]>(ownAssigned);
 
   const openTeams = () => {
@@ -587,7 +585,7 @@ function PlayCard({
   };
 
   return (
-    <Panel className="flex flex-col gap-3">
+    <Panel className="relative flex flex-col gap-3">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
         <h3 className="min-w-0 truncate text-center text-xl font-black leading-tight text-foreground">
           {play.name}
@@ -595,7 +593,9 @@ function PlayCard({
         <BubbleButton
           size="sm"
           tone={menu ? "grape" : "neutral"}
-          className="ml-auto"
+          className="ml-auto min-h-11 min-w-11 shrink-0 text-lg"
+          aria-label={`Actions for ${play.name}`}
+          aria-expanded={menu}
           onClick={() => setMenu((m) => !m)}
         >
           •••
