@@ -323,65 +323,47 @@ function PlaybookPage() {
   });
 
   const [quickOpen, setQuickOpen] = useState(false);
-  const [folderName, setFolderName] = useState("");
-  const [folderEditor, setFolderEditor] = useState<string | null>(null);
-
-  const folderCreate = useMutation({
-    mutationFn: () => createPlaybookFolder(teamFilter, folderName),
-    onSuccess: () => { setFolderName(""); void queryClient.invalidateQueries({ queryKey: ["playbook-folders", teamFilter] }); toast.success("Folder created"); },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const folderRename = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) => renamePlaybookFolder(id, name),
-    onSuccess: () => { setFolderEditor(null); void queryClient.invalidateQueries({ queryKey: ["playbook-folders", teamFilter] }); toast.success("Folder renamed"); },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const folderDelete = useMutation({
-    mutationFn: deletePlaybookFolder,
-    onSuccess: () => { setFolder("ALL"); void queryClient.invalidateQueries({ queryKey: ["playbook-folders", teamFilter] }); void queryClient.invalidateQueries({ queryKey: ["play-folder-memberships", teamFilter] }); toast.success("Folder deleted; plays moved to Unfiled"); },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const toggleFolder = useMutation({
-    mutationFn: ({ playId, folderId, included }: { playId: string; folderId: string; included: boolean }) => setPlayFolderMembership(playId, teamFilter, folderId, included),
-    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ["play-folder-memberships", teamFilter] }); toast.success("Folders updated"); },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [pickingPlays, setPickingPlays] = useState(false);
+  const { access } = useAccess();
+  const role = resolveRole(access);
+  const coachTeams = (teams.data ?? []).filter((t) => role.canCoachTeam(t.id));
+  const canManageFolders = teamFilter !== "ALL" && role.canCoachTeam(teamFilter);
+  const openFolder = (folders.data ?? []).find((f) => f.id === folderFilter) ?? null;
+  const teamPlaysForPicker = useMemo(
+    () => myPlays.filter((p) => (teamsByPlay.get(p.id) ?? []).includes(teamFilter)).sort((a, b) => a.name.localeCompare(b.name)),
+    [myPlays, teamsByPlay, teamFilter],
+  );
+  const folderCount = (id: string) => {
+    const teamIds = new Set(teamPlaysForPicker.map((p) => p.id));
+    return (folderMemberships.data ?? []).filter((m) => m.folder_id === id && teamIds.has(m.play_id)).length;
+  };
 
   return (
     <AppShell
       title="Playbook"
       subtitle={
-        tab === "library" ? "CoachSide Library" : selected ? `${selected} folder` : "Pick a folder"
+        tab === "library"
+          ? "CoachSide Library"
+          : openFolder
+            ? `Folder · ${openFolder.name}`
+            : selected
+              ? `${selected} plays`
+              : "All plays"
       }
       actions={
-        <>
-          {selected && tab === "mine" ? (
-            <BubbleButton size="sm" tone="ghost" onClick={() => setCategory(null)}>
-              ← All folders
-            </BubbleButton>
-          ) : null}
-          <Link to="/plays/new" search={selected ? { category: selected } : {}}>
-            <BubbleButton size="sm" tone="flame">
-              + Create Play
-            </BubbleButton>
-          </Link>
-        </>
+        <Link to="/plays/new" search={selected ? { category: selected } : {}}>
+          <BubbleButton size="sm" tone="flame">
+            + Create Play
+          </BubbleButton>
+        </Link>
       }
     >
       <Panel className="mb-3 flex flex-wrap items-center justify-center gap-2">
-        <BubbleButton
-          size="sm"
-          tone={tab === "mine" ? "grape" : "neutral"}
-          onClick={() => setTab("mine")}
-        >
+        <BubbleButton size="sm" tone={tab === "mine" ? "grape" : "neutral"} onClick={() => setTab("mine")}>
           My Playbook
         </BubbleButton>
-        <BubbleButton
-          size="sm"
-          tone={tab === "library" ? "grape" : "neutral"}
-          onClick={() => setTab("library")}
-        >
+        <BubbleButton size="sm" tone={tab === "library" ? "grape" : "neutral"} onClick={() => setTab("library")}>
           CoachSide Library
         </BubbleButton>
       </Panel>
@@ -395,169 +377,151 @@ function PlaybookPage() {
           {libraryContent === "plays" ? <LibraryFeed variant="app" /> : <DrillFeed />}
         </>
       ) : (
-      <>
-      <Panel className="mb-3 flex flex-wrap items-center gap-2">
-        <Label>Team</Label>
-        <BubbleButton
-          size="sm"
-          tone={teamFilter === "ALL" ? "grape" : "neutral"}
-          onClick={() => setTeam("ALL")}
-        >
-          All teams
-        </BubbleButton>
-        {teams.data?.map((t) => (
-          <BubbleButton
-            key={t.id}
-            size="sm"
-            tone={teamFilter === t.id ? "grape" : "neutral"}
-            onClick={() => setTeam(t.id)}
-          >
-            {t.name}
+      <div className="flex flex-col gap-3">
+        {/* 1. Team selector */}
+        <Panel className="flex flex-wrap items-center gap-2">
+          <Label>Team</Label>
+          <BubbleButton size="sm" tone={teamFilter === "ALL" ? "grape" : "neutral"} onClick={() => setTeam("ALL")}>
+            All teams
           </BubbleButton>
-        ))}
-        <Pill tone="muted" className="ml-auto">
-          {visiblePlays.length} {visiblePlays.length === 1 ? "play" : "plays"}
-        </Pill>
-      </Panel>
-
-      {teamFilter !== "ALL" ? (
-        <Panel className="mb-3 flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Label>Team folders</Label>
-            <BubbleButton size="sm" tone={folderFilter === "ALL" ? "grape" : "neutral"} onClick={() => setFolder("ALL")}>All Plays</BubbleButton>
-            <BubbleButton size="sm" tone={folderFilter === "UNFILED" ? "grape" : "neutral"} onClick={() => setFolder("UNFILED")}>Unfiled</BubbleButton>
-            {(folders.data ?? []).map((folder) => <BubbleButton key={folder.id} size="sm" tone={folderFilter === folder.id ? "grape" : "neutral"} onClick={() => setFolder(folder.id)}>{folder.name}</BubbleButton>)}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <TextInput className="max-w-xs" placeholder="New folder, e.g. vs East High" value={folderName} onChange={(e) => setFolderName(e.target.value)} />
-            <BubbleButton size="sm" tone="flame" disabled={!folderName.trim() || folderCreate.isPending} onClick={() => folderCreate.mutate()}>+ New Folder</BubbleButton>
-            {folderFilter !== "ALL" && folderFilter !== "UNFILED" ? <BubbleButton size="sm" tone="neutral" onClick={() => setFolderEditor(folderFilter)}>Rename</BubbleButton> : null}
-            {folderFilter !== "ALL" && folderFilter !== "UNFILED" ? <BubbleButton size="sm" tone="ghost" onClick={() => { if (window.confirm("Delete this folder? Its plays will move to Unfiled.")) folderDelete.mutate(folderFilter); }}>Delete folder</BubbleButton> : null}
-          </div>
-          {folderEditor ? <FolderRename folder={(folders.data ?? []).find((f) => f.id === folderEditor) ?? null} onCancel={() => setFolderEditor(null)} onSave={(name) => folderRename.mutate({ id: folderEditor, name })} /> : null}
+          {teams.data?.map((t) => (
+            <BubbleButton key={t.id} size="sm" tone={teamFilter === t.id ? "grape" : "neutral"} onClick={() => setTeam(t.id)}>
+              {t.name}
+            </BubbleButton>
+          ))}
+          <Pill tone="muted" className="ml-auto">
+            {visiblePlays.length} {visiblePlays.length === 1 ? "play" : "plays"}
+          </Pill>
         </Panel>
-      ) : null}
 
-
-      {!selected && folderFilter === "ALL" ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {PLAY_CATEGORIES.map((c) => {
-            const meta = CATEGORY_META[c];
-            const n = counts.get(c) ?? 0;
-            return (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCategory(c)}
-                className={cn(
-                  actionCardCls,
-                  "flex min-h-[150px] flex-col justify-between p-4",
-                  meta.tone === "grape" && "border-grape/60 bg-grape/15 hover:bg-grape/25",
-                  meta.tone === "flame" && "border-flame/60 bg-flame/15 hover:bg-flame/25",
-                  meta.tone === "neutral" && "border-border bg-surface/80 hover:border-grape/60",
-                )}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xl font-black leading-tight text-foreground sm:text-2xl">
-                    {c}
-                  </span>
-                  <Pill tone={n ? "flame" : "muted"}>{n}</Pill>
-                </div>
-                <InfoPanel className="mt-3">{meta.blurb}</InfoPanel>
-                <div className="mt-3 text-center text-sm font-black text-grape-bright">Open folder →</div>
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <Panel className="flex flex-wrap items-center gap-2">
-            <Label>Folders</Label>
-            {PLAY_CATEGORIES.map((c) => (
-              <BubbleButton
-                key={c}
-                size="sm"
-                tone={c === selected ? "grape" : "neutral"}
-                onClick={() => setCategory(c)}
-              >
-                {c}
-                <Pill tone="muted" className="px-2 py-0">
-                  {counts.get(c) ?? 0}
-                </Pill>
-              </BubbleButton>
-            ))}
-            <BubbleButton
-              size="sm"
-              tone="flame"
-              className="ml-auto"
-              onClick={() => setQuickOpen((o) => !o)}
-            >
+        {/* 2. Play Types — filters on what the play is */}
+        <Panel className="flex flex-wrap items-center gap-2">
+          <Label>Play Types</Label>
+          <BubbleButton size="sm" tone={!selected ? "grape" : "neutral"} onClick={() => setCategory(null)}>
+            All
+            <Pill tone="muted" className="px-2 py-0">{visiblePlays.length}</Pill>
+          </BubbleButton>
+          {PLAY_CATEGORIES.map((c) => (
+            <BubbleButton key={c} size="sm" tone={c === selected ? "grape" : "neutral"} onClick={() => setCategory(c)}>
+              {c}
+              <Pill tone="muted" className="px-2 py-0">{counts.get(c) ?? 0}</Pill>
+            </BubbleButton>
+          ))}
+          {selected ? (
+            <BubbleButton size="sm" tone="flame" className="ml-auto" onClick={() => setQuickOpen((o) => !o)}>
               {quickOpen ? "Close" : `+ New ${selected} play`}
             </BubbleButton>
+          ) : null}
+        </Panel>
+
+        {/* 3. My Folders — why/when this team uses a play */}
+        {teamFilter === "ALL" ? (
+          <InfoPanel className="text-center text-sm">Pick a team to see and manage its folders</InfoPanel>
+        ) : (
+          <Panel className="flex flex-col gap-3 border-grape/50">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-2xl border border-grape/60 bg-grape/15 px-3 py-1.5 text-lg font-black text-foreground">My Folders</span>
+              <Pill tone="muted">{teamName(teamFilter)}</Pill>
+              <BubbleButton size="sm" tone={folderFilter === "ALL" ? "grape" : "neutral"} onClick={() => setFolder("ALL")}>All Plays</BubbleButton>
+              <BubbleButton size="sm" tone={folderFilter === "UNFILED" ? "grape" : "ghost"} onClick={() => setFolder("UNFILED")}>Unfiled</BubbleButton>
+              {canManageFolders ? (
+                <BubbleButton size="sm" tone="flame" className="ml-auto" onClick={() => setCreatingFolder((o) => !o)}>
+                  {creatingFolder ? "Close" : "+ Create Folder"}
+                </BubbleButton>
+              ) : null}
+            </div>
+            {creatingFolder && canManageFolders ? (
+              <CreateFolderForm teamId={teamFilter} onDone={(f) => { setCreatingFolder(false); if (f) setFolder(f.id); }} />
+            ) : null}
+            {(folders.data ?? []).length ? (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {(folders.data ?? []).map((f) => (
+                  <FolderCard
+                    key={f.id}
+                    folder={f}
+                    count={folderCount(f.id)}
+                    active={folderFilter === f.id}
+                    canManage={canManageFolders}
+                    onOpen={() => setFolder(folderFilter === f.id ? "ALL" : f.id)}
+                  />
+                ))}
+              </div>
+            ) : folders.isLoading ? null : (
+              <InfoPanel className="text-sm">No folders yet — try “Dana Hills”, “End of Game” or “Zone BLOBs”</InfoPanel>
+            )}
           </Panel>
+        )}
 
-          {quickOpen && selected ? (
-            <QuickCreate
-              category={selected}
-              defaultTeam={teamFilter !== "ALL" ? teamFilter : (teams.data?.[0]?.id ?? "")}
-              onDone={() => setQuickOpen(false)}
+        {openFolder ? (
+          <Panel className="flex flex-wrap items-center gap-2 border-flame/60">
+            <span className="rounded-2xl border border-flame/60 bg-flame/15 px-3 py-1.5 font-black text-foreground">📁 {openFolder.name}</span>
+            <VisibilityPill visibility={openFolder.visibility} />
+            {canManageFolders ? (
+              <BubbleButton size="sm" tone="flame" onClick={() => setPickingPlays((o) => !o)}>{pickingPlays ? "Close" : "+ Add Plays"}</BubbleButton>
+            ) : null}
+            <BubbleButton size="sm" tone="ghost" className="ml-auto" onClick={() => { setPickingPlays(false); setFolder("ALL"); }}>← All Plays</BubbleButton>
+          </Panel>
+        ) : null}
+        {openFolder && pickingPlays && canManageFolders ? (
+          <AddPlaysPicker
+            key={openFolder.id}
+            folder={openFolder}
+            teamPlays={teamPlaysForPicker}
+            memberIds={(folderMemberships.data ?? []).filter((m) => m.folder_id === openFolder.id).map((m) => m.play_id)}
+            onDone={() => setPickingPlays(false)}
+          />
+        ) : null}
+
+        {quickOpen && selected ? (
+          <QuickCreate
+            category={selected}
+            defaultTeam={teamFilter !== "ALL" ? teamFilter : (teams.data?.[0]?.id ?? "")}
+            onDone={() => setQuickOpen(false)}
+          />
+        ) : null}
+
+        {/* 4. Play cards */}
+        {plays.isLoading ? <EmptyState>Loading plays…</EmptyState> : null}
+        {!plays.isLoading && listedPlays.length === 0 ? (
+          <EmptyState>
+            {openFolder ? `No plays in ${openFolder.name}${selected ? ` of type ${selected}` : ""} yet` : `No ${selected ?? ""} plays yet`}
+          </EmptyState>
+        ) : null}
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {listedPlays.map((p) => (
+            <PlayCard
+              key={p.id}
+              play={p}
+              viewSearch={{
+                from: "playbook",
+                tab: "mine",
+                ...(selected ? { category: selected } : {}),
+                ...(teamFilter !== "ALL" ? { team: teamFilter } : {}),
+                ...(folderFilter !== "ALL" ? { folder: folderFilter } : {}),
+              }}
+              assignedTeams={teamsByPlay.get(p.id) ?? []}
+              canEdit={isPlayOwner(p, myUserId)}
+              allTeams={teams.data ?? []}
+              coachTeams={coachTeams}
+              teamName={teamName}
+              busy={share.isPending || duplicate.isPending || remove.isPending}
+              onShareLink={() => share.mutate(p)}
+              onUnshare={() => unshare.mutate(p)}
+              onDuplicate={() => duplicate.mutate(p)}
+              onDelete={() => {
+                if (window.confirm(`Delete “${p.name}”? This cannot be undone.`)) remove.mutate(p);
+              }}
+              onSaveTeams={(ids) => assignTeams.mutate({ playId: p.id, teamIds: ids })}
+              savingTeams={assignTeams.isPending}
+              activeTeamId={teamFilter !== "ALL" ? teamFilter : null}
+              onPublish={(anonymous) => publish.mutate({ p, author: me.profile?.full_name ?? null, anonymous })}
+              onUnpublish={() => unpublish.mutate(p)}
+              onAnonymous={(anonymous) => anonymize.mutate({ p, anonymous })}
             />
-          ) : null}
-
-          {plays.isLoading ? <EmptyState>Loading plays…</EmptyState> : null}
-          {!plays.isLoading && listedPlays.length === 0 ? (
-            <EmptyState>No {selected ?? (folderFilter === "UNFILED" ? "Unfiled" : "folder")} plays yet</EmptyState>
-          ) : null}
-
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {listedPlays.map((p) => (
-              <PlayCard
-                key={p.id}
-                play={p}
-                viewSearch={{
-                  from: "playbook",
-                  tab: "mine",
-                  ...(selected ? { category: selected } : {}),
-                  ...(teamFilter !== "ALL" ? { team: teamFilter } : {}),
-                  ...(folderFilter !== "ALL" ? { folder: folderFilter } : {}),
-                }}
-                assignedTeams={teamsByPlay.get(p.id) ?? []}
-                canEdit={isPlayOwner(p, myUserId)}
-
-                allTeams={teams.data ?? []}
-
-                teamName={teamName}
-                busy={share.isPending || duplicate.isPending || remove.isPending}
-                onShareLink={() => share.mutate(p)}
-                onUnshare={() => unshare.mutate(p)}
-                onDuplicate={() => duplicate.mutate(p)}
-                onDelete={() => {
-                  if (window.confirm(`Delete “${p.name}”? This cannot be undone.`)) {
-                    remove.mutate(p);
-                  }
-                }}
-                onSaveTeams={(ids) => assignTeams.mutate({ playId: p.id, teamIds: ids })}
-                savingTeams={assignTeams.isPending}
-                activeTeamId={teamFilter !== "ALL" ? teamFilter : null}
-                folders={folders.data ?? []}
-                folderIds={(folderMemberships.data ?? []).filter((m) => m.play_id === p.id).map((m) => m.folder_id)}
-                onToggleFolder={(folderId, included) => toggleFolder.mutate({ playId: p.id, folderId, included })}
-                onPublish={(anonymous) =>
-                  publish.mutate({
-                    p,
-                    author: me.profile?.full_name ?? null,
-                    anonymous,
-                  })
-                }
-                onUnpublish={() => unpublish.mutate(p)}
-                onAnonymous={(anonymous) => anonymize.mutate({ p, anonymous })}
-              />
-            ))}
-          </div>
-
+          ))}
         </div>
-      )}
-      </>
+      </div>
       )}
     </AppShell>
   );
