@@ -27,21 +27,24 @@ import {
   fetchTeams,
   setPlayTeams,
   updatePlay,
-  createPlaybookFolder,
-  deletePlaybookFolder,
   fetchPlaybookFolders,
   fetchPlayFolderMemberships,
-  setPlayFolderMembership,
-  renamePlaybookFolder,
-  type TeamPlaybookFolder,
 } from "@/lib/data";
 import { publishPlay, setPlayAnonymous, unpublishPlay } from "@/lib/library";
 import { LibraryFeed } from "@/components/community/LibraryFeed";
 import { DrillFeed } from "@/components/drills/DrillFeed";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
 import { PlayThumb } from "@/components/community/PlayThumb";
+import {
+  AddPlaysPicker,
+  AddToFolderPanel,
+  CreateFolderForm,
+  FolderCard,
+  VisibilityPill,
+} from "@/components/playbook/Folders";
 import { isPlayOwner } from "@/lib/playOwnership";
 import { useMe } from "@/lib/useMe";
+import { resolveRole, useAccess } from "@/lib/access";
 
 
 import {
@@ -69,12 +72,12 @@ export const Route = createFileRoute("/_authenticated/plays/")({
       {
         name: "description",
         content:
-          "Your basketball playbook organised into Offense, BLOB, SLOB, Defense, Press Break and Presses folders.",
+          "Your basketball playbook: filter by Play Type and organise each team's plays into your own folders like End of Game or opponent scouting.",
       },
       { property: "og:title", content: "Playbook — CoachSide" },
       {
         property: "og:description",
-        content: "Present, edit, share and duplicate plays from organised category folders.",
+        content: "Present, share and organise plays with Play Type filters and coach-created team folders.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -179,13 +182,9 @@ function PlaybookPage() {
 
   const listedPlays = useMemo(
     () =>
-      selected
-        ? visiblePlays
-            .filter((p) => normalizeCategory(p.category) === selected)
-            .sort((a, b) => a.name.localeCompare(b.name))
-        : folderFilter !== "ALL"
-          ? [...visiblePlays].sort((a, b) => a.name.localeCompare(b.name))
-          : [],
+      visiblePlays
+        .filter((p) => !selected || normalizeCategory(p.category) === selected)
+        .sort((a, b) => a.name.localeCompare(b.name)),
     [visiblePlays, selected],
   );
 
