@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { BubbleButton } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
+import { notifyProgressChanged } from "@/lib/activity";
 import { fetchMyFollowedCreators, setFollowCreator } from "@/lib/community";
 
 /** Follow a public CoachSide creator. Signed-out visitors are sent to sign in. */
@@ -20,6 +21,7 @@ export function FollowButton({ username, size = "sm" }: { username: string; size
     mutationFn: () => setFollowCreator(username, !following),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["my-follows"] });
+      notifyProgressChanged();
       void qc.invalidateQueries({ queryKey: ["creator-profile", username] });
       toast.success(following ? `Unfollowed @${username}` : `Following @${username}`);
     },

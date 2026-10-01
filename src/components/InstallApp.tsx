@@ -21,6 +21,7 @@ export function useInstallApp() {
 
   useEffect(() => {
     setInstalled(isStandalone());
+    if (isStandalone()) trackActivityOnce("pwa_installed", "device");
     setIos(isIos());
     try {
       setDismissed(localStorage.getItem(DISMISS_KEY) === "1");
