@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
+import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/activity";
 import { Court, toLocal, type CourtZoom } from "@/components/court/Court";
 import { fetchEvents, fetchGame, fetchPlayers, fetchSubs } from "@/lib/data";
 import { cacheGet, pendingOps } from "@/lib/offline";
@@ -165,6 +166,7 @@ function ReviewPage() {
         : `team-game-report.pdf`,
     );
     toast.success("PDF report downloaded");
+    void trackActivity("stats_exported", { teamId: game.data.team_id, entityId: game.data.id });
   };
 
   return (

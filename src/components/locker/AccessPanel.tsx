@@ -9,6 +9,7 @@ import {
   Panel,
   Pill,
 } from "@/components/Bubbles";
+import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/activity";
 import { lockerUrl, resetLockerToken, setLockerSharing, updateTeam } from "@/lib/data";
 import {
   ensureTeamInvite,
@@ -137,6 +138,7 @@ export function LockerAccessPanel({ team }: { team: Team }) {
               onClick={async () => {
                 if (team.locker_enabled === false) await setLockerSharing(team.id, true);
                 await navigator.clipboard?.writeText(lockerUrl(team.locker_token));
+                void trackActivity("parent_link_shared", { teamId: team.id });
                 await qc.invalidateQueries({ queryKey: ["teams"] });
                 toast.success("Parent link copied");
               }}
@@ -148,6 +150,7 @@ export function LockerAccessPanel({ team }: { team: Team }) {
               onClick={async () => {
                 const token = await resetLockerToken(team.id);
                 await navigator.clipboard?.writeText(lockerUrl(token));
+                void trackActivity("parent_link_shared", { teamId: team.id });
                 await qc.invalidateQueries({ queryKey: ["teams"] });
                 toast.success("New parent link created and copied — the old one no longer works");
               }}

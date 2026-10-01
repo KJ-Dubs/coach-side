@@ -12,6 +12,7 @@ import {
   SelectInput,
   TextInput,
 } from "@/components/Bubbles";
+import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/activity";
 import {
   createTeamEvent,
   deleteTeamEvent,
@@ -152,7 +153,7 @@ function LockerAdmin() {
               <Pill tone="muted" className="max-w-full break-all">
                 {shareLink}
               </Pill>
-              <BubbleButton size="sm" tone="flame" onClick={() => copy(shareLink, "Locker room link")}>
+              <BubbleButton size="sm" tone="flame" onClick={() => { copy(shareLink, "Locker room link"); void trackActivity("parent_link_shared", { teamId: team.id }); }}>
                 Copy locker room link
               </BubbleButton>
               <BubbleButton size="sm" tone="neutral" onClick={() => copy(calLink, "Calendar link")}>

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { BubbleButton, InfoPanel } from "@/components/Bubbles";
+import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/activity";
 import { AddToPlaybook } from "@/components/AddToPlaybook";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
 import { AddToFolderPanel } from "@/components/playbook/Folders";
@@ -106,7 +107,7 @@ function MenuBody({
 
   const share = useMutation({
     mutationFn: () => createPlayShareLink(play.id),
-    onSuccess: (token) => void copy(`${window.location.origin}/share/${token}`, "Share link copied"),
+    onSuccess: (token) => { void trackActivity("play_shared", { entityId: play.id }); void copy(`${window.location.origin}/share/${token}`, "Share link copied"); },
     onError: (e: Error) => toast.error(e.message),
   });
   const duplicate = useMutation({
