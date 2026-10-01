@@ -47,7 +47,28 @@ export function AuthCard({
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
+  const [resendBusy, setResendBusy] = useState(false);
   const [remember, setRemember] = useState(true);
+
+  const resendConfirmation = async () => {
+    if (!unconfirmedEmail) return;
+    setResendBusy(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: unconfirmedEmail,
+        options: { emailRedirectTo: returnTo ?? `${window.location.origin}/auth` },
+      });
+      if (error) throw error;
+      setNotice("Confirmation email sent — check your inbox and spam folder.");
+      setUnconfirmedEmail(null);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setResendBusy(false);
+    }
+  };
 
   useEffect(() => {
     setRemember(rememberDevice());
@@ -115,7 +136,17 @@ export function AuthCard({
           email: email.trim(),
           password,
         });
-        if (error) throw error;
+        if (error) {
+          // Offer a recovery path instead of a dead-end raw error.
+          if (/not confirmed/i.test(error.message)) {
+            setUnconfirmedEmail(email.trim());
+            setNotice(
+              "Your email isn't confirmed yet. Check your inbox (and spam) for the confirmation link, or resend it below.",
+            );
+            return;
+          }
+          throw error;
+        }
         onDone?.();
       } else if (mode === "forgot") {
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
