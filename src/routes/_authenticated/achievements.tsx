@@ -3,7 +3,8 @@ import { Lock, Medal } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState, Label, Note, Panel, Pill } from "@/components/Bubbles";
 import { useMyProgress } from "@/components/ProgressCard";
-import { ACHIEVEMENTS, CATEGORIES } from "@/lib/achievements";
+import { ACHIEVEMENTS, CATEGORIES, METRIC_SOURCES } from "@/lib/achievements";
+import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/achievements")({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/achievements")({
 function AchievementsPage() {
   const q = useMyProgress();
   const data = q.data;
+  const { isAdmin } = useIsAppAdmin();
   return (
     <AppShell title="CoachSide Progress" subtitle="Achievements from what you actually do in CoachSide" backTo="/dashboard" backLabel="Home">
       {!data ? (
@@ -61,6 +63,11 @@ function AchievementsPage() {
                       <span className="flex min-w-0 flex-1 flex-col gap-1">
                         <span className="text-sm font-black text-foreground">{a.name}</span>
                         <Note>{a.description}</Note>
+                        {isAdmin ? (
+                          <Pill tone="muted" className="max-w-full whitespace-normal text-left text-[10px]">
+                            QA · {a.metric} = {p.value} · {METRIC_SOURCES[a.metric] ?? "NO SOURCE"}
+                          </Pill>
+                        ) : null}
                         {a.target > 1 && !p.unlocked ? (
                           <span className="flex items-center gap-2">
                             <span className="h-2 flex-1 overflow-hidden rounded-full bg-surface">
