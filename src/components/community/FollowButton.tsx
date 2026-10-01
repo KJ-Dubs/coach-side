@@ -7,7 +7,7 @@ import { notifyProgressChanged } from "@/lib/activity";
 import { fetchMyFollowedCreators, setFollowCreator } from "@/lib/community";
 
 /** Follow a public CoachSide creator. Signed-out visitors are sent to sign in. */
-export function FollowButton({ username, size = "sm" }: { username: string; size?: "sm" | "md" }) {
+export function FollowButton({ username, size = "sm", named = false, className }: { username: string; size?: "sm" | "md"; named?: boolean; className?: string }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const follows = useQuery({
@@ -44,9 +44,10 @@ export function FollowButton({ username, size = "sm" }: { username: string; size
       tone={following ? "neutral" : "grape"}
       disabled={toggle.isPending}
       aria-pressed={following}
+      className={className}
       onClick={() => toggle.mutate()}
     >
-      {following ? "✓ Following" : "+ Follow"}
+      {named ? (following ? `Unfollow @${username}` : `+ Follow @${username}`) : following ? "✓ Following" : "+ Follow"}
     </BubbleButton>
   );
 }

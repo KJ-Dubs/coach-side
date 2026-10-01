@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { BubbleButton, InfoPanel } from "@/components/Bubbles";
 import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/activity";
+import { FollowButton } from "@/components/community/FollowButton";
 import { AddToPlaybook } from "@/components/AddToPlaybook";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
 import { AddToFolderPanel } from "@/components/playbook/Folders";
@@ -193,9 +194,12 @@ function MenuBody({
           <BubbleButton size="sm" tone="ghost" className={item} disabled={remove.isPending} onClick={() => { if (window.confirm(`Delete “${play.name}”? This cannot be undone.`)) remove.mutate(); }}>Delete</BubbleButton>
         </>
       ) : null}
+      {play.creator_username && !owner ? (
+        <FollowButton username={play.creator_username} named className={item} />
+      ) : null}
       {play.creator_username ? (
         <Link to="/coach/$username" params={{ username: play.creator_username }}>
-          <BubbleButton size="sm" tone="neutral" className={item}>View creator</BubbleButton>
+          <BubbleButton size="sm" tone="neutral" className={item}>View coach profile</BubbleButton>
         </Link>
       ) : null}
     </div>
