@@ -217,6 +217,16 @@ export function AuthCard({
       ) : null}
 
       {notice ? <Note tone="grape">{notice}</Note> : null}
+      {unconfirmedEmail ? (
+        <BubbleButton
+          size="sm"
+          tone="flame"
+          disabled={resendBusy}
+          onClick={() => void resendConfirmation()}
+        >
+          {resendBusy ? "Sending…" : "Resend confirmation email"}
+        </BubbleButton>
+      ) : null}
 
       <form
         className="flex flex-col gap-3"

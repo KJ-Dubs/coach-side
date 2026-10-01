@@ -60,9 +60,23 @@ export function trackActivityOnce(
   const k = `coachside.act.${eventType}.${dedupeKey}`;
   try {
     if (localStorage.getItem(k)) return;
-    localStorage.setItem(k, "1");
   } catch {
     // fall through and record
   }
-  void trackActivity(eventType, opts);
+  // Mark as done only after a row was actually recorded — a signed-out
+  // visitor must not permanently consume the dedupe key.
+  void (async () => {
+    try {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return;
+      await trackActivity(eventType, opts);
+      try {
+        localStorage.setItem(k, "1");
+      } catch {
+        /* private mode */
+      }
+    } catch {
+      /* never block */
+    }
+  })();
 }
