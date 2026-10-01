@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Note, Panel, Pill } from "@/components/Bubbles";
+import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/activity";
 import { PlayPresenter } from "@/components/court/PlayPresenter";
 import { PresenterBackButton, PresenterNav } from "@/components/court/PresenterNav";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
@@ -123,6 +124,7 @@ function PlayViewPage() {
         toast.error("Could not create a share link");
         return;
       }
+      void trackActivity("play_shared", { entityId: playId });
       const url = `${window.location.origin}/share/${token}`;
       try {
         await navigator.clipboard.writeText(url);

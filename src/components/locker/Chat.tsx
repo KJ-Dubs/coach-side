@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { BubbleButton, EmptyState, Note, Pill } from "@/components/Bubbles";
+import { notifyProgressChanged } from "@/lib/activity";
 import { AttachmentCard, AttachmentPicker } from "@/components/locker/Attachments";
 import {
   deleteMessage,
@@ -76,6 +77,7 @@ export function Chat({
   const send = useMutation({
     mutationFn: () => sendMessage({ conversationId, body: body.trim(), attachments }),
     onSuccess: async () => {
+      notifyProgressChanged();
       setBody("");
       setAttachments([]);
       await invalidate();
@@ -107,7 +109,7 @@ export function Chat({
 
   const pin = useMutation({
     mutationFn: (v: { id: string; pinned: boolean }) => setMessagePinned(v.id, v.pinned),
-    onSuccess: invalidate,
+    onSuccess: () => { notifyProgressChanged(); return invalidate(); },
     onError: (e: Error) => toast.error(e.message),
   });
 

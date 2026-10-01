@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { statColor } from "@/lib/statColors";
 import { Court, toLocal, type CourtZoom } from "@/components/court/Court";
 import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
+import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/activity";
 import { fetchEvents, fetchGame, fetchPlayers } from "@/lib/data";
 import { shotValue, zoneOf, ZONE_LABEL } from "@/lib/court";
 import {
@@ -818,7 +819,7 @@ function LiveGamePage() {
         <Panel className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 p-1.5 sm:flex sm:flex-wrap">
           <div className="flex min-w-0 flex-wrap gap-2">
             <BubbleButton size="sm" tone="neutral" onClick={() => navigate({ to: "/dashboard" })}>⌂ Home</BubbleButton>
-            <BubbleButton size="sm" tone="grape" onClick={() => navigate({ to: "/board" })}>✎ Timeout Board</BubbleButton>
+            <BubbleButton size="sm" tone="grape" onClick={() => { void trackActivity("board_used_in_game", { entityId: gameId }); navigate({ to: "/board" }); }}>✎ Timeout Board</BubbleButton>
           </div>
           <div className="flex shrink-0 gap-1.5 sm:ml-auto">
             <BubbleButton size="sm" tone={courtZoom === "left" ? "grape" : "neutral"} onClick={() => setCourtZoom("left")}>Half</BubbleButton>

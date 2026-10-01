@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Download, Share, SquarePlus } from "lucide-react";
 import { BubbleButton, Panel, Pill } from "@/components/Bubbles";
+import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/activity";
 import { isIos, isStandalone } from "@/lib/pwa";
 import mark from "@/assets/coachside-mark.jpg.asset.json";
 
@@ -20,6 +21,7 @@ export function useInstallApp() {
 
   useEffect(() => {
     setInstalled(isStandalone());
+    if (isStandalone()) trackActivityOnce("pwa_installed", "device");
     setIos(isIos());
     try {
       setDismissed(localStorage.getItem(DISMISS_KEY) === "1");
@@ -31,6 +33,7 @@ export function useInstallApp() {
       setPrompt(e as InstallPromptEvent);
     };
     const onInstalled = () => {
+      trackActivityOnce("pwa_installed", "device");
       setInstalled(true);
       setPrompt(null);
     };

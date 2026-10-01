@@ -1,6 +1,7 @@
 import { PaidGate } from "@/components/billing/PaidGate";
 import { useEffect, useRef, useState } from "react";
 import { BubbleButton, Label, Panel, Pill } from "@/components/Bubbles";
+import { trackActivity } from "@/lib/activity";
 import {
   DEFAULT_EXPORT_OPTIONS,
   FORMAT_SIZE,
@@ -32,6 +33,7 @@ function ExportPlayVideoInner({
   const [url, setUrl] = useState<string | null>(null);
   const [resultFormat, setResultFormat] = useState<ExportFormat | null>(null);
   const urlRef = useRef<string | null>(null);
+  const trackedUrlRef = useRef<string | null>(null);
 
   useEffect(
     () => () => {
@@ -84,6 +86,11 @@ function ExportPlayVideoInner({
     document.body.appendChild(link);
     link.click();
     link.remove();
+    // Highlight Reel: count a successful PLAY download once per prepared video.
+    if (model.kind !== "drill" && trackedUrlRef.current !== url) {
+      trackedUrlRef.current = url;
+      void trackActivity("play_exported_video", { metadata: { format: resultFormat ?? "unknown" } });
+    }
   };
 
   const previewClass =

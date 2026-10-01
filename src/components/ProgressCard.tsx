@@ -6,6 +6,7 @@ import { BubbleButton, Label, Note, Panel, Pill } from "@/components/Bubbles";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { syncMyProgress } from "@/lib/retention.functions";
 import { useAuth } from "@/lib/auth";
+import { PROGRESS_EVENT } from "@/lib/activity";
 
 export function useMyProgress() {
   const { user } = useAuth();
@@ -17,6 +18,11 @@ export function useMyProgress() {
     enabled: !!user,
     staleTime: 60_000,
   });
+  useEffect(() => {
+    const onChange = () => void qc.invalidateQueries({ queryKey: ["my-progress"] });
+    window.addEventListener(PROGRESS_EVENT, onChange);
+    return () => window.removeEventListener(PROGRESS_EVENT, onChange);
+  }, [qc]);
   useEffect(() => {
     if (q.data?.newlyUnlocked.length) {
       void qc.invalidateQueries({ queryKey: ["notifications"] });

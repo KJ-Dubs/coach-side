@@ -14,6 +14,7 @@ import { useAccess, resolveRole } from "@/lib/access";
 import { consumePendingInvite } from "@/lib/pendingInvite";
 import { TrialStatus } from "@/components/billing/TrialStatus";
 import { HelpCard, ProgressCard } from "@/components/ProgressCard";
+import { HomeTipCard } from "@/components/HomeTipCard";
 import { EnablePushCard } from "@/components/EnablePushCard";
 import { useCurrentTeam } from "@/lib/teamContext";
 import { PlayOfTheDayCard } from "@/components/community/PlayOfTheDayCard";
@@ -101,7 +102,7 @@ function UpNext({ teamId }: { teamId: string | null }) {
           </div>
         ) : <p className="mt-2 text-sm font-semibold text-muted-foreground">Nothing scheduled</p>}
       </div>
-      <Link to="/calendar" className="w-full max-w-[360px] justify-self-center sm:w-auto sm:justify-self-end">
+      <Link to="/lockerroom" search={{ area: "schedule" }} className="w-full max-w-[360px] justify-self-center sm:w-auto sm:justify-self-end">
         <BubbleButton size="sm" tone="neutral" className="w-full justify-center sm:w-auto">
           Calendar
         </BubbleButton>
@@ -213,6 +214,8 @@ function Dashboard() {
           )}
         </div>
       </Panel>
+
+      {isCoach ? <HomeTipCard /> : null}
 
       {live.length ? (
         <Panel className="flex flex-col items-center gap-3 px-4 py-4 text-center">

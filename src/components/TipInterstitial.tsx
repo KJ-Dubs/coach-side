@@ -45,8 +45,9 @@ function pickTip() {
   } catch {
     // ignore
   }
-  const pool = COACHSIDE_TIPS.filter((t) => t !== prev);
-  const tip = pool[Math.floor(Math.random() * pool.length)] ?? COACHSIDE_TIPS[0]!;
+  const texts = COACHSIDE_TIPS.map((t) => t.text);
+  const pool = texts.filter((t) => t !== prev);
+  const tip = pool[Math.floor(Math.random() * pool.length)] ?? texts[0]!;
   memoryLastTip = tip;
   try {
     sessionStorage.setItem(LAST_TIP_KEY, tip);

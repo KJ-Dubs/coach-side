@@ -6,6 +6,9 @@ import { HeartButton } from "@/components/community/HeartButton";
 import { PlayThumb } from "@/components/community/PlayThumb";
 import { fetchPlayOfTheDay, libraryPlayAsPlay } from "@/lib/community";
 import { normalizeCategory } from "@/lib/types";
+import { trackActivityOnce } from "@/lib/activity";
+
+const markViewed = (id: string) => trackActivityOnce("potd_viewed", `${new Date().toISOString().slice(0, 10)}`, { entityId: id });
 
 /** Home's featured play. A CoachSide owner picks this by hand. */
 export function PlayOfTheDayCard({ canAdd = true }: { canAdd?: boolean }) {
@@ -20,6 +23,7 @@ export function PlayOfTheDayCard({ canAdd = true }: { canAdd?: boolean }) {
         params={{ playId: play.id }}
         className="block w-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grape sm:w-1/2"
         aria-label={`Open Play of the Day ${play.name}`}
+        onClick={() => markViewed(play.id)}
       >
         <PlayThumb playId={play.id} attackBasket={play.attack_basket} category={play.category} />
       </Link>
@@ -41,6 +45,7 @@ export function PlayOfTheDayCard({ canAdd = true }: { canAdd?: boolean }) {
           to="/plays/$playId/view"
           params={{ playId: play.id }}
           search={{ from: "home" }}
+          onClick={() => markViewed(play.id)}
           className="block w-full"
         >
           <BubbleButton tone="flame" size="lg" className="min-h-14 w-full">

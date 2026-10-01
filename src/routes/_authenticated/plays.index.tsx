@@ -17,6 +17,7 @@ import {
   Pill,
   TextInput,
 } from "@/components/Bubbles";
+import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/activity";
 import {
   createPlay,
   createPlayShareLink,
@@ -247,7 +248,8 @@ function PlaybookPage() {
 
   const share = useMutation({
     mutationFn: (p: Play) => createPlayShareLink(p.id),
-    onSuccess: async (token) => {
+    onSuccess: async (token, p) => {
+      if (token) void trackActivity("play_shared", { entityId: p.id });
       void invalidate();
       if (!token) {
         toast.error("Could not create a share link");

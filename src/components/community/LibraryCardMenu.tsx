@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { BubbleButton, InfoPanel } from "@/components/Bubbles";
+import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/activity";
+import { FollowButton } from "@/components/community/FollowButton";
 import { AddToPlaybook } from "@/components/AddToPlaybook";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
 import { AddToFolderPanel } from "@/components/playbook/Folders";
@@ -106,7 +108,7 @@ function MenuBody({
 
   const share = useMutation({
     mutationFn: () => createPlayShareLink(play.id),
-    onSuccess: (token) => void copy(`${window.location.origin}/share/${token}`, "Share link copied"),
+    onSuccess: (token) => { void trackActivity("play_shared", { entityId: play.id }); void copy(`${window.location.origin}/share/${token}`, "Share link copied"); },
     onError: (e: Error) => toast.error(e.message),
   });
   const duplicate = useMutation({
@@ -192,9 +194,12 @@ function MenuBody({
           <BubbleButton size="sm" tone="ghost" className={item} disabled={remove.isPending} onClick={() => { if (window.confirm(`Delete “${play.name}”? This cannot be undone.`)) remove.mutate(); }}>Delete</BubbleButton>
         </>
       ) : null}
+      {play.creator_username && !owner ? (
+        <FollowButton username={play.creator_username} named className={item} />
+      ) : null}
       {play.creator_username ? (
         <Link to="/coach/$username" params={{ username: play.creator_username }}>
-          <BubbleButton size="sm" tone="neutral" className={item}>View creator</BubbleButton>
+          <BubbleButton size="sm" tone="neutral" className={item}>View coach profile</BubbleButton>
         </Link>
       ) : null}
     </div>
