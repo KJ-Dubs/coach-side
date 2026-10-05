@@ -155,8 +155,8 @@
 - [x] Constrain report panels, filters, map, timelines, and box-score overflow on phone and iPad widths
 
 ## Creator discovery
-- [ ] Move Create Play from the Playbook header into My Playbook controls
-- [ ] Add Plays / Drills / Coaches Library navigation and a safe public coach directory
-- [ ] Add My Coach Profile, self-profile behavior, author links, and origin-aware profile Back
-- [ ] Point Follow a Coach achievement and tips to the Coaches directory
-- [ ] Verify privacy, follow behavior, responsive layouts, type safety, and preview build
+- [x] Move Create Play from the Playbook header into My Playbook controls
+- [x] Add Plays / Drills / Coaches Library navigation and a safe public coach directory
+- [x] Add My Coach Profile, self-profile behavior, author links, and origin-aware profile Back
+- [x] Point Follow a Coach achievement and tips to the Coaches directory
+- [x] Verify privacy constraints, follow safeguards, type safety, tests, and preview build
