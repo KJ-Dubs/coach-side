@@ -303,7 +303,12 @@ function LibraryCard({
       <div className="flex flex-wrap items-center justify-center gap-2">
         {play.featured ? <Pill tone="flame">Play of the Day</Pill> : null}
         {play.creator_username ? (
-          <Link to="/coach/$username" params={{ username: play.creator_username }} aria-label={`View coach profile @${play.creator_username}`}>
+          <Link
+            to="/coach/$username"
+            params={{ username: play.creator_username }}
+            search={{ from: variant === "app" ? "app-plays" : "public-plays" }}
+            aria-label={`View coach profile @${play.creator_username}`}
+          >
             <Pill tone="grape" className="underline-offset-2 hover:underline">by {play.author_label} · Profile ›</Pill>
           </Link>
         ) : (

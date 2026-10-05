@@ -198,7 +198,7 @@ function MenuBody({
         <FollowButton username={play.creator_username} named className={item} />
       ) : null}
       {play.creator_username ? (
-        <Link to="/coach/$username" params={{ username: play.creator_username }}>
+        <Link to="/coach/$username" params={{ username: play.creator_username }} search={{ from: "app-plays" }}>
           <BubbleButton size="sm" tone="neutral" className={item}>View coach profile</BubbleButton>
         </Link>
       ) : null}

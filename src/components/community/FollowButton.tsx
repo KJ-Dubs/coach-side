@@ -28,6 +28,7 @@ export function FollowButton({ username, size = "sm", named = false, className }
     mutationFn: () => setFollowCreator(username, !following),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["my-follows"] });
+      void qc.invalidateQueries({ queryKey: ["creator-directory"] });
       notifyProgressChanged();
       void qc.invalidateQueries({ queryKey: ["creator-profile", username] });
       toast.success(following ? `Unfollowed @${username}` : `Following @${username}`);
