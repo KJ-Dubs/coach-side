@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { BubbleButton } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
 import { notifyProgressChanged } from "@/lib/activity";
-import { fetchMyFollowedCreators, setFollowCreator } from "@/lib/community";
+import { fetchMyFollowedCreators, fetchMyPublicProfile, setFollowCreator } from "@/lib/community";
 
 /** Follow a public CoachSide creator. Signed-out visitors are sent to sign in. */
 export function FollowButton({ username, size = "sm", named = false, className }: { username: string; size?: "sm" | "md"; named?: boolean; className?: string }) {
@@ -15,7 +15,14 @@ export function FollowButton({ username, size = "sm", named = false, className }
     queryFn: fetchMyFollowedCreators,
     enabled: !!user,
   });
+  const mine = useQuery({
+    queryKey: ["my-public-profile"],
+    queryFn: fetchMyPublicProfile,
+    enabled: !!user,
+  });
+  
   const following = (follows.data ?? []).some((c) => c.username === username);
+  const isMe = mine.data?.username === username;
 
   const toggle = useMutation({
     mutationFn: () => setFollowCreator(username, !following),
@@ -37,6 +44,8 @@ export function FollowButton({ username, size = "sm", named = false, className }
       </Link>
     );
   }
+
+  if (isMe) return null;
 
   return (
     <BubbleButton
