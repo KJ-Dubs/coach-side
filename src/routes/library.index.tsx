@@ -15,16 +15,16 @@ export const Route = createFileRoute("/library/")({
   validateSearch: (search) => searchSchema.parse(search),
   head: () => ({
     meta: [
-      { title: "CoachSide Play & Drill Library — Free Basketball Plays and Drills" },
+      { title: "CoachSide Library — Basketball Plays, Drills and Coaches" },
       {
         name: "description",
         content:
-          "Browse animated basketball plays and full practice drills published by coaches: offense, BLOB, SLOB, presses, shooting, defense and more. Free to watch, no account needed.",
+          "Browse animated basketball plays, practice drills and public coach profiles. Discover and follow creators free, with no account needed to browse.",
       },
-      { property: "og:title", content: "CoachSide Play & Drill Library" },
+      { property: "og:title", content: "CoachSide Library — Plays, Drills and Coaches" },
       {
         property: "og:description",
-        content: "Animated basketball plays and practice drills published by real coaches. Free to browse.",
+        content: "Discover basketball plays, practice drills and the coaches who publish them. Free to browse.",
       },
       { property: "og:type", content: "website" },
       { property: "og:image", content: "https://coachside.live/og-cover.png" },
@@ -47,7 +47,7 @@ function LibraryPage() {
       <SectionHeader
         as="h1"
         title="CoachSide Library"
-        subtitle="Animated plays and full practice drills published by coaches. Free to browse — sign in to save."
+        subtitle="Discover plays, drills and the coaches who publish them. Free to browse — sign in to save and follow."
       >
         <Link to={session ? "/dashboard" : "/"}>
           <BubbleButton tone="neutral" size="sm">
@@ -67,7 +67,7 @@ function LibraryPage() {
           Coaches
         </BubbleButton>
         {session ? <span className="basis-full sm:hidden" aria-hidden /> : null}
-        {session ? <MyCoachProfileButton /> : null}
+        {session ? <MyCoachProfileButton source="public" /> : null}
       </Panel>
 
       {content === "plays" ? <LibraryFeed variant="public" /> : content === "drills" ? <DrillFeed /> : <CoachesDirectory source="public" />}

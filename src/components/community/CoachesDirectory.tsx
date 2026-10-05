@@ -59,7 +59,7 @@ export function CoachesDirectory({ source }: { source: "app" | "public" }) {
   );
 }
 
-export function MyCoachProfileButton() {
+export function MyCoachProfileButton({ source = "app" }: { source?: "app" | "public" }) {
   const { user } = useAuth();
   const mine = useQuery({
     queryKey: ["my-public-profile"],
@@ -73,7 +73,7 @@ export function MyCoachProfileButton() {
   }
   if (mine.data?.username) {
     return (
-      <Link to="/coach/$username" params={{ username: mine.data.username }} search={{ from: "app-coaches" }}>
+      <Link to="/coach/$username" params={{ username: mine.data.username }} search={{ from: source === "app" ? "app-coaches" : "public-coaches" }}>
         <BubbleButton size="sm" tone="grape">My Coach Profile</BubbleButton>
       </Link>
     );
