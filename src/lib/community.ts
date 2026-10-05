@@ -131,6 +131,15 @@ export type CreatorProfile = {
   followers: number;
 };
 
+export type CreatorDirectoryEntry = CreatorProfile;
+
+/** Public discovery rows only: profiles with a handle and a credited published play. */
+export async function fetchCreatorDirectory(): Promise<CreatorDirectoryEntry[]> {
+  const { data, error } = await supabase.rpc("creator_directory" as never);
+  if (error) throw error;
+  return (data ?? []) as CreatorDirectoryEntry[];
+}
+
 export async function fetchCreatorProfile(username: string): Promise<CreatorProfile | null> {
   const { data, error } = await supabase.rpc("creator_profile" as never, {
     _username: username,

@@ -47,7 +47,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   A("library_5", "Library Scout 5", "Add 5 Library plays.", P, "library_saved", 5, "/plays?tab=library"),
   A("library_15", "Library Scout 15", "Add 15 Library plays.", P, "library_saved", 15, "/plays?tab=library", true),
   A("heart_1", "Fan", "Heart a Library play.", P, "hearts", 1, "/library"),
-  A("follow_1", "Film Room", "Follow a coach from a Library play's ••• menu or their profile.", P, "follows", 1, "/library"),
+  A("follow_1", "Film Room", "Discover and follow a coach in the CoachSide Library.", P, "follows", 1, "/plays?tab=library&content=coaches"),
 
   A("team_1", "Program Builder", "Create a team.", T, "teams", 1, "/roster"),
   A("roster_1", "First Signing", "Add your first player.", T, "max_roster", 1, "/roster"),
@@ -96,7 +96,7 @@ export const METRIC_SOURCES: Record<string, string> = {
   play_shared: "Activity: play_shared (••• Share / Copy Link) + your plays with a share link on",
   play_exported: "Activity: play_exported_video (Download MP4 of a play; drills excluded)",
   hearts: "Hearts you gave Library plays",
-  follows: "Coaches you follow (Library ••• menu or /coach/:username)",
+  follows: "Coaches you follow (Library > Coaches or /coach/:username)",
   teams: "Teams you coach",
   max_roster: "Largest roster among your teams",
   qr_joins: "Players who joined your teams (QR/invite)",

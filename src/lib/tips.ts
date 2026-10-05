@@ -18,7 +18,7 @@ export const COACHSIDE_TIPS: CoachTip[] = [
   { text: "Create drills with multiple balls, cones, defenders, and animated steps.", link: "/drills/new", cta: "Open Drill Maker" },
   { text: "Players can scan your team QR code to join the Locker Room." },
   { text: "Share your parent link for read-only stats and schedule access.", link: "/locker", cta: "Get parent link" },
-  { text: "Follow coaches straight from the ••• menu on any Library play.", link: "/library", cta: "Find coaches" },
+  { text: "Discover and follow creators in CoachSide Library > Coaches.", link: "/plays?tab=library&content=coaches", cta: "Find coaches" },
   { text: "Open Play of the Day on Home to discover something new before practice." },
   { text: "Team Stats can be filtered by player, team, game, and season.", link: "/stats", cta: "Open Team Stats" },
   { text: "Send a Plan in the Locker Room so players know exactly what to work on.", link: "/lockerroom?area=plans", cta: "Open Plans" },

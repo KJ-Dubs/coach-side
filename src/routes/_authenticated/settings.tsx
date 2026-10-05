@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { LockerAccessPanel } from "@/components/locker/AccessPanel";
 import { AppShell } from "@/components/AppShell";
+import { PublicProfilePanel } from "@/components/community/PublicProfilePanel";
 import {
   BubbleButton,
   EmptyState,
@@ -82,6 +83,10 @@ function SettingsPage() {
             void queryClient.invalidateQueries({ queryKey: ["org"] });
           }}
         />
+
+        <div id="public-coach-profile" className="scroll-mt-24">
+          <PublicProfilePanel />
+        </div>
 
         <Panel className="flex flex-col gap-3">
           <div className="flex justify-center"><Heading tone="flame" className="text-center">Team information</Heading></div>

@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { NotificationPrefsPanel } from "@/components/NotificationPrefsPanel";
 import { EnablePushCard } from "@/components/EnablePushCard";
-import { PublicProfilePanel } from "@/components/community/PublicProfilePanel";
 import {
   BubbleButton,
   EmptyState,
@@ -175,8 +174,6 @@ function ProfilePage() {
             </div>
           </Panel>
         )}
-
-        {isPlayer ? null : <PublicProfilePanel />}
 
         <div className="lg:col-span-2">
           <EnablePushCard />

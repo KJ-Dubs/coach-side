@@ -3346,6 +3346,17 @@ export type Database = {
         Args: { _name?: string; _play: string; _team_ids?: string[] }
         Returns: string
       }
+      creator_directory: {
+        Args: never
+        Returns: {
+          bio: string
+          display_name: string
+          followers: number
+          published_plays: number
+          total_hearts: number
+          username: string
+        }[]
+      }
       creator_profile: {
         Args: { _username: string }
         Returns: {

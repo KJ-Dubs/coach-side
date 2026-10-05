@@ -33,6 +33,7 @@ import {
 } from "@/lib/data";
 import { publishPlay, setPlayAnonymous, unpublishPlay } from "@/lib/library";
 import { LibraryFeed } from "@/components/community/LibraryFeed";
+import { CoachesDirectory, MyCoachProfileButton } from "@/components/community/CoachesDirectory";
 import { DrillFeed } from "@/components/drills/DrillFeed";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
 import { PlayThumb } from "@/components/community/PlayThumb";
@@ -61,7 +62,7 @@ const searchSchema = z.object({
   category: z.string().optional(),
   team: z.string().optional(),
   tab: z.enum(["mine", "library"]).optional(),
-  content: z.enum(["plays", "drills"]).optional(),
+  content: z.enum(["plays", "drills", "coaches"]).optional(),
   folder: z.string().optional(),
 });
 
@@ -211,7 +212,7 @@ function PlaybookPage() {
   const setTab = (next: "mine" | "library") =>
     navigate({ to: "/plays", search: next === "library" ? { tab: "library" } : {} });
 
-  const setLibraryContent = (content: "plays" | "drills") =>
+  const setLibraryContent = (content: "plays" | "drills" | "coaches") =>
     navigate({ to: "/plays", search: { tab: "library", content } });
 
   const setFolder = (folder: string) => navigate({
@@ -352,13 +353,6 @@ function PlaybookPage() {
               ? `${selected} plays`
               : "All plays"
       }
-      actions={
-        <Link to="/plays/new" search={selected ? { category: selected } : {}}>
-          <BubbleButton size="sm" tone="flame">
-            + Create Play
-          </BubbleButton>
-        </Link>
-      }
     >
       <Panel className="mb-3 flex flex-wrap items-center justify-center gap-2">
         <BubbleButton size="sm" tone={tab === "mine" ? "grape" : "neutral"} onClick={() => setTab("mine")}>
@@ -374,8 +368,11 @@ function PlaybookPage() {
           <Panel className="mb-3 flex flex-wrap items-center justify-center gap-2">
             <BubbleButton tone={libraryContent === "plays" ? "flame" : "neutral"} onClick={() => setLibraryContent("plays")}>Plays</BubbleButton>
             <BubbleButton tone={libraryContent === "drills" ? "flame" : "neutral"} onClick={() => setLibraryContent("drills")}>Drills</BubbleButton>
+            <BubbleButton tone={libraryContent === "coaches" ? "flame" : "neutral"} onClick={() => setLibraryContent("coaches")}>Coaches</BubbleButton>
+            <span className="basis-full sm:hidden" aria-hidden />
+            <MyCoachProfileButton />
           </Panel>
-          {libraryContent === "plays" ? <LibraryFeed variant="app" /> : <DrillFeed />}
+          {libraryContent === "plays" ? <LibraryFeed variant="app" /> : libraryContent === "drills" ? <DrillFeed /> : <CoachesDirectory source="app" />}
         </>
       ) : (
       <div className="flex flex-col gap-3">
@@ -408,12 +405,19 @@ function PlaybookPage() {
               <Pill tone="muted" className="px-2 py-0">{counts.get(c) ?? 0}</Pill>
             </BubbleButton>
           ))}
-          {selected ? (
-            <BubbleButton size="sm" tone="flame" className="ml-auto" onClick={() => setQuickOpen((o) => !o)}>
-              {quickOpen ? "Close" : `+ New ${selected} play`}
-            </BubbleButton>
-          ) : null}
         </Panel>
+
+        <div className="flex justify-center">
+          {selected ? (
+            <BubbleButton size="sm" tone="flame" onClick={() => setQuickOpen((o) => !o)}>
+              {quickOpen ? "Close" : `+ New ${selected} Play`}
+            </BubbleButton>
+          ) : (
+            <Link to="/plays/new">
+              <BubbleButton size="sm" tone="flame">+ Create Play</BubbleButton>
+            </Link>
+          )}
+        </div>
 
         {/* 3. My Folders — why/when this team uses a play */}
         {teamFilter === "ALL" ? (
