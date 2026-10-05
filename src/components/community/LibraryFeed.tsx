@@ -275,7 +275,7 @@ function LibraryCard({
         <h3 className="min-w-0 truncate text-center text-xl font-black leading-tight text-foreground">
           {play.name}
         </h3>
-        <LibraryCardMenu play={play} isCoach={isCoach} />
+        <LibraryCardMenu play={play} isCoach={isCoach} origin={variant === "app" ? "app-plays" : "public-plays"} />
       </div>
 
       <Link

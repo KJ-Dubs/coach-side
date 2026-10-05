@@ -75,7 +75,7 @@ function PublicPlayPage() {
           <Panel className="flex flex-wrap items-center gap-2">
             <Pill tone="neutral">{normalizeCategory(play.category)}</Pill>
             {play.creator_username ? (
-              <Link to="/coach/$username" params={{ username: play.creator_username }}>
+              <Link to="/coach/$username" params={{ username: play.creator_username }} search={{ from: "public-plays" }}>
                 <Pill tone="grape">by {play.author_label}</Pill>
               </Link>
             ) : (

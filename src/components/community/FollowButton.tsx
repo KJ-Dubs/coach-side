@@ -22,7 +22,7 @@ export function FollowButton({ username, size = "sm", named = false, className }
   });
   
   const following = (follows.data ?? []).some((c) => c.username === username);
-  const isMe = mine.data?.username === username;
+  const isMe = mine.data?.username?.toLowerCase() === username.toLowerCase();
 
   const toggle = useMutation({
     mutationFn: () => setFollowCreator(username, !following),

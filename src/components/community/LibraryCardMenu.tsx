@@ -30,7 +30,7 @@ async function copy(url: string, label: string) {
  * Upper-right ••• for signed-in Library cards. Owner actions only appear for
  * the play's creator; everyone else gets adopt/share/version actions.
  */
-export function LibraryCardMenu({ play, isCoach }: { play: LibraryPlay; isCoach: boolean }) {
+export function LibraryCardMenu({ play, isCoach, origin }: { play: LibraryPlay; isCoach: boolean; origin: "app-plays" | "public-plays" }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState<"none" | "teams" | "folders">("none");
@@ -64,7 +64,7 @@ export function LibraryCardMenu({ play, isCoach }: { play: LibraryPlay; isCoach:
       </BubbleButton>
       {open ? (
         <div className="absolute right-0 top-full z-30 mt-2 w-[min(18rem,calc(100vw-2rem))] max-h-[70vh] overflow-y-auto rounded-2xl border border-border bg-surface-2 p-2 shadow-xl">
-          <MenuBody play={play} isCoach={isCoach} userId={user.id} panel={panel} setPanel={setPanel} close={() => setOpen(false)} />
+          <MenuBody play={play} isCoach={isCoach} userId={user.id} origin={origin} panel={panel} setPanel={setPanel} close={() => setOpen(false)} />
         </div>
       ) : null}
     </div>
@@ -72,9 +72,10 @@ export function LibraryCardMenu({ play, isCoach }: { play: LibraryPlay; isCoach:
 }
 
 function MenuBody({
-  play, isCoach, userId, panel, setPanel, close,
+  play, isCoach, userId, origin, panel, setPanel, close,
 }: {
   play: LibraryPlay; isCoach: boolean; userId: string;
+  origin: "app-plays" | "public-plays";
   panel: "none" | "teams" | "folders"; setPanel: (p: "none" | "teams" | "folders") => void; close: () => void;
 }) {
   const qc = useQueryClient();
@@ -198,7 +199,7 @@ function MenuBody({
         <FollowButton username={play.creator_username} named className={item} />
       ) : null}
       {play.creator_username ? (
-        <Link to="/coach/$username" params={{ username: play.creator_username }} search={{ from: "app-plays" }}>
+        <Link to="/coach/$username" params={{ username: play.creator_username }} search={{ from: origin }}>
           <BubbleButton size="sm" tone="neutral" className={item}>View coach profile</BubbleButton>
         </Link>
       ) : null}
