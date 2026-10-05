@@ -59,6 +59,32 @@ export function CoachesDirectory({ source }: { source: "app" | "public" }) {
   );
 }
 
+export function MyCoachProfileButton() {
+  const { user } = useAuth();
+  const mine = useQuery({
+    queryKey: ["my-public-profile"],
+    queryFn: fetchMyPublicProfile,
+    enabled: !!user,
+  });
+
+  if (!user) return null;
+  if (mine.isLoading) {
+    return <BubbleButton size="sm" tone="neutral" disabled>Loading profile…</BubbleButton>;
+  }
+  if (mine.data?.username) {
+    return (
+      <Link to="/coach/$username" params={{ username: mine.data.username }} search={{ from: "app-coaches" }}>
+        <BubbleButton size="sm" tone="grape">My Coach Profile</BubbleButton>
+      </Link>
+    );
+  }
+  return (
+    <Link to="/settings" hash="public-coach-profile">
+      <BubbleButton size="sm" tone="grape">Set Up Coach Profile</BubbleButton>
+    </Link>
+  );
+}
+
 function CoachCard({
   coach,
   ownUsername,

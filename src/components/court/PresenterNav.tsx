@@ -13,7 +13,7 @@ export type PresenterReturnContext = {
   team?: string | undefined;
   folder?: string | undefined;
   tab?: "mine" | "library" | undefined;
-  content?: "plays" | "drills" | undefined;
+  content?: "plays" | "drills" | "coaches" | undefined;
 };
 
 export function PresenterBackButton({
