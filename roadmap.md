@@ -153,3 +153,10 @@
 ## Game Report mobile stability
 - [x] Move report actions below the centered title and eliminate document-level horizontal drift
 - [x] Constrain report panels, filters, map, timelines, and box-score overflow on phone and iPad widths
+
+## Creator discovery
+- [ ] Move Create Play from the Playbook header into My Playbook controls
+- [ ] Add Plays / Drills / Coaches Library navigation and a safe public coach directory
+- [ ] Add My Coach Profile, self-profile behavior, author links, and origin-aware profile Back
+- [ ] Point Follow a Coach achievement and tips to the Coaches directory
+- [ ] Verify privacy, follow behavior, responsive layouts, type safety, and preview build
