@@ -6,6 +6,7 @@ import type { PlayFrame } from "./types";
  * "CoachSide suggests" tags. No AI — one shared vocabulary, one scorer.
  */
 
+/** Legacy single-select situations — kept only to read and search old plays. */
 export const SITUATIONS = [
   "Half court set",
   "Quick hitter",
@@ -17,14 +18,31 @@ export const SITUATIONS = [
   "End of quarter",
 ] as const;
 
+export const CONCEPTS = [
+  "SLOB",
+  "BLOB",
+  "Motion",
+  "Set",
+  "5 Out",
+  "4 Out 1 In",
+  "Post",
+  "3 High",
+  "Triangle",
+  "Swing",
+  "Backdoor",
+  "Slips",
+  "High-Low",
+  "Split Post",
+] as const;
+
 export const DEFENSES = [
   "Man to man",
   "Tight / denial",
   "Sagging man",
+  "Switching",
   "2-3 zone",
   "3-2 zone",
   "1-3-1 zone",
-  "Switching",
   "Full court press",
 ] as const;
 
@@ -37,19 +55,22 @@ export const OUTCOMES = [
   "Reversal / reset",
 ] as const;
 
+/** Shown in the indexing sheet. Legacy "Handoff" stays readable/searchable. */
 export const PRIMARY_ACTIONS = [
   "Ball screen",
   "Off-ball screen",
   "Down screen",
   "Flare screen",
   "Backdoor",
-  "Handoff",
   "Cut",
   "Post entry",
   "Skip pass",
   "Dribble drive",
   "Stagger",
   "Flash",
+  "Slip",
+  "High-low",
+  "Split post",
 ] as const;
 
 export const TIME_PRESSURE = [
@@ -60,22 +81,73 @@ export const TIME_PRESSURE = [
 ] as const;
 
 export type PlayIndex = {
-  situation: string | null;
-  defense_faced: string | null;
-  outcome: string | null;
+  concepts: string[];
+  defenses: string[];
+  outcomes: string[];
   primary_actions: string[];
   time_pressure: string | null;
   tags: string[];
 };
 
 export const EMPTY_INDEX: PlayIndex = {
-  situation: null,
-  defense_faced: null,
-  outcome: null,
+  concepts: [],
+  defenses: [],
+  outcomes: [],
   primary_actions: [],
   time_pressure: null,
   tags: [],
 };
+
+const SITUATION_TO_CONCEPT: Record<string, string> = {
+  "Baseline out of bounds": "BLOB",
+  "Sideline out of bounds": "SLOB",
+  "Half court set": "Set",
+  "Quick hitter": "Set",
+  "After timeout": "Set",
+  "End of quarter": "Set",
+};
+
+type IndexRow = {
+  situation?: string | null;
+  defense_faced?: string | null;
+  outcome?: string | null;
+  concepts?: string[] | null;
+  defenses?: string[] | null;
+  outcomes?: string[] | null;
+  primary_actions?: string[] | null;
+  time_pressure?: string | null;
+  tags?: string[] | null;
+};
+
+/** Reads new array fields, falling back to legacy scalars on older rows. */
+export function normalizeIndex(r: IndexRow): PlayIndex {
+  const mapped = r.situation ? SITUATION_TO_CONCEPT[r.situation] : undefined;
+  return {
+    concepts: r.concepts?.length ? [...r.concepts] : mapped ? [mapped] : [],
+    defenses: r.defenses?.length ? [...r.defenses] : r.defense_faced ? [r.defense_faced] : [],
+    outcomes: r.outcomes?.length ? [...r.outcomes] : r.outcome ? [r.outcome] : [],
+    primary_actions: [...(r.primary_actions ?? [])],
+    time_pressure: r.time_pressure ?? null,
+    tags: [...(r.tags ?? [])],
+  };
+}
+
+/**
+ * Columns to save. The legacy `situation` value is never written, so an old
+ * play keeps its original value; legacy defense/outcome mirror the first pick.
+ */
+export function indexToRow(i: PlayIndex) {
+  return {
+    concepts: i.concepts,
+    defenses: i.defenses,
+    outcomes: i.outcomes,
+    defense_faced: i.defenses[0] ?? null,
+    outcome: i.outcomes[0] ?? null,
+    primary_actions: i.primary_actions,
+    time_pressure: i.time_pressure,
+    tags: i.tags,
+  };
+}
 
 /* ------------ suggestions read from the coach's own drawing ------------ */
 
@@ -98,11 +170,11 @@ function dist(a: { x: number; y: number }, b: { x: number; y: number }) {
 export function suggestFromFrames(
   frames: PlayFrame[],
   attackBasket: string,
-): { actions: string[]; outcome: string | null; tags: string[] } {
+): { actions: string[]; outcomes: string[]; tags: string[] } {
   const rim = rimFor(attackBasket);
   const actions = new Set<string>();
   const tags = new Set<string>();
-  let outcome: string | null = null;
+  const outcomes = new Set<string>();
 
   for (const f of frames) {
     for (const a of f.actions ?? []) {
@@ -130,12 +202,12 @@ export function suggestFromFrames(
       }
       if (a.type === "shot" && start) {
         const d = dist(start, rim);
-        outcome = d > 22 ? "3-point look" : d < 6 ? "Rim finish" : "Mid-range";
+        outcomes.add(d > 22 ? "3-point look" : d < 6 ? "Rim finish" : "Mid-range");
         tags.add(d > 22 ? "three" : d < 6 ? "finishing" : "mid-range");
       }
     }
   }
-  return { actions: [...actions], outcome, tags: [...tags] };
+  return { actions: [...actions], outcomes: [...outcomes], tags: [...tags] };
 }
 
 /* ------------------------- plain-language search ------------------------- */
@@ -149,6 +221,13 @@ const SYNONYMS: Record<string, string[]> = {
   rim: ["Rim finish", "finishing"],
   finish: ["Rim finish", "finishing"],
   backdoor: ["Backdoor"],
+  blob: ["Baseline out of bounds", "BLOB"],
+  slob: ["Sideline out of bounds", "SLOB"],
+  motion: ["Motion"],
+  slip: ["Slip", "Slips"],
+  slips: ["Slip", "Slips"],
+  triangle: ["Triangle"],
+  swing: ["Swing"],
   tight: ["Tight / denial"],
   denial: ["Tight / denial"],
   deny: ["Tight / denial"],
@@ -156,8 +235,6 @@ const SYNONYMS: Record<string, string[]> = {
   man: ["Man to man"],
   switch: ["Switching"],
   press: ["Press break", "Full court press"],
-  blob: ["Baseline out of bounds", "BLOB"],
-  slob: ["Sideline out of bounds", "SLOB"],
   ato: ["After timeout"],
   timeout: ["After timeout"],
   end: ["End of quarter", "Last shot"],
@@ -194,6 +271,9 @@ export type Searchable = {
   primary_actions?: string[] | undefined;
   time_pressure?: string | null | undefined;
   tags?: string[] | undefined;
+  concepts?: string[] | undefined;
+  defenses?: string[] | undefined;
+  outcomes?: string[] | undefined;
 };
 
 /** 0 = no match. Higher = better match. */
@@ -210,6 +290,9 @@ export function searchScore(item: Searchable, query: string): number {
     item.time_pressure ?? "",
     ...(item.primary_actions ?? []),
     ...(item.tags ?? []),
+    ...(item.concepts ?? []),
+    ...(item.defenses ?? []),
+    ...(item.outcomes ?? []),
   ]
     .join(" ")
     .toLowerCase();
