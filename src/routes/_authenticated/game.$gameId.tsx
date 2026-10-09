@@ -982,6 +982,7 @@ function LiveGamePage() {
               style={courtZoom === "full" ? { maxWidth: "100%" } : { maxWidth: "min(100%, calc((100dvh - 5rem) * 0.94))" }}
               onCourtPoint={onCourtPoint}
               onCourtPointerUp={() => { courtPressRef.current = false; lockInput(150); }}
+              onCourtPointerCancel={() => { courtPressRef.current = false; }}
               overlay={
                 <>
                   {point ? (
