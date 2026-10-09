@@ -182,7 +182,7 @@ export function AppShell({
             </nav>
 
             <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-1.5">
-              {actions}
+              {!compact ? actions : null}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -227,6 +227,11 @@ export function AppShell({
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            {compact && actions ? (
+              <div className="order-2 col-span-2 min-w-0 [&>div]:justify-end lg:order-4 lg:col-span-3">
+                {actions}
+              </div>
+            ) : null}
           </div>
         </header>
 
