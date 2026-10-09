@@ -275,6 +275,12 @@ function LiveGamePage() {
   /* ---------------- event helpers ---------------- */
   const addEvent = useCallback(
     (partial: Partial<GameEvent> & { event_type: string }): GameEvent => {
+      // Double-tap guard: an identical event within one interaction window is
+      // the same physical action registering twice — reuse the first one.
+      const sig = [partial.event_type, partial.player_id ?? "", partial.result ?? "", partial.points ?? 0, partial.x ?? "", partial.y ?? "", partial.related_event_id ?? ""].join("|");
+      const now = Date.now();
+      const last = lastAddRef.current;
+      if (last && last.sig === sig && now - last.at < 400) return last.event;
       const e: GameEvent = {
         id: uuid(),
         game_id: gameId,
