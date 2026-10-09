@@ -28,6 +28,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedToolsRouteImport } from './routes/_authenticated/tools'
 import { Route as CoachUsernameRouteImport } from './routes/coach.$username'
 import { Route as DrillsDrillIdRouteImport } from './routes/drills.$drillId'
+import { Route as GameReportTokenRouteImport } from './routes/game-report.$token'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as LibraryIndexRouteImport } from './routes/library.index'
@@ -156,6 +157,11 @@ const CoachUsernameRoute = CoachUsernameRouteImport.update({
 const DrillsDrillIdRoute = DrillsDrillIdRouteImport.update({
   id: '/drills/$drillId',
   path: '/drills/$drillId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GameReportTokenRoute = GameReportTokenRouteImport.update({
+  id: '/game-report/$token',
+  path: '/game-report/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
@@ -357,6 +363,7 @@ export interface FileRoutesByFullPath {
   '/tools': typeof AuthenticatedToolsRoute
   '/coach/$username': typeof CoachUsernameRoute
   '/drills/$drillId': typeof DrillsDrillIdRoute
+  '/game-report/$token': typeof GameReportTokenRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/library/$playId': typeof LibraryPlayIdRoute
@@ -411,6 +418,7 @@ export interface FileRoutesByTo {
   '/tools': typeof AuthenticatedToolsRoute
   '/coach/$username': typeof CoachUsernameRoute
   '/drills/$drillId': typeof DrillsDrillIdRoute
+  '/game-report/$token': typeof GameReportTokenRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/library/$playId': typeof LibraryPlayIdRoute
@@ -467,6 +475,7 @@ export interface FileRoutesById {
   '/_authenticated/tools': typeof AuthenticatedToolsRoute
   '/coach/$username': typeof CoachUsernameRoute
   '/drills/$drillId': typeof DrillsDrillIdRoute
+  '/game-report/$token': typeof GameReportTokenRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join/$token': typeof JoinTokenRoute
   '/library/$playId': typeof LibraryPlayIdRoute
@@ -523,6 +532,7 @@ export interface FileRouteTypes {
     | '/tools'
     | '/coach/$username'
     | '/drills/$drillId'
+    | '/game-report/$token'
     | '/invite/$token'
     | '/join/$token'
     | '/library/$playId'
@@ -577,6 +587,7 @@ export interface FileRouteTypes {
     | '/tools'
     | '/coach/$username'
     | '/drills/$drillId'
+    | '/game-report/$token'
     | '/invite/$token'
     | '/join/$token'
     | '/library/$playId'
@@ -632,6 +643,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tools'
     | '/coach/$username'
     | '/drills/$drillId'
+    | '/game-report/$token'
     | '/invite/$token'
     | '/join/$token'
     | '/library/$playId'
@@ -674,6 +686,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CoachUsernameRoute: typeof CoachUsernameRoute
   DrillsDrillIdRoute: typeof DrillsDrillIdRoute
+  GameReportTokenRoute: typeof GameReportTokenRoute
   InviteTokenRoute: typeof InviteTokenRoute
   JoinTokenRoute: typeof JoinTokenRoute
   LibraryPlayIdRoute: typeof LibraryPlayIdRoute
@@ -825,6 +838,13 @@ declare module '@tanstack/react-router' {
       path: '/drills/$drillId'
       fullPath: '/drills/$drillId'
       preLoaderRoute: typeof DrillsDrillIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/game-report/$token': {
+      id: '/game-report/$token'
+      path: '/game-report/$token'
+      fullPath: '/game-report/$token'
+      preLoaderRoute: typeof GameReportTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/invite/$token': {
@@ -1147,6 +1167,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CoachUsernameRoute: CoachUsernameRoute,
   DrillsDrillIdRoute: DrillsDrillIdRoute,
+  GameReportTokenRoute: GameReportTokenRoute,
   InviteTokenRoute: InviteTokenRoute,
   JoinTokenRoute: JoinTokenRoute,
   LibraryPlayIdRoute: LibraryPlayIdRoute,
