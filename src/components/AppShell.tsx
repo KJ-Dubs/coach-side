@@ -47,6 +47,7 @@ export function AppShell({
   balancedTitle,
   backTo,
   backLabel = "Back",
+  compact = false,
 }: {
   children: ReactNode;
   title: string;
@@ -57,6 +58,7 @@ export function AppShell({
   balancedTitle?: boolean | undefined;
   backTo?: string | undefined;
   backLabel?: string | undefined;
+  compact?: boolean | undefined;
 }) {
   const me = useMe();
   const { access } = useAccess();
@@ -140,9 +142,9 @@ export function AppShell({
 
 
   return (
-    <div className="min-h-screen max-w-full overflow-x-clip px-3 py-3 sm:px-5 sm:py-5">
+    <div className={cn("min-h-screen max-w-full overflow-x-clip", compact ? "px-1.5 py-1.5 sm:px-2 sm:py-2" : "px-3 py-3 sm:px-5 sm:py-5")}>
       <div className={cn("mx-auto w-full min-w-0 max-w-full", wide ? "max-w-[1600px]" : "max-w-6xl")}>
-        <header className="mb-4 rounded-3xl border border-border/70 bg-surface/85 p-2.5 shadow-lg shadow-black/30 backdrop-blur">
+        <header className={cn("rounded-3xl border border-border/70 bg-surface/85 shadow-lg shadow-black/30 backdrop-blur", compact ? "mb-1.5 p-1.5" : "mb-4 p-2.5")}>
           <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 lg:grid-cols-[1fr_minmax(520px,auto)_1fr]">
             <Link
               to="/dashboard"
@@ -180,7 +182,7 @@ export function AppShell({
             </nav>
 
             <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-1.5">
-              {actions}
+              {!compact ? actions : null}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -225,23 +227,29 @@ export function AppShell({
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            {compact && actions ? (
+              <div className="order-2 col-span-2 min-w-0 [&>div]:justify-end lg:order-4 lg:col-span-3">
+                {actions}
+              </div>
+            ) : null}
           </div>
         </header>
 
         <div className={cn(
-          "mb-4 items-center gap-3 rounded-3xl border border-border/70 bg-surface/80 px-4 py-4 text-center",
+          "items-center rounded-3xl border border-border/70 bg-surface/80 text-center",
+          compact ? "mb-1.5 gap-2 px-2 py-1.5" : "mb-4 gap-3 px-4 py-4",
           balancedTitle
             ? "flex flex-col justify-center sm:grid sm:grid-cols-[3rem_minmax(0,1fr)_3rem]"
             : "grid grid-cols-[minmax(0,1fr)_auto] sm:flex sm:flex-wrap sm:justify-center",
         )}>
-          {backTo ? <div className="col-span-2 justify-self-start sm:col-span-1"><BackNav to={backTo} label={backLabel} /></div> : null}
+          {backTo ? <div className={cn("justify-self-start sm:col-span-1", !compact && "col-span-2")}><BackNav to={backTo} label={backLabel} /></div> : null}
           {logoUrl ? (
             <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-flame/50 bg-surface-2/80 p-1 shadow-lg shadow-black/30 sm:justify-self-start">
               <img src={logoUrl} alt="Team logo" className="h-full w-full object-contain" />
             </span>
           ) : balancedTitle ? <span className="hidden h-12 w-12 sm:block" aria-hidden /> : null}
           <div className={cn("min-w-0 text-center", !balancedTitle && "sm:min-w-[280px]")}>
-            <h1 className="text-2xl font-black leading-tight text-foreground sm:text-3xl">{title}</h1>
+            <h1 className={cn("font-black leading-tight text-foreground", compact ? "text-lg sm:text-xl" : "text-2xl sm:text-3xl")}>{title}</h1>
             {subtitle ? <p className="mt-1 text-sm font-semibold leading-relaxed text-muted-foreground">{subtitle}</p> : null}
           </div>
           {balancedTitle ? <span className="hidden h-12 w-12 sm:block" aria-hidden /> : null}
