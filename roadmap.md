@@ -3,7 +3,7 @@
 ## Initial defense placement correction
 - [x] Seed a visible half-court shell for the active camera; Full follows current offensive concentration
 - [x] Guard existing defenders and preserve logical coordinates, camera behavior, legacy plays and animation
-- [ ] Verify placement regressions and preview compilation
+- [x] Verify 16 placement cases and 16 related regressions; automatic typecheck/build passes (saved-play browser flow not tested)
 
 ## Playmaker court size correction
 - [x] Remove viewport-height court width caps and reduce Playmaker-only shell spacing
