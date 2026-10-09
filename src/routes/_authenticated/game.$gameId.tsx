@@ -7,7 +7,7 @@ import { Court, toLocal, type CourtZoom } from "@/components/court/Court";
 import { BubbleButton, Label, Panel, Pill, StatTile } from "@/components/Bubbles";
 import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/activity";
 import { fetchEvents, fetchGame, fetchPlayers } from "@/lib/data";
-import { shotValue, zoneOf, ZONE_LABEL } from "@/lib/court";
+import { shotValue, zoneOf, ZONE_LABEL, formatClock } from "@/lib/court";
 import {
   cacheGet,
   cacheSet,
