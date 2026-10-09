@@ -167,6 +167,6 @@
 - [x] Verify downloaded short/long-title and drill H.264 MP4 frames, aspect ratios and outro; 16 targeted tests pass
 
 ## Playmaker under-court controls
-- [ ] Move current-sequence Play, Undo, Next Sequence and count directly below the court
-- [ ] Preserve repeat preview, deterministic continuity, full Replay and Reset; remove lower duplicates
-- [ ] Verify phone/iPad layout, controls and preview build health
+- [x] Move current-sequence Play, Undo, Next Sequence and count directly below the court
+- [x] Preserve repeat preview, deterministic continuity, full Replay and Reset; remove lower duplicates
+- [x] Verify 320/390px phone and iPad layouts, repeat preview, advance, undo and empty states using an unsaved browser fixture; preview build OK and 16 regression tests pass
