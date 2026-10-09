@@ -16,6 +16,7 @@ import {
   seasonsOf,
 } from "@/lib/stats";
 import type { Game } from "@/lib/types";
+import { ShareGameButton } from "@/components/game/ShareGameButton";
 
 export const Route = createFileRoute("/_authenticated/games/")({
   head: () => ({
@@ -246,6 +247,7 @@ function GameCard({
             Edit Game Stats
           </BubbleButton>
         ) : null}
+        {isFinal && canEditStats ? <ShareGameButton gameId={g.id} /> : null}
         {isFinal ? null : (
           <>
             <BubbleButton
