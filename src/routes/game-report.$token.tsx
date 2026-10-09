@@ -7,6 +7,8 @@ import { fmtSplit, gameResult, opponentLine, scoreFromEvents } from "@/lib/stats
 import { boxRow } from "@/lib/pdf";
 import { statColor, STAT_LABELS } from "@/lib/statColors";
 import { ZONE_LABEL, type Zone } from "@/lib/court";
+import { STAT_CATEGORY_FOR, computeCoverage } from "@/lib/gameConfig";
+import { TrackingCoverageCard } from "@/components/game/TrackingCoverage";
 
 export const Route = createFileRoute("/game-report/$token")({
   loader: async ({ params }) => {
@@ -68,6 +70,15 @@ function PublicReport() {
   const { team: us, opp: them } = scoreFromEvents(events);
   const result = gameResult(game, events);
   const oppL = opponentLine(events);
+  const coverage = computeCoverage(game, events);
+  const colStatus = (h: string) => {
+    const k = STAT_CATEGORY_FOR[h];
+    if (!k) return "full";
+    const a = coverage[k].status, p = coverage.players.status;
+    return a === "none" || p === "none" ? "none" : a === "full" && p === "full" ? "full" : "partial";
+  };
+  const cell = (h: string, v: number) => (colStatus(h) === "none" && v === 0 ? "—" : v);
+  const anyIncomplete = ["PTS", ...Object.keys(STAT_CATEGORY_FOR)].some((h) => colStatus(h) !== "full") || coverage.players.status !== "full";
   const periods = game.periods || 4;
   const maxP = events.reduce((m, e) => Math.max(m, e.quarter), periods);
   const pList = Array.from({ length: maxP }, (_, i) => i + 1);
@@ -124,14 +135,16 @@ function PublicReport() {
         ))}
       </Panel>
 
+      <TrackingCoverageCard coverage={coverage} periods={periods} />
       <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Panel className="flex min-w-0 flex-col gap-2 overflow-hidden">
           <Label>Player stats</Label>
+          {anyIncomplete ? <div className="rounded-2xl border border-flame/50 bg-flame/10 px-3 py-2 text-xs font-bold">Some stats were only tracked for part of this game (*) or not tracked (—). See Stat tracking coverage.</div> : null}
           <div className="max-w-full overflow-x-auto overscroll-x-contain rounded-2xl border border-border bg-surface-2/60 p-2">
             <table className="w-full min-w-[520px] text-xs font-bold">
               <thead>
                 <tr className="text-muted-foreground">
-                  {["Player", "PTS", "FG", "3", "FT", "REB", "AST", "STL", "TO", "BLK", "PF"].map((h) => <th key={h} className="px-1.5 py-1 text-left">{h}</th>)}
+                  {["Player", "PTS", "FG", "3", "FT", "REB", "AST", "STL", "TO", "BLK", "PF"].map((h) => <th key={h} className="px-1.5 py-1 text-left">{h}{colStatus(h) === "partial" ? "*" : ""}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -142,12 +155,12 @@ function PublicReport() {
                     <td className="px-1.5">{r.fgm}/{r.fga}</td>
                     <td className="px-1.5">{r.threes}</td>
                     <td className="px-1.5">{r.ftm}/{r.fta}</td>
-                    <td className="px-1.5">{r.reb}</td>
-                    <td className="px-1.5">{r.ast}</td>
-                    <td className="px-1.5">{r.stl}</td>
-                    <td className="px-1.5">{r.to}</td>
-                    <td className="px-1.5">{r.blk}</td>
-                    <td className="px-1.5">{r.pf}</td>
+                    <td className="px-1.5">{cell("REB", r.reb)}</td>
+                    <td className="px-1.5">{cell("AST", r.ast)}</td>
+                    <td className="px-1.5">{cell("STL", r.stl)}</td>
+                    <td className="px-1.5">{cell("TO", r.to)}</td>
+                    <td className="px-1.5">{cell("BLK", r.blk)}</td>
+                    <td className="px-1.5">{cell("PF", r.pf)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -165,9 +178,9 @@ function PublicReport() {
             <Pill tone="flame">FG {fmtSplit(oppL.fg)}</Pill>
             <Pill tone="muted">3PT {fmtSplit(oppL.three)}</Pill>
             <Pill tone="muted">FT {fmtSplit(oppL.ft)}</Pill>
-            <Pill tone="muted">OREB {oppL.oreb}</Pill>
+            <Pill tone="muted">OREB {coverage.oppRebounds.status === "none" ? "—" : oppL.oreb}{coverage.oppRebounds.status === "partial" ? " · Partial" : ""}</Pill>
             <Pill tone="muted">DREB {oppL.dreb}</Pill>
-            <Pill tone="muted">TO {oppL.to}</Pill>
+            <Pill tone="muted">TO {coverage.oppTurnovers.status === "none" ? "—" : oppL.to}{coverage.oppTurnovers.status === "partial" ? " · Partial" : ""}</Pill>
           </div>
         </Panel>
 
