@@ -27,7 +27,7 @@ export function CoverageEditor({ game, events }: { game: Game; events: GameEvent
     setOverride(next);
     const value = Object.keys(next).length ? next : null;
     const { error } = await supabase.from("games").update({ tracking_coverage_override: value } as never).eq("id", game.id);
-    if (error) return toast.error("Could not save coverage");
+    if (error) { toast.error("Could not save coverage"); return; }
     qc.setQueryData(["game", game.id], (old: unknown) => (old ? { ...(old as object), tracking_coverage_override: value } : old));
   };
   const setStatus = (k: TrackingKey, status: CoverageStatus) => {
