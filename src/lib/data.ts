@@ -172,11 +172,13 @@ export async function createGame(input: {
   starting_five: string[];
   home_away: "home" | "away";
   overtime_minutes: number;
+  stat_tracking_config?: Record<string, unknown> | null;
+  rules_config?: Record<string, unknown> | null;
 }): Promise<Game> {
   const { data, error } = await supabase
     .from("games")
     .insert({
-      ...input,
+      ...(input as never as Record<string, never>),
       status: "live",
       quarter: 1,
       clock_seconds: input.period_minutes * 60,

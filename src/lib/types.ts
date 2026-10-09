@@ -9,6 +9,7 @@ export type Team = {
   default_periods?: number;
   default_period_minutes?: number;
   default_overtime_minutes?: number;
+  default_game_config?: unknown;
   locker_token?: string;
   allow_player_posting?: boolean;
   require_ack_default?: boolean;
@@ -48,6 +49,8 @@ export type Game = {
   overtime_minutes?: number;
   ended_at?: string | null;
   created_at?: string;
+  stat_tracking_config?: unknown;
+  rules_config?: unknown;
 };
 
 export type EventType =
