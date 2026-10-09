@@ -42,7 +42,7 @@ describe("Playmaker initial defense shell", () => {
     for (const xs of [[0.6, 0.7, 0.8, 0.2, 0.5], [0.2, 0.3, 0.4, 0.8, 0.5]]) {
       it(`Full follows offense majority ${xs[0]}, flip=${flip}`, () => {
         const result = defenders(addHalfCourtDefense(offense(xs), "full", flip, makeId));
-        expect(result.every((t) => xs[0] > 0.5 ? t.x > 0.5 : t.x < 0.5)).toBe(true);
+        expect(result.every((t) => (xs[0] ?? 0.5) > 0.5 ? t.x > 0.5 : t.x < 0.5)).toBe(true);
       });
     }
     it(`Full ambiguous offense defaults to attack half, flip=${flip}`, () => {
