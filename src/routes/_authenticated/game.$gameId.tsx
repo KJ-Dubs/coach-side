@@ -24,7 +24,8 @@ import { fmtSplit, opponentLine, scoreFromEvents } from "@/lib/stats";
 import { EventEditor } from "@/components/court/EventEditor";
 import { TileEditor, EndGameCheck, type TileKind } from "@/components/game/LiveTileEditor";
 import { supabase } from "@/integrations/supabase/client";
-import { bonusLabel, countFouls, foulWindow, normalizeRules, normalizeTracking } from "@/lib/gameConfig";
+import { bonusLabel, countFouls, diffTracking, foulWindow, normalizeHistory, normalizeRules, normalizeTracking, type RulesConfig, type TrackingConfig } from "@/lib/gameConfig";
+import { TrackingSettingsSheet } from "@/components/game/TrackingSettingsSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/_authenticated/game/$gameId")({
@@ -1297,6 +1298,9 @@ function LiveGamePage() {
           </div>
         </div>
       </div>
+      {settingsOpen ? (
+        <TrackingSettingsSheet tracking={tracking} rules={rules} onTracking={saveTracking} onRules={saveRules} onClose={() => setSettingsOpen(false)} />
+      ) : null}
       {tileEdit ? (
         <TileEditor
           kind={tileEdit}
