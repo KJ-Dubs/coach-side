@@ -247,7 +247,6 @@ function GameCard({
           </BubbleButton>
         ) : null}
         {isFinal ? null : (
-        ) : (
           <>
             <BubbleButton
               tone="flame"
