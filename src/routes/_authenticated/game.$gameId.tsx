@@ -273,6 +273,15 @@ function LiveGamePage() {
   const isOvertime = quarter > periods;
 
   /* ---------------- event helpers ---------------- */
+  const lastAddRef = useRef<{ sig: string; at: number; event: GameEvent } | null>(null);
+  // Interaction lock: taps before this timestamp are ignored, so the touch
+  // that opened a prompt can never also press a button mounted under it.
+  const inputLockRef = useRef(0);
+  const courtPressRef = useRef(false);
+  const lockInput = (ms: number) => {
+    inputLockRef.current = Math.max(inputLockRef.current, Date.now() + ms);
+  };
+  const inputLocked = () => courtPressRef.current || Date.now() < inputLockRef.current;
   const addEvent = useCallback(
     (partial: Partial<GameEvent> & { event_type: string }): GameEvent => {
       // Double-tap guard: an identical event within one interaction window is
@@ -311,6 +320,7 @@ function LiveGamePage() {
       void enqueue({ id: opId(), kind: "insert_event", payload: e }).then(() =>
         flushQueue().then(setPending),
       );
+      lastAddRef.current = { sig, at: now, event: e };
       return e;
     },
     [gameId, quarter, lineup, rules.foulLimit, tracking.players],
