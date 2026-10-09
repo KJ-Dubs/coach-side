@@ -1,5 +1,10 @@
 # CourtSide Coach — production pass roadmap
 
+## Initial defense placement correction
+- [x] Seed a visible half-court shell for the active camera; Full follows current offensive concentration
+- [x] Guard existing defenders and preserve logical coordinates, camera behavior, legacy plays and animation
+- [ ] Verify placement regressions and preview compilation
+
 ## Playmaker court size correction
 - [x] Remove viewport-height court width caps and reduce Playmaker-only shell spacing
 - [x] Keep compact Play/Undo/Next/count directly under the full-width court
