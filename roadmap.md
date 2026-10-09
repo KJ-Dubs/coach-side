@@ -3,7 +3,7 @@
 ## Playmaker court size correction
 - [x] Remove viewport-height court width caps and reduce Playmaker-only shell spacing
 - [x] Keep compact Play/Undo/Next/count directly under the full-width court
-- [ ] Verify phone/tablet sizing, gestures, playback and build
+- [x] Verify 360/390/430px phones and iPad widths: 97–98% width, no overflow, accurate drag, preview/replay and sequence controls using unsaved browser fixture; 16 regressions and preview build pass
 
 ## Targeted authoring cleanup
 - [x] Hide Curl Cut and Handoff authoring buttons without changing legacy actions
