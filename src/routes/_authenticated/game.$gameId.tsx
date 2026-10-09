@@ -25,7 +25,7 @@ import { EventEditor } from "@/components/court/EventEditor";
 import { TileEditor, EndGameCheck, type TileKind } from "@/components/game/LiveTileEditor";
 import { supabase } from "@/integrations/supabase/client";
 import { bonusLabel, countFouls, diffTracking, foulWindow, normalizeHistory, normalizeRules, normalizeTracking, type RulesConfig, type TrackingConfig } from "@/lib/gameConfig";
-import { TrackingSettingsSheet } from "@/components/game/TrackingSettingsSheet";
+import { ClockEditor, TrackingSettingsSheet } from "@/components/game/TrackingSettingsSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/_authenticated/game/$gameId")({
@@ -357,7 +357,7 @@ function LiveGamePage() {
           id: uuid(),
           game_id: gameId,
           quarter,
-          clock_seconds: clockRef.current,
+          clock_seconds: eventClock(),
           player_out: out,
           player_in: inId,
           lineup_after: after,
@@ -934,6 +934,7 @@ function LiveGamePage() {
   const saveTracking = (next: TrackingConfig) => {
     const changes = diffTracking(tracking, next, { period: quarter, eventCount: events.length, userId });
     if (!changes.length) return;
+    if (!next.clock) setRunning(false);
     const history = [...normalizeHistory(game.data?.tracking_history), ...changes];
     reset();
     patchGame({ stat_tracking_config: next, tracking_history: history });
@@ -952,7 +953,7 @@ function LiveGamePage() {
       <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-2">
         {/* SCORE + PERIOD + FOULS — compact and sticky */}
         <Panel className="sticky top-1 z-40 border-grape/50 bg-background/95 p-1.5 backdrop-blur">
-          <div className="grid grid-cols-5 gap-1.5">
+          <div className={cn("grid gap-1.5", tracking.clock ? "grid-cols-6" : "grid-cols-5")}>
             {([
               { k: "us", label: "Us", value: teamScore, tone: "grape", cls: "px-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-2xl" },
               { k: "opp", label: "Opp", value: oppScore, tone: "flame", cls: "px-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-2xl" },
@@ -970,6 +971,16 @@ function LiveGamePage() {
                 />
               </button>
             ))}
+            {tracking.clock ? (
+              <div className="flex min-h-11 flex-col gap-0.5 rounded-2xl border border-border bg-surface-2/70 p-0.5">
+                <button type="button" aria-label="Edit game clock" onClick={() => { setRunning(false); setClockEdit(true); }} className={cn("min-h-6 flex-1 rounded-xl text-center font-black tabular-nums active:scale-[0.97]", clock === 0 ? "text-flame" : "", "text-base sm:text-lg")}>
+                  {formatClock(clock)}
+                </button>
+                <button type="button" aria-label={running ? "Pause clock" : "Start clock"} disabled={clock === 0} onClick={() => setRunning((v) => !v)} className={cn("min-h-6 rounded-xl text-[11px] font-black disabled:opacity-40", running ? "bg-flame/30" : "bg-grape/30")}>
+                  {running ? "❚❚ Pause" : "▶ Play"}
+                </button>
+              </div>
+            ) : null}
           </div>
         </Panel>
 
@@ -1305,7 +1316,22 @@ function LiveGamePage() {
         </div>
       </div>
       {settingsOpen ? (
-        <TrackingSettingsSheet tracking={tracking} rules={rules} onTracking={saveTracking} onRules={saveRules} onClose={() => setSettingsOpen(false)} />
+        <TrackingSettingsSheet
+          tracking={tracking}
+          rules={rules}
+          onTracking={saveTracking}
+          onRules={saveRules}
+          clockDefaults={{ periodMinutes: game.data?.period_minutes ?? 8, otMinutes: overtimeMinutes, clockSeconds: clock, isOvertime }}
+          onClockSetup={({ periodMinutes, otMinutes, clockSeconds }) => {
+            patchGame({ period_minutes: periodMinutes, overtime_minutes: otMinutes });
+            setClock(clockSeconds);
+            setRunning(false);
+          }}
+          onClose={() => setSettingsOpen(false)}
+        />
+      ) : null}
+      {clockEdit ? (
+        <ClockEditor seconds={clock} onSave={(v) => { setClock(v); setEndPrompt(false); setClockEdit(false); }} onClose={() => setClockEdit(false)} />
       ) : null}
       {tileEdit ? (
         <TileEditor
