@@ -18,6 +18,8 @@ export type TrackingConfig = {
   oppRebounds: boolean;
   oppTurnovers: boolean;
   oppFouls: boolean;
+  /** Running game clock (period length / OT length only asked when on). */
+  clock: boolean;
 };
 
 export const FULL_TRACKING: TrackingConfig = {
@@ -34,6 +36,7 @@ export const FULL_TRACKING: TrackingConfig = {
   oppRebounds: true,
   oppTurnovers: true,
   oppFouls: true,
+  clock: false,
 };
 
 export const SCORE_ONLY_TRACKING: TrackingConfig = {
@@ -50,6 +53,7 @@ export const SCORE_ONLY_TRACKING: TrackingConfig = {
   oppRebounds: false,
   oppTurnovers: false,
   oppFouls: true,
+  clock: false,
 };
 
 export const TRACKING_LABELS: { key: keyof TrackingConfig; label: string; group: "us" | "opp" }[] = [
@@ -66,6 +70,7 @@ export const TRACKING_LABELS: { key: keyof TrackingConfig; label: string; group:
   { key: "oppRebounds", label: "Opponent rebounds", group: "opp" },
   { key: "oppTurnovers", label: "Opponent turnovers", group: "opp" },
   { key: "oppFouls", label: "Opponent fouls", group: "opp" },
+  { key: "clock", label: "Game clock", group: "us" },
 ];
 
 export type BonusRule =
