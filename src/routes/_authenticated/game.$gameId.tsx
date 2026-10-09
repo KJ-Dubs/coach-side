@@ -276,11 +276,7 @@ function LiveGamePage() {
   const lastAddRef = useRef<{ sig: string; at: number; event: GameEvent } | null>(null);
   // Interaction lock: taps before this timestamp are ignored, so the touch
   // that opened a prompt can never also press a button mounted under it.
-  const inputLockRef = useRef(0);
   const courtPressRef = useRef(false);
-  const lockInput = (ms: number) => {
-    inputLockRef.current = Math.max(inputLockRef.current, Date.now() + ms);
-  };
   // Set when the court gesture ends; cleared by the next real pointerdown.
   // Only a synthetic click from the SAME gesture can arrive while it is set.
   const swallowClickRef = useRef(false);
@@ -290,7 +286,6 @@ function LiveGamePage() {
     return () => window.removeEventListener("pointerdown", clear, true);
   }, []);
   const sameGesture = () => courtPressRef.current || swallowClickRef.current;
-  const courtRetapLocked = () => Date.now() < inputLockRef.current;
   const addEvent = useCallback(
     (partial: Partial<GameEvent> & { event_type: string }): GameEvent => {
       // Double-tap guard: an identical event within one interaction window is
@@ -512,8 +507,6 @@ function LiveGamePage() {
   /* ---------------- court tap ---------------- */
   const onCourtPoint = (raw: { x: number; y: number }) => {
     courtPressRef.current = true;
-    if (Date.now() < inputLockRef.current) return;
-    lockInput(300);
     // The surface reports full-court coordinates 0..1; stats are stored in
     // half-court units (1 = half line) so backcourt taps land in 1..2.
     const p = { x: Math.min(2, Math.max(0, raw.x * 2)), y: raw.y };
@@ -1006,7 +999,7 @@ function LiveGamePage() {
                       onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}
                       onPointerUp={(pointerEvent) => {
                         pointerEvent.stopPropagation();
-                        if (sameGesture() || courtRetapLocked()) return;
+                        if (sameGesture()) return;
                         dismissCourtPrompt();
                       }}
                     />
