@@ -15,6 +15,7 @@ import { buildGamePdf, boxRow } from "@/lib/pdf";
 import { supabase } from "@/integrations/supabase/client";
 import type { GameEvent } from "@/lib/types";
 import { PostGameEditor } from "@/components/game/PostGameEditor";
+import { ShareGameButton } from "@/components/game/ShareGameButton";
 
 export const Route = createFileRoute("/_authenticated/review/$gameId")({
   head: () => ({
@@ -223,11 +224,14 @@ function ReviewPage() {
             </BubbleButton>
           )}
       </Panel>
-      {isFinal && coach && !editMode ? (
-        <div className="mb-3 flex justify-center">
-          <BubbleButton size="lg" tone="flame" onClick={() => setEditMode(true)}>
-            Edit Game Stats
-          </BubbleButton>
+      {isFinal && coach ? (
+        <div className="mb-3 flex min-w-0 max-w-full flex-wrap items-center justify-center gap-2">
+          {!editMode ? (
+            <BubbleButton size="md" tone="flame" onClick={() => setEditMode(true)}>
+              Edit Game Stats
+            </BubbleButton>
+          ) : null}
+          <ShareGameButton gameId={gameId} size="md" />
         </div>
       ) : null}
       {editMode && game.data ? (
