@@ -905,11 +905,23 @@ function LiveGamePage() {
         {/* SCORE + PERIOD + FOULS — compact and sticky */}
         <Panel className="sticky top-1 z-40 border-grape/50 bg-background/95 p-1.5 backdrop-blur">
           <div className="grid grid-cols-5 gap-1.5">
-            <StatTile label={game.data ? "Us" : "Team"} value={teamScore} tone="grape" className="px-1.5 py-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-2xl" />
-            <StatTile label="Opp" value={oppScore} tone="flame" className="px-1.5 py-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-2xl" />
-            <StatTile label="Period" value={isOvertime ? `OT${quarter - periods}` : `Q${quarter}`} className="px-1 py-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-lg" />
-            <StatTile label="Team fouls" value={teamFouls} className="px-1 py-1.5 [&>div:first-child]:text-[9px] [&>div:nth-child(2)]:text-lg" />
-            <StatTile label="Opp fouls" value={oppFouls} className="px-1 py-1.5 [&>div:first-child]:text-[9px] [&>div:nth-child(2)]:text-lg" />
+            {([
+              { k: "us", label: "Us", value: teamScore, tone: "grape", cls: "px-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-2xl" },
+              { k: "opp", label: "Opp", value: oppScore, tone: "flame", cls: "px-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-2xl" },
+              { k: "period", label: "Period", value: isOvertime ? `OT${quarter - periods}` : `Q${quarter}`, tone: "neutral", cls: "px-1 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-lg" },
+              { k: "fouls", label: "Team fouls", value: teamFouls, hint: oppBonus, tone: "neutral", cls: "px-1 [&>div:first-child]:text-[9px] [&>div:nth-child(2)]:text-lg" },
+              { k: "oppFouls", label: "Opp fouls", value: oppFouls, hint: teamBonus, tone: "neutral", cls: "px-1 [&>div:first-child]:text-[9px] [&>div:nth-child(2)]:text-lg" },
+            ] as const).map((t) => (
+              <button key={t.k} type="button" aria-label={`Edit ${t.label}`} onClick={() => setTileEdit(t.k)} className="min-h-11 rounded-2xl text-left active:scale-[0.97]">
+                <StatTile
+                  label={t.label}
+                  value={t.value}
+                  hint={"hint" in t && t.hint ? <span className="rounded-full bg-flame/25 px-1 font-black text-foreground">{t.k === "fouls" ? `OPP ${t.hint}` : t.hint}</span> : undefined}
+                  tone={t.tone}
+                  className={cn("h-full py-1.5", t.cls)}
+                />
+              </button>
+            ))}
           </div>
         </Panel>
 
@@ -917,6 +929,15 @@ function LiveGamePage() {
           <div className="flex min-w-0 flex-wrap gap-2">
             <BubbleButton size="sm" tone="neutral" onClick={() => navigate({ to: "/dashboard" })}>⌂ Home</BubbleButton>
             <BubbleButton size="sm" tone="grape" onClick={() => { void trackActivity("board_used_in_game", { entityId: gameId }); navigate({ to: "/board" }); }}>✎ Timeout Board</BubbleButton>
+            {rules.timeoutsFull + rules.timeouts30 > 0 ? (
+              <div className="flex items-center gap-1 rounded-full border border-border bg-surface-2/70 p-0.5">
+                {rules.timeoutsFull > 0 ? <BubbleButton size="sm" tone="neutral" className="min-h-11 px-2 text-xs" disabled={timeoutsLeftFull === 0} onClick={() => addEvent({ event_type: "TIMEOUT", result: "FULL" })}>TO Full: {timeoutsLeftFull}</BubbleButton> : null}
+                {rules.timeouts30 > 0 ? <BubbleButton size="sm" tone="neutral" className="min-h-11 px-2 text-xs" disabled={timeoutsLeft30 === 0} onClick={() => addEvent({ event_type: "TIMEOUT", result: "30" })}>30s: {timeoutsLeft30}</BubbleButton> : null}
+                {events.some((e) => e.event_type === "TIMEOUT") ? (
+                  <BubbleButton size="sm" tone="ghost" className="h-11 min-h-11 w-11 px-0" aria-label="Undo last timeout" onClick={() => { const t = [...events].reverse().find((e) => e.event_type === "TIMEOUT"); if (t) deleteEvent(t.id); }}>↺</BubbleButton>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           <div className="flex shrink-0 gap-1.5 sm:ml-auto">
             <BubbleButton size="sm" tone={courtZoom === "left" ? "grape" : "neutral"} onClick={() => setCourtZoom("left")}>Half</BubbleButton>
@@ -1054,15 +1075,42 @@ function LiveGamePage() {
           <div className="flex min-w-0 flex-col gap-1.5">
             {/* OUR FREE THROWS — player list appears only after a result is chosen */}
             <Panel className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 p-1.5">
-              <Label className="px-2">Our FT</Label>
-              <div className="grid grid-cols-2 gap-1.5">
-                <BubbleButton size="sm" tone="flame" className="min-h-11" onClick={() => goStep({ kind: "ft", made: true })}>FT Made</BubbleButton>
-                <BubbleButton size="sm" tone="grape" className="min-h-11" onClick={() => goStep({ kind: "ft", made: false })}>FT Miss</BubbleButton>
+              <Label className="px-2">{tracking.players && tracking.shotLocations ? "Our FT" : "Us"}</Label>
+              <div className={cn("grid gap-1.5", tracking.players && tracking.shotLocations ? "grid-cols-2" : "grid-cols-4")}>
+                {tracking.players && tracking.shotLocations ? null : (
+                  <>
+                    {[2, 3].map((v) => (
+                      <BubbleButton key={v} size="sm" tone="flame" className="min-h-11 px-1" onClick={() => {
+                        if (tracking.players) { setPoint(null); goStep({ kind: "quick", value: v as 2 | 3 }); }
+                        else addEvent({ event_type: "MADE", points: v, result: `${v}PT`, context: { shot_value: v } });
+                      }}>+{v}</BubbleButton>
+                    ))}
+                  </>
+                )}
+                <BubbleButton size="sm" tone="flame" className="min-h-11 px-1 text-xs" onClick={() => tracking.players ? goStep({ kind: "ft", made: true }) : addEvent({ event_type: "FT_MADE", points: 1, result: "FT", zone: "freethrow" })}>{tracking.players && tracking.shotLocations ? "FT Made" : "+1 FT"}</BubbleButton>
+                {tracking.players ? (
+                  <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => goStep({ kind: "ft", made: false })}>FT Miss</BubbleButton>
+                ) : tracking.fouls ? (
+                  <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "FOUL" })}>Foul</BubbleButton>
+                ) : (
+                  <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "FT_MISS", result: "FT", zone: "freethrow" })}>FT Miss</BubbleButton>
+                )}
               </div>
             </Panel>
 
             {/* OPPONENT */}
-            <Panel className="flex flex-col gap-1.5 p-1.5">
+            {!tracking.opponent ? (
+              <Panel className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 p-1.5">
+                <Label className="px-2">Opp</Label>
+                <div className={cn("grid gap-1.5", tracking.oppFouls ? "grid-cols-4" : "grid-cols-3")}>
+                  {[1, 2, 3].map((v) => (
+                    <BubbleButton key={v} size="sm" tone="flame" className="min-h-11 px-1" onClick={() => v === 1 ? addEvent({ event_type: "OPP_FT_MADE", points: 1, result: "FT" }) : addEvent({ event_type: "OPP_MADE", points: v, result: `${v}PT`, context: { shot_value: v } })}>+{v}</BubbleButton>
+                  ))}
+                  {tracking.oppFouls ? <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_FOUL" })}>Foul</BubbleButton> : null}
+                </div>
+              </Panel>
+            ) : null}
+            {tracking.opponent ? <Panel className="flex flex-col gap-1.5 p-1.5">
               <BubbleButton
                 size="sm"
                 tone="neutral"
@@ -1090,10 +1138,10 @@ function LiveGamePage() {
                   <div>
                     <Label>Possession</Label>
                     <div className="mt-1 grid grid-cols-4 gap-1.5">
-                      <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "OFF" })}>Off. Reb</BubbleButton>
-                      <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "DEF" })}>Def. Reb</BubbleButton>
-                      <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_TURNOVER" })}>Turnover</BubbleButton>
-                      <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_FOUL" })}>Opp Foul</BubbleButton>
+                      {tracking.oppRebounds ? <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "OFF" })}>Off. Reb</BubbleButton> : null}
+                      {tracking.oppRebounds ? <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "DEF" })}>Def. Reb</BubbleButton> : null}
+                      {tracking.oppTurnovers ? <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_TURNOVER" })}>Turnover</BubbleButton> : null}
+                      {tracking.oppFouls ? <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_FOUL" })}>Opp Foul</BubbleButton> : null}
                     </div>
                   </div>
                 </div>
@@ -1101,17 +1149,17 @@ function LiveGamePage() {
               <div className="rounded-2xl border border-border/70 bg-surface-2/60 px-2 py-1 text-center text-[11px] font-bold text-muted-foreground">
                 FG {fmtSplit(opp.fg)} · 3PT {fmtSplit(opp.three)} · FT {fmtSplit(opp.ft)} · OREB {opp.oreb} · TO {opp.to} · Fouls {oppFouls}
               </div>
-            </Panel>
+            </Panel> : null}
 
             {/* LINEUP */}
-            <Panel className="flex flex-col gap-1.5 p-1.5">
+            {tracking.players ? <Panel className="flex flex-col gap-1.5 p-1.5">
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                 <Label>On the floor</Label>
                 <BubbleButton size="md" tone={showBench ? "grape" : "neutral"} className="min-h-12" onClick={() => { setShowBench((value) => !value); setSubOut(null); }}>Sub</BubbleButton>
               </div>
               <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
                 {onFloor.map((p) => (
-                  <BubbleButton key={p.id} size="sm" tone={subOut === p.id ? "flame" : "grape"} className="min-h-11 min-w-0 truncate px-2 text-xs" onClick={() => showBench && setSubOut(p.id)}>
+                  <BubbleButton key={p.id} size="sm" tone={subOut === p.id ? "flame" : fouledOut(p.id) ? "danger" : "grape"} className="min-h-11 min-w-0 truncate px-2 text-xs" onClick={() => showBench && setSubOut(p.id)}>
                     {playerChoiceLabel(p)}
                   </BubbleButton>
                 ))}
@@ -1126,7 +1174,7 @@ function LiveGamePage() {
                   ) : null}
                 </div>
               ) : null}
-            </Panel>
+            </Panel> : null}
 
             {/* EVENT / REVIEW / UNDO */}
             {eventsExpanded || editingEvent ? <Panel className="flex flex-col gap-1.5 p-1.5">
@@ -1193,7 +1241,7 @@ function LiveGamePage() {
                 <BubbleButton size="sm" tone="neutral" className="min-h-11" onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}>Review</BubbleButton>
                 <BubbleButton size="sm" tone="grape" className="min-h-11" disabled={quarter < periods} onClick={startOvertime}>+ Overtime</BubbleButton>
                 <BubbleButton size="sm" tone="ghost" className="col-span-2 min-h-11" onClick={() => setEventsExpanded((value) => !value)}>Recent events ({events.length})</BubbleButton>
-                <BubbleButton size="lg" tone="danger" className="col-span-3 min-h-14 text-base" disabled={ending} onClick={() => void finishGame()}>
+                <BubbleButton size="lg" tone="danger" className="col-span-3 min-h-14 text-base" disabled={ending} onClick={() => setEndCheck(true)}>
                   {ending ? "Saving…" : finalized ? "Save & open review" : "End Game & Save"}
                 </BubbleButton>
               </div>
@@ -1201,6 +1249,39 @@ function LiveGamePage() {
           </div>
         </div>
       </div>
+      {tileEdit ? (
+        <TileEditor
+          kind={tileEdit}
+          events={events}
+          onFloor={onFloor}
+          bench={bench}
+          tracking={tracking}
+          quarter={quarter}
+          periods={periods}
+          teamFouls={teamFouls}
+          oppFouls={oppFouls}
+          inFoulWindow={inFoulWindow}
+          userId={userId}
+          onAdd={(e) => { if (e.player_id) ensureOnFloor(e.player_id); addEvent(e); }}
+          onDelete={deleteEvent}
+          onSetQuarter={(q) => {
+            setQuarter(q);
+            void enqueue({ id: opId(), kind: "update_game", payload: { id: gameId, quarter: q } }).then(() => flushQueue().then(setPending));
+          }}
+          onClose={() => setTileEdit(null)}
+        />
+      ) : null}
+      {endCheck ? (
+        <EndGameCheck
+          teamScore={teamScore}
+          oppScore={oppScore}
+          userId={userId}
+          onAdd={addEvent}
+          onReconcile={(k) => { setEndCheck(false); setTileEdit(k); }}
+          onConfirm={() => { setEndCheck(false); void finishGame(); }}
+          onClose={() => setEndCheck(false)}
+        />
+      ) : null}
     </div>
   );
 }
