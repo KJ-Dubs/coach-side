@@ -165,3 +165,8 @@
 - [x] Update shared play/drill MP4 painter with safe top logo, sideline title and persistent bottom CTA
 - [x] Preserve outro, animation, orientation and shared encoder composition
 - [x] Verify downloaded short/long-title and drill H.264 MP4 frames, aspect ratios and outro; 16 targeted tests pass
+
+## Playmaker under-court controls
+- [ ] Move current-sequence Play, Undo, Next Sequence and count directly below the court
+- [ ] Preserve repeat preview, deterministic continuity, full Replay and Reset; remove lower duplicates
+- [ ] Verify phone/iPad layout, controls and preview build health

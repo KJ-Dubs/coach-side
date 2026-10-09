@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowRight, Pause, Play, Undo2 } from "lucide-react";
 import {
   BALL_ACTIONS,
   DO_MS,
@@ -132,6 +133,7 @@ function PlayDesignerPage() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [stroke, setStroke] = useState<Point[] | null>(null);
   const [mode, setMode] = useState<AnimMode>("idle");
+  const [previewComplete, setPreviewComplete] = useState(false);
   const [timeMs, setTimeMs] = useState(0);
   const rafRef = useRef<number | null>(null);
   const [name, setName] = useState("");
@@ -214,9 +216,16 @@ function PlayDesignerPage() {
 
 
   const timeline = useMemo(() => ({ steps, totalMs: steps.length * STEP_MS }), [steps]);
-  const rangeStart = mode === "preview" ? activeIdx * STEP_MS : 0;
   const rangeEnd = mode === "preview" ? (activeIdx + 1) * STEP_MS : timeline.totalMs;
-  const live = mode === "idle" ? null : sampleTimeline(timeline, timeMs);
+  const live = mode === "idle"
+    ? previewComplete && activeStep
+      ? sampleTimeline(timeline, (activeIdx + 1) * STEP_MS - 1)
+      : null
+    : sampleTimeline(timeline, timeMs);
+
+  useEffect(() => {
+    setPreviewComplete(false);
+  }, [frame, activeIdx, activeBranch]);
 
   useEffect(() => {
     setSeqIdx((i) => Math.min(i, seqCount));
@@ -232,7 +241,7 @@ function PlayDesignerPage() {
         const next = prev + dt;
         if (next >= rangeEnd) {
           setMode("idle");
-          if (mode === "preview") setSeqIdx((i) => Math.min(seqCount, i + 1));
+          if (mode === "preview") setPreviewComplete(true);
           return rangeEnd - 1;
         }
         return next;
@@ -247,16 +256,19 @@ function PlayDesignerPage() {
 
   const previewSequence = () => {
     if (!activeStep) return;
-    setTimeMs(rangeStart);
+    setPreviewComplete(false);
+    setTimeMs(activeIdx * STEP_MS);
     setMode("preview");
   };
   const replayPlay = () => {
     if (seqCount === 0) return;
+    setPreviewComplete(false);
     setSeqIdx(0);
     setTimeMs(0);
     setMode("replay");
   };
   const resetPlay = () => {
+    setPreviewComplete(false);
     setMode("idle");
     setTimeMs(0);
     setSeqIdx(0);
@@ -567,6 +579,27 @@ function PlayDesignerPage() {
     ) || findChainConflicts(frame).some((c) => c.seq === seqNumber);
   const activeWarnings = passWarnings.filter((w) => w.seq === seqNumber);
 
+  const undoSequenceAction = () => {
+    if (activeActions.length === 0) return;
+    setMode("idle");
+    setPreviewComplete(false);
+    setSelectedActionId(null);
+    patchFrame((f) => {
+      const mine = f.actions.filter((a) => a.seq === seqNumber);
+      const drop = mine[mine.length - 1];
+      return drop ? { ...f, actions: f.actions.filter((a) => a.id !== drop.id) } : f;
+    });
+  };
+
+  const nextSequence = () => {
+    if (sequenceInvalid || !activeStep) return;
+    setMode("idle");
+    setPreviewComplete(false);
+    setTimeMs(0);
+    setSeqIdx(Math.min(activeIdx + 1, seqCount));
+    setSelectedActionId(null);
+  };
+
 
   const setTokens = (tokens: PlayToken[]) => patchFrame((f) => ({ ...f, tokens }));
 
@@ -660,7 +693,7 @@ function PlayDesignerPage() {
       ) : null}
       <div className="grid gap-3 xl:grid-cols-[1fr_340px]">
 
-        <div className="flex flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-3">
           <PlayCanvas
             frame={frame}
             flip={flip}
@@ -676,6 +709,51 @@ function PlayDesignerPage() {
             onCourtPointerMove={onMove}
             onCourtPointerUp={onUp}
           />
+          <Panel
+            aria-label="Sequence controls"
+            className="flex min-w-0 items-center gap-1.5 p-2 sm:gap-3"
+          >
+            <BubbleButton
+              size="sm"
+              tone="flame"
+              className="h-11 w-11 shrink-0 p-0"
+              aria-label={mode === "preview" ? "Stop sequence preview" : "Preview current sequence"}
+              title={mode === "preview" ? "Stop sequence preview" : "Preview current sequence"}
+              disabled={!activeStep?.actions.length}
+              onClick={() => mode === "preview" ? setMode("idle") : previewSequence()}
+            >
+              {mode === "preview" ? <Pause className="size-5" aria-hidden /> : <Play className="size-5 fill-current" aria-hidden />}
+            </BubbleButton>
+            <BubbleButton
+              size="sm"
+              tone="neutral"
+              className="h-11 w-11 shrink-0 p-0"
+              aria-label="Undo last action in current sequence"
+              title="Undo last action in current sequence"
+              disabled={!canEdit || activeActions.length === 0}
+              onClick={undoSequenceAction}
+            >
+              <Undo2 className="size-5" aria-hidden />
+            </BubbleButton>
+            <BubbleButton
+              size="sm"
+              tone="grape"
+              className="min-h-11 min-w-0 gap-1 px-2 text-xs sm:px-4 sm:text-sm"
+              disabled={sequenceInvalid || !activeStep}
+              title={sequenceInvalid ? "Finish or repair this sequence first" : "Next Sequence"}
+              onClick={nextSequence}
+            >
+              Next Sequence <ArrowRight className="size-4 shrink-0" aria-hidden />
+            </BubbleButton>
+            <Pill
+              tone="muted"
+              className="ml-auto shrink-0 whitespace-nowrap px-2 tracking-normal"
+              aria-label={`Sequence ${activeIdx + 1} of ${Math.max(seqCount, activeIdx + 1)}`}
+              aria-live="polite"
+            >
+              {activeIdx + 1} of {Math.max(seqCount, activeIdx + 1)}
+            </Pill>
+          </Panel>
           {selectedPass ? (
             <Panel className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -802,20 +880,6 @@ function PlayDesignerPage() {
               ))}
             </div>
             <div className="flex flex-wrap gap-2 border-t border-border pt-3">
-              <BubbleButton
-                size="sm"
-                tone="neutral"
-                onClick={() => {
-                  setSelectedActionId(null);
-                  patchFrame((f) => {
-                    const mine = f.actions.filter((a) => a.seq === seqNumber);
-                    const drop = mine[mine.length - 1];
-                    return drop ? { ...f, actions: f.actions.filter((a) => a.id !== drop.id) } : f;
-                  });
-                }}
-              >
-                Undo last action
-              </BubbleButton>
               <BubbleButton size="sm" tone="grape" disabled={hasDefense} onClick={addDefense}>
                 Add Defense
               </BubbleButton>
@@ -845,18 +909,6 @@ function PlayDesignerPage() {
                 </>
               ) : null}
             </div>
-            <BubbleButton
-              tone="flame"
-              disabled={sequenceInvalid}
-              onClick={() => {
-                setMode("idle");
-                setTimeMs(0);
-                setSeqIdx(seqCount);
-                setSelectedActionId(null);
-              }}
-            >
-              + New Sequence
-            </BubbleButton>
             <Pill tone={sequenceInvalid ? "flame" : "muted"}>
               {sequenceInvalid
                 ? "Finish or repair this sequence before starting the next one."
@@ -902,14 +954,6 @@ function PlayDesignerPage() {
           </Panel>
           <Panel className="flex flex-wrap items-center gap-2">
             <Label>Animate</Label>
-            <BubbleButton
-              size="sm"
-              tone="flame"
-              disabled={!activeStep}
-              onClick={() => (mode === "preview" ? setMode("idle") : previewSequence())}
-            >
-              {mode === "preview" ? "❚❚ Pause" : "▶ Preview Sequence"}
-            </BubbleButton>
             <BubbleButton
               size="sm"
               tone="grape"
