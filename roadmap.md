@@ -162,6 +162,6 @@
 - [x] Verify privacy constraints, follow safeguards, type safety, tests, and preview build
 
 ## Downloaded social video composition
-- [ ] Update shared play/drill MP4 painter with safe top logo, sideline title and persistent bottom CTA
-- [ ] Preserve outro, animation, orientation and both encoders
-- [ ] Verify actual short/long-title and drill MP4s, aspect ratios and preview health
+- [x] Update shared play/drill MP4 painter with safe top logo, sideline title and persistent bottom CTA
+- [x] Preserve outro, animation, orientation and shared encoder composition
+- [x] Verify downloaded short/long-title and drill H.264 MP4 frames, aspect ratios and outro; 16 targeted tests pass
