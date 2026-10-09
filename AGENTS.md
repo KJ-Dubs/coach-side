@@ -22,3 +22,4 @@ Film Room: film jobs stage AI/manual events in film_job_events; only coach-revie
 - AppShell compact spacing is opt-in for court-first editors; preserve default spacing on all other pages and size Playmaker courts through their native responsive aspect ratio, not CSS transforms.
 - Play index uses array columns (concepts/defenses/outcomes) read via normalizeIndex in src/lib/playIndex.ts; legacy scalar situation is never overwritten so old metadata and search survive.
 - Playmaker initial defense placement uses a guarded pure half-court shell helper; camera-aware display positions are converted back to logical full-court coordinates, and existing defenders are never reseeded, preserving legacy geometry.
+- Post-game corrections edit game_events only (PostGameEditor); games.team_score/opp_score are re-snapshotted from scoreFromEvents after each change, never edited directly, so stats and score cannot drift.

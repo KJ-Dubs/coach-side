@@ -14,6 +14,7 @@ import { statColor, STAT_LABELS } from "@/lib/statColors";
 import { buildGamePdf, boxRow } from "@/lib/pdf";
 import { supabase } from "@/integrations/supabase/client";
 import type { GameEvent } from "@/lib/types";
+import { PostGameEditor } from "@/components/game/PostGameEditor";
 
 export const Route = createFileRoute("/_authenticated/review/$gameId")({
   head: () => ({
@@ -31,6 +32,8 @@ export const Route = createFileRoute("/_authenticated/review/$gameId")({
       },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): { edit?: boolean } =>
+    s["edit"] === true || s["edit"] === "1" || s["edit"] === 1 ? { edit: true } : {},
   component: ReviewPage,
 });
 
@@ -49,6 +52,7 @@ const MAP_TYPES = [
 function ReviewPage() {
   const { gameId } = Route.useParams();
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const game = useQuery({ queryKey: ["game", gameId], queryFn: () => fetchGame(gameId) });
   const players = useQuery({
     queryKey: ["players", game.data?.team_id],
@@ -140,6 +144,19 @@ function ReviewPage() {
   const isFinal = game.data?.status === "final";
   const result = game.data ? gameResult(game.data, eventsQ.data ?? []) : null;
 
+  const canEdit = useQuery({
+    queryKey: ["is-team-coach", game.data?.team_id],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("is_team_coach", { _team: game.data!.team_id });
+      return data === true;
+    },
+    enabled: !!game.data,
+  });
+  const coach = canEdit.data === true;
+  const editMode = isFinal && coach && !!search.edit;
+  const setEditMode = (on: boolean) =>
+    navigate({ to: "/review/$gameId", params: { gameId }, search: on ? { edit: true } : {}, replace: true });
+
   const deleteEvent = async (e: GameEvent) => {
     await supabase.from("game_events").delete().eq("id", e.id);
     void eventsQ.refetch();
@@ -206,6 +223,22 @@ function ReviewPage() {
             </BubbleButton>
           )}
       </Panel>
+      {isFinal && coach && !editMode ? (
+        <div className="mb-3 flex justify-center">
+          <BubbleButton size="lg" tone="flame" onClick={() => setEditMode(true)}>
+            Edit Game Stats
+          </BubbleButton>
+        </div>
+      ) : null}
+      {editMode && game.data ? (
+        <PostGameEditor
+          game={game.data}
+          events={events}
+          roster={roster}
+          onChanged={async () => (await eventsQ.refetch()).data ?? []}
+          onDone={() => setEditMode(false)}
+        />
+      ) : null}
       <Panel className="mb-3 flex min-w-0 max-w-full flex-wrap items-center gap-2">
         <Label>Opponent</Label>
         <Pill tone="flame">FG {fmtSplit(opp.fg)}</Pill>
@@ -450,9 +483,13 @@ function ReviewPage() {
                     {e.result ? ` · ${e.result}` : ""}
                     {e.zone ? ` · ${e.zone}` : ""}
                   </span>
-                  <BubbleButton size="sm" tone="ghost" onClick={() => void deleteEvent(e)}>
-                    ✕
-                  </BubbleButton>
+                  {coach && !isFinal ? (
+                    <BubbleButton size="sm" tone="ghost" onClick={() => void deleteEvent(e)}>
+                      ✕
+                    </BubbleButton>
+                  ) : (
+                    <span />
+                  )}
                 </div>
               ))}
             </div>

@@ -43,9 +43,24 @@ async function tx<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectS
   });
 }
 
+const inflight = new Set<Promise<unknown>>();
+
 export async function enqueue(op: QueueOp) {
-  await tx(OPS, "readwrite", (s) => s.put(op));
+  const p = tx(OPS, "readwrite", (s) => s.put(op));
+  inflight.add(p);
+  try {
+    await p;
+  } finally {
+    inflight.delete(p);
+  }
 }
+
+/** Wait until every enqueue started so far has landed in IndexedDB. */
+export async function settleEnqueues() {
+  await Promise.allSettled([...inflight]);
+}
+
+let flushing: Promise<number> | null = null;
 
 export async function pendingOps(): Promise<QueueOp[]> {
   const all = await tx<QueueOp[]>(OPS, "readonly", (s) => s.getAll());
@@ -77,7 +92,34 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
 }
 
 /** Flush every queued op. Returns the number still pending afterwards. */
-export async function flushQueue(): Promise<number> {
+export function flushQueue(): Promise<number> {
+  // Serialize: overlapping flushes (interval + End Game) could race and skip ops.
+  const run = (flushing ?? Promise.resolve(0)).catch(() => 0).then(() => flushOnce());
+  flushing = run;
+  void run.finally(() => {
+    if (flushing === run) flushing = null;
+  });
+  return run;
+}
+
+/**
+ * Drain the queue before finalizing: waits for pending local writes, then
+ * flushes until empty, offline, or no progress is made.
+ */
+export async function drainQueue(maxRounds = 4): Promise<number> {
+  await settleEnqueues();
+  let left = await flushQueue();
+  for (let i = 1; i < maxRounds && left > 0; i++) {
+    if (typeof navigator !== "undefined" && !navigator.onLine) break;
+    const before = left;
+    await new Promise((r) => setTimeout(r, 400));
+    left = await flushQueue();
+    if (left >= before) break;
+  }
+  return left;
+}
+
+async function flushOnce(): Promise<number> {
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     return (await pendingOps()).length;
   }
