@@ -29,6 +29,9 @@ export type LibraryPlay = {
   primary_actions: string[];
   time_pressure: string | null;
   tags: string[];
+  concepts: string[];
+  defenses: string[];
+  outcomes: string[];
 };
 
 export type LibrarySort = "featured" | "trending" | "top" | "new";
@@ -60,6 +63,9 @@ function row(r: Record<string, unknown>): LibraryPlay {
     primary_actions: (r["primary_actions"] as string[] | null) ?? [],
     time_pressure: (r["time_pressure"] as string | null) ?? null,
     tags: (r["tags"] as string[] | null) ?? [],
+    concepts: (r["concepts"] as string[] | null) ?? [],
+    defenses: (r["defenses"] as string[] | null) ?? [],
+    outcomes: (r["outcomes"] as string[] | null) ?? [],
   };
 }
 

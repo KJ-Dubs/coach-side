@@ -172,6 +172,9 @@ export type Play = {
   primary_actions?: string[];
   time_pressure?: string | null;
   tags?: string[];
+  concepts?: string[];
+  defenses?: string[];
+  outcomes?: string[];
   indexed_at?: string | null;
 };
 
