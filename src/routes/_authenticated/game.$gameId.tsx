@@ -251,6 +251,8 @@ function LiveGamePage() {
   // One canonical scoring rule (src/lib/stats.ts eventPoints) for everything.
   const { team: teamScore, opp: oppScore } = useMemo(() => scoreFromEvents(events), [events]);
   const opp = useMemo(() => opponentLine(events), [events]);
+  const scoreRef = useRef({ teamScore, oppScore });
+  scoreRef.current = { teamScore, oppScore };
   const periods = game.data?.periods ?? 4;
   // Per-quarter or per-half window; foul events are never deleted on reset.
   const inFoulWindow = useMemo(() => foulWindow(rules.bonus, quarter, periods), [rules.bonus, quarter, periods]);
@@ -403,8 +405,8 @@ function LiveGamePage() {
           status,
           quarter,
           clock_seconds: clockRef.current,
-          team_score: teamScore,
-          opp_score: oppScore,
+          team_score: scoreRef.current.teamScore,
+          opp_score: scoreRef.current.oppScore,
           ...(status === "final" ? { ended_at: new Date().toISOString() } : {}),
         },
       });
@@ -431,8 +433,8 @@ function LiveGamePage() {
     await saveGameState("final");
     await cacheSet(`game-final-${gameId}`, {
       status: "final",
-      team_score: teamScore,
-      opp_score: oppScore,
+      team_score: scoreRef.current.teamScore,
+      opp_score: scoreRef.current.oppScore,
       quarter,
       ended_at: new Date().toISOString(),
     });

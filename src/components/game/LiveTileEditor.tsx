@@ -263,7 +263,7 @@ export function EndGameCheck(props: {
             onClick={() => {
               if (du > 0) teamAdjustEvents(false, du, props.userId, "end_game_reconcile").forEach(props.onAdd);
               if (dO > 0) teamAdjustEvents(true, dO, props.userId, "end_game_reconcile").forEach(props.onAdd);
-              setTimeout(props.onConfirm, 0);
+              setTimeout(props.onConfirm, 60);
             }}
           >
             Team-only adjustment & save
