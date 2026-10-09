@@ -982,7 +982,13 @@ function LiveGamePage() {
               className="mx-auto w-full"
               style={courtZoom === "full" ? { maxWidth: "100%" } : { maxWidth: "min(100%, calc((100dvh - 5rem) * 0.94))" }}
               onCourtPoint={onCourtPoint}
-              onCourtPointerUp={() => { courtPressRef.current = false; swallowClickRef.current = true; }}
+              onCourtPointerUp={() => {
+                // Button pointerups inside the overlay bubble here too; only the
+                // end of a gesture that STARTED on the court arms the ghost-click guard.
+                if (!courtPressRef.current) return;
+                courtPressRef.current = false;
+                swallowClickRef.current = true;
+              }}
               onCourtPointerCancel={() => { courtPressRef.current = false; }}
               overlay={
                 <>
