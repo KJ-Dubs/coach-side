@@ -1,5 +1,10 @@
 # CourtSide Coach — production pass roadmap
 
+## Targeted authoring cleanup
+- [x] Hide Curl Cut and Handoff authoring buttons without changing legacy actions
+- [x] Make the main Board X/O control toggle its visible symbol without changing persistence
+- [x] Verify legacy curl movement/handoff possession and unchanged input; Board placement, drag, undo/redo and session persistence; phone layout and Playmaker controls using unsaved browser fixtures; 16 regression tests and preview build pass
+
 ## Site-wide visual system cleanup
 - [x] Add shared centered header, grouped information, checklist, and CTA primitives
 - [x] Apply the hierarchy across coach, player, and public screens without behavior changes

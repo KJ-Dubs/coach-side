@@ -272,7 +272,8 @@ function BoardPage() {
   const onUp = () => {
     down.current = false;
     if (dragId.current && gestureStart.current) {
-      setHistory((states) => [...states, gestureStart.current ?? []]);
+      const previous = gestureStart.current;
+      setHistory((states) => [...states, previous]);
       setRedo([]);
     }
     gestureStart.current = null;
@@ -295,7 +296,14 @@ function BoardPage() {
       active={tool === t}
       aria-pressed={tool === t}
       aria-label={labelText}
-      onClick={() => setTool(t)}
+      onClick={() => {
+        if (t === "xo" && tool === "xo") {
+          setXoSymbol((symbol) => symbol === "X" ? "O" : "X");
+        }
+        setTool(t);
+      }}
+      title={t === "xo" ? `Place ${xoSymbol}; tap again to switch to ${xoSymbol === "X" ? "O" : "X"}` : labelText}
+      className={t === "xo" ? "min-h-11 min-w-11" : undefined}
     >
       {tool === t ? "● " : ""}
       {labelText}
@@ -375,7 +383,7 @@ function BoardPage() {
           {toolBtn("draw", "Marker")}
           {toolBtn("arrow", "Arrow")}
            {toolBtn("screen", "Screen")}
-          {toolBtn("xo", "X / O")}
+          {toolBtn("xo", `X / O: ${xoSymbol}`)}
            {toolBtn("marker", "Players")}
           {toolBtn("erase", "Eraser")}
 
@@ -449,14 +457,6 @@ function BoardPage() {
                   {n}
                 </BubbleButton>
               ))}
-            </>
-          ) : null}
-
-          {tool === "xo" ? (
-            <>
-              <span className="mx-1 h-6 w-px bg-border" aria-hidden />
-              <BubbleButton size="sm" tone={xoSymbol === "X" ? "grape" : "neutral"} aria-pressed={xoSymbol === "X"} onClick={() => setXoSymbol("X")}>X</BubbleButton>
-              <BubbleButton size="sm" tone={xoSymbol === "O" ? "grape" : "neutral"} aria-pressed={xoSymbol === "O"} onClick={() => setXoSymbol("O")}>O</BubbleButton>
             </>
           ) : null}
 
