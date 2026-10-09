@@ -19,3 +19,4 @@ Film Room: film jobs stage AI/manual events in film_job_events; only coach-revie
 - All scores/points derive from `eventPoints` in src/lib/stats.ts (location-based, far basket mirrored); opponent stats are team-level OPP_* events — never sum raw `points`.
 - Playmaker's current-sequence controls sit below the court in one viewport-bounded group; preview retains the selected sequence's exact end sample and Next advances through projected engine state, so repeat previews and continuity never edit play geometry.
 - Playmaker authoring palette visibility is independent of supported saved action types; hiding tools must not remove legacy deserialization, rendering, possession or export support.
+- AppShell compact spacing is opt-in for court-first editors; preserve default spacing on all other pages and size Playmaker courts through their native responsive aspect ratio, not CSS transforms.

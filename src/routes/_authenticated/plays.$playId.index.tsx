@@ -665,8 +665,8 @@ function PlayDesignerPage() {
   return (
     <AppShell
       wide
+      compact
       title="Play Designer"
-      subtitle="Drag players, drag to draw actions, build frames"
       backTo="/plays"
       backLabel="Playbook"
       actions={
@@ -698,12 +698,12 @@ function PlayDesignerPage() {
             : "This play is read-only. Create your own version to make changes."}
         </Note>
       ) : null}
-      <div className="grid gap-3 xl:grid-cols-[1fr_340px]">
+      <div className="grid min-w-0 gap-2 xl:grid-cols-[minmax(0,1fr)_340px]">
 
-        <div className="flex min-w-0 flex-col gap-3">
-          <div ref={courtControlsRef} className="flex min-w-0 flex-col gap-2">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <div ref={courtControlsRef} className="flex w-full min-w-0 flex-col gap-1">
           <PlayCanvas
-            className={`mx-auto ${zoom === "full" ? "max-w-[calc(48svh*1.88)]" : zoom === "top" || zoom === "bottom" ? "max-w-[calc(48svh*1.064)]" : "max-w-[calc(48svh*0.94)]"}`}
+            className="mx-auto w-full max-w-full"
             frame={frame}
             flip={flip}
             zoom={zoom}
@@ -720,7 +720,7 @@ function PlayDesignerPage() {
           />
           <Panel
             aria-label="Sequence controls"
-            className="flex min-w-0 items-center gap-1.5 p-2 sm:gap-3"
+            className="grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-1 p-1 sm:gap-2"
           >
             <BubbleButton
               size="sm"

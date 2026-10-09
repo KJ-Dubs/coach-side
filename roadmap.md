@@ -1,5 +1,10 @@
 # CourtSide Coach — production pass roadmap
 
+## Playmaker court size correction
+- [x] Remove viewport-height court width caps and reduce Playmaker-only shell spacing
+- [x] Keep compact Play/Undo/Next/count directly under the full-width court
+- [ ] Verify phone/tablet sizing, gestures, playback and build
+
 ## Targeted authoring cleanup
 - [x] Hide Curl Cut and Handoff authoring buttons without changing legacy actions
 - [x] Make the main Board X/O control toggle its visible symbol without changing persistence
