@@ -238,10 +238,16 @@ function LiveGamePage() {
   const clockRef = useRef(clock);
   clockRef.current = clock;
   useEffect(() => {
-    if (!running) return;
+    if (!running || !tracking.clock) return;
     const t = setInterval(() => setClock((c) => Math.max(0, c - 1)), 1000);
     return () => clearInterval(t);
-  }, [running]);
+  }, [running, tracking.clock]);
+  // Event clock values are only meaningful while the clock is tracked;
+  // otherwise store the 0 sentinel rather than a frozen fake time.
+  const trackClockRef = useRef(tracking.clock);
+  trackClockRef.current = tracking.clock;
+  const eventClock = () => (trackClockRef.current ? clockRef.current : 0);
+  const [clockEdit, setClockEdit] = useState(false);
 
   const roster = players.data ?? [];
   const byId = useMemo(() => new Map(roster.map((p) => [p.id, p])), [roster]);
@@ -300,7 +306,7 @@ function LiveGamePage() {
         id: uuid(),
         game_id: gameId,
         quarter,
-        clock_seconds: clockRef.current,
+        clock_seconds: eventClock(),
         player_id: partial.player_id ?? null,
         x: partial.x ?? null,
         y: partial.y ?? null,
@@ -494,7 +500,7 @@ function LiveGamePage() {
   // Time expired in the final period → auto-end and save. A tied game is not
   // finalized automatically: the coach picks overtime or ends it.
   useEffect(() => {
-    if (!loaded || finalized) return;
+    if (!loaded || finalized || !tracking.clock) return;
     if (clock > 0) return;
     setRunning(false);
     if (quarter >= periods) {
