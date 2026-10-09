@@ -1569,7 +1569,9 @@ export type Database = {
           period_minutes: number
           periods: number
           quarter: number
+          rules_config: Json | null
           starting_five: Json
+          stat_tracking_config: Json | null
           status: string
           team_id: string
           team_score: number
@@ -1587,7 +1589,9 @@ export type Database = {
           period_minutes?: number
           periods?: number
           quarter?: number
+          rules_config?: Json | null
           starting_five?: Json
+          stat_tracking_config?: Json | null
           status?: string
           team_id: string
           team_score?: number
@@ -1605,7 +1609,9 @@ export type Database = {
           period_minutes?: number
           periods?: number
           quarter?: number
+          rules_config?: Json | null
           starting_five?: Json
+          stat_tracking_config?: Json | null
           status?: string
           team_id?: string
           team_score?: number
@@ -3245,6 +3251,7 @@ export type Database = {
           assistant_coaches: string | null
           created_at: string
           default_arrival_offset_minutes: number
+          default_game_config: Json | null
           default_game_reminder_minutes: number
           default_overtime_minutes: number
           default_period_minutes: number
@@ -3268,6 +3275,7 @@ export type Database = {
           assistant_coaches?: string | null
           created_at?: string
           default_arrival_offset_minutes?: number
+          default_game_config?: Json | null
           default_game_reminder_minutes?: number
           default_overtime_minutes?: number
           default_period_minutes?: number
@@ -3291,6 +3299,7 @@ export type Database = {
           assistant_coaches?: string | null
           created_at?: string
           default_arrival_offset_minutes?: number
+          default_game_config?: Json | null
           default_game_reminder_minutes?: number
           default_overtime_minutes?: number
           default_period_minutes?: number
