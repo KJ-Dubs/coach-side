@@ -51,6 +51,8 @@ export type Game = {
   created_at?: string;
   stat_tracking_config?: unknown;
   rules_config?: unknown;
+  tracking_history?: unknown;
+  tracking_coverage_override?: unknown;
 };
 
 export type EventType =

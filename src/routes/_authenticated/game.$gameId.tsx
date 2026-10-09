@@ -24,7 +24,8 @@ import { fmtSplit, opponentLine, scoreFromEvents } from "@/lib/stats";
 import { EventEditor } from "@/components/court/EventEditor";
 import { TileEditor, EndGameCheck, type TileKind } from "@/components/game/LiveTileEditor";
 import { supabase } from "@/integrations/supabase/client";
-import { bonusLabel, countFouls, foulWindow, normalizeRules, normalizeTracking } from "@/lib/gameConfig";
+import { bonusLabel, countFouls, diffTracking, foulWindow, normalizeHistory, normalizeRules, normalizeTracking, type RulesConfig, type TrackingConfig } from "@/lib/gameConfig";
+import { TrackingSettingsSheet } from "@/components/game/TrackingSettingsSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/_authenticated/game/$gameId")({
@@ -114,6 +115,7 @@ function LiveGamePage() {
   const [locPick, setLocPick] = useState(false);
   const [tileEdit, setTileEdit] = useState<TileKind | null>(null);
   const [endCheck, setEndCheck] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   useEffect(() => {
     void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
@@ -915,6 +917,22 @@ function LiveGamePage() {
   };
 
   const lastEvent = events[events.length - 1];
+
+  /* ---------------- mid-game tracking settings ---------------- */
+  // Changes apply now (cache) and persist through the offline queue; every
+  // toggle is appended to tracking_history so reports can disclose coverage.
+  const patchGame = (patch: Record<string, unknown>) => {
+    queryClient.setQueryData(["game", gameId], (old: unknown) => (old ? { ...(old as object), ...patch } : old));
+    void enqueue({ id: opId(), kind: "update_game", payload: { id: gameId, ...patch } }).then(() => flushQueue().then(setPending));
+  };
+  const saveTracking = (next: TrackingConfig) => {
+    const changes = diffTracking(tracking, next, { period: quarter, eventCount: events.length, userId });
+    if (!changes.length) return;
+    const history = [...normalizeHistory(game.data?.tracking_history), ...changes];
+    reset();
+    patchGame({ stat_tracking_config: next, tracking_history: history });
+  };
+  const saveRules = (next: RulesConfig) => patchGame({ rules_config: next });
   const editingEvent = editingId ? events.find((e) => e.id === editingId) ?? null : null;
   const jersey = (e: GameEvent) =>
     e.player_id
@@ -952,6 +970,7 @@ function LiveGamePage() {
         <Panel className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 p-1.5 sm:flex sm:flex-wrap">
           <div className="flex min-w-0 flex-wrap gap-2">
             <BubbleButton size="sm" tone="neutral" onClick={() => navigate({ to: "/dashboard" })}>⌂ Home</BubbleButton>
+            <BubbleButton size="sm" tone="neutral" aria-label="Tracking settings" onClick={() => setSettingsOpen(true)}>⚙ Tracking</BubbleButton>
             <BubbleButton size="sm" tone="grape" onClick={() => { void trackActivity("board_used_in_game", { entityId: gameId }); navigate({ to: "/board" }); }}>✎ Timeout Board</BubbleButton>
             {rules.timeoutsFull + rules.timeouts30 > 0 ? (
               <div className="flex items-center gap-1 rounded-full border border-border bg-surface-2/70 p-0.5">
@@ -1279,6 +1298,9 @@ function LiveGamePage() {
           </div>
         </div>
       </div>
+      {settingsOpen ? (
+        <TrackingSettingsSheet tracking={tracking} rules={rules} onTracking={saveTracking} onRules={saveRules} onClose={() => setSettingsOpen(false)} />
+      ) : null}
       {tileEdit ? (
         <TileEditor
           kind={tileEdit}

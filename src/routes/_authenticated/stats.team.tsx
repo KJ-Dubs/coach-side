@@ -13,6 +13,7 @@ import {
   fmtMinutes,
   fmtPct,
   fmtPer,
+  fmtRate,
   fmtSplit,
   gameResult,
   gameScore,
@@ -204,12 +205,12 @@ function TeamStatsPage() {
                 <StatTile label="Total points" value={line.pts} tone="flame" />
                 <StatTile label="Points / game" value={fmtPer(line.pts, g)} tone="flame" />
                 <StatTile label="Opp points / game" value={fmtPer(line.oppPts, g)} />
-                <StatTile label="Rebounds / game" value={fmtPer(line.reb, g)} hint={`${line.reb} total`} />
-                <StatTile label="Assists / game" value={fmtPer(line.ast, g)} hint={`${line.ast} total`} />
-                <StatTile label="Steals / game" value={fmtPer(line.stl, g)} hint={`${line.stl} total`} />
-                <StatTile label="Turnovers / game" value={fmtPer(line.to, g)} hint={`${line.to} total`} />
-                <StatTile label="Blocks / game" value={fmtPer(line.blk, g)} hint={`${line.blk} total`} />
-                <StatTile label="Fouls / game" value={fmtPer(line.pf, g)} hint={`${line.pf} total`} />
+                <StatTile label="Rebounds / game" value={fmtRate(line.rates.reb)} hint={`${line.reb} total${line.rates.reb.incomplete ? ` · avg excludes ${line.rates.reb.incomplete} partial/untracked game(s)` : ""}`} />
+                <StatTile label="Assists / game" value={fmtRate(line.rates.ast)} hint={`${line.ast} total${line.rates.ast.incomplete ? ` · avg excludes ${line.rates.ast.incomplete} partial/untracked game(s)` : ""}`} />
+                <StatTile label="Steals / game" value={fmtRate(line.rates.stl)} hint={`${line.stl} total${line.rates.stl.incomplete ? ` · avg excludes ${line.rates.stl.incomplete} partial/untracked game(s)` : ""}`} />
+                <StatTile label="Turnovers / game" value={fmtRate(line.rates.to)} hint={`${line.to} total${line.rates.to.incomplete ? ` · avg excludes ${line.rates.to.incomplete} partial/untracked game(s)` : ""}`} />
+                <StatTile label="Blocks / game" value={fmtRate(line.rates.blk)} hint={`${line.blk} total${line.rates.blk.incomplete ? ` · avg excludes ${line.rates.blk.incomplete} partial/untracked game(s)` : ""}`} />
+                <StatTile label="Fouls / game" value={fmtRate(line.rates.pf)} hint={`${line.pf} total${line.rates.pf.incomplete ? ` · avg excludes ${line.rates.pf.incomplete} partial/untracked game(s)` : ""}`} />
                 <StatTile label="Opp fouls / game" value={fmtPer(line.oppFouls, g)} hint={`${line.oppFouls} total`} />
                 <StatTile label="Margin / game" value={g ? ((line.pts - line.oppPts) / g).toFixed(1) : "—"} />
               </div>

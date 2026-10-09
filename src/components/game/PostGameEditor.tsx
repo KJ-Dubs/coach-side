@@ -10,6 +10,7 @@ import { zoneOf } from "@/lib/court";
 import { uuid } from "@/lib/offline";
 import { eventPoints, isOppEvent, scoreFromEvents, shotValueOf } from "@/lib/stats";
 import type { Game, GameEvent, Player } from "@/lib/types";
+import { CoverageEditor } from "@/components/game/CoverageEditor";
 
 type AddKind =
   | "MADE"
@@ -282,6 +283,7 @@ export function PostGameEditor({
         </div>
       ) : null}
 
+      <CoverageEditor game={game} events={events} />
       <div className="flex flex-col gap-1.5 rounded-2xl border border-border bg-surface-2/60 p-2">
         <Label>Fix score</Label>
         <Pill tone="muted">Scores come from recorded events — add or correct the scoring event that caused the difference.</Pill>

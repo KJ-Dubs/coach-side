@@ -1575,6 +1575,8 @@ export type Database = {
           status: string
           team_id: string
           team_score: number
+          tracking_coverage_override: Json | null
+          tracking_history: Json
         }
         Insert: {
           clock_seconds?: number
@@ -1595,6 +1597,8 @@ export type Database = {
           status?: string
           team_id: string
           team_score?: number
+          tracking_coverage_override?: Json | null
+          tracking_history?: Json
         }
         Update: {
           clock_seconds?: number
@@ -1615,6 +1619,8 @@ export type Database = {
           status?: string
           team_id?: string
           team_score?: number
+          tracking_coverage_override?: Json | null
+          tracking_history?: Json
         }
         Relationships: [
           {

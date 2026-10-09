@@ -15,6 +15,8 @@ import { buildGamePdf, boxRow } from "@/lib/pdf";
 import { supabase } from "@/integrations/supabase/client";
 import type { GameEvent } from "@/lib/types";
 import { PostGameEditor } from "@/components/game/PostGameEditor";
+import { TrackingCoverageCard } from "@/components/game/TrackingCoverage";
+import { COVERAGE_LABEL, STAT_CATEGORY_FOR, TRACKING_LABELS, computeCoverage } from "@/lib/gameConfig";
 import { ShareGameButton } from "@/components/game/ShareGameButton";
 
 export const Route = createFileRoute("/_authenticated/review/$gameId")({
@@ -145,6 +147,25 @@ function ReviewPage() {
   const isFinal = game.data?.status === "final";
   const result = game.data ? gameResult(game.data, eventsQ.data ?? []) : null;
 
+  const coverage = useMemo(() => computeCoverage(game.data ?? {}, events), [game.data, events]);
+  // Player-level columns need both the category and individual tracking.
+  const colStatus = (h: string) => {
+    const k = STAT_CATEGORY_FOR[h];
+    if (!k) return "full" as const;
+    const a = coverage[k].status;
+    const p = coverage.players.status;
+    if (a === "none" || p === "none") return "none" as const;
+    return a === "full" && p === "full" ? ("full" as const) : ("partial" as const);
+  };
+  const cell = (h: string, v: number) => (colStatus(h) === "none" && v === 0 ? "—" : v);
+  const oppCell = (k: "oppRebounds" | "oppTurnovers" | "rebounds", v: number) =>
+    coverage[k].status === "none" && v === 0 ? "—" : coverage[k].status === "partial" ? `${v} · Partial` : v;
+  const boxNotes = [
+    ...(coverage.players.status !== "full" ? [`Individual player stats: ${COVERAGE_LABEL[coverage.players.status].toLowerCase()}.`] : []),
+    ...Object.entries(STAT_CATEGORY_FOR)
+      .filter(([, k]) => coverage[k].status !== "full")
+      .map(([h, k]) => `${h === "PF" ? "Fouls" : TRACKING_LABELS.find((t) => t.key === k)?.label} ${coverage[k].status === "partial" ? "were only tracked for part of this game (*)" : "were not tracked (—)"}.`),
+  ];
   const canEdit = useQuery({
     queryKey: ["is-team-coach", game.data?.team_id],
     queryFn: async () => {
@@ -243,14 +264,15 @@ function ReviewPage() {
           onDone={() => setEditMode(false)}
         />
       ) : null}
+      {game.data ? <TrackingCoverageCard coverage={coverage} periods={game.data.periods} /> : null}
       <Panel className="mb-3 flex min-w-0 max-w-full flex-wrap items-center gap-2">
         <Label>Opponent</Label>
         <Pill tone="flame">FG {fmtSplit(opp.fg)}</Pill>
         <Pill tone="muted">3PT {fmtSplit(opp.three)}</Pill>
         <Pill tone="muted">FT {fmtSplit(opp.ft)}</Pill>
-        <Pill tone="flame">OREB {opp.oreb}</Pill>
-        <Pill tone="muted">DREB {opp.dreb}</Pill>
-        <Pill tone="muted">TO {opp.to}</Pill>
+        <Pill tone="flame">OREB {oppCell("oppRebounds", opp.oreb)}</Pill>
+        <Pill tone="muted">DREB {oppCell("rebounds", opp.dreb)}</Pill>
+        <Pill tone="muted">TO {oppCell("oppTurnovers", opp.to)}</Pill>
       </Panel>
       <Panel className="mb-3 flex min-w-0 max-w-full flex-wrap items-center gap-2">
         <Pill tone={isFinal ? "grape" : "flame"}>{isFinal ? "FINAL — saved" : "In progress"}</Pill>
@@ -411,13 +433,16 @@ function ReviewPage() {
         <div className="flex min-w-0 max-w-full flex-col gap-3">
           <Panel className="flex min-w-0 max-w-full flex-col gap-2 overflow-hidden">
             <Label>Box score</Label>
+            {boxNotes.length ? (
+              <div className="rounded-2xl border border-flame/50 bg-flame/10 px-3 py-2 text-xs font-bold">{boxNotes.join(" ")}</div>
+            ) : null}
             <div className="max-w-full overflow-x-auto overscroll-x-contain rounded-2xl border border-border bg-surface-2/60 p-2">
               <table className="w-full min-w-[520px] text-xs font-bold">
                 <thead>
                   <tr className="text-muted-foreground">
                     {["#", "PTS", "FG", "3", "FT", "REB", "AST", "STL", "TO", "BLK", "PF"].map((h) => (
                       <th key={h} className="px-1.5 py-1 text-left">
-                        {h}
+                        {h}{colStatus(h) === "partial" ? "*" : ""}
                       </th>
                     ))}
                   </tr>
@@ -436,12 +461,12 @@ function ReviewPage() {
                       <td className="px-1.5">
                         {r.ftm}/{r.fta}
                       </td>
-                      <td className="px-1.5">{r.reb}</td>
-                      <td className="px-1.5">{r.ast}</td>
-                      <td className="px-1.5">{r.stl}</td>
-                      <td className="px-1.5">{r.to}</td>
-                      <td className="px-1.5">{r.blk}</td>
-                      <td className="px-1.5">{r.pf}</td>
+                      <td className="px-1.5">{cell("REB", r.reb)}</td>
+                      <td className="px-1.5">{cell("AST", r.ast)}</td>
+                      <td className="px-1.5">{cell("STL", r.stl)}</td>
+                      <td className="px-1.5">{cell("TO", r.to)}</td>
+                      <td className="px-1.5">{cell("BLK", r.blk)}</td>
+                      <td className="px-1.5">{cell("PF", r.pf)}</td>
                     </tr>
                   ))}
                 </tbody>

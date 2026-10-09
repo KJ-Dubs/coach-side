@@ -2,6 +2,29 @@
 // game_events and substitutions. Nothing here is stored back to the database.
 import { distanceFt, isThree } from "./court";
 import type { Game, GameEvent, Player, Substitution } from "./types";
+import { computeCoverage, type TrackingKey } from "./gameConfig";
+
+/** Counting stats whose tracking can be switched off per game. */
+export type RateKey = "reb" | "ast" | "stl" | "blk" | "to" | "pf";
+export const RATE_CATEGORY: Record<RateKey, TrackingKey> = {
+  reb: "rebounds", ast: "assists", stl: "steals", blk: "blocks", to: "turnovers", pf: "fouls",
+};
+/**
+ * Totals and game counts from FULLY tracked games only, so untracked or
+ * partially tracked games never count as zeros in per-game averages.
+ */
+export type RateLine = Record<RateKey, { total: number; games: number; incomplete: number }>;
+const emptyRates = (): RateLine => ({
+  reb: { total: 0, games: 0, incomplete: 0 }, ast: { total: 0, games: 0, incomplete: 0 }, stl: { total: 0, games: 0, incomplete: 0 },
+  blk: { total: 0, games: 0, incomplete: 0 }, to: { total: 0, games: 0, incomplete: 0 }, pf: { total: 0, games: 0, incomplete: 0 },
+});
+const RATE_EVENT: Record<string, RateKey> = { REBOUND: "reb", ASSIST: "ast", STEAL: "stl", BLOCK: "blk", TURNOVER: "to", FOUL: "pf" };
+
+/** Per-game average for a category, or "—" when no game tracked it fully. */
+export function fmtRate(r: { total: number; games: number }, digits = 1) {
+  return r.games ? (r.total / r.games).toFixed(digits) : "—";
+}
+
 
 export type Split = { made: number; att: number };
 
@@ -22,6 +45,7 @@ export type PlayerLine = {
   three: Split;
   ft: Split;
   rim: Split;
+  rates: RateLine;
 };
 
 export type TeamLine = {
@@ -43,6 +67,7 @@ export type TeamLine = {
   three: Split;
   ft: Split;
   rim: Split;
+  rates: RateLine;
 };
 
 const emptySplit = (): Split => ({ made: 0, att: 0 });
@@ -65,6 +90,7 @@ export function emptyPlayerLine(playerId: string): PlayerLine {
     three: emptySplit(),
     ft: emptySplit(),
     rim: emptySplit(),
+    rates: emptyRates(),
   };
 }
 
@@ -88,6 +114,7 @@ export function emptyTeamLine(): TeamLine {
     three: emptySplit(),
     ft: emptySplit(),
     rim: emptySplit(),
+    rates: emptyRates(),
   };
 }
 
@@ -334,6 +361,15 @@ export function aggregatePlayers(
     for (const e of ev) if (e.player_id) played.add(e.player_id);
 
     for (const id of played) get(id).games++;
+    const cov = computeCoverage(g, ev);
+    const fullFor = (k: RateKey) => cov.players.status === "full" && cov[RATE_CATEGORY[k]].status === "full";
+    for (const id of played) {
+      const l = get(id);
+      for (const k of Object.keys(RATE_CATEGORY) as RateKey[]) {
+        if (fullFor(k)) l.rates[k].games++;
+        else l.rates[k].incomplete++;
+      }
+    }
     for (const id of g.starting_five ?? []) get(id).starts++;
     for (const [id, secs] of minutesForGame(g, ev, sb)) get(id).seconds += secs;
 
@@ -342,6 +378,8 @@ export function aggregatePlayers(
       const l = get(e.player_id);
       if (isOppEvent(e)) continue;
       l.pts += eventPoints(e);
+      const rk = RATE_EVENT[e.event_type];
+      if (rk && fullFor(rk)) l.rates[rk].total++;
       switch (e.event_type) {
         case "REBOUND":
           l.reb++;
@@ -377,6 +415,11 @@ export function aggregateTeam(games: Game[], events: GameEvent[]): TeamLine {
   for (const g of games) {
     const ev = evByGame.get(g.id) ?? [];
     line.games++;
+    const cov = computeCoverage(g, ev);
+    for (const k of Object.keys(RATE_CATEGORY) as RateKey[]) {
+      if (cov[RATE_CATEGORY[k]].status === "full") line.rates[k].games++;
+      else line.rates[k].incomplete++;
+    }
     const s = gameScore(g, ev);
     line.pts += s.team;
     line.oppPts += s.opp;
@@ -385,6 +428,8 @@ export function aggregateTeam(games: Game[], events: GameEvent[]): TeamLine {
     else if (r === "L") line.losses++;
     else if (r === "T") line.ties++;
     for (const e of ev) {
+      const rk = RATE_EVENT[e.event_type];
+      if (rk && cov[RATE_CATEGORY[rk]].status === "full") line.rates[rk].total++;
       switch (e.event_type) {
         case "REBOUND":
           line.reb++;
@@ -621,6 +666,11 @@ export function sumPlayerLines(lines: PlayerLine[]): PlayerLine {
     addSplit(out.three, l.three);
     addSplit(out.ft, l.ft);
     addSplit(out.rim, l.rim);
+    for (const k of Object.keys(out.rates) as RateKey[]) {
+      out.rates[k].total += l.rates[k].total;
+      out.rates[k].games = Math.max(out.rates[k].games, l.rates[k].games);
+      out.rates[k].incomplete = Math.max(out.rates[k].incomplete, l.rates[k].incomplete);
+    }
   }
   return out;
 }

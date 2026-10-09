@@ -33,7 +33,7 @@ export function teamAdjustEvents(opp: boolean, points: number, userId: string | 
   return out;
 }
 
-function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-background/70 p-2 backdrop-blur-sm sm:items-center" onClick={onClose}>
       <div
