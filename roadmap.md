@@ -160,3 +160,8 @@
 - [x] Add My Coach Profile, self-profile behavior, author links, and origin-aware profile Back
 - [x] Point Follow a Coach achievement and tips to the Coaches directory
 - [x] Verify privacy constraints, follow safeguards, type safety, tests, and preview build
+
+## Downloaded social video composition
+- [ ] Update shared play/drill MP4 painter with safe top logo, sideline title and persistent bottom CTA
+- [ ] Preserve outro, animation, orientation and both encoders
+- [ ] Verify actual short/long-title and drill MP4s, aspect ratios and preview health
