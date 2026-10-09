@@ -281,7 +281,16 @@ function LiveGamePage() {
   const lockInput = (ms: number) => {
     inputLockRef.current = Math.max(inputLockRef.current, Date.now() + ms);
   };
-  const inputLocked = () => courtPressRef.current || Date.now() < inputLockRef.current;
+  // Set when the court gesture ends; cleared by the next real pointerdown.
+  // Only a synthetic click from the SAME gesture can arrive while it is set.
+  const swallowClickRef = useRef(false);
+  useEffect(() => {
+    const clear = () => { swallowClickRef.current = false; };
+    window.addEventListener("pointerdown", clear, true);
+    return () => window.removeEventListener("pointerdown", clear, true);
+  }, []);
+  const sameGesture = () => courtPressRef.current || swallowClickRef.current;
+  const courtRetapLocked = () => Date.now() < inputLockRef.current;
   const addEvent = useCallback(
     (partial: Partial<GameEvent> & { event_type: string }): GameEvent => {
       // Double-tap guard: an identical event within one interaction window is
@@ -891,8 +900,7 @@ function LiveGamePage() {
     const inner = onPick;
     onPick = (k) => {
       if (stepRef.current !== renderedStep) return;
-      if (inputLocked()) return;
-      lockInput(250);
+      if (sameGesture()) return;
       inner(k);
     };
   }
@@ -981,7 +989,7 @@ function LiveGamePage() {
               className="mx-auto w-full"
               style={courtZoom === "full" ? { maxWidth: "100%" } : { maxWidth: "min(100%, calc((100dvh - 5rem) * 0.94))" }}
               onCourtPoint={onCourtPoint}
-              onCourtPointerUp={() => { courtPressRef.current = false; lockInput(150); }}
+              onCourtPointerUp={() => { courtPressRef.current = false; swallowClickRef.current = true; }}
               onCourtPointerCancel={() => { courtPressRef.current = false; }}
               overlay={
                 <>
@@ -998,8 +1006,7 @@ function LiveGamePage() {
                       onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}
                       onPointerUp={(pointerEvent) => {
                         pointerEvent.stopPropagation();
-                        if (inputLocked()) return;
-                        lockInput(250);
+                        if (sameGesture() || courtRetapLocked()) return;
                         dismissCourtPrompt();
                       }}
                     />
