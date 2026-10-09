@@ -125,7 +125,7 @@ export function PostGameEditor({
     const fresh = await onChanged();
     const s = scoreFromEvents(fresh);
     await supabase.from("games").update({ team_score: s.team, opp_score: s.opp } as never).eq("id", game.id);
-    void trackActivity(kind as never, { teamId: game.team_id, entityId: game.id, metadata: { event_id: eventId } });
+    void trackActivity(kind, { teamId: game.team_id, entityId: game.id, metadata: { event_id: eventId } });
     await qc.invalidateQueries();
   };
 

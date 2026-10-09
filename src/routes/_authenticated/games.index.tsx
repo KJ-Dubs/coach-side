@@ -228,6 +228,17 @@ function GameCard({
           >
             View Game Review
           </BubbleButton>
+        ) : null}
+        {isFinal && canEditStats ? (
+          <BubbleButton
+            tone="flame"
+            size="sm"
+            onClick={() => navigate({ to: "/review/$gameId", params: { gameId: g.id }, search: { edit: true } })}
+          >
+            Edit Game Stats
+          </BubbleButton>
+        ) : null}
+        {isFinal ? null : (
         ) : (
           <>
             <BubbleButton

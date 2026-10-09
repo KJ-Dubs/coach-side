@@ -19,7 +19,10 @@ export type ActivityEventType =
   | "board_used_in_game"
   | "pwa_installed"
   | "potd_viewed"
-  | "membership_changed";
+  | "membership_changed"
+  | "game_stat_edited"
+  | "game_stat_added_postgame"
+  | "game_stat_deleted_postgame";
 
 /** Fired after an achievement-relevant action so Progress refreshes promptly. */
 export const PROGRESS_EVENT = "coachside:progress-changed";
