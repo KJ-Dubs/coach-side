@@ -178,11 +178,11 @@ export async function createGame(input: {
   const { data, error } = await supabase
     .from("games")
     .insert({
-      ...(input as never as Record<string, never>),
+      ...input,
       status: "live",
       quarter: 1,
       clock_seconds: input.period_minutes * 60,
-    })
+    } as never)
     .select("*")
     .single();
   if (error) throw error;
@@ -737,6 +737,7 @@ export async function updateTeam(
       | "default_periods"
       | "default_period_minutes"
       | "default_overtime_minutes"
+      | "default_game_config"
       | "home_gym"
       | "default_practice_location"
       | "default_arrival_offset_minutes"
