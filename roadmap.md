@@ -185,3 +185,9 @@
 - [x] Move current-sequence Play, Undo, Next Sequence and count directly below the court
 - [x] Preserve repeat preview, deterministic continuity, full Replay and Reset; remove lower duplicates
 - [x] Verify 320/390px phone and iPad layouts, repeat preview, advance, undo and empty states using an unsaved browser fixture; preview build OK and 16 regression tests pass
+
+## Configurable Live Game tracking & editable tiles
+- [x] Per-game tracking toggles, foul limit, bonus rule, timeouts (+ optional team defaults) on Start a Game
+- [x] Live Game hides disabled controls; score-only mode skips Who? prompts
+- [x] Editable score/period/foul tiles with event-backed reconciliation and team-only SCORE adjustments
+- [x] End-game scoreboard check, foul-out notice, bonus labels, timeout tracker

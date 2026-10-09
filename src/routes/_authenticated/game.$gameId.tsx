@@ -22,6 +22,9 @@ import type { GameEvent, Player } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { fmtSplit, opponentLine, scoreFromEvents } from "@/lib/stats";
 import { EventEditor } from "@/components/court/EventEditor";
+import { TileEditor, EndGameCheck, type TileKind } from "@/components/game/LiveTileEditor";
+import { supabase } from "@/integrations/supabase/client";
+import { bonusLabel, countFouls, foulWindow, normalizeRules, normalizeTracking } from "@/lib/gameConfig";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/_authenticated/game/$gameId")({
@@ -58,7 +61,8 @@ type Step =
   | { kind: "reboundLoc"; playerId: string; eventId: string }
   | { kind: "oppStat" }
   | { kind: "oppMiss"; eventId: string }
-  | { kind: "ft"; made: boolean };
+  | { kind: "ft"; made: boolean }
+  | { kind: "quick"; value: 2 | 3 };
 
 const STAT_CHOICES: Choice[] = [
   { key: "MADE", label: "MAKE", tone: "flame" },
@@ -108,6 +112,14 @@ function LiveGamePage() {
   const [pendingSubIn, setPendingSubIn] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [locPick, setLocPick] = useState(false);
+  const [tileEdit, setTileEdit] = useState<TileKind | null>(null);
+  const [endCheck, setEndCheck] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, []);
+  const tracking = useMemo(() => normalizeTracking(game.data?.stat_tracking_config), [game.data?.stat_tracking_config]);
+  const rules = useMemo(() => normalizeRules(game.data?.rules_config), [game.data?.rules_config]);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -231,15 +243,33 @@ function LiveGamePage() {
 
   const roster = players.data ?? [];
   const byId = useMemo(() => new Map(roster.map((p) => [p.id, p])), [roster]);
+  const byIdRef = useRef(byId);
+  byIdRef.current = byId;
   const onFloor = lineup.map((id) => byId.get(id)).filter(Boolean) as Player[];
   const bench = roster.filter((p) => p.active && !lineup.includes(p.id));
 
   // One canonical scoring rule (src/lib/stats.ts eventPoints) for everything.
   const { team: teamScore, opp: oppScore } = useMemo(() => scoreFromEvents(events), [events]);
   const opp = useMemo(() => opponentLine(events), [events]);
-  const teamFouls = events.filter((e) => e.event_type === "FOUL" && e.quarter === quarter).length;
-  const oppFouls = events.filter((e) => e.event_type === "OPP_FOUL" && e.quarter === quarter).length;
+  const scoreRef = useRef({ teamScore, oppScore });
+  scoreRef.current = { teamScore, oppScore };
   const periods = game.data?.periods ?? 4;
+  // Per-quarter or per-half window; foul events are never deleted on reset.
+  const inFoulWindow = useMemo(() => foulWindow(rules.bonus, quarter, periods), [rules.bonus, quarter, periods]);
+  const teamFouls = countFouls(events, "FOUL", inFoulWindow);
+  const oppFouls = countFouls(events, "OPP_FOUL", inFoulWindow);
+  const teamBonus = bonusLabel(rules.bonus, teamFouls);
+  const oppBonus = bonusLabel(rules.bonus, oppFouls);
+  const playerFouls = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const e of events) if (e.event_type === "FOUL" && e.player_id) m.set(e.player_id, (m.get(e.player_id) ?? 0) + 1);
+    return m;
+  }, [events]);
+  const fouledOut = (pid: string) =>
+    tracking.fouls && tracking.players && rules.foulLimit != null && (playerFouls.get(pid) ?? 0) >= rules.foulLimit;
+  const timeoutsUsed = (kind: "FULL" | "30") => events.filter((e) => e.event_type === "TIMEOUT" && e.result === kind).length;
+  const timeoutsLeftFull = Math.max(0, rules.timeoutsFull - timeoutsUsed("FULL"));
+  const timeoutsLeft30 = Math.max(0, rules.timeouts30 - timeoutsUsed("30"));
   const isOvertime = quarter > periods;
 
   /* ---------------- event helpers ---------------- */
@@ -262,13 +292,22 @@ function LiveGamePage() {
         context: partial.context ?? {},
         created_at: new Date().toISOString(),
       };
-      setEvents((prev) => [...prev, e]);
+      setEvents((prev) => {
+        if (e.event_type === "FOUL" && e.player_id && rules.foulLimit != null && tracking.players) {
+          const n = prev.filter((x) => x.event_type === "FOUL" && x.player_id === e.player_id).length + 1;
+          if (n === rules.foulLimit) {
+            const pl = byIdRef.current.get(e.player_id);
+            setTimeout(() => toast.warning(`#${pl?.jersey ?? "?"} has fouled out (${n} fouls)`, { duration: 6000 }), 0);
+          }
+        }
+        return [...prev, e];
+      });
       void enqueue({ id: opId(), kind: "insert_event", payload: e }).then(() =>
         flushQueue().then(setPending),
       );
       return e;
     },
-    [gameId, quarter, lineup],
+    [gameId, quarter, lineup, rules.foulLimit, tracking.players],
   );
 
   const updateEvent = useCallback((id: string, patch: Partial<GameEvent>) => {
@@ -366,8 +405,8 @@ function LiveGamePage() {
           status,
           quarter,
           clock_seconds: clockRef.current,
-          team_score: teamScore,
-          opp_score: oppScore,
+          team_score: scoreRef.current.teamScore,
+          opp_score: scoreRef.current.oppScore,
           ...(status === "final" ? { ended_at: new Date().toISOString() } : {}),
         },
       });
@@ -394,8 +433,8 @@ function LiveGamePage() {
     await saveGameState("final");
     await cacheSet(`game-final-${gameId}`, {
       status: "final",
-      team_score: teamScore,
-      opp_score: oppScore,
+      team_score: scoreRef.current.teamScore,
+      opp_score: scoreRef.current.oppScore,
       quarter,
       ended_at: new Date().toISOString(),
     });
@@ -484,6 +523,11 @@ function LiveGamePage() {
       return;
     }
     setPoint(p);
+    if (!tracking.players) {
+      setActivePlayer(null);
+      goStep({ kind: "stat" });
+      return;
+    }
     goStep({ kind: "player" });
   };
 
@@ -500,7 +544,11 @@ function LiveGamePage() {
   };
 
   const pickStat = (statKey: string) => {
-    if (!point || !activePlayer) return;
+    if (!point || (tracking.players && !activePlayer)) return;
+    if (statKey === "__opp") {
+      goStep({ kind: "oppStat" });
+      return;
+    }
     const zone = zoneOf(point.x, point.y);
     const value = shotValue(point.x, point.y);
 
@@ -514,7 +562,8 @@ function LiveGamePage() {
         points: value,
         result: `${value}PT`,
       });
-      goStep({ kind: "assist", eventId: e.id });
+      if (tracking.assists && tracking.players) goStep({ kind: "assist", eventId: e.id });
+      else reset();
       return;
     }
     if (statKey === "MISS") {
@@ -526,11 +575,17 @@ function LiveGamePage() {
         zone,
         result: `${value}PT`,
       });
-      goStep({ kind: "miss", eventId: e.id });
+      if (tracking.rebounds || (tracking.opponent && tracking.oppRebounds)) goStep({ kind: "miss", eventId: e.id });
+      else reset();
       return;
     }
     if (statKey === "FOUL") {
-      goStep({ kind: "foul" });
+      if (tracking.foulDetail) {
+        goStep({ kind: "foul" });
+      } else {
+        addEvent({ event_type: "FOUL", player_id: activePlayer, x: point.x, y: point.y, zone });
+        reset();
+      }
       return;
     }
     if (statKey === "TURNOVER") {
@@ -562,7 +617,7 @@ function LiveGamePage() {
 
   const playerChoiceLabel = (player: Player) => {
     const shortName = player.name.trim().split(/\s+/)[0] ?? "";
-    return `#${player.jersey}${shortName ? ` · ${shortName}` : ""}`;
+    return `#${player.jersey}${shortName ? ` · ${shortName}` : ""}${fouledOut(player.id) ? " · FO" : ""}`;
   };
   const playerChoices = (list: Player[], tone: Choice["tone"] = "grape") =>
     list.map((player) => ({ key: player.id, label: playerChoiceLabel(player), tone }));
@@ -589,7 +644,19 @@ function LiveGamePage() {
   } else if (step.kind === "stat") {
     const zone = point ? ZONE_LABEL[zoneOf(point.x, point.y)] : "";
     overlayTitle = zone ? `${zone} · what happened?` : "What happened?";
-    choices = [...STAT_CHOICES, { key: "__cancel", label: "Cancel", tone: "ghost" }];
+    const enabled: Record<string, boolean> = {
+      MADE: true,
+      MISS: true,
+      REBOUND: tracking.rebounds,
+      ASSIST: tracking.assists && tracking.players,
+      STEAL: tracking.steals,
+      TURNOVER: tracking.turnovers,
+      BLOCK: tracking.blocks,
+      FOUL: tracking.fouls,
+    };
+    choices = STAT_CHOICES.filter((c) => enabled[c.key]);
+    if (!tracking.players) choices.push({ key: "__opp", label: "Opponent", tone: "neutral" });
+    choices.push({ key: "__cancel", label: "Cancel", tone: "ghost" });
     onPick = (k) => (k === "__cancel" ? reset() : pickStat(k));
   } else if (step.kind === "ft") {
     overlayTitle = "Who shot it?";
@@ -612,6 +679,23 @@ function LiveGamePage() {
         result: "FT",
       });
       reset();
+    };
+  } else if (step.kind === "quick") {
+    overlayTitle = `+${step.value} · who scored?`;
+    choices = playerChoices(onFloor);
+    if (bench.length) {
+      choices.push(...(showOtherPlayers ? playerChoices(bench, "neutral") : [revealOtherChoice]));
+    }
+    choices.push({ key: "__team", label: "Team only", tone: "neutral" });
+    onPick = (k) => {
+      if (k === "__other") return setShowOtherPlayers(true);
+      const pid = k === "__team" ? null : k;
+      if (pid) ensureOnFloor(pid);
+      const e = addEvent({ event_type: "MADE", player_id: pid, points: step.value, result: `${step.value}PT`, context: { shot_value: step.value } });
+      if (pid && tracking.assists) {
+        setActivePlayer(pid);
+        goStep({ kind: "assist", eventId: e.id });
+      } else reset();
     };
   } else if (step.kind === "assist") {
     overlayTitle = "Assist?";
@@ -639,16 +723,24 @@ function LiveGamePage() {
     };
   } else if (step.kind === "miss") {
     overlayTitle = "Rebound?";
-    choices = playerChoices(onFloor);
-    if (bench.length) {
-      choices.push(...(showOtherPlayers ? playerChoices(bench, "neutral") : [revealOtherChoice]));
+    choices = [];
+    if (tracking.rebounds && tracking.players) {
+      choices.push(...playerChoices(onFloor));
+      if (bench.length) {
+        choices.push(...(showOtherPlayers ? playerChoices(bench, "neutral") : [revealOtherChoice]));
+      }
+    } else if (tracking.rebounds) {
+      choices.push({ key: "__teamreb", label: "Our rebound", tone: "grape" });
     }
-    choices.push({ key: "__opp", label: "Opponent rebound", tone: "grape" });
+    if (tracking.opponent && tracking.oppRebounds) choices.push({ key: "__opp", label: "Opponent rebound", tone: "grape" });
     choices.push({ key: "__oob", label: "Out of bounds", tone: "neutral" });
     choices.push({ key: "__skip", label: "Skip", tone: "ghost" });
     onPick = (k) => {
       if (k === "__other") return setShowOtherPlayers(true);
-      if (k === "__opp") {
+      if (k === "__teamreb") {
+        addEvent({ event_type: "REBOUND", result: "OFF", related_event_id: step.eventId });
+        reset();
+      } else if (k === "__opp") {
         addEvent({ event_type: "OPP_REBOUND", result: "DEF", related_event_id: step.eventId });
         reset();
       } else if (k === "__oob") {
@@ -683,13 +775,11 @@ function LiveGamePage() {
     const zone = point ? ZONE_LABEL[zoneOf(point.x, point.y)] : "";
     const value = point ? shotValue(point.x, point.y) : 2;
     overlayTitle = `Opponent${zone ? ` · ${zone}` : ""} · what happened?`;
-    choices = [
-      { key: "MADE", label: `Make ${value}`, tone: "flame" },
-      { key: "MISS", label: "Miss", tone: "grape" },
-      { key: "TURNOVER", label: "Turnover", tone: "grape" },
-      { key: "FOUL", label: "Foul", tone: "grape" },
-      { key: "__cancel", label: "Cancel", tone: "ghost" },
-    ];
+    choices = [{ key: "MADE", label: `Make ${value}`, tone: "flame" }];
+    if (tracking.opponent) choices.push({ key: "MISS", label: "Miss", tone: "grape" });
+    if (tracking.opponent && tracking.oppTurnovers) choices.push({ key: "TURNOVER", label: "Turnover", tone: "grape" });
+    if (tracking.oppFouls) choices.push({ key: "FOUL", label: "Foul", tone: "grape" });
+    choices.push({ key: "__cancel", label: "Cancel", tone: "ghost" });
     onPick = (k) => {
       if (k === "__cancel" || !point) return reset();
       const loc = { x: point.x, y: point.y, zone: zoneOf(point.x, point.y) };
@@ -699,7 +789,8 @@ function LiveGamePage() {
       }
       if (k === "MISS") {
         const e = addEvent({ event_type: "OPP_MISS", ...loc, result: `${value}PT` });
-        goStep({ kind: "oppMiss", eventId: e.id });
+        if (tracking.rebounds || tracking.oppRebounds) goStep({ kind: "oppMiss", eventId: e.id });
+        else reset();
         return;
       }
       addEvent({ event_type: `OPP_${k}`, ...loc });
@@ -707,14 +798,14 @@ function LiveGamePage() {
     };
   } else if (step.kind === "oppMiss") {
     overlayTitle = "Rebound?";
-    choices = [
-      { key: "__oreb", label: "Opponent Off. Reb", tone: "grape" },
-      ...playerChoices(onFloor),
-    ];
-    if (bench.length) {
-      choices.push(...(showOtherPlayers ? playerChoices(bench, "neutral") : [revealOtherChoice]));
+    choices = tracking.oppRebounds ? [{ key: "__oreb", label: "Opponent Off. Reb", tone: "grape" }] : [];
+    if (tracking.rebounds && tracking.players) {
+      choices.push(...playerChoices(onFloor));
+      if (bench.length) {
+        choices.push(...(showOtherPlayers ? playerChoices(bench, "neutral") : [revealOtherChoice]));
+      }
     }
-    choices.push({ key: "__usreb", label: "US Def. Reb · team", tone: "neutral" });
+    if (tracking.rebounds) choices.push({ key: "__usreb", label: "US Def. Reb · team", tone: "neutral" });
     choices.push({ key: "__oob", label: "Out of bounds", tone: "neutral" });
     choices.push({ key: "__skip", label: "Skip", tone: "ghost" });
     onPick = (k) => {
@@ -816,11 +907,23 @@ function LiveGamePage() {
         {/* SCORE + PERIOD + FOULS — compact and sticky */}
         <Panel className="sticky top-1 z-40 border-grape/50 bg-background/95 p-1.5 backdrop-blur">
           <div className="grid grid-cols-5 gap-1.5">
-            <StatTile label={game.data ? "Us" : "Team"} value={teamScore} tone="grape" className="px-1.5 py-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-2xl" />
-            <StatTile label="Opp" value={oppScore} tone="flame" className="px-1.5 py-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-2xl" />
-            <StatTile label="Period" value={isOvertime ? `OT${quarter - periods}` : `Q${quarter}`} className="px-1 py-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-lg" />
-            <StatTile label="Team fouls" value={teamFouls} className="px-1 py-1.5 [&>div:first-child]:text-[9px] [&>div:nth-child(2)]:text-lg" />
-            <StatTile label="Opp fouls" value={oppFouls} className="px-1 py-1.5 [&>div:first-child]:text-[9px] [&>div:nth-child(2)]:text-lg" />
+            {([
+              { k: "us", label: "Us", value: teamScore, tone: "grape", cls: "px-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-2xl" },
+              { k: "opp", label: "Opp", value: oppScore, tone: "flame", cls: "px-1.5 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-2xl" },
+              { k: "period", label: "Period", value: isOvertime ? `OT${quarter - periods}` : `Q${quarter}`, tone: "neutral", cls: "px-1 [&>div:first-child]:text-[10px] [&>div:nth-child(2)]:text-lg" },
+              { k: "fouls", label: "Team fouls", value: teamFouls, hint: oppBonus, tone: "neutral", cls: "px-1 [&>div:first-child]:text-[9px] [&>div:nth-child(2)]:text-lg" },
+              { k: "oppFouls", label: "Opp fouls", value: oppFouls, hint: teamBonus, tone: "neutral", cls: "px-1 [&>div:first-child]:text-[9px] [&>div:nth-child(2)]:text-lg" },
+            ] as const).map((t) => (
+              <button key={t.k} type="button" aria-label={`Edit ${t.label}`} onClick={() => setTileEdit(t.k)} className="min-h-11 rounded-2xl text-left active:scale-[0.97]">
+                <StatTile
+                  label={t.label}
+                  value={t.value}
+                  hint={"hint" in t && t.hint ? <span className="rounded-full bg-flame/25 px-1 font-black text-foreground">{t.k === "fouls" ? `OPP ${t.hint}` : t.hint}</span> : undefined}
+                  tone={t.tone}
+                  className={cn("h-full py-1.5", t.cls)}
+                />
+              </button>
+            ))}
           </div>
         </Panel>
 
@@ -828,6 +931,15 @@ function LiveGamePage() {
           <div className="flex min-w-0 flex-wrap gap-2">
             <BubbleButton size="sm" tone="neutral" onClick={() => navigate({ to: "/dashboard" })}>⌂ Home</BubbleButton>
             <BubbleButton size="sm" tone="grape" onClick={() => { void trackActivity("board_used_in_game", { entityId: gameId }); navigate({ to: "/board" }); }}>✎ Timeout Board</BubbleButton>
+            {rules.timeoutsFull + rules.timeouts30 > 0 ? (
+              <div className="flex items-center gap-1 rounded-full border border-border bg-surface-2/70 p-0.5">
+                {rules.timeoutsFull > 0 ? <BubbleButton size="sm" tone="neutral" className="min-h-11 px-2 text-xs" disabled={timeoutsLeftFull === 0} onClick={() => addEvent({ event_type: "TIMEOUT", result: "FULL" })}>TO Full: {timeoutsLeftFull}</BubbleButton> : null}
+                {rules.timeouts30 > 0 ? <BubbleButton size="sm" tone="neutral" className="min-h-11 px-2 text-xs" disabled={timeoutsLeft30 === 0} onClick={() => addEvent({ event_type: "TIMEOUT", result: "30" })}>30s: {timeoutsLeft30}</BubbleButton> : null}
+                {events.some((e) => e.event_type === "TIMEOUT") ? (
+                  <BubbleButton size="sm" tone="ghost" className="h-11 min-h-11 w-11 px-0" aria-label="Undo last timeout" onClick={() => { const t = [...events].reverse().find((e) => e.event_type === "TIMEOUT"); if (t) deleteEvent(t.id); }}>↺</BubbleButton>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           <div className="flex shrink-0 gap-1.5 sm:ml-auto">
             <BubbleButton size="sm" tone={courtZoom === "left" ? "grape" : "neutral"} onClick={() => setCourtZoom("left")}>Half</BubbleButton>
@@ -881,9 +993,9 @@ function LiveGamePage() {
                           <Label className="justify-self-center truncate bg-grape/25 px-2 text-xs text-foreground">{overlayTitle}</Label>
                           <BubbleButton size="sm" tone="ghost" className="h-11 min-h-11 w-11 px-0 text-lg" aria-label="Cancel current prompt" onClick={dismissCourtPrompt}>×</BubbleButton>
                         </div>
-                        <div className={cn("grid gap-1", ["player", "ft", "assist", "miss", "oppMiss"].includes(step.kind) ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-3")}>
+                        <div className={cn("grid gap-1", ["player", "ft", "assist", "miss", "oppMiss", "quick"].includes(step.kind) ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-3")}>
                           {choices.map((choice) => {
-                            const isPlayerChoice = !choice.key.startsWith("__") && ["player", "ft", "assist", "miss", "oppMiss"].includes(step.kind);
+                            const isPlayerChoice = !choice.key.startsWith("__") && ["player", "ft", "assist", "miss", "oppMiss", "quick"].includes(step.kind);
                             const primary = choice.key === "MADE" || choice.key === "MISS";
                             return (
                               <BubbleButton
@@ -965,15 +1077,42 @@ function LiveGamePage() {
           <div className="flex min-w-0 flex-col gap-1.5">
             {/* OUR FREE THROWS — player list appears only after a result is chosen */}
             <Panel className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 p-1.5">
-              <Label className="px-2">Our FT</Label>
-              <div className="grid grid-cols-2 gap-1.5">
-                <BubbleButton size="sm" tone="flame" className="min-h-11" onClick={() => goStep({ kind: "ft", made: true })}>FT Made</BubbleButton>
-                <BubbleButton size="sm" tone="grape" className="min-h-11" onClick={() => goStep({ kind: "ft", made: false })}>FT Miss</BubbleButton>
+              <Label className="px-2">{tracking.players && tracking.shotLocations ? "Our FT" : "Us"}</Label>
+              <div className={cn("grid gap-1.5", tracking.players && tracking.shotLocations ? "grid-cols-2" : "grid-cols-4")}>
+                {tracking.players && tracking.shotLocations ? null : (
+                  <>
+                    {[2, 3].map((v) => (
+                      <BubbleButton key={v} size="sm" tone="flame" className="min-h-11 px-1" onClick={() => {
+                        if (tracking.players) { setPoint(null); goStep({ kind: "quick", value: v as 2 | 3 }); }
+                        else addEvent({ event_type: "MADE", points: v, result: `${v}PT`, context: { shot_value: v } });
+                      }}>+{v}</BubbleButton>
+                    ))}
+                  </>
+                )}
+                <BubbleButton size="sm" tone="flame" className="min-h-11 px-1 text-xs" onClick={() => tracking.players ? goStep({ kind: "ft", made: true }) : addEvent({ event_type: "FT_MADE", points: 1, result: "FT", zone: "freethrow" })}>{tracking.players && tracking.shotLocations ? "FT Made" : "+1 FT"}</BubbleButton>
+                {tracking.players ? (
+                  <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => goStep({ kind: "ft", made: false })}>FT Miss</BubbleButton>
+                ) : tracking.fouls ? (
+                  <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "FOUL" })}>Foul</BubbleButton>
+                ) : (
+                  <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "FT_MISS", result: "FT", zone: "freethrow" })}>FT Miss</BubbleButton>
+                )}
               </div>
             </Panel>
 
             {/* OPPONENT */}
-            <Panel className="flex flex-col gap-1.5 p-1.5">
+            {!tracking.opponent ? (
+              <Panel className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 p-1.5">
+                <Label className="px-2">Opp</Label>
+                <div className={cn("grid gap-1.5", tracking.oppFouls ? "grid-cols-4" : "grid-cols-3")}>
+                  {[1, 2, 3].map((v) => (
+                    <BubbleButton key={v} size="sm" tone="flame" className="min-h-11 px-1" onClick={() => v === 1 ? addEvent({ event_type: "OPP_FT_MADE", points: 1, result: "FT" }) : addEvent({ event_type: "OPP_MADE", points: v, result: `${v}PT`, context: { shot_value: v } })}>+{v}</BubbleButton>
+                  ))}
+                  {tracking.oppFouls ? <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_FOUL" })}>Foul</BubbleButton> : null}
+                </div>
+              </Panel>
+            ) : null}
+            {tracking.opponent ? <Panel className="flex flex-col gap-1.5 p-1.5">
               <BubbleButton
                 size="sm"
                 tone="neutral"
@@ -1001,10 +1140,10 @@ function LiveGamePage() {
                   <div>
                     <Label>Possession</Label>
                     <div className="mt-1 grid grid-cols-4 gap-1.5">
-                      <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "OFF" })}>Off. Reb</BubbleButton>
-                      <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "DEF" })}>Def. Reb</BubbleButton>
-                      <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_TURNOVER" })}>Turnover</BubbleButton>
-                      <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_FOUL" })}>Opp Foul</BubbleButton>
+                      {tracking.oppRebounds ? <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "OFF" })}>Off. Reb</BubbleButton> : null}
+                      {tracking.oppRebounds ? <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_REBOUND", result: "DEF" })}>Def. Reb</BubbleButton> : null}
+                      {tracking.oppTurnovers ? <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_TURNOVER" })}>Turnover</BubbleButton> : null}
+                      {tracking.oppFouls ? <BubbleButton size="sm" tone="grape" className="min-h-11 px-1 text-xs" onClick={() => addEvent({ event_type: "OPP_FOUL" })}>Opp Foul</BubbleButton> : null}
                     </div>
                   </div>
                 </div>
@@ -1012,17 +1151,17 @@ function LiveGamePage() {
               <div className="rounded-2xl border border-border/70 bg-surface-2/60 px-2 py-1 text-center text-[11px] font-bold text-muted-foreground">
                 FG {fmtSplit(opp.fg)} · 3PT {fmtSplit(opp.three)} · FT {fmtSplit(opp.ft)} · OREB {opp.oreb} · TO {opp.to} · Fouls {oppFouls}
               </div>
-            </Panel>
+            </Panel> : null}
 
             {/* LINEUP */}
-            <Panel className="flex flex-col gap-1.5 p-1.5">
+            {tracking.players ? <Panel className="flex flex-col gap-1.5 p-1.5">
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                 <Label>On the floor</Label>
                 <BubbleButton size="md" tone={showBench ? "grape" : "neutral"} className="min-h-12" onClick={() => { setShowBench((value) => !value); setSubOut(null); }}>Sub</BubbleButton>
               </div>
               <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
                 {onFloor.map((p) => (
-                  <BubbleButton key={p.id} size="sm" tone={subOut === p.id ? "flame" : "grape"} className="min-h-11 min-w-0 truncate px-2 text-xs" onClick={() => showBench && setSubOut(p.id)}>
+                  <BubbleButton key={p.id} size="sm" tone={subOut === p.id ? "flame" : fouledOut(p.id) ? "danger" : "grape"} className="min-h-11 min-w-0 truncate px-2 text-xs" onClick={() => showBench && setSubOut(p.id)}>
                     {playerChoiceLabel(p)}
                   </BubbleButton>
                 ))}
@@ -1037,7 +1176,7 @@ function LiveGamePage() {
                   ) : null}
                 </div>
               ) : null}
-            </Panel>
+            </Panel> : null}
 
             {/* EVENT / REVIEW / UNDO */}
             {eventsExpanded || editingEvent ? <Panel className="flex flex-col gap-1.5 p-1.5">
@@ -1104,7 +1243,7 @@ function LiveGamePage() {
                 <BubbleButton size="sm" tone="neutral" className="min-h-11" onClick={() => navigate({ to: "/review/$gameId", params: { gameId } })}>Review</BubbleButton>
                 <BubbleButton size="sm" tone="grape" className="min-h-11" disabled={quarter < periods} onClick={startOvertime}>+ Overtime</BubbleButton>
                 <BubbleButton size="sm" tone="ghost" className="col-span-2 min-h-11" onClick={() => setEventsExpanded((value) => !value)}>Recent events ({events.length})</BubbleButton>
-                <BubbleButton size="lg" tone="danger" className="col-span-3 min-h-14 text-base" disabled={ending} onClick={() => void finishGame()}>
+                <BubbleButton size="lg" tone="danger" className="col-span-3 min-h-14 text-base" disabled={ending} onClick={() => setEndCheck(true)}>
                   {ending ? "Saving…" : finalized ? "Save & open review" : "End Game & Save"}
                 </BubbleButton>
               </div>
@@ -1112,6 +1251,39 @@ function LiveGamePage() {
           </div>
         </div>
       </div>
+      {tileEdit ? (
+        <TileEditor
+          kind={tileEdit}
+          events={events}
+          onFloor={onFloor}
+          bench={bench}
+          tracking={tracking}
+          quarter={quarter}
+          periods={periods}
+          teamFouls={teamFouls}
+          oppFouls={oppFouls}
+          inFoulWindow={inFoulWindow}
+          userId={userId}
+          onAdd={(e) => { if (e.player_id) ensureOnFloor(e.player_id); addEvent(e); }}
+          onDelete={deleteEvent}
+          onSetQuarter={(q) => {
+            setQuarter(q);
+            void enqueue({ id: opId(), kind: "update_game", payload: { id: gameId, quarter: q } }).then(() => flushQueue().then(setPending));
+          }}
+          onClose={() => setTileEdit(null)}
+        />
+      ) : null}
+      {endCheck ? (
+        <EndGameCheck
+          teamScore={teamScore}
+          oppScore={oppScore}
+          userId={userId}
+          onAdd={addEvent}
+          onReconcile={(k) => { setEndCheck(false); setTileEdit(k); }}
+          onConfirm={() => { setEndCheck(false); void finishGame(); }}
+          onClose={() => setEndCheck(false)}
+        />
+      ) : null}
     </div>
   );
 }

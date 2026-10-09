@@ -172,6 +172,8 @@ export async function createGame(input: {
   starting_five: string[];
   home_away: "home" | "away";
   overtime_minutes: number;
+  stat_tracking_config?: Record<string, unknown> | null;
+  rules_config?: Record<string, unknown> | null;
 }): Promise<Game> {
   const { data, error } = await supabase
     .from("games")
@@ -180,7 +182,7 @@ export async function createGame(input: {
       status: "live",
       quarter: 1,
       clock_seconds: input.period_minutes * 60,
-    })
+    } as never)
     .select("*")
     .single();
   if (error) throw error;
@@ -735,6 +737,7 @@ export async function updateTeam(
       | "default_periods"
       | "default_period_minutes"
       | "default_overtime_minutes"
+      | "default_game_config"
       | "home_gym"
       | "default_practice_location"
       | "default_arrival_offset_minutes"
@@ -747,7 +750,7 @@ export async function updateTeam(
     >
   >,
 ) {
-  const { error } = await supabase.from("teams").update(patch).eq("id", id);
+  const { error } = await supabase.from("teams").update(patch as never).eq("id", id);
   if (error) throw error;
 }
 

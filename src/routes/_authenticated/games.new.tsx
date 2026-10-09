@@ -13,7 +13,19 @@ import {
   Pill,
   TextInput,
 } from "@/components/Bubbles";
-import { createGame, fetchGames, fetchPlayers, fetchTeams, updateTeamEvent } from "@/lib/data";
+import { createGame, fetchGames, fetchPlayers, fetchTeams, updateTeam, updateTeamEvent } from "@/lib/data";
+import {
+  BONUS_PRESETS,
+  DEFAULT_RULES,
+  FULL_TRACKING,
+  SCORE_ONLY_TRACKING,
+  TRACKING_LABELS,
+  normalizeRules,
+  normalizeTracking,
+  type BonusRule,
+  type RulesConfig,
+  type TrackingConfig,
+} from "@/lib/gameConfig";
 import { cn } from "@/lib/utils";
 
 type NewGameSearch = {
@@ -144,6 +156,10 @@ function NewGamePage() {
   const [minutes, setMinutes] = useState(8);
   const [customMin, setCustomMin] = useState("");
   const [ot, setOt] = useState(4);
+  const [tracking, setTracking] = useState<TrackingConfig>({ ...FULL_TRACKING });
+  const [rules, setRules] = useState<RulesConfig>({ ...DEFAULT_RULES });
+  const [advanced, setAdvanced] = useState(false);
+  const [saveDefaults, setSaveDefaults] = useState(false);
 
   // Team defaults drive the rules step once a team is chosen.
   useEffect(() => {
@@ -151,6 +167,9 @@ function NewGamePage() {
     setPeriods(team.default_periods ?? 4);
     setMinutes(team.default_period_minutes ?? 8);
     setOt(team.default_overtime_minutes ?? 4);
+    const d = (team.default_game_config ?? null) as { tracking?: unknown; rules?: unknown } | null;
+    setTracking(normalizeTracking(d?.tracking));
+    setRules(normalizeRules(d?.rules));
     setFive([]);
   }, [team?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -181,8 +200,20 @@ function NewGamePage() {
         starting_five: five,
         home_away: homeAway,
         overtime_minutes: ot,
+        stat_tracking_config: tracking,
+        rules_config: rules,
       }),
     onSuccess: (g) => {
+      if (saveDefaults) {
+        void updateTeam(g.team_id, {
+          default_periods: periods,
+          default_period_minutes: minutes,
+          default_overtime_minutes: ot,
+          default_game_config: { tracking, rules },
+        })
+          .then(() => qc.invalidateQueries({ queryKey: ["teams"] }))
+          .catch(() => toast.error("Game started, but team defaults could not be saved"));
+      }
       void qc.invalidateQueries({ queryKey: ["games"] });
       if (prefill.eventId) {
         void updateTeamEvent(prefill.eventId, { game_id: g.id }).then(() =>
@@ -385,6 +416,17 @@ function NewGamePage() {
               ))}
             </div>
           </Field>
+          <AdvancedRules
+            open={advanced}
+            onToggle={() => setAdvanced((v) => !v)}
+            tracking={tracking}
+            setTracking={setTracking}
+            rules={rules}
+            setRules={setRules}
+            saveDefaults={saveDefaults}
+            setSaveDefaults={setSaveDefaults}
+            canSaveDefaults={!!teamId}
+          />
         </StepCard>
 
         <StepCard step="E" title="Tip off" done={false} className="lg:col-span-2">
@@ -412,5 +454,149 @@ function NewGamePage() {
         </StepCard>
       </div>
     </AppShell>
+  );
+}
+
+function Toggle({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={onClick}
+      className={cn(
+        "flex min-h-11 items-center justify-between gap-2 rounded-2xl border px-3 text-left text-xs font-bold",
+        on ? "border-grape/60 bg-grape/20 text-foreground" : "border-border bg-surface-2/60 text-muted-foreground",
+      )}
+    >
+      <span className="min-w-0">{label}</span>
+      <span className={cn("relative h-5 w-9 shrink-0 rounded-full transition-colors", on ? "bg-grape" : "bg-muted")}>
+        <span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-foreground transition-all", on ? "left-[18px]" : "left-0.5")} />
+      </span>
+    </button>
+  );
+}
+
+function NumberChip({ value, onChange, placeholder }: { value: number | null; onChange: (v: number | null) => void; placeholder: string }) {
+  return (
+    <input
+      type="number"
+      min={1}
+      max={20}
+      value={value ?? ""}
+      placeholder={placeholder}
+      onChange={(e) => {
+        const v = Number(e.target.value);
+        onChange(e.target.value === "" ? null : v > 0 ? v : null);
+      }}
+      className="h-11 w-16 rounded-full border border-input bg-surface px-2 text-center text-sm font-bold text-foreground outline-none focus:border-grape"
+    />
+  );
+}
+
+function AdvancedRules(props: {
+  open: boolean;
+  onToggle: () => void;
+  tracking: TrackingConfig;
+  setTracking: (t: TrackingConfig) => void;
+  rules: RulesConfig;
+  setRules: (r: RulesConfig) => void;
+  saveDefaults: boolean;
+  setSaveDefaults: (v: boolean) => void;
+  canSaveDefaults: boolean;
+}) {
+  const { tracking, setTracking, rules, setRules } = props;
+  const flip = (k: keyof TrackingConfig) => {
+    const next = { ...tracking, [k]: !tracking[k] };
+    if (k === "opponent" && !next.opponent) {
+      next.oppRebounds = false;
+      next.oppTurnovers = false;
+    }
+    if (k === "fouls" && !next.fouls) next.foulDetail = false;
+    setTracking(next);
+  };
+  const isFull = TRACKING_LABELS.every((t) => tracking[t.key]);
+  const isScoreOnly = TRACKING_LABELS.every((t) => tracking[t.key] === SCORE_ONLY_TRACKING[t.key]);
+  const presetKey = BONUS_PRESETS.find((p) => JSON.stringify(p.rule) === JSON.stringify(rules.bonus))?.key ?? "custom";
+  const setBonus = (b: BonusRule) => setRules({ ...rules, bonus: b });
+  const customLimit = rules.foulLimit != null && rules.foulLimit !== 5 && rules.foulLimit !== 6;
+  return (
+    <div className="flex flex-col gap-2 rounded-2xl border border-border bg-surface-2/40 p-2">
+      <BubbleButton size="sm" tone={props.open ? "grape" : "neutral"} className="min-h-11 w-full" onClick={props.onToggle} aria-expanded={props.open}>
+        {props.open ? "▾" : "▸"} Advanced rules &amp; stat tracking
+        <Pill tone="muted">{isFull ? "Full stats" : isScoreOnly ? "Score only" : "Custom"}</Pill>
+      </BubbleButton>
+      {props.open ? (
+        <div className="flex flex-col gap-3 bubble-pop">
+          <Field label="Stat tracking">
+            <div className="flex flex-wrap gap-2">
+              <BubbleButton size="sm" tone={isFull ? "grape" : "neutral"} onClick={() => setTracking({ ...FULL_TRACKING })}>Full stats</BubbleButton>
+              <BubbleButton size="sm" tone={isScoreOnly ? "grape" : "neutral"} onClick={() => setTracking({ ...SCORE_ONLY_TRACKING })}>Score only (youth)</BubbleButton>
+            </div>
+            <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+              {TRACKING_LABELS.filter((t) => {
+                if (t.key === "foulDetail") return tracking.fouls;
+                if (t.key === "oppRebounds" || t.key === "oppTurnovers") return tracking.opponent;
+                return true;
+              }).map((t) => (
+                <Toggle key={t.key} on={tracking[t.key]} label={`Track ${t.label.toLowerCase()}`} onClick={() => flip(t.key)} />
+              ))}
+            </div>
+          </Field>
+          <Field label="Player foul limit">
+            <div className="flex flex-wrap items-center gap-2">
+              {[5, 6].map((v) => (
+                <BubbleButton key={v} size="sm" tone={rules.foulLimit === v ? "grape" : "neutral"} onClick={() => setRules({ ...rules, foulLimit: v })}>{v} fouls</BubbleButton>
+              ))}
+              <BubbleButton size="sm" tone={rules.foulLimit == null ? "grape" : "neutral"} onClick={() => setRules({ ...rules, foulLimit: null })}>No limit</BubbleButton>
+              <div className={cn("flex items-center gap-1 rounded-full border px-2 py-0.5", customLimit ? "border-grape" : "border-border")}>
+                <Label>Custom</Label>
+                <NumberChip value={customLimit ? rules.foulLimit : null} placeholder="#" onChange={(v) => v && setRules({ ...rules, foulLimit: v })} />
+              </div>
+            </div>
+          </Field>
+          <Field label="Team fouls / bonus">
+            <div className="flex flex-wrap gap-2">
+              {BONUS_PRESETS.map((p) => (
+                <BubbleButton key={p.key} size="sm" tone={presetKey === p.key ? "grape" : "neutral"} onClick={() => setBonus(p.rule)}>{p.label}</BubbleButton>
+              ))}
+              <BubbleButton size="sm" tone={presetKey === "custom" ? "grape" : "neutral"} onClick={() => setBonus({ mode: "quarter", bonus: 5, double: 8 })}>Custom</BubbleButton>
+            </div>
+            {rules.bonus.mode !== "none" ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {(["quarter", "half"] as const).map((m) => (
+                  <BubbleButton key={m} size="sm" tone={rules.bonus.mode === m ? "flame" : "neutral"} onClick={() => setBonus({ ...(rules.bonus as { bonus: number | null; double: number | null }), mode: m })}>
+                    Per {m}
+                  </BubbleButton>
+                ))}
+                <div className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5">
+                  <Label>{rules.bonus.mode === "half" ? "1 & 1 at" : "Bonus at"}</Label>
+                  <NumberChip value={rules.bonus.bonus} placeholder="—" onChange={(v) => setBonus({ ...(rules.bonus as Extract<BonusRule, { bonus: number | null }>), bonus: v })} />
+                </div>
+                <div className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5">
+                  <Label>Double at</Label>
+                  <NumberChip value={rules.bonus.double} placeholder="—" onChange={(v) => setBonus({ ...(rules.bonus as Extract<BonusRule, { double: number | null }>), double: v })} />
+                </div>
+              </div>
+            ) : null}
+          </Field>
+          <Field label="Timeouts">
+            <div className="flex flex-col gap-2">
+              {([["timeoutsFull", "Full / 1-min"], ["timeouts30", "30-second"]] as const).map(([k, label]) => (
+                <div key={k} className="flex flex-wrap items-center gap-1.5">
+                  <Pill tone="muted">{label}</Pill>
+                  {[0, 1, 2, 3, 4, 5].map((v) => (
+                    <BubbleButton key={v} size="sm" className="h-11 min-w-11 px-0" tone={rules[k] === v ? "grape" : "neutral"} onClick={() => setRules({ ...rules, [k]: v })}>{v}</BubbleButton>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </Field>
+          {props.canSaveDefaults ? (
+            <Toggle on={props.saveDefaults} label="Save these rules as team defaults" onClick={() => props.setSaveDefaults(!props.saveDefaults)} />
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }
