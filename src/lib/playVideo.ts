@@ -446,32 +446,64 @@ function titleLayout(ctx: CanvasRenderingContext2D, title: string, maxWidth: num
   };
 }
 
-function drawTitleBand(ctx: CanvasRenderingContext2D, model: ExportModel, p: Palette, w: number, headerH: number, pad: number) {
-  const kind = model.kind === "drill" ? "DRILL" : "PLAY";
-  const label = model.category ? `${kind}  •  ${model.category.toUpperCase()}` : kind;
-  const labelSize = Math.round(w * 0.025);
-  const preferred = Math.round(w * (w > 1300 ? 0.046 : 0.06));
-  const minimum = Math.round(w * 0.034);
-  const top = Math.round(pad * 0.8);
+export const VIDEO_COURT_CTA = "Add this to your playbook on CoachSide.live";
+
+/** Shared logical-pixel layout; the WASM canvas scales this composition intact. */
+export function videoComposition(format: ExportFormat, viewWidth: number) {
+  const { w, h } = FORMAT_SIZE[format];
+  const unit = Math.min(w, h) / 1080;
+  const vertical = format === "vertical";
+  const pad = Math.round(w * 0.04);
+  const logoSize = (vertical ? 170 : 90) * unit;
+  const logoY = (vertical ? 110 : 32) * unit;
+  const titlePreferred = (vertical ? 68 : 54) * unit;
+  const titleMinimum = 44 * unit;
+  const titleGap = 30 * unit;
+  const courtTop = (vertical ? 490 : 270) * unit;
+  const courtBottom = h - (vertical ? 350 : 250) * unit;
+  const scale = Math.min((w - pad * 2) / viewWidth, (courtBottom - courtTop) / PH);
+  const courtW = viewWidth * scale;
+  const courtH = PH * scale;
+  const courtX = (w - courtW) / 2;
+  const courtY = courtTop + (courtBottom - courtTop - courtH) / 2;
+  return {
+    w, h, unit, pad, logoSize, logoY, titlePreferred, titleMinimum, titleGap,
+    scale, courtW, courtH, courtX, courtY,
+    ctaY: courtY + courtH + 78 * unit,
+    statusY: h - (vertical ? 170 : 95) * unit,
+  };
+}
+
+function drawCourtBranding(
+  ctx: CanvasRenderingContext2D,
+  model: ExportModel,
+  opts: ExportOptions,
+  p: Palette,
+  layout: ReturnType<typeof videoComposition>,
+  mark: CanvasImageSource,
+) {
+  const { w, pad, logoSize, logoY, titlePreferred, titleMinimum, titleGap, courtY, ctaY, unit } = layout;
   ctx.save();
-  ctx.fillStyle = p.panel;
-  ctx.fillRect(0, 0, w, headerH);
-  ctx.strokeStyle = withAlpha(p.grape, 0.55);
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(pad, headerH - 2);
-  ctx.lineTo(w - pad, headerH - 2);
-  ctx.stroke();
+  ctx.drawImage(mark, (w - logoSize) / 2, logoY, logoSize, logoSize);
   ctx.textAlign = "center";
-  ctx.font = `900 ${labelSize}px system-ui, sans-serif`;
-  ctx.fillStyle = p.flame;
-  ctx.fillText(label, w / 2, top + labelSize);
-  const fitted = titleLayout(ctx, model.name, w - pad * 2.5, preferred, minimum);
-  ctx.font = `900 ${fitted.size}px system-ui, sans-serif`;
+  ctx.textBaseline = "bottom";
   ctx.fillStyle = p.text;
-  const lineHeight = fitted.size * 1.08;
-  const titleTop = top + labelSize + Math.round(labelSize * 0.75);
-  fitted.lines.forEach((line, index) => ctx.fillText(line, w / 2, titleTop + fitted.size + index * lineHeight));
+  if (opts.showTitle) {
+    const fitted = titleLayout(ctx, model.name, w - pad * 2.5, Math.round(titlePreferred), Math.round(titleMinimum));
+    ctx.font = `900 ${fitted.size}px system-ui, sans-serif`;
+    const lineHeight = fitted.size * 1.12;
+    fitted.lines.forEach((line, index) => ctx.fillText(
+      line, w / 2, courtY - titleGap - (fitted.lines.length - 1 - index) * lineHeight,
+    ));
+  }
+  ctx.textBaseline = "middle";
+  let ctaSize = 38 * unit;
+  ctx.font = `800 ${ctaSize}px system-ui, sans-serif`;
+  while (ctx.measureText(VIDEO_COURT_CTA).width > w - pad * 2 && ctaSize > 30 * unit) {
+    ctaSize -= unit;
+    ctx.font = `800 ${ctaSize}px system-ui, sans-serif`;
+  }
+  ctx.fillText(VIDEO_COURT_CTA, w / 2, ctaY);
   ctx.restore();
 }
 
@@ -482,24 +514,16 @@ function paintFrame(
   p: Palette,
   state: FrameState,
   totalSteps: number,
+  mark: CanvasImageSource,
 ) {
   const { w, h } = FORMAT_SIZE[opts.format];
   ctx.fillStyle = p.bg;
   ctx.fillRect(0, 0, w, h);
 
-  const pad = Math.round(w * 0.04);
-  const headerH = Math.round(h * (opts.format === "vertical" ? 0.16 : opts.format === "square" ? 0.22 : 0.24));
-  drawTitleBand(ctx, model, p, w, headerH, pad);
-
-  const footerH = Math.round(h * (opts.format === "vertical" ? 0.09 : 0.11));
   const view = courtView(model);
-  const availW = w - pad * 2;
-  const availH = h - headerH - footerH - pad;
-  const scale = Math.min(availW / view.w, availH / PH);
-  const courtW = view.w * scale;
-  const courtH = PH * scale;
-  const courtX = (w - courtW) / 2;
-  const courtY = headerH + (availH - courtH) / 2;
+  const layout = videoComposition(opts.format, view.w);
+  const { pad, scale, courtX, courtY, statusY, unit } = layout;
+  drawCourtBranding(ctx, model, opts, p, layout, mark);
 
   ctx.save();
   ctx.translate(courtX, courtY);
@@ -526,14 +550,14 @@ function paintFrame(
   ctx.restore();
   ctx.restore();
 
-  // Sequence status stays in the footer so the title band remains unobstructed.
+  // Secondary footer controls stay below the sideline CTA and above social UI.
   if (opts.showSequenceNumbers && totalSteps > 0) {
-    const s = Math.round(w * 0.03);
+    const s = Math.round(28 * unit);
     ctx.save();
     ctx.font = `800 ${s}px system-ui, sans-serif`;
     const label = `SEQUENCE ${state.seqIndex + 1} / ${totalSteps}`;
     const tw = ctx.measureText(label).width + s * 1.4;
-    const by = h - pad - s * 1.9;
+    const by = statusY;
     roundedBubble(ctx, pad, by, tw, s * 1.9, withAlpha(p.flame, 0.22), p.flame);
     ctx.fillStyle = p.text;
     ctx.textAlign = "left";
@@ -542,14 +566,14 @@ function paintFrame(
   }
 
   if (opts.showWatermark) {
-    const s = Math.round(w * 0.032);
+    const s = Math.round(28 * unit);
     ctx.save();
     ctx.globalAlpha = 0.78;
     ctx.font = `900 ${s}px system-ui, sans-serif`;
-    const label = "coachside.live";
+    const label = "CoachSide";
     const tw = ctx.measureText(label).width + s * 1.4;
     const bx = w - pad - tw;
-    const by = h - pad - s * 1.9;
+    const by = statusY;
     roundedBubble(ctx, bx, by, tw, s * 1.9, withAlpha(p.panel, 0.85), p.flame);
     ctx.fillStyle = p.text;
     ctx.textAlign = "left";
@@ -673,6 +697,7 @@ async function eachFrame(
           ...drill,
         },
         totalSteps,
+        mark,
       );
       await emit();
     }
@@ -696,6 +721,7 @@ async function eachFrame(
           ...drill,
         },
         totalSteps,
+        mark,
       );
       await emit();
     }
@@ -723,6 +749,7 @@ async function eachFrame(
           ...drill,
         },
         totalSteps,
+        mark,
       );
       await emit();
     }
