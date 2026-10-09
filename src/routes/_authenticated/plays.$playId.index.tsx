@@ -44,6 +44,7 @@ import {
 } from "@/lib/types";
 
 import { uuid } from "@/lib/offline";
+import { addHalfCourtDefense } from "@/lib/playDefense";
 
 export const Route = createFileRoute("/_authenticated/plays/$playId/")({
   head: () => ({
@@ -625,35 +626,11 @@ function PlayDesignerPage() {
 
   const setTokens = (tokens: PlayToken[]) => patchFrame((f) => ({ ...f, tokens }));
 
-  const defenseForView = () => {
-    if (zoom === "full") return PRESS_DEFENSE;
-    const displayRightSide = zoom === "right" || zoom === "bottom";
-    const rightSide = flip ? !displayRightSide : displayRightSide;
-    const spots = [
-      { x: 0.22, y: 0.5 },
-      { x: 0.4, y: 0.24 },
-      { x: 0.4, y: 0.76 },
-      { x: 0.66, y: 0.36 },
-      { x: 0.66, y: 0.64 },
-    ];
-    return spots.map((spot, i) => ({
-      id: `d${i + 1}`,
-      label: String(i + 1),
-      x: rightSide ? 0.5 + spot.x * 0.5 : spot.x * 0.5,
-      y: spot.y,
-      ball: false,
-      team: "defense" as const,
-    }));
-  };
-
   const addDefense = () =>
-    patchFrame((f) => ({
-      ...f,
-      tokens: [
-        ...f.tokens.filter((t) => t.team !== "defense"),
-        ...defenseForView().map((t) => ({ ...t, id: uuid() })),
-      ],
-    }));
+    patchFrame((f) => {
+      const tokens = addHalfCourtDefense(f.tokens, zoom, flip, uuid, liveTokens);
+      return tokens === f.tokens ? f : { ...f, tokens };
+    });
 
   const removeDefense = () =>
     patchFrame((f) => ({ ...f, tokens: f.tokens.filter((t) => t.team !== "defense") }));
