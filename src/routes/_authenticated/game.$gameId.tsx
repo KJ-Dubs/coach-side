@@ -502,6 +502,9 @@ function LiveGamePage() {
 
   /* ---------------- court tap ---------------- */
   const onCourtPoint = (raw: { x: number; y: number }) => {
+    courtPressRef.current = true;
+    if (Date.now() < inputLockRef.current) return;
+    lockInput(300);
     // The surface reports full-court coordinates 0..1; stats are stored in
     // half-court units (1 = half line) so backcourt taps land in 1..2.
     const p = { x: Math.min(2, Math.max(0, raw.x * 2)), y: raw.y };
@@ -888,6 +891,8 @@ function LiveGamePage() {
     const inner = onPick;
     onPick = (k) => {
       if (stepRef.current !== renderedStep) return;
+      if (inputLocked()) return;
+      lockInput(250);
       inner(k);
     };
   }
@@ -976,6 +981,7 @@ function LiveGamePage() {
               className="mx-auto w-full"
               style={courtZoom === "full" ? { maxWidth: "100%" } : { maxWidth: "min(100%, calc((100dvh - 5rem) * 0.94))" }}
               onCourtPoint={onCourtPoint}
+              onCourtPointerUp={() => { courtPressRef.current = false; lockInput(150); }}
               overlay={
                 <>
                   {point ? (
@@ -988,12 +994,11 @@ function LiveGamePage() {
                     <div
                       className="absolute inset-0 z-[15] rounded-[1.25rem] bg-background/15"
                       aria-label="Dismiss current prompt"
-                      onPointerDown={(pointerEvent) => {
+                      onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}
+                      onPointerUp={(pointerEvent) => {
                         pointerEvent.stopPropagation();
-                        dismissCourtPrompt();
-                      }}
-                      onClick={(clickEvent) => {
-                        clickEvent.stopPropagation();
+                        if (inputLocked()) return;
+                        lockInput(250);
                         dismissCourtPrompt();
                       }}
                     />
