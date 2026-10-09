@@ -151,6 +151,8 @@ export function Court({
   const vb = camera.viewBox;
   const ref = useRef<HTMLDivElement>(null);
   const interactive = Boolean(onCourtPoint || onCourtPointerMove || onCourtPointerUp);
+  // True while a gesture that started on the bare court surface is active.
+  const surfaceGesture = useRef(false);
 
   const pointFrom = (e: ReactPointerEvent) => {
     const el = ref.current;
@@ -176,6 +178,7 @@ export function Court({
       }}
       onPointerDown={(e) => {
         if (!interactive) return;
+        surfaceGesture.current = true;
         e.currentTarget.setPointerCapture(e.pointerId);
         const p = pointFrom(e);
         if (p && onCourtPoint) onCourtPoint(p);
@@ -189,7 +192,17 @@ export function Court({
         if (p && onCourtPointerUp) onCourtPointerUp(p);
         if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
       }}
+      onTouchEnd={(e) => {
+        // One canonical path: the court acts on pointer events only. Cancel the
+        // browser's compatibility mouse/click events for this touch so it can't
+        // land on UI that mounted under the finger (iOS/Android ghost click).
+        // Overlay controls stop pointerdown propagation, so their taps keep
+        // their normal click.
+        if (surfaceGesture.current && e.cancelable) e.preventDefault();
+        surfaceGesture.current = false;
+      }}
       onPointerCancel={(e) => {
+        surfaceGesture.current = false;
         onCourtPointerCancel?.();
         if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
       }}
