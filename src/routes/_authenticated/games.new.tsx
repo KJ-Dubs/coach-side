@@ -186,7 +186,7 @@ function NewGamePage() {
   const stepA = !!teamId;
   const stepB = opponent.trim().length > 0 && !!date;
   const stepC = five.length === 5;
-  const stepD = minutes > 0 && ot > 0;
+  const stepD = !tracking.clock || (minutes > 0 && ot > 0 && periods > 0);
   const ready = stepA && stepB && stepC && stepD;
 
   const create = useMutation({
@@ -357,7 +357,7 @@ function NewGamePage() {
 
         <StepCard step="D" title="Rules" done={stepD}>
           <Field label="Structure">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {[4, 2].map((p) => (
                 <BubbleButton
                   key={p}
@@ -367,9 +367,29 @@ function NewGamePage() {
                   {p === 2 ? "2 Halves" : "4 Quarters"}
                 </BubbleButton>
               ))}
+              <div className={cn("flex items-center gap-1 rounded-full border bg-surface-2 px-2 py-1", periods !== 2 && periods !== 4 ? "border-flame" : "border-border")}>
+                <Label>Custom</Label>
+                <input
+                  type="number"
+                  min={1}
+                  max={8}
+                  value={periods !== 2 && periods !== 4 ? periods : ""}
+                  placeholder="#"
+                  aria-label="Custom number of periods"
+                  onChange={(e) => {
+                    const n = Math.round(Number(e.target.value));
+                    if (n >= 1 && n <= 8) setPeriods(n);
+                  }}
+                  className="w-12 rounded-full border border-input bg-surface px-2 py-1 text-center text-xs font-bold text-foreground outline-none focus:border-grape"
+                />
+              </div>
             </div>
           </Field>
-          <Field label={`${periods === 2 ? "Half" : "Quarter"} length`}>
+          <Toggle on={tracking.clock} label="Track game clock" onClick={() => setTracking({ ...tracking, clock: !tracking.clock })} />
+          {tracking.clock ? (
+          <div className="flex flex-col gap-3 rounded-2xl border border-grape/40 bg-surface-2/40 p-2 bubble-pop">
+          <Label>Clock rules</Label>
+          <Field label={`${periods === 2 ? "Half" : periods === 4 ? "Quarter" : "Period"} length`}>
             <div className="flex flex-wrap items-center gap-2">
               {PERIOD_PRESETS.map((m) => (
                 <BubbleButton
@@ -416,6 +436,8 @@ function NewGamePage() {
               ))}
             </div>
           </Field>
+          </div>
+          ) : null}
           <AdvancedRules
             open={advanced}
             onToggle={() => setAdvanced((v) => !v)}
@@ -438,7 +460,7 @@ function NewGamePage() {
             <Pill tone="muted">{date}</Pill>
             <Pill tone={stepC ? "grape" : "muted"}>{five.length}/5 starters</Pill>
             <Pill tone="muted">
-              {periods} × {minutes} min · OT {ot}
+              {tracking.clock ? `${periods} × ${minutes} min · OT ${ot}` : `${periods} periods · no clock`}
             </Pill>
           </div>
           <div className="flex justify-center"><BubbleButton
@@ -515,8 +537,9 @@ function AdvancedRules(props: {
     if (k === "fouls" && !next.fouls) next.foulDetail = false;
     setTracking(next);
   };
-  const isFull = TRACKING_LABELS.every((t) => tracking[t.key]);
-  const isScoreOnly = TRACKING_LABELS.every((t) => tracking[t.key] === SCORE_ONLY_TRACKING[t.key]);
+  const statLabels = TRACKING_LABELS.filter((t) => t.key !== "clock");
+  const isFull = statLabels.every((t) => tracking[t.key]);
+  const isScoreOnly = statLabels.every((t) => tracking[t.key] === SCORE_ONLY_TRACKING[t.key]);
   const presetKey = BONUS_PRESETS.find((p) => JSON.stringify(p.rule) === JSON.stringify(rules.bonus))?.key ?? "custom";
   const setBonus = (b: BonusRule) => setRules({ ...rules, bonus: b });
   const customLimit = rules.foulLimit != null && rules.foulLimit !== 5 && rules.foulLimit !== 6;
@@ -530,11 +553,11 @@ function AdvancedRules(props: {
         <div className="flex flex-col gap-3 bubble-pop">
           <Field label="Stat tracking">
             <div className="flex flex-wrap gap-2">
-              <BubbleButton size="sm" tone={isFull ? "grape" : "neutral"} onClick={() => setTracking({ ...FULL_TRACKING })}>Full stats</BubbleButton>
-              <BubbleButton size="sm" tone={isScoreOnly ? "grape" : "neutral"} onClick={() => setTracking({ ...SCORE_ONLY_TRACKING })}>Score only (youth)</BubbleButton>
+              <BubbleButton size="sm" tone={isFull ? "grape" : "neutral"} onClick={() => setTracking({ ...FULL_TRACKING, clock: tracking.clock })}>Full stats</BubbleButton>
+              <BubbleButton size="sm" tone={isScoreOnly ? "grape" : "neutral"} onClick={() => setTracking({ ...SCORE_ONLY_TRACKING, clock: tracking.clock })}>Score only (youth)</BubbleButton>
             </div>
             <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-              {TRACKING_LABELS.filter((t) => {
+              {statLabels.filter((t) => {
                 if (t.key === "foulDetail") return tracking.fouls;
                 if (t.key === "oppRebounds" || t.key === "oppTurnovers") return tracking.opponent;
                 return true;
