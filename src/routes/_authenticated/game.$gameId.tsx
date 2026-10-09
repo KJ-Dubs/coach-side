@@ -273,8 +273,23 @@ function LiveGamePage() {
   const isOvertime = quarter > periods;
 
   /* ---------------- event helpers ---------------- */
+  const lastAddRef = useRef<{ sig: string; at: number; event: GameEvent } | null>(null);
+  // Interaction lock: taps before this timestamp are ignored, so the touch
+  // that opened a prompt can never also press a button mounted under it.
+  const inputLockRef = useRef(0);
+  const courtPressRef = useRef(false);
+  const lockInput = (ms: number) => {
+    inputLockRef.current = Math.max(inputLockRef.current, Date.now() + ms);
+  };
+  const inputLocked = () => courtPressRef.current || Date.now() < inputLockRef.current;
   const addEvent = useCallback(
     (partial: Partial<GameEvent> & { event_type: string }): GameEvent => {
+      // Double-tap guard: an identical event within one interaction window is
+      // the same physical action registering twice — reuse the first one.
+      const sig = [partial.event_type, partial.player_id ?? "", partial.result ?? "", partial.points ?? 0, partial.x ?? "", partial.y ?? "", partial.related_event_id ?? ""].join("|");
+      const now = Date.now();
+      const last = lastAddRef.current;
+      if (last && last.sig === sig && now - last.at < 400) return last.event;
       const e: GameEvent = {
         id: uuid(),
         game_id: gameId,
@@ -305,6 +320,7 @@ function LiveGamePage() {
       void enqueue({ id: opId(), kind: "insert_event", payload: e }).then(() =>
         flushQueue().then(setPending),
       );
+      lastAddRef.current = { sig, at: now, event: e };
       return e;
     },
     [gameId, quarter, lineup, rules.foulLimit, tracking.players],
@@ -486,6 +502,9 @@ function LiveGamePage() {
 
   /* ---------------- court tap ---------------- */
   const onCourtPoint = (raw: { x: number; y: number }) => {
+    courtPressRef.current = true;
+    if (Date.now() < inputLockRef.current) return;
+    lockInput(300);
     // The surface reports full-court coordinates 0..1; stats are stored in
     // half-court units (1 = half line) so backcourt taps land in 1..2.
     const p = { x: Math.min(2, Math.max(0, raw.x * 2)), y: raw.y };
@@ -872,6 +891,8 @@ function LiveGamePage() {
     const inner = onPick;
     onPick = (k) => {
       if (stepRef.current !== renderedStep) return;
+      if (inputLocked()) return;
+      lockInput(250);
       inner(k);
     };
   }
@@ -960,6 +981,8 @@ function LiveGamePage() {
               className="mx-auto w-full"
               style={courtZoom === "full" ? { maxWidth: "100%" } : { maxWidth: "min(100%, calc((100dvh - 5rem) * 0.94))" }}
               onCourtPoint={onCourtPoint}
+              onCourtPointerUp={() => { courtPressRef.current = false; lockInput(150); }}
+              onCourtPointerCancel={() => { courtPressRef.current = false; }}
               overlay={
                 <>
                   {point ? (
@@ -972,12 +995,11 @@ function LiveGamePage() {
                     <div
                       className="absolute inset-0 z-[15] rounded-[1.25rem] bg-background/15"
                       aria-label="Dismiss current prompt"
-                      onPointerDown={(pointerEvent) => {
+                      onPointerDown={(pointerEvent) => pointerEvent.stopPropagation()}
+                      onPointerUp={(pointerEvent) => {
                         pointerEvent.stopPropagation();
-                        dismissCourtPrompt();
-                      }}
-                      onClick={(clickEvent) => {
-                        clickEvent.stopPropagation();
+                        if (inputLocked()) return;
+                        lockInput(250);
                         dismissCourtPrompt();
                       }}
                     />

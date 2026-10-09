@@ -98,6 +98,7 @@ type CourtProps = {
   onCourtPoint?: ((p: { x: number; y: number }) => void) | undefined;
   onCourtPointerMove?: ((p: { x: number; y: number }) => void) | undefined;
   onCourtPointerUp?: ((p: { x: number; y: number }) => void) | undefined;
+  onCourtPointerCancel?: (() => void) | undefined;
   cursor?: string | undefined;
   style?: CSSProperties | undefined;
 };
@@ -141,6 +142,7 @@ export function Court({
   onCourtPoint,
   onCourtPointerMove,
   onCourtPointerUp,
+  onCourtPointerCancel,
   cursor = "crosshair",
   style,
 }: CourtProps) {
@@ -188,6 +190,7 @@ export function Court({
         if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
       }}
       onPointerCancel={(e) => {
+        onCourtPointerCancel?.();
         if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
       }}
     >
