@@ -272,7 +272,8 @@ function BoardPage() {
   const onUp = () => {
     down.current = false;
     if (dragId.current && gestureStart.current) {
-      setHistory((states) => [...states, gestureStart.current ?? []]);
+      const previous = gestureStart.current;
+      setHistory((states) => [...states, previous]);
       setRedo([]);
     }
     gestureStart.current = null;
