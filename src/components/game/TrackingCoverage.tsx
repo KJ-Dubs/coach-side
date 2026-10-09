@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Label, Panel, Pill } from "@/components/Bubbles";
 import { COVERAGE_LABEL, TRACKING_LABELS, periodRanges, type Coverage, type TrackingKey } from "@/lib/gameConfig";
 
-const SHOWN: TrackingKey[] = ["players", "shotLocations", "rebounds", "assists", "steals", "turnovers", "blocks", "fouls", "opponent", "oppRebounds", "oppTurnovers", "oppFouls"];
+const SHOWN: TrackingKey[] = ["players", "shotLocations", "rebounds", "assists", "steals", "turnovers", "blocks", "fouls", "opponent", "oppRebounds", "oppTurnovers", "oppFouls", "clock"];
 
 export function TrackingCoverageCard({ coverage, periods, className }: { coverage: Record<TrackingKey, Coverage>; periods: number; className?: string }) {
   const [open, setOpen] = useState(false);
