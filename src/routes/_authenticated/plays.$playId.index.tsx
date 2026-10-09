@@ -656,10 +656,8 @@ function PlayDesignerPage() {
     { key: "ball", label: "Ball Handler" },
     { key: "pass", label: "Pass" },
     { key: "cut", label: "Cut / Move" },
-    { key: "curl", label: "Curl Cut" },
     { key: "dribble", label: "Dribble" },
     { key: "screen", label: "Screen" },
-    { key: "handoff", label: "Handoff" },
     { key: "shot", label: "Shot" },
   ];
 
