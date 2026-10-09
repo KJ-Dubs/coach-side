@@ -14,6 +14,7 @@ import {
   listOptionGroups,
   nearestTokenAt,
   resolveLegacyActors,
+  sampleStep,
   sampleTimeline,
   scorePassReceivers,
   stateAtSequenceStart,
@@ -136,6 +137,7 @@ function PlayDesignerPage() {
   const [previewComplete, setPreviewComplete] = useState(false);
   const [timeMs, setTimeMs] = useState(0);
   const rafRef = useRef<number | null>(null);
+  const courtControlsRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Offense");
   const [saving, setSaving] = useState(false);
@@ -219,7 +221,7 @@ function PlayDesignerPage() {
   const rangeEnd = mode === "preview" ? (activeIdx + 1) * STEP_MS : timeline.totalMs;
   const live = mode === "idle"
     ? previewComplete && activeStep
-      ? sampleTimeline(timeline, (activeIdx + 1) * STEP_MS - 1)
+      ? { step: activeStep, index: activeIdx, phase: "do" as const, sample: sampleStep(activeStep, "do", 1) }
       : null
     : sampleTimeline(timeline, timeMs);
 
@@ -256,6 +258,13 @@ function PlayDesignerPage() {
 
   const previewSequence = () => {
     if (!activeStep) return;
+    const court = courtControlsRef.current;
+    if (court) {
+      const bounds = court.getBoundingClientRect();
+      if (bounds.top < 0 || bounds.bottom > window.innerHeight) {
+        court.scrollIntoView({ block: "nearest", behavior: "instant" });
+      }
+    }
     setPreviewComplete(false);
     setTimeMs(activeIdx * STEP_MS);
     setMode("preview");
@@ -694,7 +703,9 @@ function PlayDesignerPage() {
       <div className="grid gap-3 xl:grid-cols-[1fr_340px]">
 
         <div className="flex min-w-0 flex-col gap-3">
+          <div ref={courtControlsRef} className="flex min-w-0 flex-col gap-2">
           <PlayCanvas
+            className={`mx-auto ${zoom === "full" ? "max-w-[calc(48svh*1.88)]" : zoom === "top" || zoom === "bottom" ? "max-w-[calc(48svh*1.064)]" : "max-w-[calc(48svh*0.94)]"}`}
             frame={frame}
             flip={flip}
             zoom={zoom}
@@ -754,6 +765,7 @@ function PlayDesignerPage() {
               {activeIdx + 1} of {Math.max(seqCount, activeIdx + 1)}
             </Pill>
           </Panel>
+          </div>
           {selectedPass ? (
             <Panel className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
