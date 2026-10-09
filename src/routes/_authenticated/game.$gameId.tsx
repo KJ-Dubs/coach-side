@@ -13,6 +13,7 @@ import {
   cacheSet,
   enqueue,
   flushQueue,
+  drainQueue,
   opId,
   pendingOps,
   uuid,
@@ -383,6 +384,13 @@ function LiveGamePage() {
   const finalizeGame = useCallback(async () => {
     setRunning(false);
     setFinalized(true);
+    // Make sure the last tapped stat (often the game-winner) is persisted
+    // before the game is marked final and the review opens.
+    try {
+      setPending(await drainQueue());
+    } catch {
+      /* offline — queued events stay in IndexedDB and still show in Review */
+    }
     await saveGameState("final");
     await cacheSet(`game-final-${gameId}`, {
       status: "final",

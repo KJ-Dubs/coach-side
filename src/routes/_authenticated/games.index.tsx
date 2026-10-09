@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -189,6 +190,13 @@ function GameCard({
   const result = gameResult(g, events);
   const isFinal = g.status === "final";
   const navigate = useNavigate();
+  const coachQ = useQuery({
+    queryKey: ["is-team-coach", g.team_id],
+    queryFn: async () => (await supabase.rpc("is_team_coach", { _team: g.team_id })).data === true,
+    enabled: isFinal,
+    staleTime: 60_000,
+  });
+  const canEditStats = coachQ.data === true;
   return (
     <Panel className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
