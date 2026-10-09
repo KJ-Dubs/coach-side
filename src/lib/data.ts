@@ -750,7 +750,7 @@ export async function updateTeam(
     >
   >,
 ) {
-  const { error } = await supabase.from("teams").update(patch).eq("id", id);
+  const { error } = await supabase.from("teams").update(patch as never).eq("id", id);
   if (error) throw error;
 }
 
