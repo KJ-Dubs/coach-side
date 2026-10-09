@@ -1526,6 +1526,35 @@ export type Database = {
           },
         ]
       }
+      game_share_links: {
+        Row: {
+          created_at: string
+          created_by: string
+          game_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          game_id: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          game_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_share_links_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: true
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       games: {
         Row: {
           clock_seconds: number
@@ -3488,6 +3517,7 @@ export type Database = {
       play_visible: { Args: { _play: string }; Returns: boolean }
       practice_plan_coach: { Args: { _plan: string }; Returns: boolean }
       practice_plan_visible: { Args: { _plan: string }; Returns: boolean }
+      public_game_report: { Args: { _token: string }; Returns: Json }
       public_play_frames: {
         Args: { _play: string }
         Returns: {
@@ -3518,6 +3548,10 @@ export type Database = {
       set_follow_creator: {
         Args: { _follow: boolean; _username: string }
         Returns: undefined
+      }
+      set_game_share: {
+        Args: { _action: string; _game: string }
+        Returns: string
       }
       set_my_username: {
         Args: { _bio: string; _display_name: string; _username: string }

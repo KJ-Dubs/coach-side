@@ -15,6 +15,13 @@
       "when": 1791529823415,
       "tag": "0001_play_index_arrays",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791570688414,
+      "tag": "0002_migration",
+      "breakpoints": true
     }
   ]
 }
