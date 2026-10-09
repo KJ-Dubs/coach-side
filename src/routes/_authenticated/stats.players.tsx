@@ -13,6 +13,7 @@ import {
   fmtMinutes,
   fmtPct,
   fmtPer,
+  fmtRate,
   fmtSplit,
   gameResult,
   gameScore,
@@ -341,12 +342,12 @@ function PlayerStatsPage() {
                 <StatTile label="Minutes" value={fmtMinutes(line.seconds)} hint={line.games ? `${fmtMinutes(Math.round(line.seconds / line.games))} / game` : undefined} />
                 <StatTile label="Total points" value={line.pts} tone="flame" />
                 <StatTile label="PPG" value={fmtPer(line.pts, line.games)} tone="flame" />
-                <StatTile label="Rebounds" value={line.reb} hint={`${fmtPer(line.reb, line.games)} / game`} />
-                <StatTile label="Assists" value={line.ast} hint={`${fmtPer(line.ast, line.games)} / game`} />
-                <StatTile label="Steals" value={line.stl} hint={`${fmtPer(line.stl, line.games)} / game`} />
-                <StatTile label="Blocks" value={line.blk} hint={`${fmtPer(line.blk, line.games)} / game`} />
-                <StatTile label="Turnovers" value={line.to} hint={`${fmtPer(line.to, line.games)} / game`} />
-                <StatTile label="Fouls" value={line.pf} hint={`${fmtPer(line.pf, line.games)} / game`} />
+                <StatTile label="Rebounds" value={line.reb} hint={`${fmtRate(line.rates.reb)} / game${line.rates.reb.incomplete ? ` · ${line.rates.reb.incomplete} game(s) partial/untracked excluded` : ""}`} />
+                <StatTile label="Assists" value={line.ast} hint={`${fmtRate(line.rates.ast)} / game${line.rates.ast.incomplete ? ` · ${line.rates.ast.incomplete} game(s) partial/untracked excluded` : ""}`} />
+                <StatTile label="Steals" value={line.stl} hint={`${fmtRate(line.rates.stl)} / game${line.rates.stl.incomplete ? ` · ${line.rates.stl.incomplete} game(s) partial/untracked excluded` : ""}`} />
+                <StatTile label="Blocks" value={line.blk} hint={`${fmtRate(line.rates.blk)} / game${line.rates.blk.incomplete ? ` · ${line.rates.blk.incomplete} game(s) partial/untracked excluded` : ""}`} />
+                <StatTile label="Turnovers" value={line.to} hint={`${fmtRate(line.rates.to)} / game${line.rates.to.incomplete ? ` · ${line.rates.to.incomplete} game(s) partial/untracked excluded` : ""}`} />
+                <StatTile label="Fouls" value={line.pf} hint={`${fmtRate(line.rates.pf)} / game${line.rates.pf.incomplete ? ` · ${line.rates.pf.incomplete} game(s) partial/untracked excluded` : ""}`} />
               </div>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
                 <StatTile label="FG%" value={fmtPct(line.fg)} hint={fmtSplit(line.fg)} tone="grape" />

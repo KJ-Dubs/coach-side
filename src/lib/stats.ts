@@ -666,6 +666,11 @@ export function sumPlayerLines(lines: PlayerLine[]): PlayerLine {
     addSplit(out.three, l.three);
     addSplit(out.ft, l.ft);
     addSplit(out.rim, l.rim);
+    for (const k of Object.keys(out.rates) as RateKey[]) {
+      out.rates[k].total += l.rates[k].total;
+      out.rates[k].games = Math.max(out.rates[k].games, l.rates[k].games);
+      out.rates[k].incomplete = Math.max(out.rates[k].incomplete, l.rates[k].incomplete);
+    }
   }
   return out;
 }
