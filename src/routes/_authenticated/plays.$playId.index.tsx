@@ -266,7 +266,6 @@ function PlayDesignerPage() {
   const replayPlay = () => {
     if (seqCount === 0) return;
     setPreviewComplete(false);
-    setSeqIdx(0);
     setTimeMs(0);
     setMode("replay");
   };
