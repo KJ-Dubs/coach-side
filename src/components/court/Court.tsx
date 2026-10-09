@@ -188,6 +188,7 @@ export function Court({
         if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
       }}
       onPointerCancel={(e) => {
+        if (onCourtPointerUp) onCourtPointerUp(pointFrom(e) ?? { x: 0, y: 0 });
         if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
       }}
     >
