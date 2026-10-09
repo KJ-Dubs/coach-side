@@ -17,7 +17,7 @@ import {
 } from "@/components/Bubbles";
 import { PlayIndexSheet } from "@/components/PlayIndexSheet";
 import { createPlay, fetchTeams } from "@/lib/data";
-import { EMPTY_INDEX, type PlayIndex } from "@/lib/playIndex";
+import { EMPTY_INDEX, indexToRow, type PlayIndex } from "@/lib/playIndex";
 import { PLAY_CATEGORIES, type PlayCategory } from "@/lib/types";
 
 const searchSchema = z.object({ category: z.string().optional() });
@@ -86,12 +86,7 @@ function CreatePlayPage() {
         category,
         attack_basket: basket,
         team_ids: teamIds,
-        situation: index.situation,
-        defense_faced: index.defense_faced,
-        outcome: index.outcome,
-        primary_actions: index.primary_actions,
-        time_pressure: index.time_pressure,
-        tags: index.tags,
+        ...indexToRow(index),
       }),
     onSuccess: (p) => {
       void queryClient.invalidateQueries({ queryKey: ["plays"] });

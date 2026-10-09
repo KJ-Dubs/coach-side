@@ -18,7 +18,7 @@ import {
   type LibraryPlay,
   type LibrarySort,
 } from "@/lib/community";
-import { searchScore, DEFENSES, OUTCOMES, SITUATIONS } from "@/lib/playIndex";
+import { searchScore, DEFENSES, OUTCOMES, CONCEPTS, normalizeIndex } from "@/lib/playIndex";
 import { setPlayOfTheDayAndNotify } from "@/lib/notifications.functions";
 import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
 import { PLAY_CATEGORIES, normalizeCategory } from "@/lib/types";
@@ -59,9 +59,10 @@ export function LibraryFeed({
   const shown = useMemo(() => {
     const list = (feed.data ?? []).filter((p) => {
       if (category !== "All" && normalizeCategory(p.category) !== category) return false;
-      if (situation !== "Any" && p.situation !== situation) return false;
-      if (defense !== "Any" && p.defense_faced !== defense) return false;
-      if (outcome !== "Any" && p.outcome !== outcome) return false;
+      const ix = normalizeIndex(p);
+      if (situation !== "Any" && !ix.concepts.includes(situation) && p.situation !== situation) return false;
+      if (defense !== "Any" && !ix.defenses.includes(defense)) return false;
+      if (outcome !== "Any" && !ix.outcomes.includes(outcome)) return false;
       return (
         searchScore(
           {
@@ -74,6 +75,9 @@ export function LibraryFeed({
             primary_actions: p.primary_actions,
             time_pressure: p.time_pressure,
             tags: p.tags,
+            concepts: p.concepts,
+            defenses: p.defenses,
+            outcomes: p.outcomes,
           },
           query,
         ) > 0
@@ -82,8 +86,8 @@ export function LibraryFeed({
     if (query.trim()) {
       return [...list].sort(
         (a, b) =>
-          searchScore({ name: b.name, category: b.category, tags: b.tags, primary_actions: b.primary_actions }, query) -
-          searchScore({ name: a.name, category: a.category, tags: a.tags, primary_actions: a.primary_actions }, query),
+          searchScore({ ...b, creator: b.author_label }, query) -
+          searchScore({ ...a, creator: a.author_label }, query),
       );
     }
     return sortLibrary(list, sort);
@@ -96,7 +100,7 @@ export function LibraryFeed({
     const likedPlays = (feed.data ?? []).filter((p) => liked.has(p.id));
     const weight = new Map<string, number>();
     for (const p of likedPlays) {
-      for (const k of [normalizeCategory(p.category), ...(p.tags ?? []), ...(p.primary_actions ?? [])]) {
+      for (const k of [normalizeCategory(p.category), ...(p.tags ?? []), ...(p.primary_actions ?? []), ...normalizeIndex(p).concepts]) {
         weight.set(k, (weight.get(k) ?? 0) + 1);
       }
     }
@@ -109,7 +113,8 @@ export function LibraryFeed({
           (k) =>
             normalizeCategory(p.category) === k ||
             (p.tags ?? []).includes(k) ||
-            (p.primary_actions ?? []).includes(k),
+            (p.primary_actions ?? []).includes(k) ||
+            normalizeIndex(p).concepts.includes(k),
         ),
       )
       .slice(0, 3)
@@ -146,7 +151,7 @@ export function LibraryFeed({
         {showFilters ? (
           <div className="flex flex-col gap-2">
             <FilterRow label="Category" options={["All", ...PLAY_CATEGORIES]} value={category} onPick={setCategory} />
-            <FilterRow label="Situation" options={["Any", ...SITUATIONS]} value={situation} onPick={setSituation} />
+            <FilterRow label="Concept" options={["Any", ...CONCEPTS]} value={situation} onPick={setSituation} />
             <FilterRow label="Defense" options={["Any", ...DEFENSES]} value={defense} onPick={setDefense} />
             <FilterRow label="Outcome" options={["Any", ...OUTCOMES]} value={outcome} onPick={setOutcome} />
           </div>
@@ -238,7 +243,8 @@ function LibraryCard({
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const meta = [normalizeCategory(play.category), play.situation, play.defense_faced]
+  const pix = normalizeIndex(play);
+  const meta = [normalizeCategory(play.category), pix.concepts[0] ?? play.situation, pix.defenses[0]]
     .filter(Boolean)
     .join(" • ");
   const tags = (play.tags ?? []).slice(0, 4);

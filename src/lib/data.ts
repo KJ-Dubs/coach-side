@@ -533,6 +533,9 @@ export async function createPlay(input: {
   primary_actions?: string[];
   time_pressure?: string | null;
   tags?: string[];
+  concepts?: string[];
+  defenses?: string[];
+  outcomes?: string[];
 }): Promise<Play> {
   const { team_ids, ...row } = input;
   const { data: auth } = await supabase.auth.getUser();

@@ -1,18 +1,19 @@
 import { useState } from "react";
-import { BubbleButton, InfoPanel, Label, Panel, Pill, TextInput } from "@/components/Bubbles";
+import { BubbleButton, Label, Panel, Pill, TextInput } from "@/components/Bubbles";
 import {
+  CONCEPTS,
   DEFENSES,
   OUTCOMES,
   PRIMARY_ACTIONS,
-  SITUATIONS,
   TIME_PRESSURE,
   type PlayIndex,
 } from "@/lib/playIndex";
 
+type Suggestions = { actions: string[]; outcomes: string[]; tags: string[] };
+
 /**
- * The short "what is this play for?" sheet. Coaches answer in taps, and any
- * suggestion CoachSide reads from the drawing is clearly marked as a suggestion
- * that the coach's own answer overrides.
+ * Fast multi-select index sheet. CoachSide suggestions from the drawing are
+ * additive only — they never replace the coach's own picks.
  */
 export function PlayIndexSheet({
   value,
@@ -22,18 +23,13 @@ export function PlayIndexSheet({
 }: {
   value: PlayIndex;
   onChange: (next: PlayIndex) => void;
-  suggestions?: { actions: string[]; outcome: string | null; tags: string[] } | undefined;
+  suggestions?: Suggestions | undefined;
   compact?: boolean;
 }) {
   const [tagDraft, setTagDraft] = useState("");
   const set = (patch: Partial<PlayIndex>) => onChange({ ...value, ...patch });
-
-  const toggleAction = (a: string) =>
-    set({
-      primary_actions: value.primary_actions.includes(a)
-        ? value.primary_actions.filter((x) => x !== a)
-        : [...value.primary_actions, a],
-    });
+  const toggle = (key: "concepts" | "defenses" | "outcomes" | "primary_actions", v: string) =>
+    set({ [key]: value[key].includes(v) ? value[key].filter((x) => x !== v) : [...value[key], v] });
 
   const addTag = (t: string) => {
     const clean = t.trim().toLowerCase();
@@ -41,101 +37,64 @@ export function PlayIndexSheet({
     set({ tags: [...value.tags, clean] });
   };
 
-  const suggestedActions = (suggestions?.actions ?? []).filter(
-    (a) => !value.primary_actions.includes(a),
-  );
-  const suggestedTags = (suggestions?.tags ?? []).filter((t) => !value.tags.includes(t));
-  const suggestOutcome = suggestions?.outcome && !value.outcome ? suggestions.outcome : null;
+  const sugActions = (suggestions?.actions ?? []).filter((a) => !value.primary_actions.includes(a));
+  const sugOutcomes = (suggestions?.outcomes ?? []).filter((a) => !value.outcomes.includes(a));
+  const sugTags = (suggestions?.tags ?? []).filter((t) => !value.tags.includes(t));
+
+  // Keep legacy picks (e.g. Handoff) visible and removable without offering them as new choices.
+  const withLegacy = (opts: readonly string[], picked: string[]) => [
+    ...opts,
+    ...picked.filter((p) => !opts.includes(p)),
+  ];
 
   return (
-    <Panel className={compact ? "flex flex-col gap-3 p-3" : "flex flex-col gap-4"}>
-      <div className="text-center">
-        <h3 className="text-xl font-black leading-tight text-foreground">Index this play</h3>
-        <p className="mt-1 text-sm font-semibold text-muted-foreground">
-          A few taps now makes this play findable later.
-        </p>
-      </div>
-
-      <Choice
-        label="Situation"
-        options={SITUATIONS as readonly string[]}
-        value={value.situation}
-        onPick={(v) => set({ situation: v })}
+    <Panel className={compact ? "flex flex-col gap-2.5 p-3" : "flex flex-col gap-3"}>
+      <h3 className="text-center text-lg font-black leading-tight text-foreground">Index this play</h3>
+      <Multi label="Play concepts" options={withLegacy(CONCEPTS, value.concepts)} picked={value.concepts} onToggle={(v) => toggle("concepts", v)} />
+      <Multi label="Defense faced" options={withLegacy(DEFENSES, value.defenses)} picked={value.defenses} onToggle={(v) => toggle("defenses", v)} />
+      <Multi
+        label="Intended outcomes"
+        options={withLegacy(OUTCOMES, value.outcomes)}
+        picked={value.outcomes}
+        onToggle={(v) => toggle("outcomes", v)}
+        suggested={sugOutcomes}
       />
-      <Choice
-        label="Defense faced"
-        options={DEFENSES as readonly string[]}
-        value={value.defense_faced}
-        onPick={(v) => set({ defense_faced: v })}
+      <Multi
+        label="Primary actions"
+        options={withLegacy(PRIMARY_ACTIONS, value.primary_actions)}
+        picked={value.primary_actions}
+        onToggle={(v) => toggle("primary_actions", v)}
+        suggested={sugActions}
       />
-      <Choice
-        label="Intended outcome"
-        options={OUTCOMES as readonly string[]}
-        value={value.outcome}
-        onPick={(v) => set({ outcome: v })}
-      />
-      {suggestOutcome ? (
-        <InfoPanel tone="flame">
-          CoachSide suggests <strong>{suggestOutcome}</strong> from the drawing.{" "}
-          <button
-            type="button"
-            className="underline"
-            onClick={() => set({ outcome: suggestOutcome })}
-          >
-            Use it
-          </button>
-        </InfoPanel>
-      ) : null}
-
-      <div className="flex flex-col gap-1.5">
-        <Label>Primary actions</Label>
-        <div className="flex flex-wrap justify-center gap-2">
-          {PRIMARY_ACTIONS.map((a) => (
-            <BubbleButton
-              key={a}
-              size="sm"
-              tone={value.primary_actions.includes(a) ? "grape" : "neutral"}
-              onClick={() => toggleAction(a)}
-            >
-              {value.primary_actions.includes(a) ? "✓ " : ""}
-              {a}
-            </BubbleButton>
+      <div className="flex flex-col gap-1">
+        <Label>Time pressure</Label>
+        <div className="flex flex-wrap gap-1.5">
+          {TIME_PRESSURE.map((o) => (
+            <Chip key={o} on={value.time_pressure === o} onClick={() => set({ time_pressure: value.time_pressure === o ? null : o })}>
+              {o}
+            </Chip>
           ))}
         </div>
-        {suggestedActions.length ? (
-          <InfoPanel tone="flame">
-            <div className="flex flex-wrap items-center gap-2">
-              <span>CoachSide suggests:</span>
-              {suggestedActions.map((a) => (
-                <BubbleButton key={a} size="sm" tone="neutral" onClick={() => toggleAction(a)}>
-                  + {a}
-                </BubbleButton>
-              ))}
-            </div>
-          </InfoPanel>
-        ) : null}
       </div>
-
-      <Choice
-        label="Time pressure"
-        options={TIME_PRESSURE as readonly string[]}
-        value={value.time_pressure}
-        onPick={(v) => set({ time_pressure: v })}
-      />
-
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1">
         <Label>Tags</Label>
-        <div className="flex flex-wrap items-center gap-2">
-          {value.tags.map((t) => (
-            <button key={t} type="button" onClick={() => set({ tags: value.tags.filter((x) => x !== t) })}>
-              <Pill tone="grape">{t} ✕</Pill>
-            </button>
-          ))}
-          {!value.tags.length ? <Pill tone="muted">No tags yet</Pill> : null}
-        </div>
+        {value.tags.length || sugTags.length ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {value.tags.map((t) => (
+              <button key={t} type="button" onClick={() => set({ tags: value.tags.filter((x) => x !== t) })}>
+                <Pill tone="grape">{t} ✕</Pill>
+              </button>
+            ))}
+            {sugTags.map((t) => (
+              <Chip key={t} on={false} suggested onClick={() => addTag(t)}>
+                + {t}
+              </Chip>
+            ))}
+          </div>
+        ) : null}
         <div className="flex gap-2">
           <TextInput
-            placeholder="Add a tag, e.g. horns"
+            placeholder="Add a tag"
             value={tagDraft}
             onChange={(e) => setTagDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -146,59 +105,75 @@ export function PlayIndexSheet({
               }
             }}
           />
-          <BubbleButton
-            size="sm"
-            tone="neutral"
-            onClick={() => {
-              addTag(tagDraft);
-              setTagDraft("");
-            }}
-          >
+          <BubbleButton size="sm" tone="neutral" onClick={() => { addTag(tagDraft); setTagDraft(""); }}>
             Add
           </BubbleButton>
         </div>
-        {suggestedTags.length ? (
-          <InfoPanel tone="flame">
-            <div className="flex flex-wrap items-center gap-2">
-              <span>CoachSide suggests:</span>
-              {suggestedTags.map((t) => (
-                <BubbleButton key={t} size="sm" tone="neutral" onClick={() => addTag(t)}>
-                  + {t}
-                </BubbleButton>
-              ))}
-            </div>
-          </InfoPanel>
-        ) : null}
       </div>
     </Panel>
   );
 }
 
-function Choice({
+function Chip({
+  on,
+  suggested,
+  onClick,
+  children,
+}: {
+  on: boolean;
+  suggested?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      className={
+        "min-h-9 rounded-full border px-3 text-xs font-bold transition-colors " +
+        (on
+          ? "border-grape bg-grape text-primary-foreground"
+          : suggested
+            ? "border-dashed border-flame/70 bg-flame/10 text-flame"
+            : "border-border bg-surface-2/70 text-foreground hover:border-grape/60")
+      }
+    >
+      {on ? "✓ " : ""}
+      {children}
+    </button>
+  );
+}
+
+function Multi({
   label,
   options,
-  value,
-  onPick,
+  picked,
+  onToggle,
+  suggested = [],
 }: {
   label: string;
   options: readonly string[];
-  value: string | null;
-  onPick: (v: string | null) => void;
+  picked: string[];
+  onToggle: (v: string) => void;
+  suggested?: string[];
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1">
       <Label>{label}</Label>
-      <div className="flex flex-wrap justify-center gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {options.map((o) => (
-          <BubbleButton
-            key={o}
-            size="sm"
-            tone={value === o ? "grape" : "neutral"}
-            onClick={() => onPick(value === o ? null : o)}
-          >
+          <Chip key={o} on={picked.includes(o)} suggested={suggested.includes(o)} onClick={() => onToggle(o)}>
             {o}
-          </BubbleButton>
+          </Chip>
         ))}
+        {suggested
+          .filter((s) => !options.includes(s))
+          .map((s) => (
+            <Chip key={s} on={false} suggested onClick={() => onToggle(s)}>
+              + {s}
+            </Chip>
+          ))}
       </div>
     </div>
   );

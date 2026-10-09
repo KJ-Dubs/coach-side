@@ -2411,10 +2411,12 @@ export type Database = {
         Row: {
           attack_basket: string
           category: string
+          concepts: string[]
           copied_at: string | null
           created_at: string
           created_by: string | null
           defense_faced: string | null
+          defenses: string[]
           id: string
           indexed_at: string | null
           is_shared: boolean
@@ -2422,6 +2424,7 @@ export type Database = {
           library_version: number
           name: string
           outcome: string | null
+          outcomes: string[]
           primary_actions: string[]
           publish_anonymous: boolean
           published_at: string | null
@@ -2439,10 +2442,12 @@ export type Database = {
         Insert: {
           attack_basket?: string
           category?: string
+          concepts?: string[]
           copied_at?: string | null
           created_at?: string
           created_by?: string | null
           defense_faced?: string | null
+          defenses?: string[]
           id?: string
           indexed_at?: string | null
           is_shared?: boolean
@@ -2450,6 +2455,7 @@ export type Database = {
           library_version?: number
           name: string
           outcome?: string | null
+          outcomes?: string[]
           primary_actions?: string[]
           publish_anonymous?: boolean
           published_at?: string | null
@@ -2467,10 +2473,12 @@ export type Database = {
         Update: {
           attack_basket?: string
           category?: string
+          concepts?: string[]
           copied_at?: string | null
           created_at?: string
           created_by?: string | null
           defense_faced?: string | null
+          defenses?: string[]
           id?: string
           indexed_at?: string | null
           is_shared?: boolean
@@ -2478,6 +2486,7 @@ export type Database = {
           library_version?: number
           name?: string
           outcome?: string | null
+          outcomes?: string[]
           primary_actions?: string[]
           publish_anonymous?: boolean
           published_at?: string | null
@@ -3432,8 +3441,10 @@ export type Database = {
           attack_basket: string
           author_label: string
           category: string
+          concepts: string[]
           creator_username: string
           defense_faced: string
+          defenses: string[]
           featured: boolean
           hearts: number
           hearts_recent: number
@@ -3441,6 +3452,7 @@ export type Database = {
           library_version: number
           name: string
           outcome: string
+          outcomes: string[]
           primary_actions: string[]
           published_at: string
           share_token: string
