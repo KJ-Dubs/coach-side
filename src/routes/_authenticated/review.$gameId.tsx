@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/review/$gameId")({
     ],
   }),
   validateSearch: (s: Record<string, unknown>): { edit?: boolean } =>
-    s.edit === true || s.edit === "1" || s.edit === 1 ? { edit: true } : {},
+    s["edit"] === true || s["edit"] === "1" || s["edit"] === 1 ? { edit: true } : {},
   component: ReviewPage,
 });
 

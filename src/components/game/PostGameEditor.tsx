@@ -192,7 +192,10 @@ export function PostGameEditor({
   };
 
   const saveAdd = async () => {
-    if (needsPlayer && !aPlayer) return toast.error("Pick the player");
+    if (needsPlayer && !aPlayer) {
+      toast.error("Pick the player");
+      return;
+    }
     let type: string = aKind;
     let points = 0;
     let result: string | null = null;
