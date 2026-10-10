@@ -6,7 +6,7 @@ import { pendingPlans } from "@/lib/playerLocker";
 import type { TeamEvent } from "@/lib/types";
 import { fetchMyNotifications } from "@/lib/notifications";
 
-type Destination = { area: "chat" | "schedule" | "playbook" | "plans"; item?: string; conversation?: string };
+type Destination = { area: "chat" | "schedule" | "playbook" | "plans"; item?: string; folder?: string; conversation?: string };
 const when = (iso: string) => new Date(iso).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 export function PlayerHub({ teamId, userId, playerId, events, plans, targets, announcements, loading, onOpen }: {
@@ -37,7 +37,7 @@ export function PlayerHub({ teamId, userId, playerId, events, plans, targets, an
     </Panel>
     {unread.length || pinned.length || updates.length ? <Panel className="flex flex-col gap-2 shadow-none"><Heading tone="flame">New for You</Heading>
       {latestMessage ? <BubbleButton tone="neutral" className="justify-start whitespace-normal text-left" onClick={() => onOpen({ area: "chat", item: latestMessage.id, ...(conversation.data ? { conversation: conversation.data } : {}) })}><MessageCircle className="h-4 w-4 shrink-0"/>{unread.length} unread team message{unread.length === 1 ? "" : "s"}</BubbleButton> : null}
-      {updates.map((n) => <BubbleButton key={n.id} tone="neutral" className="justify-start whitespace-normal text-left" onClick={() => onOpen({ area: n.related_type === "event" ? "schedule" : n.related_type === "play" || n.related_type === "playbook_folder" ? "playbook" : "plans", ...(n.related_id ? { item: n.related_id } : {}) })}>{n.title}</BubbleButton>)}
+      {updates.map((n) => <BubbleButton key={n.id} tone="neutral" className="justify-start whitespace-normal text-left" onClick={() => onOpen({ area: n.related_type === "event" ? "schedule" : n.related_type === "play" || n.related_type === "playbook_folder" ? "playbook" : "plans", ...(n.related_id ? n.related_type === "playbook_folder" ? { folder: n.related_id } : { item: n.related_id } : {}) })}>{n.title}</BubbleButton>)}
       {pinned.slice(0, 2).map((a) => <BubbleButton key={a.id} tone="neutral" className="justify-start whitespace-normal text-left" onClick={() => onOpen({ area: "chat", item: a.id })}><Pill tone="flame">Pinned</Pill>{a.title}</BubbleButton>)}
     </Panel> : null}
     <nav className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Locker Room areas">{[
