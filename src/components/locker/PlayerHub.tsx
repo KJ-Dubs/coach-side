@@ -5,7 +5,7 @@ import { ensureConversation, fetchMessages, fetchMyConversationState, type Annou
 import { pendingPlans } from "@/lib/playerLocker";
 import type { TeamEvent } from "@/lib/types";
 
-type Destination = { area: "chat" | "schedule" | "playbook" | "plans"; item?: string | undefined; conversation?: string | undefined };
+type Destination = { area: "chat" | "schedule" | "playbook" | "plans"; item?: string; conversation?: string };
 const when = (iso: string) => new Date(iso).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 export function PlayerHub({ teamId, userId, playerId, events, plans, targets, announcements, loading, onOpen }: {
@@ -32,7 +32,7 @@ export function PlayerHub({ teamId, userId, playerId, events, plans, targets, an
       {loading ? <EmptyState>Loading your plans…</EmptyState> : pending.length ? pending.slice(0, 3).map(({ plan }) => <BubbleButton key={plan.id} tone="neutral" className="min-h-16 justify-between gap-3 whitespace-normal text-left" onClick={() => onOpen({ area: "plans", item: plan.id })}><span className="min-w-0 break-words">{plan.title}</span><span className="shrink-0 text-xs text-muted-foreground">{plan.due_at ? `Due ${new Date(plan.due_at).toLocaleDateString()}` : "Review"}</span></BubbleButton>) : <EmptyState>You’re all caught up. New plans from your coach will appear here.</EmptyState>}
     </Panel>
     {unread.length || pinned.length ? <Panel className="flex flex-col gap-2 shadow-none"><Heading tone="flame">New for You</Heading>
-      {unread.length ? <BubbleButton tone="neutral" className="justify-start whitespace-normal text-left" onClick={() => onOpen({ area: "chat", item: unread[unread.length - 1]?.id, conversation: conversation.data })}><MessageCircle className="h-4 w-4 shrink-0"/>{unread.length} unread team message{unread.length === 1 ? "" : "s"}</BubbleButton> : null}
+      {unread.length ? <BubbleButton tone="neutral" className="justify-start whitespace-normal text-left" onClick={() => onOpen({ area: "chat", ...(unread[unread.length - 1]?.id ? { item: unread[unread.length - 1]?.id as string } : {}), ...(conversation.data ? { conversation: conversation.data } : {}) })}><MessageCircle className="h-4 w-4 shrink-0"/>{unread.length} unread team message{unread.length === 1 ? "" : "s"}</BubbleButton> : null}
       {pinned.slice(0, 2).map((a) => <BubbleButton key={a.id} tone="neutral" className="justify-start whitespace-normal text-left" onClick={() => onOpen({ area: "chat", item: a.id })}><Pill tone="flame">Pinned</Pill>{a.title}</BubbleButton>)}
     </Panel> : null}
     <nav className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Locker Room areas">{[
