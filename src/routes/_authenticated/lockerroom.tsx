@@ -107,6 +107,8 @@ function Hub({ events, plays, plans, pinned, onOpen }: { events: TeamEvent[]; pl
 function ChatArea({ teamId, locker, directory, announcements, allowPlayerPosting, focusId, conversationId }: { focusId?: string | undefined; conversationId?: string | undefined; teamId: string; locker: ReturnType<typeof useLocker>; directory: Awaited<ReturnType<typeof fetchTeamDirectory>>; announcements: Awaited<ReturnType<typeof fetchAnnouncements>>; allowPlayerPosting: boolean }) {
   const [sub, setSub] = useState<"team" | "messages">(conversationId ? "messages" : "team");
   const [other, setOther] = useState("");
+  const [linkedConversation, setLinkedConversation] = useState(conversationId);
+  useEffect(() => { setLinkedConversation(conversationId); }, [conversationId]);
   const teamConv = useQuery({ queryKey: ["conversation", teamId, "team"], queryFn: () => ensureConversation(teamId, "team"), enabled: !!teamId });
   const staffConv = useQuery({ queryKey: ["conversation", teamId, "staff"], queryFn: () => ensureConversation(teamId, "staff"), enabled: !!teamId && locker.isCoach });
   const playerCoachConv = useQuery({ queryKey: ["player-coaches", teamId, locker.playerId], queryFn: () => ensurePlayerCoachesConversation(teamId, String(locker.playerId)), enabled: !!teamId && locker.isPlayer && !!locker.playerId });

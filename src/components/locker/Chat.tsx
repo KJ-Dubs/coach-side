@@ -69,8 +69,9 @@ export function Chat({
   });
 
   useEffect(() => {
-    void markConversationRead(conversationId).catch(() => undefined);
-  }, [conversationId, messages.data?.length]);
+    if (!messages.data) return;
+    void markConversationRead(conversationId).then(() => qc.invalidateQueries({ queryKey: ["conversation-read", conversationId] })).catch(() => undefined);
+  }, [conversationId, messages.data, qc]);
 
   useEffect(() => {
     if (focusId) document.getElementById(`locker-message-${focusId}`)?.scrollIntoView({ block: "center" });
