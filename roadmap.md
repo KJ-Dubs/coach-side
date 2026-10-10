@@ -1,5 +1,10 @@
 # CourtSide Coach — production pass roadmap
 
+## Player Locker Room simplification
+- [ ] Player summaries, compact navigation and hidden administrative clutter
+- [ ] Read-only schedule, folder-first thumbnails, personal To Do / Completed Plans
+- [ ] Exact-item links, coach/public preservation and focused verification
+
 ## Initial defense placement correction
 - [x] Seed a visible half-court shell for the active camera; Full follows current offensive concentration
 - [x] Guard existing defenders and preserve logical coordinates, camera behavior, legacy plays and animation
