@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserAccess, resolveRole } from "@/lib/access";
 import { purgeDeviceRoleCache } from "@/lib/roleCache";
 import { flushQueue } from "@/lib/offline";
-import { rememberDevice } from "@/lib/remember";
 
 /**
  * Sign-in gate for every coach-only page. Client-only because the session
@@ -18,14 +17,20 @@ import { rememberDevice } from "@/lib/remember";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async ({ location }) => {
+    const next = location.href.startsWith("/") ? location.href : location.pathname;
+    const toAuth = () => redirect({ to: "/auth", search: { next } });
     const { data: local } = await supabase.auth.getSession();
-    if (!local.session) throw redirect({ to: "/auth" });
+    if (!local.session) throw toAuth();
     let user = local.session.user;
     try {
       const { data, error } = await supabase.auth.getUser();
       if (data.user) user = data.user;
-      else if (!(error && /network|fetch|Failed/i.test(error.message))) {
-        throw redirect({ to: "/auth" });
+      else {
+        // Only a definitive rejection of the session (expired/revoked) sends
+        // the coach to sign in. Network, timeout and server hiccups keep the
+        // stored session so a live game is never interrupted.
+        const status = (error as { status?: number } | null)?.status;
+        if (status === 401 || status === 403) throw toAuth();
       }
     } catch (e) {
       if (e && typeof e === "object" && "to" in e) throw e;
@@ -58,15 +63,11 @@ function AuthenticatedLayout() {
     sync();
     const t = setInterval(sync, 10000);
     window.addEventListener("online", sync);
-    // "Remember this device" off → drop the local session when the tab closes.
-    const onHide = () => {
-      if (!rememberDevice()) void supabase.auth.signOut({ scope: "local" });
-    };
-    window.addEventListener("pagehide", onHide);
+    // Never sign out on pagehide/visibility/backgrounding: mobile and PWA
+    // fire these during normal app switching and it would end a live game.
     return () => {
       clearInterval(t);
       window.removeEventListener("online", sync);
-      window.removeEventListener("pagehide", onHide);
     };
   }, []);
   return <Outlet />;
