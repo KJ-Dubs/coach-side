@@ -5,7 +5,7 @@ import { ensureConversation, fetchMessages, fetchMyConversationState, type Annou
 import { pendingPlans } from "@/lib/playerLocker";
 import type { TeamEvent } from "@/lib/types";
 
-type Destination = { area: "chat" | "schedule" | "playbook" | "plans"; item?: string; conversation?: string };
+type Destination = { area: "chat" | "schedule" | "playbook" | "plans"; item?: string | undefined; conversation?: string | undefined };
 const when = (iso: string) => new Date(iso).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 export function PlayerHub({ teamId, userId, playerId, events, plans, targets, announcements, loading, onOpen }: {

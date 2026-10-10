@@ -54,7 +54,7 @@ export function Chat({
   meRoleLabel?: string;
   canPin?: boolean;
   simple?: boolean;
-  focusId?: string;
+  focusId?: string | undefined;
 }) {
   const qc = useQueryClient();
   const [body, setBody] = useState("");
