@@ -1,7 +1,7 @@
 const KEY = "coachside.remember-device";
 
 /** Devices are remembered by default: the session persists and the coach is
- *  signed straight back in next visit. Turning it off signs out on close. */
+ *  signed straight back in next visit. The checkbox never triggers background sign-out (that ended live games). */
 export function rememberDevice() {
   if (typeof window === "undefined") return true;
   return window.localStorage.getItem(KEY) !== "0";
