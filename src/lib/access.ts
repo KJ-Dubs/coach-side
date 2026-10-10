@@ -155,5 +155,6 @@ export { purgeDeviceRoleCache } from "./roleCache";
 export const PLAYER_ROUTES = ["/lockerroom", "/profile"];
 
 export function isPlayerAllowedPath(pathname: string) {
-  return PLAYER_ROUTES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  // Only the read-only presenter, never the play editor or discovery index.
+  return /^\/plays\/[^/]+\/view\/?$/.test(pathname) || PLAYER_ROUTES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }

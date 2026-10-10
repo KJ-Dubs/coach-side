@@ -15,6 +15,7 @@ Film Room: film jobs stage AI/manual events in film_job_events; only coach-revie
 
 - Locker Room team organization uses canonical play assignments plus many-to-many folder memberships; folders never own or clone plays.
 - Player private messaging uses one team/player coaching-staff thread whose active coach membership is synchronized from team membership.
+- Player Locker Room summaries and personal completion views use the same RLS-authorized records as coach views; progress rows must never redefine a whole-team Plan's audience, and navigation carries team/item context to the existing read-only surfaces.
 - Presenter Back uses router history after normal navigation and source/search fallbacks only for direct links, preserving list scroll and filters.
 - All scores/points derive from `eventPoints` in src/lib/stats.ts (location-based, far basket mirrored); opponent stats are team-level OPP_* events — never sum raw `points`.
 - Playmaker's current-sequence controls sit below the court in one viewport-bounded group; preview retains the selected sequence's exact end sample and Next advances through projected engine state, so repeat previews and continuity never edit play geometry.
