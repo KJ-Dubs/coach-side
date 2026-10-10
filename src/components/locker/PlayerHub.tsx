@@ -4,6 +4,7 @@ import { BubbleButton, EmptyState, Heading, Panel, Pill } from "@/components/Bub
 import { ensureConversation, fetchMessages, fetchMyConversationState, type Announcement, type Assignment, type AssignmentTarget } from "@/lib/locker";
 import { pendingPlans } from "@/lib/playerLocker";
 import type { TeamEvent } from "@/lib/types";
+import { fetchMyNotifications } from "@/lib/notifications";
 
 type Destination = { area: "chat" | "schedule" | "playbook" | "plans"; item?: string; conversation?: string };
 const when = (iso: string) => new Date(iso).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -15,10 +16,13 @@ export function PlayerHub({ teamId, userId, playerId, events, plans, targets, an
   const conversation = useQuery({ queryKey: ["conversation", teamId, "team"], queryFn: () => ensureConversation(teamId, "team"), enabled: !!teamId });
   const messages = useQuery({ queryKey: ["messages", conversation.data], queryFn: () => fetchMessages(String(conversation.data)), enabled: !!conversation.data, refetchInterval: 15000 });
   const read = useQuery({ queryKey: ["conversation-read", conversation.data, userId], queryFn: () => fetchMyConversationState(String(conversation.data)), enabled: !!conversation.data });
+  const notifications = useQuery({ queryKey: ["player-locker-updates", userId], queryFn: () => fetchMyNotifications(), enabled: !!userId, refetchInterval: 30000 });
   const pending = pendingPlans(plans, targets, userId, playerId);
   const next = [...events].filter((e) => new Date(e.ends_at ?? e.starts_at).getTime() >= Date.now()).sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
   const unread = (messages.data ?? []).filter((m) => !m.deleted_at && m.sender_id !== userId && (!read.data?.last_read_at || m.created_at > read.data.last_read_at));
   const pinned = announcements.filter((a) => a.pinned);
+  const updates = (notifications.data ?? []).filter((n) => n.team_id === teamId && !n.read_at && n.related_id && ["event", "play", "playbook_folder", "assignment", "plan"].includes(n.related_type ?? "")).slice(0, 3);
+  const latestMessage = unread[unread.length - 1];
   return <div className="flex min-w-0 flex-col gap-3">
     <Panel className="flex flex-col gap-3 border-flame/40 shadow-none">
       <Heading tone="flame">Next</Heading>
@@ -31,8 +35,9 @@ export function PlayerHub({ teamId, userId, playerId, events, plans, targets, an
       <Heading>Coach Wants You to Review</Heading>
       {loading ? <EmptyState>Loading your plans…</EmptyState> : pending.length ? pending.slice(0, 3).map(({ plan }) => <BubbleButton key={plan.id} tone="neutral" className="min-h-16 justify-between gap-3 whitespace-normal text-left" onClick={() => onOpen({ area: "plans", item: plan.id })}><span className="min-w-0 break-words">{plan.title}</span><span className="shrink-0 text-xs text-muted-foreground">{plan.due_at ? `Due ${new Date(plan.due_at).toLocaleDateString()}` : "Review"}</span></BubbleButton>) : <EmptyState>You’re all caught up. New plans from your coach will appear here.</EmptyState>}
     </Panel>
-    {unread.length || pinned.length ? <Panel className="flex flex-col gap-2 shadow-none"><Heading tone="flame">New for You</Heading>
-      {unread.length ? <BubbleButton tone="neutral" className="justify-start whitespace-normal text-left" onClick={() => onOpen({ area: "chat", ...(unread[unread.length - 1]?.id ? { item: unread[unread.length - 1]?.id as string } : {}), ...(conversation.data ? { conversation: conversation.data } : {}) })}><MessageCircle className="h-4 w-4 shrink-0"/>{unread.length} unread team message{unread.length === 1 ? "" : "s"}</BubbleButton> : null}
+    {unread.length || pinned.length || updates.length ? <Panel className="flex flex-col gap-2 shadow-none"><Heading tone="flame">New for You</Heading>
+      {latestMessage ? <BubbleButton tone="neutral" className="justify-start whitespace-normal text-left" onClick={() => onOpen({ area: "chat", item: latestMessage.id, ...(conversation.data ? { conversation: conversation.data } : {}) })}><MessageCircle className="h-4 w-4 shrink-0"/>{unread.length} unread team message{unread.length === 1 ? "" : "s"}</BubbleButton> : null}
+      {updates.map((n) => <BubbleButton key={n.id} tone="neutral" className="justify-start whitespace-normal text-left" onClick={() => onOpen({ area: n.related_type === "event" ? "schedule" : n.related_type === "play" || n.related_type === "playbook_folder" ? "playbook" : "plans", ...(n.related_id ? { item: n.related_id } : {}) })}>{n.title}</BubbleButton>)}
       {pinned.slice(0, 2).map((a) => <BubbleButton key={a.id} tone="neutral" className="justify-start whitespace-normal text-left" onClick={() => onOpen({ area: "chat", item: a.id })}><Pill tone="flame">Pinned</Pill>{a.title}</BubbleButton>)}
     </Panel> : null}
     <nav className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Locker Room areas">{[
