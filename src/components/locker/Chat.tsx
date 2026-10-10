@@ -40,6 +40,8 @@ export function Chat({
   meName,
   meRoleLabel,
   canPin = false,
+  simple = false,
+  focusId,
 }: {
   conversationId: string;
   teamId: string | null;
@@ -51,6 +53,8 @@ export function Chat({
   meName?: string;
   meRoleLabel?: string;
   canPin?: boolean;
+  simple?: boolean;
+  focusId?: string | undefined;
 }) {
   const qc = useQueryClient();
   const [body, setBody] = useState("");
@@ -65,12 +69,14 @@ export function Chat({
   });
 
   useEffect(() => {
-    void markConversationRead(conversationId).catch(() => undefined);
-  }, [conversationId, messages.data?.length]);
+    if (!messages.data) return;
+    void markConversationRead(conversationId).then(() => qc.invalidateQueries({ queryKey: ["conversation-read", conversationId] })).catch(() => undefined);
+  }, [conversationId, messages.data, qc]);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end" });
-  }, [messages.data?.length]);
+    if (focusId) document.getElementById(`locker-message-${focusId}`)?.scrollIntoView({ block: "center" });
+    else if (!simple) endRef.current?.scrollIntoView({ block: "end" });
+  }, [messages.data?.length, focusId, simple]);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["messages", conversationId] });
 
@@ -86,7 +92,7 @@ export function Chat({
   });
 
   const saveEdit = useMutation({
-    mutationFn: () => editMessage(editing!.id, editing!.body.trim()),
+    mutationFn: () => { if (!editing) throw new Error("No message selected"); return editMessage(editing.id, editing.body.trim()); },
     onSuccess: async () => {
       setEditing(null);
       await invalidate();
@@ -121,7 +127,7 @@ export function Chat({
         {messages.isLoading ? (
           <EmptyState>Loading messages…</EmptyState>
         ) : (messages.data ?? []).length === 0 ? (
-          <EmptyState>No messages yet — say something to the team</EmptyState>
+           <EmptyState>{canPost ? "No messages yet. Start the conversation." : "Your coach’s messages will appear here."}</EmptyState>
         ) : (
           [...(messages.data ?? [])].sort((a, b) => {
             if (!!a.pinned_at !== !!b.pinned_at) return a.pinned_at ? -1 : 1;
@@ -133,7 +139,8 @@ export function Chat({
             return (
               <div
                 key={m.id}
-                className={cn("flex w-full", mine ? "justify-end" : "justify-start")}
+                id={`locker-message-${m.id}`}
+                className={cn("flex w-full rounded-2xl", m.id === focusId && "ring-2 ring-flame", mine ? "justify-end" : "justify-start")}
               >
                 <div
                   className={cn(
@@ -151,11 +158,11 @@ export function Chat({
                         person?.email ??
                         (mine ? (meName ?? "You") : "Team member")}
                     </Pill>
-                    <Pill tone="muted">
+                    {!simple ? <Pill tone="muted">
                       {person
                         ? TEAM_ROLE_LABEL[person.role]
                         : (mine ? (meRoleLabel ?? "Coach") : "Member")}
-                    </Pill>
+                    </Pill> : null}
                     <Pill tone="muted">{fmtTime(m.created_at)}</Pill>
                     {m.pinned_at ? <Pill tone="flame">Pinned</Pill> : null}
                     {m.edited_at && !m.deleted_at ? <Pill tone="muted">Edited</Pill> : null}
@@ -202,7 +209,7 @@ export function Chat({
                             react.mutate({ id: m.id, emoji, mine: mineReact })
                           }
                           className={cn(
-                            "inline-flex min-h-9 items-center gap-1 rounded-full border px-3 py-1 text-sm font-bold",
+                             "inline-flex min-h-11 items-center gap-1 rounded-full border px-3 py-1 text-sm font-bold",
                             mineReact
                               ? "border-flame/70 bg-flame/25 text-foreground"
                               : "border-border bg-surface-2/70 text-muted-foreground",
@@ -246,7 +253,7 @@ export function Chat({
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Write a message to the team…"
+            placeholder={simple ? "Write a message…" : "Write a message to the team…"}
             aria-label="Message"
             className="min-h-20 w-full rounded-2xl border border-input bg-surface-2/70 px-4 py-3 text-base font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-grape"
           />

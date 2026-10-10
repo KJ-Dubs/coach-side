@@ -28,6 +28,7 @@ import { resolveRole, useAccess } from "@/lib/access";
 import { useMe } from "@/lib/useMe";
 import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
 import { BackNav } from "@/components/BackNav";
+import { BubbleButton } from "@/components/Bubbles";
 
 const QUICK = [
   { to: "/plays", label: "Playbook", icon: BookOpen },
@@ -48,6 +49,7 @@ export function AppShell({
   backTo,
   backLabel = "Back",
   compact = false,
+  playerTeamId,
 }: {
   children: ReactNode;
   title: string;
@@ -59,6 +61,7 @@ export function AppShell({
   backTo?: string | undefined;
   backLabel?: string | undefined;
   compact?: boolean | undefined;
+  playerTeamId?: string | undefined;
 }) {
   const me = useMe();
   const { access } = useAccess();
@@ -78,10 +81,10 @@ export function AppShell({
   // membership, never by anything stored on the device.
   if (role.isPlayerOnly) {
     const playerTeam =
-      me.teams.find((t) => access.playerTeamIds.includes(t.id)) ?? me.teams[0] ?? null;
+      me.teams.find((t) => t.id === playerTeamId && access.playerTeamIds.includes(t.id)) ?? me.teams.find((t) => access.playerTeamIds.includes(t.id)) ?? null;
     return (
-      <div className="min-h-screen px-3 py-3 sm:px-5 sm:py-5">
-        <div className="mx-auto w-full max-w-3xl">
+      <div className="min-h-screen max-w-full overflow-x-clip px-3 py-3 sm:px-5 sm:py-5">
+        <div className="mx-auto w-full min-w-0 max-w-3xl">
           <header className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-3xl border border-border/70 bg-surface/85 p-2.5 shadow-lg shadow-black/30 backdrop-blur">
             <span className="inline-flex items-center rounded-2xl border border-border/70 bg-surface-2/70 px-3 py-1.5">
               <img src={wordmark.url} alt="CoachSide" className="h-8 w-auto max-w-[150px] object-contain" />
@@ -91,7 +94,7 @@ export function AppShell({
                 {playerTeam.name}
               </span>
             ) : null}
-            <nav className="flex items-center gap-1.5" aria-label="Player navigation">
+            <nav className="flex w-full flex-wrap items-center justify-between gap-1.5" aria-label="Player navigation">
               <Link
                 to="/lockerroom"
                 className="inline-flex min-h-11 items-center rounded-full border border-border bg-surface-2/70 px-4 text-xs font-black uppercase text-foreground"
@@ -102,23 +105,13 @@ export function AppShell({
               >
                 Locker Room
               </Link>
-              <Link
-                to="/profile"
-                className="inline-flex min-h-11 items-center rounded-full border border-border bg-surface-2/70 px-4 text-xs font-black uppercase text-foreground"
-                activeProps={{
-                  className:
-                    "inline-flex min-h-11 items-center rounded-full border border-grape/60 bg-grape/25 px-4 text-xs font-black uppercase text-grape-bright",
-                }}
-              >
-                Profile
-              </Link>
-              <button
-                type="button"
-                onClick={() => void doSignOut()}
-                className="inline-flex min-h-11 items-center rounded-full border border-flame/60 bg-flame/20 px-4 text-xs font-black uppercase text-foreground"
-              >
-                Sign out
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild><BubbleButton tone="neutral" aria-label="Open your account menu"><UserRound className="h-4 w-4"/><ChevronDown className="h-4 w-4"/></BubbleButton></DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44 border-border bg-popover p-2">
+                  <DropdownMenuItem asChild className="min-h-11 rounded-xl"><Link to="/profile"><UserRound/>Profile</Link></DropdownMenuItem>
+                  <DropdownMenuItem className="min-h-11 rounded-xl" onSelect={() => void doSignOut()}><LogOut/>Sign out</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </nav>
           </header>
 

@@ -79,7 +79,7 @@ export function AttachmentCard({
     return (
       <Link
         to="/lockerroom"
-        search={attachment.related_id ? { area: "schedule", item: attachment.related_id } : { area: "schedule" }}
+        search={{ area: "schedule", ...(attachment.related_id ? { item: attachment.related_id } : {}), ...(teamId ? { team: teamId } : {}) }}
         className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-flame/60 bg-flame/15 px-3 py-2 transition-colors hover:bg-flame/25"
       >
         <Pill tone="flame">{EVENT_TYPE_LABEL[ev?.event_type ?? "event"] ?? "Event"}</Pill>
@@ -95,7 +95,7 @@ export function AttachmentCard({
   }
 
   if (attachment.attachment_type === "playbook_folder") {
-    return <Link to="/lockerroom" search={attachment.related_id ? { area: "playbook", folder: attachment.related_id } : { area: "playbook" }} className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-grape/60 bg-grape/15 px-3 py-2"><Pill tone="grape">Playbook Folder</Pill><span className="text-base font-black text-foreground">{(attachment.metadata["name"] as string) ?? "Open folder"}</span></Link>;
+    return <Link to="/lockerroom" search={{ area: "playbook", ...(attachment.related_id ? { folder: attachment.related_id } : {}), ...(teamId ? { team: teamId } : {}) }} className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-grape/60 bg-grape/15 px-3 py-2"><Pill tone="grape">Playbook Folder</Pill><span className="text-base font-black text-foreground">{(attachment.metadata["name"] as string) ?? "Open folder"}</span></Link>;
   }
   if (attachment.attachment_type === "drill") {
     return <Link to="/drills" className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-flame/60 bg-flame/15 px-3 py-2"><Pill tone="flame">Drill</Pill><span className="text-base font-black text-foreground">{(attachment.metadata["name"] as string) ?? "Open drill"}</span></Link>;
@@ -104,7 +104,7 @@ export function AttachmentCard({
     return <Link to="/practice/$planId" params={{ planId: attachment.related_id ?? "" }} className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-2/80 px-3 py-2"><Pill tone="neutral">Practice Plan</Pill><span className="text-base font-black text-foreground">{(attachment.metadata["name"] as string) ?? "Open practice plan"}</span></Link>;
   }
   if (attachment.attachment_type === "plan") {
-    return <Link to="/lockerroom" search={attachment.related_id ? { area: "plans", item: attachment.related_id } : { area: "plans" }} className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-2/80 px-3 py-2"><Pill tone="neutral">Plan</Pill><span className="text-base font-black text-foreground">{(attachment.metadata["name"] as string) ?? "Open plan"}</span></Link>;
+    return <Link to="/lockerroom" search={{ area: "plans", ...(attachment.related_id ? { item: attachment.related_id } : {}), ...(teamId ? { team: teamId } : {}) }} className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-2/80 px-3 py-2"><Pill tone="neutral">Plan</Pill><span className="text-base font-black text-foreground">{(attachment.metadata["name"] as string) ?? "Open plan"}</span></Link>;
   }
   if (attachment.attachment_type === "url") {
     const href = String(attachment.metadata["url"] ?? "");
