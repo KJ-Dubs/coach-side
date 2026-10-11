@@ -996,7 +996,7 @@ function PlayDesignerPage() {
                     tone="ghost"
                     className="min-h-11"
                     onClick={() => {
-                      setPendingSelection({ group: optionSheet.group, key: optionSheet.key });
+                      patchFrame((f) => deleteOptionBranch(f, optionSheet.group, optionSheet.key));
                       setOptionSheet(null);
                     }}
                   >
