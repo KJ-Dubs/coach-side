@@ -82,8 +82,9 @@ export function resolveLegacyActors(frame: PlayFrame): PlayFrame {
   if (!frame) return frame;
   const needs = frame.actions.some(
     (a) =>
-      !a.actor ||
-      ((a.type === "pass" || a.type === "handoff") && !a.target && a.passTo !== "space"),
+      !isOptionMarker(a) &&
+      (!a.actor ||
+      ((a.type === "pass" || a.type === "handoff") && !a.target && a.passTo !== "space")),
   );
 
 

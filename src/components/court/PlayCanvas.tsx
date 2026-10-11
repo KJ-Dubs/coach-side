@@ -95,11 +95,11 @@ function ActionShape({ a, flip, dim, vertical }: { a: PlayAction; flip: boolean;
         y={mid.y + 5}
         transform={vertical ? `rotate(-90 ${mid.x} ${mid.y})` : undefined}
         textAnchor="middle"
-        fontSize={16}
+        fontSize={a.option?.branchSeq ? 13 : 16}
         fontWeight={900}
         fill="var(--primary-foreground)"
       >
-        {a.seq}
+        {seqLabel(a)}
       </text>
       {a.option ? (
         <text
@@ -240,7 +240,7 @@ export function PlayCanvas({
           : selected.target
             ? `→ ${shownTokens.find((t) => t.id === selected.target)?.label ?? "?"}`
             : null,
-        `Seq ${selected.seq}`,
+        `Seq ${seqLabel(selected)}`,
       ]
         .filter(Boolean)
         .join(" • ")
