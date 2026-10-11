@@ -1,5 +1,5 @@
-import { normalizeIndex, searchScore } from "./playIndex";
-import { normalizeCategory, type Play } from "./types";
+import { CONCEPTS, DEFENSES, OUTCOMES, PRIMARY_ACTIONS, normalizeIndex, searchScore } from "./playIndex";
+import { PLAY_CATEGORIES, normalizeCategory, type Play } from "./types";
 
 /**
  * Playbook concept filters. Each filter only reads the coach-saved index
@@ -8,7 +8,7 @@ import { normalizeCategory, type Play } from "./types";
  */
 export type ConceptFilter = { key: string; label: string; match: (p: Play) => boolean };
 
-const lc = (xs: (string | null | undefined)[]) => xs.filter(Boolean).map((x) => x!.toLowerCase());
+const lc = (xs: (string | null | undefined)[]) => xs.flatMap((x) => x ? [x.toLowerCase()] : []);
 
 function fields(p: Play) {
   const i = normalizeIndex(p);
@@ -75,4 +75,53 @@ export function matchesQuery(p: Play, query: string, folderNames: string[]): boo
 /** Selected concept filters combine with AND so each pick narrows the list. */
 export function matchesConcepts(p: Play, keys: string[]): boolean {
   return keys.every((k) => CONCEPT_FILTERS.find((f) => f.key === k)?.match(p) ?? true);
+}
+
+export type DiscoveryFilter = ConceptFilter & { group: string; category?: string };
+export type DiscoverySection = { label: string; choices: DiscoveryFilter[] };
+const indexedChoice = (field: "concepts" | "defenses" | "outcomes" | "actions", value: string): DiscoveryFilter => ({
+  key: `${field}:${value}`, label: value, group: field,
+  match: (p) => has(fields(p)[field], value),
+});
+const conceptChoice = (key: string, group: string): DiscoveryFilter[] => {
+  const filter = CONCEPT_FILTERS.find((f) => f.key === key);
+  return filter ? [{ ...filter, group }] : [];
+};
+
+/** Display sections use saved vocabulary; independent facets stay AND-able.
+ * For example 5 Out + 3-point looks describes structure AND outcome, even
+ * though both convenient shortcuts are displayed in Concept / Structure. */
+export const DISCOVERY_SECTIONS: DiscoverySection[] = [
+  { label: "Play Type", choices: PLAY_CATEGORIES.map((category) => ({
+    key: `type:${category}`, label: category, category, group: "type",
+    match: (p) => normalizeCategory(p.category) === category,
+  })) },
+  { label: "Concept / Structure", choices: [
+    ...CONCEPTS.filter((v) => v !== "BLOB" && v !== "SLOB").map((v) => indexedChoice("concepts", v)),
+    ...["cuts", "screens", "pnr"].flatMap((key) => conceptChoice(key, "actions")),
+    ...conceptChoice("transition", "context"),
+    ...conceptChoice("three", "outcomes"),
+    ...conceptChoice("oob", "context"),
+    ...conceptChoice("late", "context"),
+  ] },
+  { label: "Defense Faced", choices: [
+    ...conceptChoice("zone", "defenses"), ...conceptChoice("man", "defenses"),
+    ...conceptChoice("press", "defenses"),
+    ...DEFENSES.map((v) => indexedChoice("defenses", v)),
+  ] },
+  { label: "Outcome / Action", choices: [
+    ...OUTCOMES.map((v) => indexedChoice("outcomes", v)),
+    ...PRIMARY_ACTIONS.map((v) => indexedChoice("actions", v)),
+  ] },
+];
+export const DISCOVERY_FILTERS = DISCOVERY_SECTIONS.flatMap((s) => s.choices);
+
+/** OR for alternative values of one facet; AND for independent facets. */
+export function matchesDiscovery(p: Play, keys: string[]): boolean {
+  const groups = new Map<string, DiscoveryFilter[]>();
+  for (const key of keys) {
+    const filter = DISCOVERY_FILTERS.find((f) => f.key === key);
+    if (filter) groups.set(filter.group, [...(groups.get(filter.group) ?? []), filter]);
+  }
+  return [...groups.values()].every((choices) => choices.some((f) => f.match(p)));
 }
