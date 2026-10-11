@@ -30,7 +30,11 @@ import {
   updatePlay,
   fetchPlaybookFolders,
   fetchPlayFolderMemberships,
+  fetchFolderNamesByPlay,
 } from "@/lib/data";
+import { CONCEPT_FILTERS, SORTS, matchesConcepts, matchesQuery, sortPlays, type SortKey } from "@/lib/playbookFilters";
+import { indexToRow, normalizeIndex, type PlayIndex } from "@/lib/playIndex";
+import { PlayIndexSheet } from "@/components/PlayIndexSheet";
 import { publishPlay, setPlayAnonymous, unpublishPlay } from "@/lib/library";
 import { LibraryFeed } from "@/components/community/LibraryFeed";
 import { CoachesDirectory, MyCoachProfileButton } from "@/components/community/CoachesDirectory";
@@ -183,11 +187,29 @@ function PlaybookPage() {
   }, [visiblePlays]);
 
   const listedPlays = useMemo(
-    () =>
-      visiblePlays
-        .filter((p) => !selected || normalizeCategory(p.category) === selected)
-        .sort((a, b) => a.name.localeCompare(b.name)),
+    () => visiblePlays.filter((p) => !selected || normalizeCategory(p.category) === selected),
     [visiblePlays, selected],
+  );
+
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("newest");
+  const [conceptKeys, setConceptKeys] = useState<string[]>([]);
+  const discoveryActive = !!query.trim() || conceptKeys.length > 0;
+  const clearDiscovery = () => { setQuery(""); setConceptKeys([]); };
+  const folderNames = useQuery({
+    queryKey: ["play-folder-names"],
+    queryFn: fetchFolderNamesByPlay,
+    enabled: tab === "mine",
+  });
+  const discoveredPlays = useMemo(
+    () =>
+      sortPlays(
+        listedPlays.filter(
+          (p) => matchesConcepts(p, conceptKeys) && matchesQuery(p, query, folderNames.data?.get(p.id) ?? []),
+        ),
+        sort,
+      ),
+    [listedPlays, conceptKeys, query, folderNames.data, sort],
   );
 
   const setCategory = (category: string | null) =>
@@ -407,6 +429,65 @@ function PlaybookPage() {
           ))}
         </Panel>
 
+        {/* Search, sort and concept filters */}
+        <Panel className="flex flex-col gap-2 p-3">
+          <div className="flex gap-2">
+            <TextInput
+              type="search"
+              aria-label="Search plays"
+              placeholder="Search name, tag, concept or folder"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="min-w-0 flex-1"
+            />
+            <select
+              aria-label="Sort plays"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="min-h-11 shrink-0 rounded-full border border-border bg-surface-2 px-3 text-xs font-bold text-foreground focus:border-grape focus:outline-none"
+            >
+              {SORTS.map((s) => (
+                <option key={s.key} value={s.key}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="-mx-1 flex flex-wrap gap-1.5 px-1">
+            {CONCEPT_FILTERS.map((f) => {
+              const on = conceptKeys.includes(f.key);
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setConceptKeys((cur) => (on ? cur.filter((k) => k !== f.key) : [...cur, f.key]))}
+                  className={cn(
+                    "min-h-9 rounded-full border px-3 text-xs font-bold transition-colors",
+                    on ? "border-flame bg-flame text-primary-foreground" : "border-border bg-surface-2/70 text-foreground hover:border-flame/60",
+                  )}
+                >
+                  {on ? "✓ " : ""}{f.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Pill tone="muted">
+              {discoveredPlays.length} of {listedPlays.length} {listedPlays.length === 1 ? "play" : "plays"}
+            </Pill>
+            {query.trim() ? (
+              <button type="button" onClick={() => setQuery("")}><Pill tone="grape">“{query.trim()}” ✕</Pill></button>
+            ) : null}
+            {conceptKeys.map((k) => (
+              <button key={k} type="button" onClick={() => setConceptKeys((cur) => cur.filter((x) => x !== k))}>
+                <Pill tone="flame">{CONCEPT_FILTERS.find((f) => f.key === k)?.label} ✕</Pill>
+              </button>
+            ))}
+            {discoveryActive ? (
+              <BubbleButton size="sm" tone="ghost" className="ml-auto" onClick={clearDiscovery}>Clear all</BubbleButton>
+            ) : null}
+          </div>
+        </Panel>
+
         <div className="flex justify-center">
           {selected ? (
             <BubbleButton size="sm" tone="flame" onClick={() => setQuickOpen((o) => !o)}>
@@ -488,13 +569,20 @@ function PlaybookPage() {
         {/* 4. Play cards */}
         {plays.isLoading ? <EmptyState>Loading plays…</EmptyState> : null}
         {!plays.isLoading && listedPlays.length === 0 ? (
-          <EmptyState>
-            {openFolder ? `No plays in ${openFolder.name}${selected ? ` of type ${selected}` : ""} yet` : `No ${selected ?? ""} plays yet`}
-          </EmptyState>
+          discoveryActive ? (
+            <Panel className="flex flex-col items-center gap-2 text-center">
+              <Note>No plays match your search and filters</Note>
+              <BubbleButton size="sm" tone="flame" onClick={clearDiscovery}>Clear search & filters</BubbleButton>
+            </Panel>
+          ) : (
+            <EmptyState>
+              {openFolder ? `No plays in ${openFolder.name}${selected ? ` of type ${selected}` : ""} yet` : `No ${selected ?? ""} plays yet`}
+            </EmptyState>
+          )
         ) : null}
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {listedPlays.map((p) => (
+          {discoveredPlays.map((p) => (
             <PlayCard
               key={p.id}
               play={p}
@@ -578,6 +666,9 @@ function PlayCard({
   const [menu, setMenu] = useState(false);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [foldersOpen, setFoldersOpen] = useState(false);
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const idx = normalizeIndex(play);
+  const chips = [...idx.concepts, ...idx.tags].slice(0, 3);
   // Only the coach's own teams are ever pre-checked or submitted — a source
   // play's foreign legacy team_id must never leak into the picker state.
   const ownAssigned = assignedTeams.filter((id) => allTeams.some((t) => t.id === id));
@@ -680,6 +771,11 @@ function PlayCard({
           <BubbleButton size="sm" tone="grape" onClick={() => { setFoldersOpen(true); setMenu(false); }}>
             Add to Folder
           </BubbleButton>
+          {canEdit ? (
+            <BubbleButton size="sm" tone="neutral" onClick={() => { setTagsOpen(true); setMenu(false); }}>
+              Tags
+            </BubbleButton>
+          ) : null}
           {canEdit && play.is_shared ? (
             <BubbleButton size="sm" tone="ghost" disabled={busy} onClick={onUnshare}>
               Stop sharing
@@ -776,6 +872,8 @@ function PlayCard({
           onClose={() => setFoldersOpen(false)}
         />
       ) : null}
+
+      {tagsOpen && canEdit ? <CardTagEditor play={play} onClose={() => setTagsOpen(false)} /> : null}
     </Panel>
   );
 }
