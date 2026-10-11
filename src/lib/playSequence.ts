@@ -18,17 +18,27 @@ export function buildSequentialSteps(frame: PlayFrame | undefined): SequenceStep
       const anchorSeq = anchor?.seq ?? Math.max(1, group.seq - 1);
       const tokens = anchor?.endTokens ?? frame.tokens;
       for (const branch of group.branches) {
-        const path = buildSteps({
-          ...frame,
-          tokens,
-          actions: frame.actions.filter((a) => a.option?.group === group.group && a.option.key === branch.key),
-        }, { [group.group]: branch.key });
-        path.forEach((step, i) => result.push({
-          ...step,
-          actions: step.actions.map((action) => ({ ...action, displaySeq: `${anchorSeq}${branch.key.toUpperCase()}${i ? `.${i + 1}` : ""}` })),
-          label: `${anchorSeq}${branch.key.toUpperCase()}${i ? `.${i + 1}` : ""}`,
-          option: { group: group.group, key: branch.key, anchorSeq, branchSeq: i + 1 },
-        }));
+        const path = buildSteps(
+          {
+            ...frame,
+            tokens,
+            actions: frame.actions.filter(
+              (a) => a.option?.group === group.group && a.option.key === branch.key,
+            ),
+          },
+          { [group.group]: branch.key },
+        );
+        path.forEach((step, i) =>
+          result.push({
+            ...step,
+            actions: step.actions.map((action) => ({
+              ...action,
+              displaySeq: `${anchorSeq}${branch.key.toUpperCase()}${i ? `.${i + 1}` : ""}`,
+            })),
+            label: `${anchorSeq}${branch.key.toUpperCase()}${i ? `.${i + 1}` : ""}`,
+            option: { group: group.group, key: branch.key, anchorSeq, branchSeq: i + 1 },
+          }),
+        );
       }
     }
   };

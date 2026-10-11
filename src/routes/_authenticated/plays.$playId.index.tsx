@@ -26,7 +26,13 @@ import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
 import { fitZoom, outsideCount, type CourtZoom } from "@/components/court/Court";
 import { PlayIndexSheet } from "@/components/PlayIndexSheet";
-import { EMPTY_INDEX, indexToRow, normalizeIndex, suggestFromFrames, type PlayIndex } from "@/lib/playIndex";
+import {
+  EMPTY_INDEX,
+  indexToRow,
+  normalizeIndex,
+  suggestFromFrames,
+  type PlayIndex,
+} from "@/lib/playIndex";
 import { fetchFrames, fetchPlay, saveFrames, updatePlay } from "@/lib/data";
 import { useMe } from "@/lib/useMe";
 import { fetchCoachLabel, isPlayOwner } from "@/lib/playOwnership";
@@ -56,7 +62,12 @@ import {
   updateOptionBranch,
 } from "@/lib/playOptions";
 import { buildSequentialSteps, mainEndState } from "@/lib/playSequence";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { addHalfCourtDefense } from "@/lib/playDefense";
 
 export const Route = createFileRoute("/_authenticated/plays/$playId/")({
@@ -124,7 +135,6 @@ function blankFrame(playId: string, idx: number): PlayFrame {
   };
 }
 
-
 function PlayDesignerPage() {
   const { playId } = Route.useParams();
   const play = useQuery({ queryKey: ["play", playId], queryFn: () => fetchPlay(playId) });
@@ -136,7 +146,6 @@ function PlayDesignerPage() {
     queryFn: () => fetchCoachLabel(play.data?.created_by),
     enabled: !!play.data?.created_by && !canEdit,
   });
-
 
   const [frames, setFrames] = useState<PlayFrame[]>([]);
   const [current, setCurrent] = useState(0);
@@ -164,15 +173,18 @@ function PlayDesignerPage() {
     rivalId: string;
   } | null>(null);
   /** Compact Add Option sheet (new option point, or another option at an existing point). */
-  const [optionSheet, setOptionSheet] = useState<{ group: string | null; label: string; condition: string } | null>(null);
-  const [pendingSelection, setPendingSelection] = useState<{ group: string; key: string } | null>(null);
-
+  const [optionSheet, setOptionSheet] = useState<{
+    group: string | null;
+    label: string;
+    condition: string;
+  } | null>(null);
+  const [pendingSelection, setPendingSelection] = useState<{ group: string; key: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (framesQ.data) {
-      setFrames(
-        framesQ.data.length ? framesQ.data : [blankFrame(playId, 0)],
-      );
+      setFrames(framesQ.data.length ? framesQ.data : [blankFrame(playId, 0)]);
     }
   }, [framesQ.data, playId]);
 
@@ -187,7 +199,13 @@ function PlayDesignerPage() {
 
   useEffect(() => {
     const saved = window.localStorage.getItem(PLAYMAKER_VIEW_KEY);
-    if (saved === "right" || saved === "left" || saved === "top" || saved === "bottom" || saved === "full") {
+    if (
+      saved === "right" ||
+      saved === "left" ||
+      saved === "top" ||
+      saved === "bottom" ||
+      saved === "full"
+    ) {
       setZoom(saved);
     }
   }, []);
@@ -210,16 +228,21 @@ function PlayDesignerPage() {
   const seqCount = steps.length;
   const activeIdx = Math.min(seqIdx, seqCount);
   const activeStep = steps[activeIdx];
-  const nextMainSeq = Math.max(0, ...(frame?.actions.filter((a) => !a.option).map((a) => a.seq) ?? [])) + 1;
+  const nextMainSeq =
+    Math.max(0, ...(frame?.actions.filter((a) => !a.option).map((a) => a.seq) ?? [])) + 1;
   const seqNumber = activeStep?.seq ?? nextMainSeq;
   const projected = activeStep ? sampleStep(activeStep, "show", 0) : mainEndState(frame);
   const branchGroup = optionGroups.find((g) => g.group === activeStep?.option?.group) ?? null;
   const branchKey = activeStep?.option?.key ?? null;
   const contextGroup = branchGroup ?? optionGroups.find((g) => g.seq === seqNumber + 1) ?? null;
-  const activeBranch: BranchSelection = branchGroup && branchKey ? { [branchGroup.group]: branchKey } : {};
+  const activeBranch: BranchSelection =
+    branchGroup && branchKey ? { [branchGroup.group]: branchKey } : {};
   const visibleActions = activeStep
-    ? (frame?.actions ?? []).filter((a) => activeStep.actions.some((st) => st.id === a.id)) : [];
-  const passWarnings = findPassWarnings(frame, activeBranch).filter((w) => visibleActions.some((a) => a.id === w.actionId));
+    ? (frame?.actions ?? []).filter((a) => activeStep.actions.some((st) => st.id === a.id))
+    : [];
+  const passWarnings = findPassWarnings(frame, activeBranch).filter((w) =>
+    visibleActions.some((a) => a.id === w.actionId),
+  );
   const stepName = (i: number) => steps[i]?.label ?? String(nextMainSeq);
   const seqTotal = Math.max(seqCount, activeIdx + 1);
   const seqStatus = (pos: number) => stepName(pos);
@@ -229,17 +252,28 @@ function PlayDesignerPage() {
   };
   useEffect(() => {
     if (!pendingSelection) return;
-    const i = steps.findIndex((st) => st.option?.group === pendingSelection.group && st.option.key === pendingSelection.key);
-    if (i >= 0) { setSeqIdx(i); setPendingSelection(null); }
+    const i = steps.findIndex(
+      (st) => st.option?.group === pendingSelection.group && st.option.key === pendingSelection.key,
+    );
+    if (i >= 0) {
+      setSeqIdx(i);
+      setPendingSelection(null);
+    }
   }, [steps, pendingSelection]);
 
   const timeline = useMemo(() => ({ steps, totalMs: steps.length * STEP_MS }), [steps]);
   const rangeEnd = mode === "preview" ? (activeIdx + 1) * STEP_MS : timeline.totalMs;
-  const live = mode === "idle"
-    ? previewComplete && activeStep
-      ? { step: activeStep, index: activeIdx, phase: "do" as const, sample: sampleStep(activeStep, "do", 1) }
-      : null
-    : sampleTimeline(timeline, timeMs);
+  const live =
+    mode === "idle"
+      ? previewComplete && activeStep
+        ? {
+            step: activeStep,
+            index: activeIdx,
+            phase: "do" as const,
+            sample: sampleStep(activeStep, "do", 1),
+          }
+        : null
+      : sampleTimeline(timeline, timeMs);
 
   useEffect(() => {
     setPreviewComplete(false);
@@ -307,7 +341,9 @@ function PlayDesignerPage() {
 
   const addAction = (drawn: PlayAction, seq: number) => {
     const opt =
-      frame && branchGroup && branchKey ? optionForSeq(frame, branchGroup.group, branchKey, seq) : undefined;
+      frame && branchGroup && branchKey
+        ? optionForSeq(frame, branchGroup.group, branchKey, seq)
+        : undefined;
     const action: PlayAction = opt ? { ...drawn, option: opt } : drawn;
     // Two outcomes by the same ball handler in one sequence cannot both happen.
     const rival = visibleActions.find(
@@ -342,7 +378,11 @@ function PlayDesignerPage() {
         label: "Move to next sequence",
         onClick: () => {
           patchFrame((f) => {
-            const shifted = insertSequenceAfter(f, seq, opt ? { group: opt.group, key: opt.key } : undefined);
+            const shifted = insertSequenceAfter(
+              f,
+              seq,
+              opt ? { group: opt.group, key: opt.key } : undefined,
+            );
             const moved: PlayAction = opt
               ? { ...action, seq: seq + 1, option: { ...opt, branchSeq: (opt.branchSeq ?? 1) + 1 } }
               : { ...action, seq: seq + 1 };
@@ -373,7 +413,8 @@ function PlayDesignerPage() {
         return;
       }
       const id = bindToken(p);
-      if (id) patchFrame((f) => ({ ...f, tokens: f.tokens.map((t) => ({ ...t, ball: t.id === id })) }));
+      if (id)
+        patchFrame((f) => ({ ...f, tokens: f.tokens.map((t) => ({ ...t, ball: t.id === id })) }));
       return;
     }
     setStroke([p]);
@@ -448,18 +489,20 @@ function PlayDesignerPage() {
           seqNumber,
         );
         if (receiver) toast.success(`Pass linked to #${receiver.label}`, { duration: 1800 });
-        else toast.info("Pass saved to open space. Possession stays with the passer.", { duration: 3000 });
+        else
+          toast.info("Pass saved to open space. Possession stays with the passer.", {
+            duration: 3000,
+          });
         return;
       }
-      addAction(
-        { id: uuid(), type: tool, seq: seqNumber, points: pts, actor: actorId },
-        seqNumber,
-      );
+      addAction({ id: uuid(), type: tool, seq: seqNumber, points: pts, actor: actorId }, seqNumber);
     }
   };
 
   const selectedPass = useMemo(
-    () => frame?.actions.find((action) => action.id === selectedActionId && action.type === "pass") ?? null,
+    () =>
+      frame?.actions.find((action) => action.id === selectedActionId && action.type === "pass") ??
+      null,
     [frame?.actions, selectedActionId],
   );
   const selectedPassChoices = useMemo(
@@ -515,7 +558,6 @@ function PlayDesignerPage() {
     setSelectedActionId(pending.action.id);
   };
 
-
   /** Commit the play's end state as the frame's new starting positions. */
   const applyEndState = () => {
     const last = steps[steps.length - 1];
@@ -551,7 +593,6 @@ function PlayDesignerPage() {
     }
     setSaving(true);
     try {
-
       await saveFrames(playId, frames);
       await updatePlay(playId, {
         name,
@@ -559,7 +600,10 @@ function PlayDesignerPage() {
         attack_basket: flip ? "left" : "right",
         ...indexToRow(index),
         indexed_at:
-          index.concepts.length || index.defenses.length || index.outcomes.length || index.primary_actions.length
+          index.concepts.length ||
+          index.defenses.length ||
+          index.outcomes.length ||
+          index.primary_actions.length
             ? new Date().toISOString()
             : (play.data?.indexed_at ?? null),
       } as Partial<typeof play.data & object>);
@@ -580,7 +624,10 @@ function PlayDesignerPage() {
         !a.actor ||
         (a.type === "handoff" && !a.target) ||
         (a.type === "pass" && !a.target && a.passTo !== "space"),
-    ) || findChainConflicts(frame ? { ...frame, actions: visibleActions } : undefined).some((c) => c.seq === seqNumber);
+    ) ||
+    findChainConflicts(frame ? { ...frame, actions: visibleActions } : undefined).some(
+      (c) => c.seq === seqNumber,
+    );
   const activeWarnings = passWarnings.filter((w) => w.seq === seqNumber);
 
   const undoSequenceAction = () => {
@@ -629,20 +676,26 @@ function PlayDesignerPage() {
     setSelectedActionId(null);
   };
 
-
   /* ---- OPTION authoring ---- */
 
   const openAddOption = () => {
     setShowSeqPicker(false);
     const g = contextGroup;
-    if (g && g.branches.length >= MAX_OPTIONS) { toast.info(`An OPTION holds up to ${MAX_OPTIONS} options.`); return; }
-    if (!activeStep) { toast.info("Finish this sequence before adding an OPTION."); return; }
+    if (g && g.branches.length >= MAX_OPTIONS) {
+      toast.info(`An OPTION holds up to ${MAX_OPTIONS} options.`);
+      return;
+    }
+    if (!activeStep) {
+      toast.info("Finish this sequence before adding an OPTION.");
+      return;
+    }
     setOptionSheet({ group: g?.group ?? null, label: "", condition: "" });
   };
   const createOption = () => {
     if (!frame || !optionSheet) return;
     const { group, label, condition } = optionSheet;
-    const res = group ? addOptionBranch(frame, group, label, condition, uuid)
+    const res = group
+      ? addOptionBranch(frame, group, label, condition, uuid)
       : createOptionPoint(frame, seqNumber + 1, label, condition, uuid);
     if (!res) return;
     const groupId = group ?? ("group" in res ? res.group : null);
@@ -685,7 +738,12 @@ function PlayDesignerPage() {
     const key = branchKey;
     const b = contextGroup.branches.find((x) => x.key === key);
     if (!b || !key) return;
-    if (!window.confirm(`Delete Option ${optionLetter(key)} — ${b.label}? Shared sequences and other options stay.`)) return;
+    if (
+      !window.confirm(
+        `Delete Option ${optionLetter(key)} — ${b.label}? Shared sequences and other options stay.`,
+      )
+    )
+      return;
     const point = pointIdx(contextGroup);
     patchFrame((f) => deleteOptionBranch(f, contextGroup.group, key));
     goToSequence(Math.max(0, point - 1));
@@ -717,7 +775,6 @@ function PlayDesignerPage() {
     { key: "screen", label: "Screen" },
     { key: "shot", label: "Shot" },
   ];
-
 
   return (
     <AppShell
@@ -756,169 +813,240 @@ function PlayDesignerPage() {
         </Note>
       ) : null}
       <div className="grid min-w-0 gap-2 xl:grid-cols-[minmax(0,1fr)_340px]">
-
         <div className="flex min-w-0 flex-col gap-1.5">
           <div ref={courtControlsRef} className="flex w-full min-w-0 flex-col gap-1">
-          <div className="relative">
-          <PlayCanvas
-            className="mx-auto w-full max-w-full"
-            frame={frame}
-            flip={flip}
-            zoom={zoom}
-            ghost={stroke}
-            tokens={live ? live.sample.tokens : projected.tokens}
-            ball={live ? live.sample.ball : projected.ball}
-            actions={live ? live.step.actions : (activeStep?.actions ?? [])}
-            activeSeq={live ? live.step.seq : seqNumber}
-            dimOtherActions
-            {...(selectedActionId ? { selectedActionId } : {})}
-            onCourtPoint={onDown}
-            onCourtPointerMove={onMove}
-            onCourtPointerUp={onUp}
-          />
-          </div>
-           <Panel
-            aria-label="Sequence controls"
-            className="grid min-w-0 grid-cols-[auto_auto_auto_minmax(0,1fr)_auto] items-center gap-1 p-1 sm:gap-2"
-          >
-            <BubbleButton
-              size="sm"
-              tone="flame"
-              className="h-11 w-11 shrink-0 p-0"
-              aria-label={mode === "replay" ? "Stop full play" : "Play full play from sequence 1"}
-              title={mode === "replay" ? "Stop full play" : "Play full play from sequence 1"}
-              disabled={seqCount === 0}
-              onClick={() => (mode === "replay" ? setMode("idle") : replayPlay())}
-            >
-              {mode === "replay" ? <Pause className="size-5" aria-hidden /> : <Play className="size-5 fill-current" aria-hidden />}
-            </BubbleButton>
-            <BubbleButton
-              size="sm"
-              tone="neutral"
-              className="h-11 w-11 shrink-0 p-0"
-              aria-label="Undo last action in selected sequence"
-              title="Undo last action in selected sequence"
-              disabled={!canEdit || activeActions.length === 0}
-              onClick={undoSequenceAction}
-            >
-              <Undo2 className="size-5" aria-hidden />
-            </BubbleButton>
-            <BubbleButton
-              size="sm"
-              tone="neutral"
-              className="h-11 w-11 shrink-0 p-0"
-              aria-label="Previous sequence"
-              title="Previous sequence"
-              disabled={activeIdx === 0}
-              onClick={() => goToSequence(activeIdx - 1)}
-            >
-              <ArrowLeft className="size-5" aria-hidden />
-            </BubbleButton>
-            <BubbleButton
-              size="sm"
-              tone="grape"
-              className="min-h-11 min-w-0 gap-1 px-2 text-xs sm:px-4 sm:text-sm"
-              disabled={activeIdx >= seqCount - 1 && (sequenceInvalid || !activeStep)}
-              title={sequenceInvalid ? "Finish or repair this sequence first" : "Next Sequence"}
-              onClick={() => (activeIdx < seqCount - 1 ? goToSequence(activeIdx + 1) : nextSequence())}
-            >
-              <span className="sm:hidden">Next</span>
-              <span className="hidden sm:inline">Next Sequence</span>
-              <ArrowRight className="size-4 shrink-0" aria-hidden />
-            </BubbleButton>
-            <BubbleButton
-              size="sm" tone="ghost"
-              className="min-h-11 shrink-0"
-              aria-label={`Sequence ${seqStatus(activeIdx)}. Open sequence picker`}
-              aria-expanded={showSeqPicker}
-              onClick={() => setShowSeqPicker((v) => !v)}
-            >
-              <Pill tone={showSeqPicker ? "grape" : "muted"} className="whitespace-nowrap px-2 tracking-normal" aria-live="polite">
-                {seqStatus(live && (mode === "replay") ? live.index : activeIdx)} ▾
-              </Pill>
-            </BubbleButton>
-          </Panel>
-          {showSeqPicker ? (
-            <Panel aria-label="Sequence picker" className="flex flex-wrap items-center gap-1.5 p-2">
-                             {Array.from({ length: seqTotal }, (_, i) => (
-                 <BubbleButton key={i} size="sm" tone={i === activeIdx ? "grape" : "neutral"}
-                   className="h-11 min-w-11 px-2" onClick={() => goToSequence(i)}>{stepName(i)}</BubbleButton>
-               ))}
-{canEdit ? (
-                <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={openAddOption}>
-                  Add Play Option
-                </BubbleButton>
-              ) : null}
-              <span className="mx-1 h-6 w-px bg-border" aria-hidden />
-              <BubbleButton size="sm" tone="ghost" className="min-h-11" disabled={!activeStep?.actions.length} onClick={() => (mode === "preview" ? setMode("idle") : previewSequence())}>
-                {mode === "preview" ? "Stop" : "Preview this"}
-              </BubbleButton>
-              <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={resetPlay}>
-                Reset
-              </BubbleButton>
-              <BubbleButton size="sm" tone="ghost" className="min-h-11" disabled={seqCount === 0} onClick={applyEndState}>
-                Use End Positions
-              </BubbleButton>
-              <BubbleButton size="sm" tone="ghost" className="min-h-11" disabled={!canEdit || !activeStep || seqCount <= 1} onClick={deleteSequence}>
-                Delete Sequence
-              </BubbleButton>
-            </Panel>
-          ) : null}
-          {optionSheet ? (
-            <Panel aria-label="Add option" className="flex flex-col gap-2 p-2">
-              <div className="flex items-center justify-between gap-2">
-                <Label>Add Play Option</Label>
-                <Pill tone="grape">
-                  {`Option ${optionLetter(
-                    optionSheet.group
-                      ? (frame ? nextOptionKey(frame, optionSheet.group) ?? "a" : "a")
-                      : "a",
-                  )}`}
-                </Pill>
-              </div>
-              <input
-                autoFocus
-                aria-label="Option name"
-                placeholder="Option name, e.g. Shoot 3"
-                maxLength={40}
-                className="min-h-11 rounded-2xl border border-input bg-surface-2/70 px-3 text-sm font-semibold outline-none focus:border-grape"
-                value={optionSheet.label}
-                onChange={(e) => setOptionSheet({ ...optionSheet, label: e.target.value })}
+            <div className="relative">
+              <PlayCanvas
+                className="mx-auto w-full max-w-full"
+                frame={frame}
+                flip={flip}
+                zoom={zoom}
+                ghost={stroke}
+                tokens={live ? live.sample.tokens : projected.tokens}
+                ball={live ? live.sample.ball : projected.ball}
+                actions={live ? live.step.actions : (activeStep?.actions ?? [])}
+                activeSeq={live ? live.step.seq : seqNumber}
+                dimOtherActions
+                {...(selectedActionId ? { selectedActionId } : {})}
+                onCourtPoint={onDown}
+                onCourtPointerMove={onMove}
+                onCourtPointerUp={onUp}
               />
-              <div className="flex flex-wrap gap-2">
-                <BubbleButton size="sm" tone="flame" className="min-h-11" onClick={createOption}>
-                  Create Option
-                </BubbleButton>
-                <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={() => setOptionSheet(null)}>
-                  Cancel
-                </BubbleButton>
-              </div>
+            </div>
+            <Panel
+              aria-label="Sequence controls"
+              className="grid min-w-0 grid-cols-[auto_auto_auto_minmax(0,1fr)_auto] items-center gap-1 p-1 sm:gap-2"
+            >
+              <BubbleButton
+                size="sm"
+                tone="flame"
+                className="h-11 w-11 shrink-0 p-0"
+                aria-label={mode === "replay" ? "Stop full play" : "Play full play from sequence 1"}
+                title={mode === "replay" ? "Stop full play" : "Play full play from sequence 1"}
+                disabled={seqCount === 0}
+                onClick={() => (mode === "replay" ? setMode("idle") : replayPlay())}
+              >
+                {mode === "replay" ? (
+                  <Pause className="size-5" aria-hidden />
+                ) : (
+                  <Play className="size-5 fill-current" aria-hidden />
+                )}
+              </BubbleButton>
+              <BubbleButton
+                size="sm"
+                tone="neutral"
+                className="h-11 w-11 shrink-0 p-0"
+                aria-label="Undo last action in selected sequence"
+                title="Undo last action in selected sequence"
+                disabled={!canEdit || activeActions.length === 0}
+                onClick={undoSequenceAction}
+              >
+                <Undo2 className="size-5" aria-hidden />
+              </BubbleButton>
+              <BubbleButton
+                size="sm"
+                tone="neutral"
+                className="h-11 w-11 shrink-0 p-0"
+                aria-label="Previous sequence"
+                title="Previous sequence"
+                disabled={activeIdx === 0}
+                onClick={() => goToSequence(activeIdx - 1)}
+              >
+                <ArrowLeft className="size-5" aria-hidden />
+              </BubbleButton>
+              <BubbleButton
+                size="sm"
+                tone="grape"
+                className="min-h-11 min-w-0 gap-1 px-2 text-xs sm:px-4 sm:text-sm"
+                disabled={activeIdx >= seqCount - 1 && (sequenceInvalid || !activeStep)}
+                title={sequenceInvalid ? "Finish or repair this sequence first" : "Next Sequence"}
+                onClick={() =>
+                  activeIdx < seqCount - 1 ? goToSequence(activeIdx + 1) : nextSequence()
+                }
+              >
+                <span className="sm:hidden">Next</span>
+                <span className="hidden sm:inline">Next Sequence</span>
+                <ArrowRight className="size-4 shrink-0" aria-hidden />
+              </BubbleButton>
+              <BubbleButton
+                size="sm"
+                tone="ghost"
+                className="min-h-11 shrink-0"
+                aria-label={`Sequence ${seqStatus(activeIdx)}. Open sequence picker`}
+                aria-expanded={showSeqPicker}
+                onClick={() => setShowSeqPicker((v) => !v)}
+              >
+                <Pill
+                  tone={showSeqPicker ? "grape" : "muted"}
+                  className="whitespace-nowrap px-2 tracking-normal"
+                  aria-live="polite"
+                >
+                  {seqStatus(live && mode === "replay" ? live.index : activeIdx)} ▾
+                </Pill>
+              </BubbleButton>
             </Panel>
-          ) : null}
-                     {branchGroup && branchKey && !optionSheet ? (
-             <div className="flex min-w-0 items-center gap-1">
-               <Pill tone="flame" className="shrink-0">OPTION</Pill>
-               <Pill tone="muted" className="min-w-0 flex-1 truncate normal-case tracking-normal">
-                 {stepName(activeIdx)} · {branchGroup.branches.find((b) => b.key === branchKey)?.label}
-               </Pill>
-               {canEdit ? <DropdownMenu>
-                 <DropdownMenuTrigger asChild>
-                   <BubbleButton size="sm" tone="ghost" className="h-11 w-11 shrink-0 p-0" aria-label="Option menu">
-                     <MoreHorizontal className="size-5" aria-hidden />
-                   </BubbleButton>
-                 </DropdownMenuTrigger>
-                 <DropdownMenuContent align="end" className="max-w-[calc(100vw-2rem)]">
-                   <DropdownMenuItem className="min-h-11" onSelect={openAddOption}>Add Play Option</DropdownMenuItem>
-                   <DropdownMenuItem className="min-h-11" onSelect={() => editShownOption("label")}>Rename Option</DropdownMenuItem>
-                   <DropdownMenuItem className="min-h-11" onSelect={() => editShownOption("condition")}>Edit Condition</DropdownMenuItem>
-                   <DropdownMenuItem className="min-h-11" onSelect={duplicateShownOption}>Duplicate Option</DropdownMenuItem>
-                   <DropdownMenuItem className="min-h-11" onSelect={deleteShownOption}>Delete Option</DropdownMenuItem>
-                 </DropdownMenuContent>
-               </DropdownMenu> : null}
-             </div>
-           ) : null}
-           </div>
-           {selectedPass ? (
+            {showSeqPicker ? (
+              <Panel
+                aria-label="Sequence picker"
+                className="flex flex-wrap items-center gap-1.5 p-2"
+              >
+                {Array.from({ length: seqTotal }, (_, i) => (
+                  <BubbleButton
+                    key={i}
+                    size="sm"
+                    tone={i === activeIdx ? "grape" : "neutral"}
+                    className="h-11 min-w-11 px-2"
+                    onClick={() => goToSequence(i)}
+                  >
+                    {stepName(i)}
+                  </BubbleButton>
+                ))}
+                {canEdit ? (
+                  <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={openAddOption}>
+                    Add Play Option
+                  </BubbleButton>
+                ) : null}
+                <span className="mx-1 h-6 w-px bg-border" aria-hidden />
+                <BubbleButton
+                  size="sm"
+                  tone="ghost"
+                  className="min-h-11"
+                  disabled={!activeStep?.actions.length}
+                  onClick={() => (mode === "preview" ? setMode("idle") : previewSequence())}
+                >
+                  {mode === "preview" ? "Stop" : "Preview this"}
+                </BubbleButton>
+                <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={resetPlay}>
+                  Reset
+                </BubbleButton>
+                <BubbleButton
+                  size="sm"
+                  tone="ghost"
+                  className="min-h-11"
+                  disabled={seqCount === 0}
+                  onClick={applyEndState}
+                >
+                  Use End Positions
+                </BubbleButton>
+                <BubbleButton
+                  size="sm"
+                  tone="ghost"
+                  className="min-h-11"
+                  disabled={!canEdit || !activeStep || seqCount <= 1}
+                  onClick={deleteSequence}
+                >
+                  Delete Sequence
+                </BubbleButton>
+              </Panel>
+            ) : null}
+            {optionSheet ? (
+              <Panel aria-label="Add option" className="flex flex-col gap-2 p-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label>Add Play Option</Label>
+                  <Pill tone="grape">
+                    {`Option ${optionLetter(
+                      optionSheet.group
+                        ? frame
+                          ? (nextOptionKey(frame, optionSheet.group) ?? "a")
+                          : "a"
+                        : "a",
+                    )}`}
+                  </Pill>
+                </div>
+                <input
+                  autoFocus
+                  aria-label="Option name"
+                  placeholder="Option name, e.g. Shoot 3"
+                  maxLength={40}
+                  className="min-h-11 rounded-2xl border border-input bg-surface-2/70 px-3 text-sm font-semibold outline-none focus:border-grape"
+                  value={optionSheet.label}
+                  onChange={(e) => setOptionSheet({ ...optionSheet, label: e.target.value })}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <BubbleButton size="sm" tone="flame" className="min-h-11" onClick={createOption}>
+                    Create Option
+                  </BubbleButton>
+                  <BubbleButton
+                    size="sm"
+                    tone="ghost"
+                    className="min-h-11"
+                    onClick={() => setOptionSheet(null)}
+                  >
+                    Cancel
+                  </BubbleButton>
+                </div>
+              </Panel>
+            ) : null}
+            {branchGroup && branchKey && !optionSheet ? (
+              <div className="flex min-w-0 items-center gap-1">
+                <Pill tone="flame" className="shrink-0">
+                  OPTION
+                </Pill>
+                <Pill tone="muted" className="min-w-0 flex-1 truncate normal-case tracking-normal">
+                  {stepName(activeIdx)} ·{" "}
+                  {branchGroup.branches.find((b) => b.key === branchKey)?.label}
+                </Pill>
+                {canEdit ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <BubbleButton
+                        size="sm"
+                        tone="ghost"
+                        className="h-11 w-11 shrink-0 p-0"
+                        aria-label="Option menu"
+                      >
+                        <MoreHorizontal className="size-5" aria-hidden />
+                      </BubbleButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="max-w-[calc(100vw-2rem)]">
+                      <DropdownMenuItem className="min-h-11" onSelect={openAddOption}>
+                        Add Play Option
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="min-h-11"
+                        onSelect={() => editShownOption("label")}
+                      >
+                        Rename Option
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="min-h-11"
+                        onSelect={() => editShownOption("condition")}
+                      >
+                        Edit Condition
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="min-h-11" onSelect={duplicateShownOption}>
+                        Duplicate Option
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="min-h-11" onSelect={deleteShownOption}>
+                        Delete Option
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+          {selectedPass ? (
             <Panel className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <Label>Selected pass</Label>
@@ -980,7 +1108,6 @@ function PlayDesignerPage() {
             </Panel>
           ) : null}
           <Panel className="flex flex-col gap-3">
-
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
               <Label>Tools</Label>
               <Pill tone="grape">Sequence {stepName(activeIdx)}</Pill>
@@ -1007,21 +1134,32 @@ function PlayDesignerPage() {
             </div>
             <div className="flex flex-wrap gap-2 border-t border-border pt-3">
               <Label>Court view</Label>
-              {([
-                ["right", "Right"],
-                ["left", "Left"],
-                ["top", "Top"],
-                ["bottom", "Bottom"],
-                ["full", "Full"],
-              ] as const).map(([key, label]) => (
-                <BubbleButton key={key} size="sm" tone={zoom === key ? "flame" : "neutral"} onClick={() => chooseZoom(key)}>
+              {(
+                [
+                  ["right", "Right"],
+                  ["left", "Left"],
+                  ["top", "Top"],
+                  ["bottom", "Bottom"],
+                  ["full", "Full"],
+                ] as const
+              ).map(([key, label]) => (
+                <BubbleButton
+                  key={key}
+                  size="sm"
+                  tone={zoom === key ? "flame" : "neutral"}
+                  onClick={() => chooseZoom(key)}
+                >
                   {label}
                 </BubbleButton>
               ))}
               {offView > 0 ? (
                 <>
                   <Pill tone="flame">{offView} off this view</Pill>
-                  <BubbleButton size="sm" tone="grape" onClick={() => chooseZoom(fitZoom(frame?.tokens ?? []))}>
+                  <BubbleButton
+                    size="sm"
+                    tone="grape"
+                    onClick={() => chooseZoom(fitZoom(frame?.tokens ?? []))}
+                  >
                     Fit players
                   </BubbleButton>
                 </>
@@ -1051,7 +1189,12 @@ function PlayDesignerPage() {
 
         <div className="flex flex-col gap-3">
           {canEdit ? (
-            <PlayIndexSheet value={index} onChange={setIndex} suggestions={suggestFromFrames(frames, flip ? "left" : "right")} compact />
+            <PlayIndexSheet
+              value={index}
+              onChange={setIndex}
+              suggestions={suggestFromFrames(frames, flip ? "left" : "right")}
+              compact
+            />
           ) : null}
           {frames.length > 1 ? (
             <details className="rounded-2xl border border-border bg-surface-2/50 p-2">
@@ -1099,7 +1242,6 @@ function PlayDesignerPage() {
               Legend: dotted = pass · solid arrow = cut · curved arrow = curl cut · bumpy line =
               dribble · bar end = screen
             </Pill>
-
           </Panel>
         </div>
       </div>

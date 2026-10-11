@@ -42,12 +42,15 @@ export function normalizePlayForPlayback(
   const steps: NormalizedPlayback["steps"] = [];
   const options: NormalizedPlayback["options"] = [];
   list.forEach((frame, frameIdx) => {
-    for (const step of buildSequentialSteps(frame)) steps.push({ step, frameIdx, note: frame.note });
+    for (const step of buildSequentialSteps(frame))
+      steps.push({ step, frameIdx, note: frame.note });
     for (const group of listOptionGroups(frame)) options.push({ frameIdx, group });
   });
   const labels = [
     ...new Set(
-      list.flatMap((f) => f.tokens.filter((t) => (t.team ?? "offense") === "offense").map((t) => t.label)),
+      list.flatMap((f) =>
+        f.tokens.filter((t) => (t.team ?? "offense") === "offense").map((t) => t.label),
+      ),
     ),
   ];
   return {
@@ -61,7 +64,6 @@ export function normalizePlayForPlayback(
   };
 }
 
-
 export function PlayPresenter({
   play,
   frames,
@@ -73,12 +75,8 @@ export function PlayPresenter({
   loading?: boolean;
   className?: string;
 }) {
-  const model = useMemo(
-    () => normalizePlayForPlayback(play, frames),
-    [play, frames],
-  );
+  const model = useMemo(() => normalizePlayForPlayback(play, frames), [play, frames]);
   const total = model.steps.length;
-
 
   const [idx, setIdx] = useState(0);
   const [phase, setPhase] = useState<"show" | "do">("show");
@@ -139,9 +137,9 @@ export function PlayPresenter({
   };
 
   const focusTokenId = focus
-    ? (sample?.tokens ?? frame?.tokens ?? []).find(
+    ? ((sample?.tokens ?? frame?.tokens ?? []).find(
         (t) => t.label === focus && (t.team ?? "offense") === "offense",
-      )?.id ?? null
+      )?.id ?? null)
     : null;
 
   const actions = current
@@ -161,7 +159,15 @@ export function PlayPresenter({
       <div className="flex flex-col gap-2">
         <SectionHeader as="h1" title={model.name} subtitle={model.category || undefined}>
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <Pill tone="flame">Sequence {current && "label" in current.step ? String(current.step.label) : total ? idx + 1 : 0} of {total}</Pill>
+            <Pill tone="flame">
+              Sequence{" "}
+              {current && "label" in current.step
+                ? String(current.step.label)
+                : total
+                  ? idx + 1
+                  : 0}{" "}
+              of {total}
+            </Pill>
             <Pill tone="neutral">{phase === "show" ? "Showing actions" : "Running play"}</Pill>
           </div>
           {current?.note ? <InfoPanel className="max-w-2xl">{current.note}</InfoPanel> : null}
@@ -188,7 +194,7 @@ export function PlayPresenter({
               tone="ghost"
               aria-label="Play this play"
               onClick={() => {
-                            setPlaying(true);
+                setPlaying(true);
               }}
               className="absolute inset-0 flex items-center justify-center rounded-3xl bg-background/45 backdrop-blur-[1px]"
             >
@@ -197,7 +203,6 @@ export function PlayPresenter({
               </span>
             </BubbleButton>
           ) : null}
-          
         </div>
 
         <Panel className="flex flex-wrap items-center justify-center gap-2">
@@ -205,7 +210,7 @@ export function PlayPresenter({
             tone="ghost"
             onClick={() => {
               setPlaying(false);
-                        goto(0);
+              goto(0);
             }}
           >
             ⟲ Restart
@@ -223,16 +228,27 @@ export function PlayPresenter({
 
         <ExportPlayVideo model={model} />
 
-
         <Panel className="flex flex-wrap items-center justify-center gap-2">
           <Pill tone="muted">Court view</Pill>
-          <BubbleButton size="sm" tone={zoom === "full" ? "grape" : "neutral"} onClick={() => setZoom("full")}>
+          <BubbleButton
+            size="sm"
+            tone={zoom === "full" ? "grape" : "neutral"}
+            onClick={() => setZoom("full")}
+          >
             Full Court
           </BubbleButton>
-          <BubbleButton size="sm" tone={zoom === "left" ? "grape" : "neutral"} onClick={() => setZoom("left")}>
+          <BubbleButton
+            size="sm"
+            tone={zoom === "left" ? "grape" : "neutral"}
+            onClick={() => setZoom("left")}
+          >
             Zoom Left Half
           </BubbleButton>
-          <BubbleButton size="sm" tone={zoom === "right" ? "grape" : "neutral"} onClick={() => setZoom("right")}>
+          <BubbleButton
+            size="sm"
+            tone={zoom === "right" ? "grape" : "neutral"}
+            onClick={() => setZoom("right")}
+          >
             Zoom Right Half
           </BubbleButton>
         </Panel>
