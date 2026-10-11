@@ -82,8 +82,9 @@ export function resolveLegacyActors(frame: PlayFrame): PlayFrame {
   if (!frame) return frame;
   const needs = frame.actions.some(
     (a) =>
-      !a.actor ||
-      ((a.type === "pass" || a.type === "handoff") && !a.target && a.passTo !== "space"),
+      !isOptionMarker(a) &&
+      (!a.actor ||
+      ((a.type === "pass" || a.type === "handoff") && !a.target && a.passTo !== "space")),
   );
 
 
@@ -233,8 +234,25 @@ function intrinsicDuration(type: string, len: number) {
 /* option branches                                                     */
 /* ------------------------------------------------------------------ */
 
-export type OptionBranch = { key: string; label: string; actionIds: string[] };
+export type OptionBranch = {
+  key: string;
+  label: string;
+  condition?: string;
+  actionIds: string[];
+  /** Number of sequences this option runs after the option point. */
+  length: number;
+};
+/** `seq` is the option point: the first sequence number every branch starts at. */
 export type OptionGroup = { group: string; seq: number; branches: OptionBranch[] };
+
+/** Empty placeholder that keeps a just-created option alive before it has actions. */
+export const OPTION_MARKER = "option-marker";
+export const isOptionMarker = (a: PlayAction) => a.label === OPTION_MARKER && (a.points?.length ?? 0) === 0;
+
+/** "5B" for multi-sequence option actions, plain number otherwise. */
+export function seqLabel(a: Pick<PlayAction, "seq" | "option">): string {
+  return a.option?.branchSeq ? `${a.seq}${a.option.key.toUpperCase()}` : String(a.seq);
+}
 export type BranchSelection = Record<string, string>;
 
 /** Decision points in a frame, in sequence order. */
@@ -244,17 +262,23 @@ export function listOptionGroups(frame: PlayFrame | undefined): OptionGroup[] {
   for (const a of frame.actions) {
     const opt = a.option;
     if (!opt) continue;
+    // Legacy same-sequence options behave as one-sequence branches.
+    const bs = Math.max(1, opt.branchSeq ?? 1);
+    const anchor = a.seq - bs + 1;
     let g = map.get(opt.group);
     if (!g) {
-      g = { group: opt.group, seq: a.seq, branches: [] };
+      g = { group: opt.group, seq: anchor, branches: [] };
       map.set(opt.group, g);
     }
-    g.seq = Math.min(g.seq, a.seq);
+    g.seq = Math.min(g.seq, anchor);
     let b = g.branches.find((x) => x.key === opt.key);
     if (!b) {
-      b = { key: opt.key, label: opt.label || opt.key, actionIds: [] };
+      b = { key: opt.key, label: opt.label || opt.key, actionIds: [], length: 0 };
       g.branches.push(b);
     }
+    if (opt.condition && !b.condition) b.condition = opt.condition;
+    if (opt.label && b.label === opt.key) b.label = opt.label;
+    b.length = Math.max(b.length, bs);
     b.actionIds.push(a.id);
   }
   const out = [...map.values()];
@@ -306,7 +330,7 @@ export function buildSteps(
 
   for (const seq of seqs) {
     const raw = frame.actions
-      .filter((a) => a.seq === seq)
+      .filter((a) => a.seq === seq && !isOptionMarker(a))
       .slice()
       .sort((a, b) => a.id.localeCompare(b.id));
     const startTokens = tokens.map((t) => ({ ...t, ball: t.id === ball }));

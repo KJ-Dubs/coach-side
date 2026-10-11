@@ -140,7 +140,15 @@ export type PlayAction = {
    */
   passTo?: "receiver" | "space";
   /** Branching outcome membership. Actions without this are canonical. */
-  option?: { group: string; key: string; label: string };
+  option?: {
+    group: string;
+    key: string;
+    label: string;
+    /** Coaching cue shown under the option name. */
+    condition?: string;
+    /** 1-based sequence inside a multi-sequence option; `seq` stays absolute. */
+    branchSeq?: number;
+  };
   durationMs?: number;
   label?: string;
 
