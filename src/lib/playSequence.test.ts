@@ -50,9 +50,9 @@ describe("automatic anchored OPTION timeline", () => {
   it("plays 1–4, 4A/B/C and 5 without skipping B; resets siblings and continuation", () => {
     const { frame } = fixture();
     const steps = buildSequentialSteps(frame);
-    expect(steps.map((s) => s.label)).toEqual(["1", "2", "3", "4", "4A", "4B", "4C", "5"]);
+    expect(steps.map((s) => s.label)).toEqual(["1", "2", "3", "4", "5", "5A", "5B", "5C"]);
     const end4 = steps.find((s) => s.label === "4");
-    for (const label of ["4A", "4B", "4C", "5"]) {
+    for (const label of ["5", "5A", "5B", "5C"]) {
       expect(steps.find((s) => s.label === label)?.startTokens).toEqual(end4?.endTokens);
       expect(steps.find((s) => s.label === label)?.startBall).toBe("p");
     }
@@ -91,9 +91,9 @@ describe("automatic anchored OPTION timeline", () => {
         .every((s) => s.startTokens[0]?.x === 0.45),
     ).toBe(true);
     const duplicate = duplicateOptionBranch(frame, group, "b", id);
-    expect(buildSequentialSteps(duplicate?.frame).some((s) => s.label === "4D")).toBe(true);
+    expect(buildSequentialSteps(duplicate?.frame).some((s) => s.label === "5D")).toBe(true);
     expect(buildSequentialSteps(deleteOptionBranch(frame, group, "b")).map((s) => s.label)).toEqual(
-      ["1", "2", "3", "4", "4A", "4C", "5"],
+      ["1", "2", "3", "4", "5", "5A", "5C"],
     );
     expect(frame).toEqual(original);
   });
@@ -103,9 +103,9 @@ describe("automatic anchored OPTION timeline", () => {
     if (!extra) throw new Error("Missing legacy OPTION");
     const old = { ...frame, actions: [...frame.actions, { ...move(6, 0.9), option: extra }] };
     const steps = buildSequentialSteps(old);
-    expect(steps.map((s) => s.label)).toEqual(["1", "2", "3", "4", "4A", "4B", "4B.2", "4C", "5"]);
-    expect(steps.find((s) => s.label === "4B.2")?.startTokens).toEqual(
-      steps.find((s) => s.label === "4B")?.endTokens,
+    expect(steps.map((s) => s.label)).toEqual(["1", "2", "3", "4", "5", "5A", "5B", "5B.2", "5C"]);
+    expect(steps.find((s) => s.label === "5B.2")?.startTokens).toEqual(
+      steps.find((s) => s.label === "5B")?.endTokens,
     );
     const legacy = {
       ...frame,
