@@ -1,9 +1,10 @@
 # CourtSide Coach — production pass roadmap
 
 ## Sequential Playmaker OPTIONS
-- [ ] Shared anchored timeline for editing, automatic playback and presenter/export compatibility
-- [ ] Compact Add Play Option and selected-option overflow; preserve court size and saved data
-- [ ] Verify A/B/C resets, main continuation, persistence, legacy data, mobile layout and automatic build checks
+- [x] Shared anchored timeline for editing, automatic playback and presenter/export compatibility
+- [x] Compact Add Play Option and selected-option overflow; preserve court size and saved data
+- [x] 42 tests; A/B/C resets, main continuation, JSON reload, legacy data; unsaved browser example 1–4/4A/4B/4C/5 at desktop, tablet and 360/390px; automatic build/typecheck OK
+- [ ] Signed-in Save Play/reload verification — blocked: no active preview session or account matching the requester; no test plays written to the backend
 
 ## Player Locker Room simplification
 - [x] Player summaries, compact navigation and hidden administrative clutter
