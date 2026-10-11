@@ -2479,6 +2479,7 @@ export type Database = {
           tags: string[]
           team_id: string | null
           time_pressure: string | null
+          updated_at: string
         }
         Insert: {
           attack_basket?: string
@@ -2510,6 +2511,7 @@ export type Database = {
           tags?: string[]
           team_id?: string | null
           time_pressure?: string | null
+          updated_at?: string
         }
         Update: {
           attack_basket?: string
@@ -2541,6 +2543,7 @@ export type Database = {
           tags?: string[]
           team_id?: string | null
           time_pressure?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
