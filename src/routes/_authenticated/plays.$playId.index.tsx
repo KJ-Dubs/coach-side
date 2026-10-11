@@ -976,30 +976,31 @@ function PlayDesignerPage() {
           </Panel>
           {showSeqPicker ? (
             <Panel aria-label="Sequence picker" className="flex flex-wrap items-center gap-1.5 p-2">
-              {Array.from({ length: seqTotal }, (_, i) =>
-                pathGroups[0] && i === sharedCount ? (
+              {Array.from({ length: seqTotal }, (_, i) => i)
+                .filter((i) => !pathGroups[0] || i < sharedCount || branchGroup)
+                .flatMap((i) => [
+                  ...(pathGroups[0] && i === sharedCount
+                    ? [
+                        <Pill key="option" tone="flame" className="px-2">
+                          OPTION
+                        </Pill>,
+                      ]
+                    : []),
                   <BubbleButton
-                    key="option"
+                    key={i}
                     size="sm"
-                    tone={branchGroup ? "flame" : "neutral"}
-                    className="h-11 px-3"
-                    onClick={() => goToSequence(sharedCount)}
+                    tone={i === activeIdx ? "grape" : "neutral"}
+                    className="h-11 min-w-11 px-2"
+                    onClick={() => goToSequence(i)}
                   >
-                    OPTION
-                  </BubbleButton>
-                ) : null,
-              )}
-              {Array.from({ length: seqTotal }, (_, i) => (
-                <BubbleButton
-                  key={i}
-                  size="sm"
-                  tone={i === activeIdx ? "grape" : "neutral"}
-                  className={`h-11 min-w-11 px-2 ${pathGroups[0] && i >= sharedCount ? "order-last" : ""}`}
-                  onClick={() => goToSequence(i)}
-                >
-                  {stepName(i)}
+                    {stepName(i)}
+                  </BubbleButton>,
+                ])}
+              {pathGroups[0] && !branchGroup ? (
+                <BubbleButton size="sm" tone="flame" className="h-11 px-3" onClick={() => goToSequence(sharedCount)}>
+                  OPTION
                 </BubbleButton>
-              ))}
+              ) : null}
               {canEdit ? (
                 <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={openAddOption}>
                   + Add Option
