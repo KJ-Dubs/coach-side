@@ -36,6 +36,13 @@
       "when": 1791575805827,
       "tag": "0004_game_tracking_history",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791747948280,
+      "tag": "0005_plays_updated_at",
+      "breakpoints": true
     }
   ]
 }

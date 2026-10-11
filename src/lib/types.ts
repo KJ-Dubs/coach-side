@@ -163,6 +163,8 @@ export type Play = {
   is_shared: boolean;
   share_token: string | null;
   created_at?: string;
+  /** Bumped on any play or frame edit. */
+  updated_at?: string;
   /** CoachSide Library publication state. */
   published_to_library?: boolean;
   published_at?: string | null;

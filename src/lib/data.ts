@@ -400,6 +400,24 @@ export async function fetchPlayFolderMemberships(teamId: string): Promise<PlayFo
   return (data ?? []) as PlayFolderMembership[];
 }
 
+/** Folder names per play across every team the viewer can see (RLS-scoped), for search. */
+export async function fetchFolderNamesByPlay(): Promise<Map<string, string[]>> {
+  const [{ data: folders, error: fe }, { data: mems, error: me }] = await Promise.all([
+    supabase.from("team_playbook_folders").select("id,name"),
+    supabase.from("play_folder_memberships").select("folder_id,play_id"),
+  ]);
+  if (fe) throw fe;
+  if (me) throw me;
+  const names = new Map((folders ?? []).map((f) => [f.id as string, f.name as string]));
+  const out = new Map<string, string[]>();
+  for (const m of mems ?? []) {
+    const n = names.get(m.folder_id as string);
+    if (!n) continue;
+    out.set(m.play_id as string, [...(out.get(m.play_id as string) ?? []), n]);
+  }
+  return out;
+}
+
 export async function setPlayFolderMembership(
   playId: string,
   teamId: string,
