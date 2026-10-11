@@ -6,17 +6,22 @@ export type SequenceStep = PlayStep & {
   option?: { group: string; key: string; anchorSeq: number; branchSeq: number };
 };
 
-/** Read-only teaching timeline: alternate paths never feed the main path. */
+/**
+ * Read-only teaching timeline. An option group at sequence N holds
+ * alternatives to sequence N: NA/NB/NC each start from the START of N (the
+ * end of N-1), play after base N, and never feed the main path — sequence
+ * N+1 continues from the main-path end of N.
+ */
 export function buildSequentialSteps(frame: PlayFrame | undefined): SequenceStep[] {
   if (!frame) return [];
   const main = buildSteps({ ...frame, actions: frame.actions.filter((a) => !a.option) });
   const groups = listOptionGroups(frame);
   const result: SequenceStep[] = [];
-  const appendOptions = (before: number, after: number) => {
-    for (const group of groups.filter((g) => g.seq > after && g.seq <= before)) {
-      const anchor = main.filter((s) => s.seq < group.seq).at(-1);
-      const anchorSeq = anchor?.seq ?? Math.max(1, group.seq - 1);
-      const tokens = anchor?.endTokens ?? frame.tokens;
+  const appendOptions = (from: number, to: number) => {
+    for (const group of groups.filter((g) => g.seq > from && g.seq <= to)) {
+      const before = main.filter((s) => s.seq < group.seq).at(-1);
+      const tokens = before?.endTokens ?? frame.tokens;
+      const anchorSeq = group.seq;
       for (const branch of group.branches) {
         const path = buildSteps(
           {
@@ -28,27 +33,27 @@ export function buildSequentialSteps(frame: PlayFrame | undefined): SequenceStep
           },
           { [group.group]: branch.key },
         );
-        path.forEach((step, i) =>
+        path.forEach((step, i) => {
+          const label = `${anchorSeq}${branch.key.toUpperCase()}${i ? `.${i + 1}` : ""}`;
           result.push({
             ...step,
-            actions: step.actions.map((action) => ({
-              ...action,
-              displaySeq: `${anchorSeq}${branch.key.toUpperCase()}${i ? `.${i + 1}` : ""}`,
-            })),
-            label: `${anchorSeq}${branch.key.toUpperCase()}${i ? `.${i + 1}` : ""}`,
+            actions: step.actions.map((action) => ({ ...action, displaySeq: label })),
+            label,
             option: { group: group.group, key: branch.key, anchorSeq, branchSeq: i + 1 },
-          }),
-        );
+          });
+        });
       }
     }
   };
   let previous = -Infinity;
   for (const step of main) {
-    appendOptions(step.seq, previous);
+    // Options for sequences with no base step of their own come first.
+    appendOptions(previous, step.seq - 1);
     result.push({ ...step, label: String(step.seq) });
+    appendOptions(step.seq - 1, step.seq);
     previous = step.seq;
   }
-  appendOptions(Infinity, previous);
+  appendOptions(previous, Infinity);
   return result;
 }
 
