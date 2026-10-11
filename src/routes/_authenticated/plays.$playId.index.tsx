@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Pause, Play, Undo2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, MoreHorizontal, Pause, Play, Plus, Undo2 } from "lucide-react";
 import {
   BALL_ACTIONS,
   DO_MS,
@@ -17,7 +17,10 @@ import {
   sampleStep,
   sampleTimeline,
   scorePassReceivers,
+  selectBranches,
+  isOptionMarker,
   stateAtSequenceStart,
+  type OptionGroup,
   type BranchSelection,
 } from "@/lib/playAnimation";
 
@@ -44,6 +47,20 @@ import {
 } from "@/lib/types";
 
 import { uuid } from "@/lib/offline";
+import {
+  MAX_OPTIONS,
+  addOptionBranch,
+  conflictToOption,
+  createOptionPoint,
+  deleteBranchSequence,
+  deleteOptionBranch,
+  duplicateOptionBranch,
+  insertSequenceAfter,
+  isPathGroup,
+  optionForSeq,
+  optionLetter,
+  updateOptionBranch,
+} from "@/lib/playOptions";
 import { addHalfCourtDefense } from "@/lib/playDefense";
 
 export const Route = createFileRoute("/_authenticated/plays/$playId/")({
@@ -69,7 +86,7 @@ export const Route = createFileRoute("/_authenticated/plays/$playId/")({
 
 type Tool = "move" | "ball" | PlayActionType;
 
-type AnimMode = "idle" | "preview" | "replay";
+type AnimMode = "idle" | "preview" | "replay" | "choose";
 
 const STEP_MS = SHOW_MS + DO_MS;
 const PLAYMAKER_VIEW_KEY = "coachside.playmaker-view";
@@ -152,6 +169,12 @@ function PlayDesignerPage() {
     seq: number;
     rivalId: string;
   } | null>(null);
+  /** Compact Add Option sheet (new option point, or another option at an existing point). */
+  const [optionSheet, setOptionSheet] = useState<{ group: string | null; label: string; condition: string } | null>(null);
+  const [optionMenu, setOptionMenu] = useState(false);
+  /** Full-play run: has the coach picked an option yet, and which options are still queued. */
+  const choiceMadeRef = useRef(false);
+  const allQueueRef = useRef<string[] | null>(null);
 
 
   useEffect(() => {
@@ -212,6 +235,35 @@ function PlayDesignerPage() {
   );
 
 
+  /** Only the actions in the shared path + the options currently shown. */
+  const visibleActions = useMemo(
+    () => (frame ? selectBranches(frame, activeBranch).actions.filter((a) => !isOptionMarker(a)) : []),
+    [frame, activeBranch],
+  );
+  const pathGroups = useMemo(
+    () => optionGroups.filter((g) => isPathGroup(frame, g.group)),
+    [optionGroups, frame],
+  );
+  /** First step index of an option point in the current timeline. */
+  const pointIdx = (g: OptionGroup) => {
+    const i = steps.findIndex((st) => st.seq >= g.seq);
+    return i < 0 ? steps.length : i;
+  };
+  /** Option path the selected sequence belongs to, if any. */
+  const branchGroup = [...pathGroups].reverse().find((g) => seqNumber >= g.seq) ?? null;
+  const branchKey = branchGroup ? (activeBranch[branchGroup.group] ?? "a") : null;
+  const branchInfo = branchGroup?.branches.find((b) => b.key === branchKey) ?? null;
+  /** Option row shown contextually: path options from their point on, legacy ones on their own sequence. */
+  const contextGroup =
+    branchGroup ?? optionGroups.find((g) => !isPathGroup(frame, g.group) && g.seq === seqNumber) ?? null;
+  const pauseGroup = optionGroups.find((g) => g.branches.length > 1) ?? null;
+  const pauseIdx = pauseGroup ? pointIdx(pauseGroup) : -1;
+  const sharedCount = pathGroups[0] ? pointIdx(pathGroups[0]) : seqCount;
+  const stepName = (i: number) => {
+    const seq = steps[i]?.seq ?? (steps[seqCount - 1]?.seq ?? 0) + 1 + (i - seqCount);
+    return branchGroup && branchKey && seq >= branchGroup.seq ? `${seq}${optionLetter(branchKey)}` : String(i + 1);
+  };
+
   const timeline = useMemo(() => ({ steps, totalMs: steps.length * STEP_MS }), [steps]);
   const rangeEnd = mode === "preview" ? (activeIdx + 1) * STEP_MS : timeline.totalMs;
   const live = mode === "idle"
@@ -229,14 +281,25 @@ function PlayDesignerPage() {
   }, [seqCount]);
 
   useEffect(() => {
-    if (mode === "idle") return;
+    if (mode === "idle" || mode === "choose") return;
     let last = performance.now();
     const tick = (now: number) => {
       const dt = now - last;
       last = now;
       setTimeMs((prev) => {
         const next = prev + dt;
+        // Full play pauses at the OPTION point so the coach chooses what happens.
+        if (mode === "replay" && pauseGroup && !choiceMadeRef.current && next >= pauseIdx * STEP_MS) {
+          setMode("choose");
+          return Math.max(0, pauseIdx * STEP_MS - 1);
+        }
         if (next >= rangeEnd) {
+          const queued = mode === "replay" ? allQueueRef.current?.shift() : undefined;
+          if (queued && pauseGroup) {
+            // Play All Options: reset to the option point and run the next option.
+            setBranch((b) => ({ ...b, [pauseGroup.group]: queued }));
+            return pauseIdx * STEP_MS;
+          }
           setMode("idle");
           if (mode === "preview") setPreviewComplete(true);
           return rangeEnd - 1;
@@ -249,7 +312,7 @@ function PlayDesignerPage() {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [mode, rangeEnd, seqCount]);
+  }, [mode, rangeEnd, seqCount, pauseGroup, pauseIdx]);
 
   const previewSequence = () => {
     if (!activeStep) return;
@@ -266,8 +329,28 @@ function PlayDesignerPage() {
   };
   const replayPlay = () => {
     if (seqCount === 0) return;
+    choiceMadeRef.current = false;
+    allQueueRef.current = null;
     setPreviewComplete(false);
     setTimeMs(0);
+    setMode("replay");
+  };
+  const playAllOptions = () => {
+    if (!pauseGroup) return;
+    const keys = pauseGroup.branches.map((b) => b.key);
+    choiceMadeRef.current = true;
+    allQueueRef.current = keys.slice(1);
+    setBranch((b) => ({ ...b, [pauseGroup.group]: keys[0]! }));
+    setOptionMenu(false);
+    setPreviewComplete(false);
+    setTimeMs(0);
+    setMode("replay");
+  };
+  const chooseDuringPlay = (key: string) => {
+    if (!pauseGroup) return;
+    choiceMadeRef.current = true;
+    setBranch((b) => ({ ...b, [pauseGroup.group]: key }));
+    setTimeMs(pauseIdx * STEP_MS);
     setMode("replay");
   };
   const resetPlay = () => {
@@ -286,9 +369,12 @@ function PlayDesignerPage() {
 
   const OPTION_LABELS = ["Option A", "Option B", "Option C", "Option D", "Option E", "Option F"];
 
-  const addAction = (action: PlayAction, seq: number) => {
+  const addAction = (drawn: PlayAction, seq: number) => {
+    const opt =
+      frame && branchGroup && branchKey ? optionForSeq(frame, branchGroup.group, branchKey, seq) : undefined;
+    const action: PlayAction = opt ? { ...drawn, option: opt } : drawn;
     // Two outcomes by the same ball handler in one sequence cannot both happen.
-    const rival = (frame?.actions ?? []).find(
+    const rival = visibleActions.find(
       (a) =>
         a.seq === seq &&
         BALL_ACTIONS.has(a.type) &&
@@ -300,7 +386,7 @@ function PlayDesignerPage() {
       setPendingOption({ action, seq, rivalId: rival.id });
       return;
     }
-    const conflict = (frame?.actions ?? []).some(
+    const conflict = visibleActions.some(
       (a) =>
         a.seq === seq &&
         BALL_ACTIONS.has(a.type) &&
@@ -319,13 +405,13 @@ function PlayDesignerPage() {
       action: {
         label: "Move to next sequence",
         onClick: () => {
-          patchFrame((f) => ({
-            ...f,
-            actions: [
-              ...f.actions.map((a) => (a.seq > seq ? { ...a, seq: a.seq + 1 } : a)),
-              { ...action, seq: seq + 1 },
-            ],
-          }));
+          patchFrame((f) => {
+            const shifted = insertSequenceAfter(f, seq, opt ? { group: opt.group, key: opt.key } : undefined);
+            const moved: PlayAction = opt
+              ? { ...action, seq: seq + 1, option: { ...opt, branchSeq: (opt.branchSeq ?? 1) + 1 } }
+              : { ...action, seq: seq + 1 };
+            return { ...shifted, actions: [...shifted.actions, moved] };
+          });
           setSelectedActionId(action.id);
           setSeqIdx((i) => i + 1);
         },
@@ -416,7 +502,7 @@ function PlayDesignerPage() {
         };
         const receiver = inferPassReceiver(
           projected.tokens,
-          frame.actions.filter((action) => action.seq === seqNumber),
+          visibleActions.filter((action) => action.seq === seqNumber),
           base,
         );
         addAction(
@@ -445,11 +531,11 @@ function PlayDesignerPage() {
       selectedPass
         ? scorePassReceivers(
             projected.tokens,
-            (frame?.actions ?? []).filter((action) => action.seq === selectedPass.seq),
+            visibleActions.filter((action) => action.seq === selectedPass.seq),
             selectedPass,
           )
         : [],
-    [selectedPass, projected.tokens, frame?.actions],
+    [selectedPass, projected.tokens, visibleActions],
   );
 
   const retargetPass = (receiverId: string | null) => {
@@ -467,39 +553,20 @@ function PlayDesignerPage() {
     }));
   };
 
-  /** Keep both outcomes as labelled options from the same shared state. */
+  /** Turn the clashing outcome into a proper OPTION point at this sequence. */
   const commitAsOption = () => {
     const pending = pendingOption;
-    const current = frame;
-    if (!pending || !current) return;
+    if (!pending || !frame) return;
     setPendingOption(null);
-    const rival = current.actions.find((a) => a.id === pending.rivalId);
-    const group = rival?.option?.group ?? uuid();
-    const keyIdx = rival?.option
-      ? new Set(
-          current.actions.filter((a) => a.option?.group === group).map((a) => a.option!.key),
-        ).size
-      : 1;
-    const key = String.fromCharCode(97 + keyIdx);
-    const next: PlayAction = {
-      ...pending.action,
-      option: { group, key, label: OPTION_LABELS[keyIdx] ?? `Option ${keyIdx + 1}` },
-    };
-    patchFrame((f) => ({
-      ...f,
-      actions: [
-        ...f.actions.map((a) =>
-          a.id === pending.rivalId && !a.option
-            ? { ...a, option: { group, key: "a", label: OPTION_LABELS[0]! } }
-            : a,
-        ),
-        next,
-      ],
-    }));
-    setBranch((b) => ({ ...b, [group]: key }));
+    const res = conflictToOption(frame, pending.rivalId, pending.action, uuid);
+    if (!res) {
+      toast.info(`An option point holds up to ${MAX_OPTIONS} options.`);
+      return;
+    }
+    patchFrame(() => res.frame);
+    setBranch((b) => ({ ...b, [res.group]: res.key }));
     setSelectedActionId(pending.action.id);
   };
-
 
   const commitAsReplacement = () => {
     const pending = pendingOption;
@@ -570,7 +637,7 @@ function PlayDesignerPage() {
 
   const hasDefense = (frame?.tokens ?? []).some((t) => t.team === "defense");
   const offView = outsideCount(zoom, frame?.tokens ?? []);
-  const activeActions = frame?.actions.filter((a) => a.seq === seqNumber) ?? [];
+  const activeActions = visibleActions.filter((a) => a.seq === seqNumber);
   const sequenceInvalid =
     activeActions.some(
       (a) =>
@@ -585,11 +652,8 @@ function PlayDesignerPage() {
     setMode("idle");
     setPreviewComplete(false);
     setSelectedActionId(null);
-    patchFrame((f) => {
-      const mine = f.actions.filter((a) => a.seq === seqNumber);
-      const drop = mine[mine.length - 1];
-      return drop ? { ...f, actions: f.actions.filter((a) => a.id !== drop.id) } : f;
-    });
+    const drop = activeActions[activeActions.length - 1];
+    if (drop) patchFrame((f) => ({ ...f, actions: f.actions.filter((a) => a.id !== drop.id) }));
   };
 
   const goToSequence = (i: number) => {
@@ -602,12 +666,18 @@ function PlayDesignerPage() {
 
   const deleteSequence = () => {
     if (!activeStep || seqCount <= 1) return;
-    if (!window.confirm(`Delete sequence ${activeIdx + 1} and all of its actions?`)) return;
+    if (!window.confirm(`Delete sequence ${stepName(activeIdx)} and all of its actions?`)) return;
     const target = seqNumber;
+    if (branchGroup && branchKey) {
+      patchFrame((f) => deleteBranchSequence(f, branchGroup.group, branchKey, target, uuid));
+      goToSequence(Math.max(0, activeIdx - 1));
+      setShowSeqPicker(false);
+      return;
+    }
     patchFrame((f) => ({
       ...f,
       actions: f.actions
-        .filter((a) => a.seq !== target)
+        .filter((a) => a.seq !== target || (!!a.option?.branchSeq && isPathGroup(f, a.option.group)))
         .map((a) => (a.seq > target ? { ...a, seq: a.seq - 1 } : a)),
     }));
     goToSequence(Math.max(0, activeIdx - 1));
@@ -623,6 +693,102 @@ function PlayDesignerPage() {
     setSelectedActionId(null);
   };
 
+
+  /* ---- OPTION authoring ---- */
+
+  const openAddOption = () => {
+    setOptionMenu(false);
+    setShowSeqPicker(false);
+    const g = pathGroups[0];
+    if (g) {
+      if (g.branches.length >= MAX_OPTIONS) {
+        toast.info(`An option point holds up to ${MAX_OPTIONS} options.`);
+        return;
+      }
+      setOptionSheet({ group: g.group, label: "", condition: "" });
+      return;
+    }
+    if (activeStep && activeIdx < seqCount - 1) {
+      toast.info("Go to the last sequence to add an OPTION after it.");
+      return;
+    }
+    setOptionSheet({ group: null, label: "", condition: "" });
+  };
+
+  const createOption = () => {
+    if (!frame || !optionSheet) return;
+    const { group, label, condition } = optionSheet;
+    if (group) {
+      const g = pathGroups.find((x) => x.group === group);
+      const res = addOptionBranch(frame, group, label, condition, uuid);
+      if (!res || !g) return;
+      patchFrame(() => res.frame);
+      setBranch((b) => ({ ...b, [group]: res.key }));
+      setOptionSheet(null);
+      goToSequence(pointIdx(g));
+      return;
+    }
+    const anchor = activeStep ? activeStep.seq + 1 : seqNumber;
+    const res = createOptionPoint(frame, anchor, label, condition, uuid);
+    patchFrame(() => res.frame);
+    setBranch((b) => ({ ...b, [res.group]: res.key }));
+    setOptionSheet(null);
+    setMode("idle");
+    setPreviewComplete(false);
+    setSelectedActionId(null);
+    setSeqIdx(steps.filter((st) => st.seq < anchor).length);
+  };
+
+  const showOption = (g: OptionGroup, key: string) => {
+    setBranch((prev) => ({ ...prev, [g.group]: key }));
+    setOptionMenu(false);
+    if (isPathGroup(frame, g.group)) goToSequence(pointIdx(g));
+    else setSelectedActionId(null);
+  };
+
+  const editShownOption = (what: "label" | "condition") => {
+    if (!contextGroup) return;
+    const key = activeBranch[contextGroup.group];
+    const b = contextGroup.branches.find((x) => x.key === key);
+    if (!b || !key) return;
+    const value = window.prompt(
+      what === "label" ? "Option name" : "Condition / coaching cue (optional)",
+      what === "label" ? b.label : (b.condition ?? ""),
+    );
+    if (value === null) return;
+    patchFrame((f) => updateOptionBranch(f, contextGroup.group, key, { [what]: value }));
+    setOptionMenu(false);
+  };
+
+  const duplicateShownOption = () => {
+    if (!contextGroup || !frame) return;
+    const key = activeBranch[contextGroup.group];
+    const res = key ? duplicateOptionBranch(frame, contextGroup.group, key, uuid) : null;
+    if (!res) {
+      toast.info(`An option point holds up to ${MAX_OPTIONS} options.`);
+      return;
+    }
+    patchFrame(() => res.frame);
+    setBranch((b) => ({ ...b, [contextGroup.group]: res.key }));
+    setOptionMenu(false);
+  };
+
+  const deleteShownOption = () => {
+    if (!contextGroup) return;
+    const key = activeBranch[contextGroup.group];
+    const b = contextGroup.branches.find((x) => x.key === key);
+    if (!b || !key) return;
+    if (!window.confirm(`Delete Option ${optionLetter(key)} — ${b.label}? Shared sequences and other options stay.`)) return;
+    const point = pointIdx(contextGroup);
+    patchFrame((f) => deleteOptionBranch(f, contextGroup.group, key));
+    setBranch((prev) => {
+      const next = { ...prev };
+      delete next[contextGroup.group];
+      return next;
+    });
+    setOptionMenu(false);
+    if (isPathGroup(frame, contextGroup.group)) goToSequence(contextGroup.branches.length > 1 ? point : Math.max(0, point - 1));
+  };
 
   const setTokens = (tokens: PlayToken[]) => patchFrame((f) => ({ ...f, tokens }));
 
