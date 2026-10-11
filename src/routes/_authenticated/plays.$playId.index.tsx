@@ -1021,6 +1021,107 @@ function PlayDesignerPage() {
               </BubbleButton>
             </Panel>
           ) : null}
+          {optionSheet ? (
+            <Panel aria-label="Add option" className="flex flex-col gap-2 p-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label>Add Option</Label>
+                <Pill tone="grape">
+                  {`Option ${optionLetter(
+                    optionSheet.group
+                      ? String.fromCharCode(97 + (pathGroups.find((g) => g.group === optionSheet.group)?.branches.length ?? 0))
+                      : "a",
+                  )}`}
+                </Pill>
+              </div>
+              <input
+                autoFocus
+                aria-label="Option name"
+                placeholder="Option name, e.g. Shoot 3"
+                maxLength={40}
+                className="min-h-11 rounded-2xl border border-input bg-surface-2/70 px-3 text-sm font-semibold outline-none focus:border-grape"
+                value={optionSheet.label}
+                onChange={(e) => setOptionSheet({ ...optionSheet, label: e.target.value })}
+              />
+              <input
+                aria-label="Condition (optional)"
+                placeholder="Condition (optional), e.g. If defender stays home"
+                maxLength={80}
+                className="min-h-11 rounded-2xl border border-input bg-surface-2/70 px-3 text-sm outline-none focus:border-grape"
+                value={optionSheet.condition}
+                onChange={(e) => setOptionSheet({ ...optionSheet, condition: e.target.value })}
+              />
+              <div className="flex flex-wrap gap-2">
+                <BubbleButton size="sm" tone="flame" className="min-h-11" onClick={createOption}>
+                  Create Option
+                </BubbleButton>
+                <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={() => setOptionSheet(null)}>
+                  Cancel
+                </BubbleButton>
+              </div>
+            </Panel>
+          ) : null}
+          {contextGroup && !optionSheet ? (
+            <Panel aria-label="Options" className="flex flex-col gap-1.5 p-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Pill tone="flame" className="px-2">OPTION</Pill>
+                {contextGroup.branches.map((b) => (
+                  <BubbleButton
+                    key={b.key}
+                    size="sm"
+                    tone={activeBranch[contextGroup.group] === b.key ? "grape" : "neutral"}
+                    className="min-h-11 max-w-[11rem] px-3"
+                    onClick={() => showOption(contextGroup, b.key)}
+                  >
+                    <span className="truncate">{`${optionLetter(b.key)} ${b.label}`}</span>
+                  </BubbleButton>
+                ))}
+                {canEdit && isPathGroup(frame, contextGroup.group) && contextGroup.branches.length < MAX_OPTIONS ? (
+                  <BubbleButton size="sm" tone="ghost" className="min-h-11 px-3" onClick={openAddOption}>
+                    {`+ ${String.fromCharCode(65 + contextGroup.branches.length)}`}
+                  </BubbleButton>
+                ) : null}
+                <BubbleButton
+                  size="sm"
+                  tone={optionMenu ? "grape" : "ghost"}
+                  className="h-11 w-11 p-0"
+                  aria-label="Option menu"
+                  aria-expanded={optionMenu}
+                  onClick={() => setOptionMenu((v) => !v)}
+                >
+                  <MoreHorizontal className="size-5" aria-hidden />
+                </BubbleButton>
+              </div>
+              {(() => {
+                const shown = contextGroup.branches.find((b) => b.key === activeBranch[contextGroup.group]);
+                return shown?.condition ? (
+                  <Pill tone="muted" className="self-start normal-case tracking-normal">{shown.condition}</Pill>
+                ) : null;
+              })()}
+              {optionMenu ? (
+                <div className="flex flex-wrap gap-1.5 border-t border-border pt-1.5">
+                  <BubbleButton size="sm" tone="flame" className="min-h-11" disabled={!pauseGroup} onClick={playAllOptions}>
+                    Play All Options
+                  </BubbleButton>
+                  {canEdit ? (
+                    <>
+                      <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={() => editShownOption("label")}>
+                        Rename Option
+                      </BubbleButton>
+                      <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={() => editShownOption("condition")}>
+                        Edit Condition
+                      </BubbleButton>
+                      <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={duplicateShownOption}>
+                        Duplicate Option
+                      </BubbleButton>
+                      <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={deleteShownOption}>
+                        Delete Option
+                      </BubbleButton>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
+            </Panel>
+          ) : null}
           </div>
           {selectedPass ? (
             <Panel className="flex flex-col gap-2">
@@ -1055,14 +1156,14 @@ function PlayDesignerPage() {
           ) : null}
           {pendingOption ? (
             <Panel className="flex flex-col gap-3">
-              <Label>Add as another option?</Label>
+              <Label>Create as Option?</Label>
               <Pill tone="muted">
-                This player already has an outcome in this sequence. Options are alternatives from
-                the same starting point, and only one runs at a time.
+                This player already has an outcome in this sequence. An OPTION starts here from the
+                same court, and only one option runs at a time.
               </Pill>
               <div className="flex flex-wrap gap-2">
                 <BubbleButton size="sm" tone="flame" onClick={commitAsOption}>
-                  Add Option
+                  Create as Option
                 </BubbleButton>
                 <BubbleButton size="sm" tone="grape" onClick={commitAsReplacement}>
                   Replace Current Action
@@ -1071,52 +1172,6 @@ function PlayDesignerPage() {
                   Cancel
                 </BubbleButton>
               </div>
-            </Panel>
-          ) : null}
-          {optionGroups.length ? (
-            <Panel className="flex flex-col gap-3">
-              <Label>Options</Label>
-              {optionGroups.map((g, gi) => (
-                <div key={g.group} className="flex flex-wrap items-center gap-2">
-                  <Pill tone="muted">{`Decision ${gi + 1} · sequence ${g.seq}`}</Pill>
-                  {g.branches.map((b) => (
-                    <BubbleButton
-                      key={b.key}
-                      size="sm"
-                      tone={activeBranch[g.group] === b.key ? "flame" : "neutral"}
-                      onClick={() => {
-                        setBranch((prev) => ({ ...prev, [g.group]: b.key }));
-                        setMode("idle");
-                        setTimeMs(0);
-                        setSeqIdx(0);
-                        setSelectedActionId(null);
-                      }}
-                    >
-                      {b.label}
-                    </BubbleButton>
-                  ))}
-                  <BubbleButton
-                    size="sm"
-                    tone="ghost"
-                    onClick={() => {
-                      const key = activeBranch[g.group];
-                      const drop = g.branches.find((b) => b.key === key);
-                      if (!drop) return;
-                      patchFrame((f) => ({
-                        ...f,
-                        actions: f.actions.filter((a) => !drop.actionIds.includes(a.id)),
-                      }));
-                      setBranch((prev) => {
-                        const next = { ...prev };
-                        delete next[g.group];
-                        return next;
-                      });
-                    }}
-                  >
-                    Delete shown option
-                  </BubbleButton>
-                </div>
-              ))}
             </Panel>
           ) : null}
           {activeWarnings.length ? (
@@ -1133,7 +1188,7 @@ function PlayDesignerPage() {
 
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
               <Label>Tools</Label>
-              <Pill tone="grape">Sequence {activeIdx + 1}</Pill>
+              <Pill tone="grape">Sequence {stepName(activeIdx)}</Pill>
             </div>
             <div className="flex flex-wrap gap-2">
               {tools.map((t) => (
@@ -1180,7 +1235,7 @@ function PlayDesignerPage() {
             <Pill tone={sequenceInvalid ? "flame" : "muted"}>
               {sequenceInvalid
                 ? "Finish or repair this sequence before starting the next one."
-                : `Draw together in sequence ${activeIdx + 1}, then start the next sequence.`}
+                : `Draw together in sequence ${stepName(activeIdx)}, then start the next sequence.`}
             </Pill>
             {activeStep?.actions.length ? (
               <div className="flex flex-wrap gap-2">
