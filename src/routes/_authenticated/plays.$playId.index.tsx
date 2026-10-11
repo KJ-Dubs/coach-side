@@ -261,8 +261,12 @@ function PlayDesignerPage() {
   const sharedCount = pathGroups[0] ? pointIdx(pathGroups[0]) : seqCount;
   const stepName = (i: number) => {
     const seq = steps[i]?.seq ?? (steps[seqCount - 1]?.seq ?? 0) + 1 + (i - seqCount);
-    return branchGroup && branchKey && seq >= branchGroup.seq ? `${seq}${optionLetter(branchKey)}` : String(i + 1);
+    const pg = [...pathGroups].reverse().find((g) => seq >= g.seq);
+    return pg ? `${seq}${optionLetter(activeBranch[pg.group] ?? "a")}` : String(i + 1);
   };
+  const seqTotal = Math.max(seqCount, Math.min(seqIdx, seqCount) + 1);
+  const seqStatus = (pos: number) =>
+    pos < sharedCount ? `${pos + 1} of ${sharedCount}` : `${stepName(pos)} of ${stepName(seqTotal - 1)}`;
 
   const timeline = useMemo(() => ({ steps, totalMs: steps.length * STEP_MS }), [steps]);
   const rangeEnd = mode === "preview" ? (activeIdx + 1) * STEP_MS : timeline.totalMs;
@@ -858,6 +862,7 @@ function PlayDesignerPage() {
 
         <div className="flex min-w-0 flex-col gap-1.5">
           <div ref={courtControlsRef} className="flex w-full min-w-0 flex-col gap-1">
+          <div className="relative">
           <PlayCanvas
             className="mx-auto w-full max-w-full"
             frame={frame}
@@ -874,18 +879,40 @@ function PlayDesignerPage() {
             onCourtPointerMove={onMove}
             onCourtPointerUp={onUp}
           />
+          {mode === "choose" && pauseGroup ? (
+            <div className="absolute inset-x-1 bottom-1 flex justify-center">
+              <Panel aria-label="Choose an option" className="flex max-w-full flex-col items-center gap-1.5 p-2 shadow-lg shadow-black/40">
+                <Pill tone="flame">OPTION</Pill>
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {pauseGroup.branches.map((b) => (
+                    <BubbleButton
+                      key={b.key}
+                      size="sm"
+                      tone="grape"
+                      className="min-h-11 flex-col gap-0 px-3 py-1 leading-tight"
+                      onClick={() => chooseDuringPlay(b.key)}
+                    >
+                      <span>{`${optionLetter(b.key)} — ${b.label}`}</span>
+                      {b.condition ? <span className="text-[11px] font-semibold opacity-80">{b.condition}</span> : null}
+                    </BubbleButton>
+                  ))}
+                </div>
+              </Panel>
+            </div>
+          ) : null}
+          </div>
           <Panel
             aria-label="Sequence controls"
-            className="grid min-w-0 grid-cols-[auto_auto_auto_minmax(0,1fr)_auto] items-center gap-1 p-1 sm:gap-2"
+            className={`grid min-w-0 ${canEdit ? "grid-cols-[auto_auto_auto_minmax(0,1fr)_auto_auto]" : "grid-cols-[auto_auto_auto_minmax(0,1fr)_auto]"} items-center gap-1 p-1 sm:gap-2`}
           >
             <BubbleButton
               size="sm"
               tone="flame"
               className="h-11 w-11 shrink-0 p-0"
-              aria-label={mode === "replay" ? "Stop full play" : "Play full play from sequence 1"}
+              aria-label={mode === "replay" || mode === "choose" ? "Stop full play" : "Play full play from sequence 1"}
               title={mode === "replay" ? "Stop full play" : "Play full play from sequence 1"}
               disabled={seqCount === 0}
-              onClick={() => (mode === "replay" ? setMode("idle") : replayPlay())}
+              onClick={() => (mode === "replay" || mode === "choose" ? setMode("idle") : replayPlay())}
             >
               {mode === "replay" ? <Pause className="size-5" aria-hidden /> : <Play className="size-5 fill-current" aria-hidden />}
             </BubbleButton>
@@ -923,31 +950,61 @@ function PlayDesignerPage() {
               <span className="hidden sm:inline">Next Sequence</span>
               <ArrowRight className="size-4 shrink-0" aria-hidden />
             </BubbleButton>
+            {canEdit ? (
+              <BubbleButton
+                size="sm"
+                tone="neutral"
+                className="h-11 w-11 shrink-0 p-0"
+                aria-label="Add Option"
+                title="Add Option"
+                onClick={openAddOption}
+              >
+                <Plus className="size-5" aria-hidden />
+              </BubbleButton>
+            ) : null}
             <button
               type="button"
               className="min-h-11 shrink-0"
-              aria-label={`Sequence ${activeIdx + 1} of ${Math.max(seqCount, activeIdx + 1)}. Open sequence picker`}
+              aria-label={`Sequence ${seqStatus(activeIdx)}. Open sequence picker`}
               aria-expanded={showSeqPicker}
               onClick={() => setShowSeqPicker((v) => !v)}
             >
               <Pill tone={showSeqPicker ? "grape" : "muted"} className="whitespace-nowrap px-2 tracking-normal" aria-live="polite">
-                {live && mode === "replay" ? live.index + 1 : activeIdx + 1} of {Math.max(seqCount, activeIdx + 1)} ▾
+                {seqStatus(live && (mode === "replay" || mode === "choose") ? live.index : activeIdx)} ▾
               </Pill>
             </button>
           </Panel>
           {showSeqPicker ? (
             <Panel aria-label="Sequence picker" className="flex flex-wrap items-center gap-1.5 p-2">
-              {Array.from({ length: Math.max(seqCount, activeIdx + 1) }, (_, i) => (
+              {Array.from({ length: seqTotal }, (_, i) =>
+                pathGroups[0] && i === sharedCount ? (
+                  <BubbleButton
+                    key="option"
+                    size="sm"
+                    tone={branchGroup ? "flame" : "neutral"}
+                    className="h-11 px-3"
+                    onClick={() => goToSequence(sharedCount)}
+                  >
+                    OPTION
+                  </BubbleButton>
+                ) : null,
+              )}
+              {Array.from({ length: seqTotal }, (_, i) => (
                 <BubbleButton
                   key={i}
                   size="sm"
                   tone={i === activeIdx ? "grape" : "neutral"}
-                  className="h-11 min-w-11 px-2"
+                  className={`h-11 min-w-11 px-2 ${pathGroups[0] && i >= sharedCount ? "order-last" : ""}`}
                   onClick={() => goToSequence(i)}
                 >
-                  {i + 1}
+                  {stepName(i)}
                 </BubbleButton>
               ))}
+              {canEdit ? (
+                <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={openAddOption}>
+                  + Add Option
+                </BubbleButton>
+              ) : null}
               <span className="mx-1 h-6 w-px bg-border" aria-hidden />
               <BubbleButton size="sm" tone="ghost" className="min-h-11" disabled={!activeStep?.actions.length} onClick={() => (mode === "preview" ? setMode("idle") : previewSequence())}>
                 {mode === "preview" ? "Stop" : "Preview this"}
