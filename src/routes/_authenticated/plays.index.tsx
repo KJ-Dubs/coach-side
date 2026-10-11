@@ -711,6 +711,9 @@ function PlayCard({
 
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Pill tone="neutral">Attack {play.attack_basket === "left" ? "left" : "right"}</Pill>
+        {chips.map((c) => (
+          <Pill key={c} tone="grape">{c}</Pill>
+        ))}
         {canEdit ? (
           <Pill tone={play.is_shared ? "success" : "muted"}>
             {play.is_shared ? "Shared link on" : "Private"}
@@ -879,6 +882,32 @@ function PlayCard({
 }
 
 /** Inline quick-create: name + teams, then straight into the designer. */
+/** Owner-only quick tag editor from the card menu; saves the same index fields as the designer. */
+function CardTagEditor({ play, onClose }: { play: Play; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [value, setValue] = useState<PlayIndex>(() => normalizeIndex(play));
+  const save = useMutation({
+    mutationFn: () => updatePlay(play.id, { ...indexToRow(value), indexed_at: new Date().toISOString() } as Partial<Play>),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["plays"] });
+      toast.success("Tags saved");
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <div className="flex flex-col gap-2">
+      <PlayIndexSheet value={value} onChange={setValue} compact />
+      <div className="flex justify-center gap-2">
+        <BubbleButton size="sm" tone="flame" disabled={save.isPending} onClick={() => save.mutate()}>
+          {save.isPending ? "Saving…" : "Save tags"}
+        </BubbleButton>
+        <BubbleButton size="sm" tone="ghost" onClick={onClose}>Cancel</BubbleButton>
+      </div>
+    </div>
+  );
+}
+
 function QuickCreate({
   category,
   defaultTeam,
