@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Court, type CourtZoom } from "./Court";
-import { withVisualOffsets } from "@/lib/playAnimation";
+import { seqLabel, withVisualOffsets } from "@/lib/playAnimation";
 import type { PlayAction, PlayFrame, PlayToken } from "@/lib/types";
 import {
   PW as W,
