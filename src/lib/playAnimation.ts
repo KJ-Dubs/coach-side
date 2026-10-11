@@ -20,6 +20,8 @@ export const MAX_MOVE_MS = 1600;
 export const BIND_RADIUS = 0.075;
 
 export type ResolvedAction = PlayAction & {
+  /** Teaching-only label; saved sequence numbers stay unchanged. */
+  displaySeq?: string;
   /** Render-ready polyline, rebased onto live actor/target positions. */
   points: Point[];
   /** Immutable owning token. Null means annotation-only (no state effect). */
@@ -250,7 +252,8 @@ export const OPTION_MARKER = "option-marker";
 export const isOptionMarker = (a: PlayAction) => a.label === OPTION_MARKER && (a.points?.length ?? 0) === 0;
 
 /** "5B" for multi-sequence option actions, plain number otherwise. */
-export function seqLabel(a: Pick<PlayAction, "seq" | "option">): string {
+export function seqLabel(a: Pick<PlayAction, "seq" | "option"> & { displaySeq?: string }): string {
+  if (a.displaySeq) return a.displaySeq;
   return a.option?.branchSeq ? `${a.seq}${a.option.key.toUpperCase()}` : String(a.seq);
 }
 export type BranchSelection = Record<string, string>;

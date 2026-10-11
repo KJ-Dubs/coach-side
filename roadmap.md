@@ -1,5 +1,10 @@
 # CourtSide Coach — production pass roadmap
 
+## Sequential Playmaker OPTIONS
+- [ ] Shared anchored timeline for editing, automatic playback and presenter/export compatibility
+- [ ] Compact Add Play Option and selected-option overflow; preserve court size and saved data
+- [ ] Verify A/B/C resets, main continuation, persistence, legacy data, mobile layout and automatic build checks
+
 ## Player Locker Room simplification
 - [x] Player summaries, compact navigation and hidden administrative clutter
 - [x] Read-only schedule, folder-first thumbnails, personal To Do / Completed Plans
