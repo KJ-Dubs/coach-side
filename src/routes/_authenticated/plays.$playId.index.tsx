@@ -174,7 +174,9 @@ function PlayDesignerPage() {
   } | null>(null);
   /** Compact Add Option sheet (new option point, or another option at an existing point). */
   const [optionSheet, setOptionSheet] = useState<{
-    group: string | null;
+    group: string;
+    key: string;
+    anchorSeq: number;
     label: string;
     condition: string;
   } | null>(null);
@@ -234,7 +236,10 @@ function PlayDesignerPage() {
   const projected = activeStep ? sampleStep(activeStep, "show", 0) : mainEndState(frame);
   const branchGroup = optionGroups.find((g) => g.group === activeStep?.option?.group) ?? null;
   const branchKey = activeStep?.option?.key ?? null;
-  const contextGroup = branchGroup ?? optionGroups.find((g) => g.seq === seqNumber + 1) ?? null;
+  const optionAnchorSeq = activeStep?.option?.anchorSeq ?? seqNumber;
+  const contextGroup = branchGroup ?? optionGroups.find((g) => g.seq === optionAnchorSeq) ?? null;
+  const nextSiblingKey = frame && contextGroup ? nextOptionKey(frame, contextGroup.group) : "a";
+  const optionButtonLabel = `+${optionAnchorSeq}${nextSiblingKey ? optionLetter(nextSiblingKey) : ""}`;
   const activeBranch: BranchSelection =
     branchGroup && branchKey ? { [branchGroup.group]: branchKey } : {};
   const visibleActions = activeStep
@@ -679,29 +684,30 @@ function PlayDesignerPage() {
   /* ---- OPTION authoring ---- */
 
   const openAddOption = () => {
+    if (!frame || !canEdit || optionSheet) return;
     setShowSeqPicker(false);
     const g = contextGroup;
     if (g && g.branches.length >= MAX_OPTIONS) {
       toast.info(`An OPTION holds up to ${MAX_OPTIONS} options.`);
       return;
     }
-    if (!activeStep) {
-      toast.info("Finish this sequence before adding an OPTION.");
-      return;
-    }
-    setOptionSheet({ group: g?.group ?? null, label: "", condition: "" });
+    const res = g
+      ? addOptionBranch(frame, g.group, "", "", uuid)
+      : createOptionPoint(frame, optionAnchorSeq, "", "", uuid);
+    if (!res) return;
+    const groupId = g?.group ?? ("group" in res ? res.group : null);
+    if (typeof groupId !== "string") return;
+    patchFrame(() => res.frame);
+    setOptionSheet({ group: groupId, key: res.key, anchorSeq: optionAnchorSeq, label: "", condition: "" });
+    setMode("idle");
+    setPreviewComplete(false);
+    setSelectedActionId(null);
   };
   const createOption = () => {
     if (!frame || !optionSheet) return;
-    const { group, label, condition } = optionSheet;
-    const res = group
-      ? addOptionBranch(frame, group, label, condition, uuid)
-      : createOptionPoint(frame, seqNumber, label, condition, uuid);
-    if (!res) return;
-    const groupId = group ?? ("group" in res ? res.group : null);
-    if (typeof groupId !== "string") return;
-    patchFrame(() => res.frame);
-    setPendingSelection({ group: groupId, key: res.key });
+    const { group, key, label, condition } = optionSheet;
+    patchFrame((f) => updateOptionBranch(f, group, key, { label, condition }));
+    setPendingSelection({ group, key });
     setOptionSheet(null);
     setMode("idle");
     setPreviewComplete(false);
@@ -835,7 +841,7 @@ function PlayDesignerPage() {
             </div>
             <Panel
               aria-label="Sequence controls"
-              className="grid min-w-0 grid-cols-[auto_auto_auto_minmax(0,1fr)_auto] items-center gap-1 p-1 sm:gap-2"
+              className="grid min-w-0 grid-cols-[44px_44px_44px_minmax(44px,1fr)_minmax(44px,auto)_minmax(44px,auto)] items-center gap-1 p-1 sm:gap-2"
             >
               <BubbleButton
                 size="sm"
@@ -877,21 +883,31 @@ function PlayDesignerPage() {
               <BubbleButton
                 size="sm"
                 tone="grape"
-                className="min-h-11 min-w-0 gap-1 px-2 text-xs sm:px-4 sm:text-sm"
+                className="h-11 min-w-11 gap-1 px-1 text-xs sm:px-2 sm:text-sm"
                 disabled={activeIdx >= seqCount - 1 && (sequenceInvalid || !activeStep)}
                 title={sequenceInvalid ? "Finish or repair this sequence first" : "Next Sequence"}
                 onClick={() =>
                   activeIdx < seqCount - 1 ? goToSequence(activeIdx + 1) : nextSequence()
                 }
               >
-                <span className="sm:hidden">Next</span>
-                <span className="hidden sm:inline">Next Sequence</span>
-                <ArrowRight className="size-4 shrink-0" aria-hidden />
+                <span>Next</span>
+                <ArrowRight className="hidden size-4 shrink-0 sm:block" aria-hidden />
+              </BubbleButton>
+              <BubbleButton
+                size="sm"
+                tone="flame"
+                className="h-11 min-w-11 whitespace-nowrap px-2 text-xs sm:text-sm"
+                aria-label={nextSiblingKey ? `Add option ${optionAnchorSeq}${optionLetter(nextSiblingKey)}` : "Option limit reached"}
+                title={nextSiblingKey ? `Add option ${optionAnchorSeq}${optionLetter(nextSiblingKey)}` : "Option limit reached"}
+                disabled={!canEdit || !nextSiblingKey || !!optionSheet}
+                onClick={openAddOption}
+              >
+                {optionButtonLabel}
               </BubbleButton>
               <BubbleButton
                 size="sm"
                 tone="ghost"
-                className="min-h-11 shrink-0"
+                className="h-11 min-w-11 shrink-0 px-1"
                 aria-label={`Sequence ${seqStatus(activeIdx)}. Open sequence picker`}
                 aria-expanded={showSeqPicker}
                 onClick={() => setShowSeqPicker((v) => !v)}
@@ -921,11 +937,6 @@ function PlayDesignerPage() {
                     {stepName(i)}
                   </BubbleButton>
                 ))}
-                {canEdit ? (
-                  <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={openAddOption}>
-                    Add Play Option
-                  </BubbleButton>
-                ) : null}
                 <span className="mx-1 h-6 w-px bg-border" aria-hidden />
                 <BubbleButton
                   size="sm"
@@ -962,15 +973,9 @@ function PlayDesignerPage() {
             {optionSheet ? (
               <Panel aria-label="Add option" className="flex flex-col gap-2 p-2">
                 <div className="flex items-center justify-between gap-2">
-                  <Label>Add Play Option</Label>
+                  <Label>Option name</Label>
                   <Pill tone="grape">
-                    {`Option ${optionLetter(
-                      optionSheet.group
-                        ? frame
-                          ? (nextOptionKey(frame, optionSheet.group) ?? "a")
-                          : "a"
-                        : "a",
-                    )}`}
+                    {`${optionSheet.anchorSeq}${optionLetter(optionSheet.key)}`}
                   </Pill>
                 </div>
                 <input
@@ -984,13 +989,16 @@ function PlayDesignerPage() {
                 />
                 <div className="flex flex-wrap gap-2">
                   <BubbleButton size="sm" tone="flame" className="min-h-11" onClick={createOption}>
-                    Create Option
+                    Save
                   </BubbleButton>
                   <BubbleButton
                     size="sm"
                     tone="ghost"
                     className="min-h-11"
-                    onClick={() => setOptionSheet(null)}
+                    onClick={() => {
+                      patchFrame((f) => deleteOptionBranch(f, optionSheet.group, optionSheet.key));
+                      setOptionSheet(null);
+                    }}
                   >
                     Cancel
                   </BubbleButton>
@@ -1019,9 +1027,6 @@ function PlayDesignerPage() {
                       </BubbleButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="max-w-[calc(100vw-2rem)]">
-                      <DropdownMenuItem className="min-h-11" onSelect={openAddOption}>
-                        Add Play Option
-                      </DropdownMenuItem>
                       <DropdownMenuItem
                         className="min-h-11"
                         onSelect={() => editShownOption("label")}
