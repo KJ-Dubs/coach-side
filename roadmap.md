@@ -1,6 +1,7 @@
 # CourtSide Coach — production pass roadmap
 
 ## Sequential Playmaker OPTIONS
+- [ ] Dynamic numbered option button between Next and picker; immediate sibling creation, naming and mobile verification
 - [x] Shared anchored timeline for editing, automatic playback and presenter/export compatibility
 - [x] Compact Add Play Option and selected-option overflow; preserve court size and saved data
 - [x] 42 tests; A/B/C resets, main continuation, JSON reload, legacy data; unsaved browser example 1–4/4A/4B/4C/5 at desktop, tablet and 360/390px; automatic build/typecheck OK
