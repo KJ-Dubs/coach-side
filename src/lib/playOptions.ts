@@ -24,7 +24,7 @@ export function isPathGroup(frame: PlayFrame | undefined, group: string) {
 }
 
 export function nextOptionKey(frame: PlayFrame, group: string): string | null {
-  const used = new Set(frame.actions.filter((a) => a.option?.group === group).map((a) => a.option!.key));
+  const used = new Set(frame.actions.flatMap((a) => a.option?.group === group ? [a.option.key] : []));
   for (let i = 0; i < MAX_OPTIONS; i++) {
     const k = String.fromCharCode(97 + i);
     if (!used.has(k)) return k;
@@ -101,7 +101,7 @@ export function duplicateOptionBranch(frame: PlayFrame, group: string, key: stri
   if (!nk) return null;
   const src = frame.actions.filter((a) => a.option?.group === group && a.option.key === key);
   const label = `${src[0]?.option?.label ?? "Option"} copy`;
-  const copies = src.map((a) => ({ ...a, id: newId(), option: { ...a.option!, key: nk, label } }));
+  const copies = src.flatMap((a) => a.option ? [{ ...a, id: newId(), option: { ...a.option, key: nk, label } }] : []);
   return { frame: { ...frame, actions: [...frame.actions, ...copies] }, key: nk };
 }
 

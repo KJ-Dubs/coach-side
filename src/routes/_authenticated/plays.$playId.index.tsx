@@ -1,25 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, MoreHorizontal, Pause, Play, Plus, Undo2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, MoreHorizontal, Pause, Play, Undo2 } from "lucide-react";
 import {
   BALL_ACTIONS,
   DO_MS,
   SHOW_MS,
-  buildSteps,
-  defaultBranchSelection,
   findChainConflicts,
   findPassWarnings,
   inferPassReceiver,
   listOptionGroups,
   nearestTokenAt,
-  resolveLegacyActors,
   sampleStep,
   sampleTimeline,
   scorePassReceivers,
-  selectBranches,
-  isOptionMarker,
-  stateAtSequenceStart,
   type OptionGroup,
   type BranchSelection,
 } from "@/lib/playAnimation";
@@ -32,7 +26,13 @@ import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
 import { fitZoom, outsideCount, type CourtZoom } from "@/components/court/Court";
 import { PlayIndexSheet } from "@/components/PlayIndexSheet";
-import { EMPTY_INDEX, indexToRow, normalizeIndex, suggestFromFrames, type PlayIndex } from "@/lib/playIndex";
+import {
+  EMPTY_INDEX,
+  indexToRow,
+  normalizeIndex,
+  suggestFromFrames,
+  type PlayIndex,
+} from "@/lib/playIndex";
 import { fetchFrames, fetchPlay, saveFrames, updatePlay } from "@/lib/data";
 import { useMe } from "@/lib/useMe";
 import { fetchCoachLabel, isPlayOwner } from "@/lib/playOwnership";
@@ -56,11 +56,18 @@ import {
   deleteOptionBranch,
   duplicateOptionBranch,
   insertSequenceAfter,
-  isPathGroup,
   optionForSeq,
   optionLetter,
+  nextOptionKey,
   updateOptionBranch,
 } from "@/lib/playOptions";
+import { buildSequentialSteps, mainEndState } from "@/lib/playSequence";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { addHalfCourtDefense } from "@/lib/playDefense";
 
 export const Route = createFileRoute("/_authenticated/plays/$playId/")({
@@ -86,7 +93,7 @@ export const Route = createFileRoute("/_authenticated/plays/$playId/")({
 
 type Tool = "move" | "ball" | PlayActionType;
 
-type AnimMode = "idle" | "preview" | "replay" | "choose";
+type AnimMode = "idle" | "preview" | "replay";
 
 const STEP_MS = SHOW_MS + DO_MS;
 const PLAYMAKER_VIEW_KEY = "coachside.playmaker-view";
@@ -128,7 +135,6 @@ function blankFrame(playId: string, idx: number): PlayFrame {
   };
 }
 
-
 function PlayDesignerPage() {
   const { playId } = Route.useParams();
   const play = useQuery({ queryKey: ["play", playId], queryFn: () => fetchPlay(playId) });
@@ -140,7 +146,6 @@ function PlayDesignerPage() {
     queryFn: () => fetchCoachLabel(play.data?.created_by),
     enabled: !!play.data?.created_by && !canEdit,
   });
-
 
   const [frames, setFrames] = useState<PlayFrame[]>([]);
   const [current, setCurrent] = useState(0);
@@ -161,8 +166,6 @@ function PlayDesignerPage() {
   const [category, setCategory] = useState("Offense");
   const [saving, setSaving] = useState(false);
   const [index, setIndex] = useState<PlayIndex>(EMPTY_INDEX);
-  /** Which option branch is shown for each decision point. */
-  const [branch, setBranch] = useState<BranchSelection>({});
   /** A new outcome that clashes with an outcome already in this sequence. */
   const [pendingOption, setPendingOption] = useState<{
     action: PlayAction;
@@ -170,20 +173,18 @@ function PlayDesignerPage() {
     rivalId: string;
   } | null>(null);
   /** Compact Add Option sheet (new option point, or another option at an existing point). */
-  const [optionSheet, setOptionSheet] = useState<{ group: string | null; label: string; condition: string } | null>(null);
-  const [optionMenu, setOptionMenu] = useState(false);
-  /** Full-play run: has the coach picked an option yet, and which options are still queued. */
-  const choiceMadeRef = useRef(false);
-  const allQueueRef = useRef<string[] | null>(null);
-
+  const [optionSheet, setOptionSheet] = useState<{
+    group: string | null;
+    label: string;
+    condition: string;
+  } | null>(null);
+  const [pendingSelection, setPendingSelection] = useState<{ group: string; key: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (framesQ.data) {
-      setFrames(
-        (framesQ.data.length ? framesQ.data : [blankFrame(playId, 0)]).map((f) =>
-          resolveLegacyActors(f),
-        ),
-      );
+      setFrames(framesQ.data.length ? framesQ.data : [blankFrame(playId, 0)]);
     }
   }, [framesQ.data, playId]);
 
@@ -198,7 +199,13 @@ function PlayDesignerPage() {
 
   useEffect(() => {
     const saved = window.localStorage.getItem(PLAYMAKER_VIEW_KEY);
-    if (saved === "right" || saved === "left" || saved === "top" || saved === "bottom" || saved === "full") {
+    if (
+      saved === "right" ||
+      saved === "left" ||
+      saved === "top" ||
+      saved === "bottom" ||
+      saved === "full"
+    ) {
       setZoom(saved);
     }
   }, []);
@@ -217,93 +224,74 @@ function PlayDesignerPage() {
   /* ---- deterministic engine state ---- */
 
   const optionGroups = useMemo(() => listOptionGroups(frame), [frame]);
-  const activeBranch = useMemo<BranchSelection>(
-    () => ({ ...defaultBranchSelection(frame), ...branch }),
-    [frame, branch],
-  );
-  const steps = useMemo(() => buildSteps(frame, activeBranch), [frame, activeBranch]);
-  const passWarnings = useMemo(() => findPassWarnings(frame, activeBranch), [frame, activeBranch]);
+  const steps = useMemo(() => buildSequentialSteps(frame), [frame]);
   const seqCount = steps.length;
   const activeIdx = Math.min(seqIdx, seqCount);
   const activeStep = steps[activeIdx];
-  const seqNumber = activeStep ? activeStep.seq : (steps[seqCount - 1]?.seq ?? 0) + 1;
-
-  /** Exact court state this sequence begins from. */
-  const projected = useMemo(
-    () => stateAtSequenceStart(frame, activeIdx, activeBranch),
-    [frame, activeIdx, activeBranch],
+  const nextMainSeq =
+    Math.max(0, ...(frame?.actions.filter((a) => !a.option).map((a) => a.seq) ?? [])) + 1;
+  const seqNumber = activeStep?.seq ?? nextMainSeq;
+  const projected = activeStep ? sampleStep(activeStep, "show", 0) : mainEndState(frame);
+  const branchGroup = optionGroups.find((g) => g.group === activeStep?.option?.group) ?? null;
+  const branchKey = activeStep?.option?.key ?? null;
+  const contextGroup = branchGroup ?? optionGroups.find((g) => g.seq === seqNumber + 1) ?? null;
+  const activeBranch: BranchSelection =
+    branchGroup && branchKey ? { [branchGroup.group]: branchKey } : {};
+  const visibleActions = activeStep
+    ? (frame?.actions ?? []).filter((a) => activeStep.actions.some((st) => st.id === a.id))
+    : [];
+  const passWarnings = findPassWarnings(frame, activeBranch).filter((w) =>
+    visibleActions.some((a) => a.id === w.actionId),
   );
-
-
-  /** Only the actions in the shared path + the options currently shown. */
-  const visibleActions = useMemo(
-    () => (frame ? selectBranches(frame, activeBranch).actions.filter((a) => !isOptionMarker(a)) : []),
-    [frame, activeBranch],
-  );
-  const pathGroups = useMemo(
-    () => optionGroups.filter((g) => isPathGroup(frame, g.group)),
-    [optionGroups, frame],
-  );
-  /** First step index of an option point in the current timeline. */
+  const stepName = (i: number) => steps[i]?.label ?? String(nextMainSeq);
+  const seqTotal = Math.max(seqCount, activeIdx + 1);
+  const seqStatus = (pos: number) => stepName(pos);
   const pointIdx = (g: OptionGroup) => {
-    const i = steps.findIndex((st) => st.seq >= g.seq);
+    const i = steps.findIndex((st) => st.option?.group === g.group);
     return i < 0 ? steps.length : i;
   };
-  /** Option path the selected sequence belongs to, if any. */
-  const branchGroup = [...pathGroups].reverse().find((g) => seqNumber >= g.seq) ?? null;
-  const branchKey = branchGroup ? (activeBranch[branchGroup.group] ?? "a") : null;
-  const branchInfo = branchGroup?.branches.find((b) => b.key === branchKey) ?? null;
-  /** Option row shown contextually: path options from their point on, legacy ones on their own sequence. */
-  const contextGroup =
-    branchGroup ?? optionGroups.find((g) => !isPathGroup(frame, g.group) && g.seq === seqNumber) ?? null;
-  const pauseGroup = optionGroups.find((g) => g.branches.length > 1) ?? null;
-  const pauseIdx = pauseGroup ? pointIdx(pauseGroup) : -1;
-  const sharedCount = pathGroups[0] ? pointIdx(pathGroups[0]) : seqCount;
-  const stepName = (i: number) => {
-    const seq = steps[i]?.seq ?? (steps[seqCount - 1]?.seq ?? 0) + 1 + (i - seqCount);
-    const pg = [...pathGroups].reverse().find((g) => seq >= g.seq);
-    return pg ? `${seq}${optionLetter(activeBranch[pg.group] ?? "a")}` : String(i + 1);
-  };
-  const seqTotal = Math.max(seqCount, Math.min(seqIdx, seqCount) + 1);
-  const seqStatus = (pos: number) =>
-    pos < sharedCount ? `${pos + 1} of ${sharedCount}` : `${stepName(pos)} of ${stepName(seqTotal - 1)}`;
+  useEffect(() => {
+    if (!pendingSelection) return;
+    const i = steps.findIndex(
+      (st) => st.option?.group === pendingSelection.group && st.option.key === pendingSelection.key,
+    );
+    if (i >= 0) {
+      setSeqIdx(i);
+      setPendingSelection(null);
+    }
+  }, [steps, pendingSelection]);
 
   const timeline = useMemo(() => ({ steps, totalMs: steps.length * STEP_MS }), [steps]);
   const rangeEnd = mode === "preview" ? (activeIdx + 1) * STEP_MS : timeline.totalMs;
-  const live = mode === "idle"
-    ? previewComplete && activeStep
-      ? { step: activeStep, index: activeIdx, phase: "do" as const, sample: sampleStep(activeStep, "do", 1) }
-      : null
-    : sampleTimeline(timeline, timeMs);
+  const live =
+    mode === "idle"
+      ? previewComplete && activeStep
+        ? {
+            step: activeStep,
+            index: activeIdx,
+            phase: "do" as const,
+            sample: sampleStep(activeStep, "do", 1),
+          }
+        : null
+      : sampleTimeline(timeline, timeMs);
 
   useEffect(() => {
     setPreviewComplete(false);
-  }, [frame, activeIdx, activeBranch]);
+  }, [frame, activeIdx]);
 
   useEffect(() => {
     setSeqIdx((i) => Math.min(i, seqCount));
   }, [seqCount]);
 
   useEffect(() => {
-    if (mode === "idle" || mode === "choose") return;
+    if (mode === "idle") return;
     let last = performance.now();
     const tick = (now: number) => {
       const dt = now - last;
       last = now;
       setTimeMs((prev) => {
         const next = prev + dt;
-        // Full play pauses at the OPTION point so the coach chooses what happens.
-        if (mode === "replay" && pauseGroup && !choiceMadeRef.current && next >= pauseIdx * STEP_MS) {
-          setMode("choose");
-          return Math.max(0, pauseIdx * STEP_MS - 1);
-        }
         if (next >= rangeEnd) {
-          const queued = mode === "replay" ? allQueueRef.current?.shift() : undefined;
-          if (queued && pauseGroup) {
-            // Play All Options: reset to the option point and run the next option.
-            setBranch((b) => ({ ...b, [pauseGroup.group]: queued }));
-            return pauseIdx * STEP_MS;
-          }
           setMode("idle");
           if (mode === "preview") setPreviewComplete(true);
           return rangeEnd - 1;
@@ -316,7 +304,7 @@ function PlayDesignerPage() {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [mode, rangeEnd, seqCount, pauseGroup, pauseIdx]);
+  }, [mode, rangeEnd, seqCount]);
 
   const previewSequence = () => {
     if (!activeStep) return;
@@ -333,28 +321,8 @@ function PlayDesignerPage() {
   };
   const replayPlay = () => {
     if (seqCount === 0) return;
-    choiceMadeRef.current = false;
-    allQueueRef.current = null;
     setPreviewComplete(false);
     setTimeMs(0);
-    setMode("replay");
-  };
-  const playAllOptions = () => {
-    if (!pauseGroup) return;
-    const keys = pauseGroup.branches.map((b) => b.key);
-    choiceMadeRef.current = true;
-    allQueueRef.current = keys.slice(1);
-    setBranch((b) => ({ ...b, [pauseGroup.group]: keys[0]! }));
-    setOptionMenu(false);
-    setPreviewComplete(false);
-    setTimeMs(0);
-    setMode("replay");
-  };
-  const chooseDuringPlay = (key: string) => {
-    if (!pauseGroup) return;
-    choiceMadeRef.current = true;
-    setBranch((b) => ({ ...b, [pauseGroup.group]: key }));
-    setTimeMs(pauseIdx * STEP_MS);
     setMode("replay");
   };
   const resetPlay = () => {
@@ -373,7 +341,9 @@ function PlayDesignerPage() {
 
   const addAction = (drawn: PlayAction, seq: number) => {
     const opt =
-      frame && branchGroup && branchKey ? optionForSeq(frame, branchGroup.group, branchKey, seq) : undefined;
+      frame && branchGroup && branchKey
+        ? optionForSeq(frame, branchGroup.group, branchKey, seq)
+        : undefined;
     const action: PlayAction = opt ? { ...drawn, option: opt } : drawn;
     // Two outcomes by the same ball handler in one sequence cannot both happen.
     const rival = visibleActions.find(
@@ -408,7 +378,11 @@ function PlayDesignerPage() {
         label: "Move to next sequence",
         onClick: () => {
           patchFrame((f) => {
-            const shifted = insertSequenceAfter(f, seq, opt ? { group: opt.group, key: opt.key } : undefined);
+            const shifted = insertSequenceAfter(
+              f,
+              seq,
+              opt ? { group: opt.group, key: opt.key } : undefined,
+            );
             const moved: PlayAction = opt
               ? { ...action, seq: seq + 1, option: { ...opt, branchSeq: (opt.branchSeq ?? 1) + 1 } }
               : { ...action, seq: seq + 1 };
@@ -439,7 +413,8 @@ function PlayDesignerPage() {
         return;
       }
       const id = bindToken(p);
-      if (id) patchFrame((f) => ({ ...f, tokens: f.tokens.map((t) => ({ ...t, ball: t.id === id })) }));
+      if (id)
+        patchFrame((f) => ({ ...f, tokens: f.tokens.map((t) => ({ ...t, ball: t.id === id })) }));
       return;
     }
     setStroke([p]);
@@ -514,18 +489,20 @@ function PlayDesignerPage() {
           seqNumber,
         );
         if (receiver) toast.success(`Pass linked to #${receiver.label}`, { duration: 1800 });
-        else toast.info("Pass saved to open space. Possession stays with the passer.", { duration: 3000 });
+        else
+          toast.info("Pass saved to open space. Possession stays with the passer.", {
+            duration: 3000,
+          });
         return;
       }
-      addAction(
-        { id: uuid(), type: tool, seq: seqNumber, points: pts, actor: actorId },
-        seqNumber,
-      );
+      addAction({ id: uuid(), type: tool, seq: seqNumber, points: pts, actor: actorId }, seqNumber);
     }
   };
 
   const selectedPass = useMemo(
-    () => frame?.actions.find((action) => action.id === selectedActionId && action.type === "pass") ?? null,
+    () =>
+      frame?.actions.find((action) => action.id === selectedActionId && action.type === "pass") ??
+      null,
     [frame?.actions, selectedActionId],
   );
   const selectedPassChoices = useMemo(
@@ -566,7 +543,7 @@ function PlayDesignerPage() {
       return;
     }
     patchFrame(() => res.frame);
-    setBranch((b) => ({ ...b, [res.group]: res.key }));
+    setPendingSelection({ group: res.group, key: res.key });
     setSelectedActionId(pending.action.id);
   };
 
@@ -580,7 +557,6 @@ function PlayDesignerPage() {
     }));
     setSelectedActionId(pending.action.id);
   };
-
 
   /** Commit the play's end state as the frame's new starting positions. */
   const applyEndState = () => {
@@ -617,7 +593,6 @@ function PlayDesignerPage() {
     }
     setSaving(true);
     try {
-
       await saveFrames(playId, frames);
       await updatePlay(playId, {
         name,
@@ -625,7 +600,10 @@ function PlayDesignerPage() {
         attack_basket: flip ? "left" : "right",
         ...indexToRow(index),
         indexed_at:
-          index.concepts.length || index.defenses.length || index.outcomes.length || index.primary_actions.length
+          index.concepts.length ||
+          index.defenses.length ||
+          index.outcomes.length ||
+          index.primary_actions.length
             ? new Date().toISOString()
             : (play.data?.indexed_at ?? null),
       } as Partial<typeof play.data & object>);
@@ -646,7 +624,10 @@ function PlayDesignerPage() {
         !a.actor ||
         (a.type === "handoff" && !a.target) ||
         (a.type === "pass" && !a.target && a.passTo !== "space"),
-    ) || findChainConflicts(frame).some((c) => c.seq === seqNumber);
+    ) ||
+    findChainConflicts(frame ? { ...frame, actions: visibleActions } : undefined).some(
+      (c) => c.seq === seqNumber,
+    );
   const activeWarnings = passWarnings.filter((w) => w.seq === seqNumber);
 
   const undoSequenceAction = () => {
@@ -679,7 +660,7 @@ function PlayDesignerPage() {
     patchFrame((f) => ({
       ...f,
       actions: f.actions
-        .filter((a) => a.seq !== target || (!!a.option?.branchSeq && isPathGroup(f, a.option.group)))
+        .filter((a) => a.option || a.seq !== target)
         .map((a) => (a.seq > target ? { ...a, seq: a.seq - 1 } : a)),
     }));
     goToSequence(Math.max(0, activeIdx - 1));
@@ -695,62 +676,41 @@ function PlayDesignerPage() {
     setSelectedActionId(null);
   };
 
-
   /* ---- OPTION authoring ---- */
 
   const openAddOption = () => {
-    setOptionMenu(false);
     setShowSeqPicker(false);
-    const g = pathGroups[0];
-    if (g) {
-      if (g.branches.length >= MAX_OPTIONS) {
-        toast.info(`An option point holds up to ${MAX_OPTIONS} options.`);
-        return;
-      }
-      setOptionSheet({ group: g.group, label: "", condition: "" });
+    const g = contextGroup;
+    if (g && g.branches.length >= MAX_OPTIONS) {
+      toast.info(`An OPTION holds up to ${MAX_OPTIONS} options.`);
       return;
     }
-    if (activeStep && activeIdx < seqCount - 1) {
-      toast.info("Go to the last sequence to add an OPTION after it.");
+    if (!activeStep) {
+      toast.info("Finish this sequence before adding an OPTION.");
       return;
     }
-    setOptionSheet({ group: null, label: "", condition: "" });
+    setOptionSheet({ group: g?.group ?? null, label: "", condition: "" });
   };
-
   const createOption = () => {
     if (!frame || !optionSheet) return;
     const { group, label, condition } = optionSheet;
-    if (group) {
-      const g = pathGroups.find((x) => x.group === group);
-      const res = addOptionBranch(frame, group, label, condition, uuid);
-      if (!res || !g) return;
-      patchFrame(() => res.frame);
-      setBranch((b) => ({ ...b, [group]: res.key }));
-      setOptionSheet(null);
-      goToSequence(pointIdx(g));
-      return;
-    }
-    const anchor = activeStep ? activeStep.seq + 1 : seqNumber;
-    const res = createOptionPoint(frame, anchor, label, condition, uuid);
+    const res = group
+      ? addOptionBranch(frame, group, label, condition, uuid)
+      : createOptionPoint(frame, seqNumber + 1, label, condition, uuid);
+    if (!res) return;
+    const groupId = group ?? ("group" in res ? res.group : null);
+    if (typeof groupId !== "string") return;
     patchFrame(() => res.frame);
-    setBranch((b) => ({ ...b, [res.group]: res.key }));
+    setPendingSelection({ group: groupId, key: res.key });
     setOptionSheet(null);
     setMode("idle");
     setPreviewComplete(false);
     setSelectedActionId(null);
-    setSeqIdx(steps.filter((st) => st.seq < anchor).length);
-  };
-
-  const showOption = (g: OptionGroup, key: string) => {
-    setBranch((prev) => ({ ...prev, [g.group]: key }));
-    setOptionMenu(false);
-    if (isPathGroup(frame, g.group)) goToSequence(pointIdx(g));
-    else setSelectedActionId(null);
   };
 
   const editShownOption = (what: "label" | "condition") => {
     if (!contextGroup) return;
-    const key = activeBranch[contextGroup.group];
+    const key = branchKey;
     const b = contextGroup.branches.find((x) => x.key === key);
     if (!b || !key) return;
     const value = window.prompt(
@@ -759,37 +719,34 @@ function PlayDesignerPage() {
     );
     if (value === null) return;
     patchFrame((f) => updateOptionBranch(f, contextGroup.group, key, { [what]: value }));
-    setOptionMenu(false);
   };
 
   const duplicateShownOption = () => {
     if (!contextGroup || !frame) return;
-    const key = activeBranch[contextGroup.group];
+    const key = branchKey;
     const res = key ? duplicateOptionBranch(frame, contextGroup.group, key, uuid) : null;
     if (!res) {
       toast.info(`An option point holds up to ${MAX_OPTIONS} options.`);
       return;
     }
     patchFrame(() => res.frame);
-    setBranch((b) => ({ ...b, [contextGroup.group]: res.key }));
-    setOptionMenu(false);
+    setPendingSelection({ group: contextGroup.group, key: res.key });
   };
 
   const deleteShownOption = () => {
     if (!contextGroup) return;
-    const key = activeBranch[contextGroup.group];
+    const key = branchKey;
     const b = contextGroup.branches.find((x) => x.key === key);
     if (!b || !key) return;
-    if (!window.confirm(`Delete Option ${optionLetter(key)} — ${b.label}? Shared sequences and other options stay.`)) return;
+    if (
+      !window.confirm(
+        `Delete Option ${optionLetter(key)} — ${b.label}? Shared sequences and other options stay.`,
+      )
+    )
+      return;
     const point = pointIdx(contextGroup);
     patchFrame((f) => deleteOptionBranch(f, contextGroup.group, key));
-    setBranch((prev) => {
-      const next = { ...prev };
-      delete next[contextGroup.group];
-      return next;
-    });
-    setOptionMenu(false);
-    if (isPathGroup(frame, contextGroup.group)) goToSequence(contextGroup.branches.length > 1 ? point : Math.max(0, point - 1));
+    goToSequence(Math.max(0, point - 1));
   };
 
   const setTokens = (tokens: PlayToken[]) => patchFrame((f) => ({ ...f, tokens }));
@@ -818,7 +775,6 @@ function PlayDesignerPage() {
     { key: "screen", label: "Screen" },
     { key: "shot", label: "Shot" },
   ];
-
 
   return (
     <AppShell
@@ -857,133 +813,104 @@ function PlayDesignerPage() {
         </Note>
       ) : null}
       <div className="grid min-w-0 gap-2 xl:grid-cols-[minmax(0,1fr)_340px]">
-
         <div className="flex min-w-0 flex-col gap-1.5">
           <div ref={courtControlsRef} className="flex w-full min-w-0 flex-col gap-1">
-          <div className="relative">
-          <PlayCanvas
-            className="mx-auto w-full max-w-full"
-            frame={frame}
-            flip={flip}
-            zoom={zoom}
-            ghost={stroke}
-            tokens={live ? live.sample.tokens : projected.tokens}
-            ball={live ? live.sample.ball : projected.ball}
-            actions={live ? live.step.actions : (activeStep?.actions ?? [])}
-            activeSeq={live ? live.step.seq : seqNumber}
-            dimOtherActions
-            {...(selectedActionId ? { selectedActionId } : {})}
-            onCourtPoint={onDown}
-            onCourtPointerMove={onMove}
-            onCourtPointerUp={onUp}
-          />
-          {mode === "choose" && pauseGroup ? (
-            <div className="absolute inset-x-1 bottom-1 flex justify-center">
-              <Panel aria-label="Choose an option" className="flex max-w-full flex-col items-center gap-1.5 p-2 shadow-lg shadow-black/40">
-                <Pill tone="flame">OPTION</Pill>
-                <div className="flex flex-wrap justify-center gap-1.5">
-                  {pauseGroup.branches.map((b) => (
-                    <BubbleButton
-                      key={b.key}
-                      size="sm"
-                      tone="grape"
-                      className="min-h-11 flex-col gap-0 px-3 py-1 leading-tight"
-                      onClick={() => chooseDuringPlay(b.key)}
-                    >
-                      <span>{`${optionLetter(b.key)} — ${b.label}`}</span>
-                      {b.condition ? <span className="text-[11px] font-semibold opacity-80">{b.condition}</span> : null}
-                    </BubbleButton>
-                  ))}
-                </div>
-              </Panel>
+            <div className="relative">
+              <PlayCanvas
+                className="mx-auto w-full max-w-full"
+                frame={frame}
+                flip={flip}
+                zoom={zoom}
+                ghost={stroke}
+                tokens={live ? live.sample.tokens : projected.tokens}
+                ball={live ? live.sample.ball : projected.ball}
+                actions={live ? live.step.actions : (activeStep?.actions ?? [])}
+                activeSeq={live ? live.step.seq : seqNumber}
+                dimOtherActions
+                {...(selectedActionId ? { selectedActionId } : {})}
+                onCourtPoint={onDown}
+                onCourtPointerMove={onMove}
+                onCourtPointerUp={onUp}
+              />
             </div>
-          ) : null}
-          </div>
-          <Panel
-            aria-label="Sequence controls"
-            className={`grid min-w-0 ${canEdit ? "grid-cols-[auto_auto_auto_minmax(0,1fr)_auto_auto]" : "grid-cols-[auto_auto_auto_minmax(0,1fr)_auto]"} items-center gap-1 p-1 sm:gap-2`}
-          >
-            <BubbleButton
-              size="sm"
-              tone="flame"
-              className="h-11 w-11 shrink-0 p-0"
-              aria-label={mode === "replay" || mode === "choose" ? "Stop full play" : "Play full play from sequence 1"}
-              title={mode === "replay" ? "Stop full play" : "Play full play from sequence 1"}
-              disabled={seqCount === 0}
-              onClick={() => (mode === "replay" || mode === "choose" ? setMode("idle") : replayPlay())}
+            <Panel
+              aria-label="Sequence controls"
+              className="grid min-w-0 grid-cols-[auto_auto_auto_minmax(0,1fr)_auto] items-center gap-1 p-1 sm:gap-2"
             >
-              {mode === "replay" ? <Pause className="size-5" aria-hidden /> : <Play className="size-5 fill-current" aria-hidden />}
-            </BubbleButton>
-            <BubbleButton
-              size="sm"
-              tone="neutral"
-              className="h-11 w-11 shrink-0 p-0"
-              aria-label="Undo last action in selected sequence"
-              title="Undo last action in selected sequence"
-              disabled={!canEdit || activeActions.length === 0}
-              onClick={undoSequenceAction}
-            >
-              <Undo2 className="size-5" aria-hidden />
-            </BubbleButton>
-            <BubbleButton
-              size="sm"
-              tone="neutral"
-              className="h-11 w-11 shrink-0 p-0"
-              aria-label="Previous sequence"
-              title="Previous sequence"
-              disabled={activeIdx === 0}
-              onClick={() => goToSequence(activeIdx - 1)}
-            >
-              <ArrowLeft className="size-5" aria-hidden />
-            </BubbleButton>
-            <BubbleButton
-              size="sm"
-              tone="grape"
-              className="min-h-11 min-w-0 gap-1 px-2 text-xs sm:px-4 sm:text-sm"
-              disabled={activeIdx >= seqCount - 1 && (sequenceInvalid || !activeStep)}
-              title={sequenceInvalid ? "Finish or repair this sequence first" : "Next Sequence"}
-              onClick={() => (activeIdx < seqCount - 1 ? goToSequence(activeIdx + 1) : nextSequence())}
-            >
-              <span className="sm:hidden">Next</span>
-              <span className="hidden sm:inline">Next Sequence</span>
-              <ArrowRight className="size-4 shrink-0" aria-hidden />
-            </BubbleButton>
-            {canEdit ? (
+              <BubbleButton
+                size="sm"
+                tone="flame"
+                className="h-11 w-11 shrink-0 p-0"
+                aria-label={mode === "replay" ? "Stop full play" : "Play full play from sequence 1"}
+                title={mode === "replay" ? "Stop full play" : "Play full play from sequence 1"}
+                disabled={seqCount === 0}
+                onClick={() => (mode === "replay" ? setMode("idle") : replayPlay())}
+              >
+                {mode === "replay" ? (
+                  <Pause className="size-5" aria-hidden />
+                ) : (
+                  <Play className="size-5 fill-current" aria-hidden />
+                )}
+              </BubbleButton>
               <BubbleButton
                 size="sm"
                 tone="neutral"
                 className="h-11 w-11 shrink-0 p-0"
-                aria-label="Add Option"
-                title="Add Option"
-                onClick={openAddOption}
+                aria-label="Undo last action in selected sequence"
+                title="Undo last action in selected sequence"
+                disabled={!canEdit || activeActions.length === 0}
+                onClick={undoSequenceAction}
               >
-                <Plus className="size-5" aria-hidden />
+                <Undo2 className="size-5" aria-hidden />
               </BubbleButton>
-            ) : null}
-            <button
-              type="button"
-              className="min-h-11 shrink-0"
-              aria-label={`Sequence ${seqStatus(activeIdx)}. Open sequence picker`}
-              aria-expanded={showSeqPicker}
-              onClick={() => setShowSeqPicker((v) => !v)}
-            >
-              <Pill tone={showSeqPicker ? "grape" : "muted"} className="whitespace-nowrap px-2 tracking-normal" aria-live="polite">
-                {seqStatus(live && (mode === "replay" || mode === "choose") ? live.index : activeIdx)} ▾
-              </Pill>
-            </button>
-          </Panel>
-          {showSeqPicker ? (
-            <Panel aria-label="Sequence picker" className="flex flex-wrap items-center gap-1.5 p-2">
-              {Array.from({ length: seqTotal }, (_, i) => i)
-                .filter((i) => !pathGroups[0] || i < sharedCount || branchGroup)
-                .flatMap((i) => [
-                  ...(pathGroups[0] && i === sharedCount
-                    ? [
-                        <Pill key="option" tone="flame" className="px-2">
-                          OPTION
-                        </Pill>,
-                      ]
-                    : []),
+              <BubbleButton
+                size="sm"
+                tone="neutral"
+                className="h-11 w-11 shrink-0 p-0"
+                aria-label="Previous sequence"
+                title="Previous sequence"
+                disabled={activeIdx === 0}
+                onClick={() => goToSequence(activeIdx - 1)}
+              >
+                <ArrowLeft className="size-5" aria-hidden />
+              </BubbleButton>
+              <BubbleButton
+                size="sm"
+                tone="grape"
+                className="min-h-11 min-w-0 gap-1 px-2 text-xs sm:px-4 sm:text-sm"
+                disabled={activeIdx >= seqCount - 1 && (sequenceInvalid || !activeStep)}
+                title={sequenceInvalid ? "Finish or repair this sequence first" : "Next Sequence"}
+                onClick={() =>
+                  activeIdx < seqCount - 1 ? goToSequence(activeIdx + 1) : nextSequence()
+                }
+              >
+                <span className="sm:hidden">Next</span>
+                <span className="hidden sm:inline">Next Sequence</span>
+                <ArrowRight className="size-4 shrink-0" aria-hidden />
+              </BubbleButton>
+              <BubbleButton
+                size="sm"
+                tone="ghost"
+                className="min-h-11 shrink-0"
+                aria-label={`Sequence ${seqStatus(activeIdx)}. Open sequence picker`}
+                aria-expanded={showSeqPicker}
+                onClick={() => setShowSeqPicker((v) => !v)}
+              >
+                <Pill
+                  tone={showSeqPicker ? "grape" : "muted"}
+                  className="whitespace-nowrap px-2 tracking-normal"
+                  aria-live="polite"
+                >
+                  {seqStatus(live && mode === "replay" ? live.index : activeIdx)} ▾
+                </Pill>
+              </BubbleButton>
+            </Panel>
+            {showSeqPicker ? (
+              <Panel
+                aria-label="Sequence picker"
+                className="flex flex-wrap items-center gap-1.5 p-2"
+              >
+                {Array.from({ length: seqTotal }, (_, i) => (
                   <BubbleButton
                     key={i}
                     size="sm"
@@ -992,134 +919,132 @@ function PlayDesignerPage() {
                     onClick={() => goToSequence(i)}
                   >
                     {stepName(i)}
-                  </BubbleButton>,
-                ])}
-              {pathGroups[0] && !branchGroup ? (
-                <BubbleButton size="sm" tone="flame" className="h-11 px-3" onClick={() => goToSequence(sharedCount)}>
-                  OPTION
-                </BubbleButton>
-              ) : null}
-              {canEdit ? (
-                <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={openAddOption}>
-                  + Add Option
-                </BubbleButton>
-              ) : null}
-              <span className="mx-1 h-6 w-px bg-border" aria-hidden />
-              <BubbleButton size="sm" tone="ghost" className="min-h-11" disabled={!activeStep?.actions.length} onClick={() => (mode === "preview" ? setMode("idle") : previewSequence())}>
-                {mode === "preview" ? "Stop" : "Preview this"}
-              </BubbleButton>
-              <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={resetPlay}>
-                Reset
-              </BubbleButton>
-              <BubbleButton size="sm" tone="ghost" className="min-h-11" disabled={seqCount === 0} onClick={applyEndState}>
-                Use End Positions
-              </BubbleButton>
-              <BubbleButton size="sm" tone="ghost" className="min-h-11" disabled={!canEdit || !activeStep || seqCount <= 1} onClick={deleteSequence}>
-                Delete Sequence
-              </BubbleButton>
-            </Panel>
-          ) : null}
-          {optionSheet ? (
-            <Panel aria-label="Add option" className="flex flex-col gap-2 p-2">
-              <div className="flex items-center justify-between gap-2">
-                <Label>Add Option</Label>
-                <Pill tone="grape">
-                  {`Option ${optionLetter(
-                    optionSheet.group
-                      ? String.fromCharCode(97 + (pathGroups.find((g) => g.group === optionSheet.group)?.branches.length ?? 0))
-                      : "a",
-                  )}`}
-                </Pill>
-              </div>
-              <input
-                autoFocus
-                aria-label="Option name"
-                placeholder="Option name, e.g. Shoot 3"
-                maxLength={40}
-                className="min-h-11 rounded-2xl border border-input bg-surface-2/70 px-3 text-sm font-semibold outline-none focus:border-grape"
-                value={optionSheet.label}
-                onChange={(e) => setOptionSheet({ ...optionSheet, label: e.target.value })}
-              />
-              <input
-                aria-label="Condition (optional)"
-                placeholder="Condition (optional), e.g. If defender stays home"
-                maxLength={80}
-                className="min-h-11 rounded-2xl border border-input bg-surface-2/70 px-3 text-sm outline-none focus:border-grape"
-                value={optionSheet.condition}
-                onChange={(e) => setOptionSheet({ ...optionSheet, condition: e.target.value })}
-              />
-              <div className="flex flex-wrap gap-2">
-                <BubbleButton size="sm" tone="flame" className="min-h-11" onClick={createOption}>
-                  Create Option
-                </BubbleButton>
-                <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={() => setOptionSheet(null)}>
-                  Cancel
-                </BubbleButton>
-              </div>
-            </Panel>
-          ) : null}
-          {contextGroup && !optionSheet ? (
-            <Panel aria-label="Options" className="flex flex-col gap-1.5 p-1.5">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <Pill tone="flame" className="px-2">OPTION</Pill>
-                {contextGroup.branches.map((b) => (
-                  <BubbleButton
-                    key={b.key}
-                    size="sm"
-                    tone={activeBranch[contextGroup.group] === b.key ? "grape" : "neutral"}
-                    className="min-h-11 max-w-[11rem] px-3"
-                    onClick={() => showOption(contextGroup, b.key)}
-                  >
-                    <span className="truncate">{`${optionLetter(b.key)} ${b.label}`}</span>
                   </BubbleButton>
                 ))}
-                {canEdit && isPathGroup(frame, contextGroup.group) && contextGroup.branches.length < MAX_OPTIONS ? (
-                  <BubbleButton size="sm" tone="ghost" className="min-h-11 px-3" onClick={openAddOption}>
-                    {`+ ${String.fromCharCode(65 + contextGroup.branches.length)}`}
+                {canEdit ? (
+                  <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={openAddOption}>
+                    Add Play Option
                   </BubbleButton>
                 ) : null}
+                <span className="mx-1 h-6 w-px bg-border" aria-hidden />
                 <BubbleButton
                   size="sm"
-                  tone={optionMenu ? "grape" : "ghost"}
-                  className="h-11 w-11 p-0"
-                  aria-label="Option menu"
-                  aria-expanded={optionMenu}
-                  onClick={() => setOptionMenu((v) => !v)}
+                  tone="ghost"
+                  className="min-h-11"
+                  disabled={!activeStep?.actions.length}
+                  onClick={() => (mode === "preview" ? setMode("idle") : previewSequence())}
                 >
-                  <MoreHorizontal className="size-5" aria-hidden />
+                  {mode === "preview" ? "Stop" : "Preview this"}
                 </BubbleButton>
-              </div>
-              {(() => {
-                const shown = contextGroup.branches.find((b) => b.key === activeBranch[contextGroup.group]);
-                return shown?.condition ? (
-                  <Pill tone="muted" className="self-start normal-case tracking-normal">{shown.condition}</Pill>
-                ) : null;
-              })()}
-              {optionMenu ? (
-                <div className="flex flex-wrap gap-1.5 border-t border-border pt-1.5">
-                  <BubbleButton size="sm" tone="flame" className="min-h-11" disabled={!pauseGroup} onClick={playAllOptions}>
-                    Play All Options
-                  </BubbleButton>
-                  {canEdit ? (
-                    <>
-                      <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={() => editShownOption("label")}>
-                        Rename Option
-                      </BubbleButton>
-                      <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={() => editShownOption("condition")}>
-                        Edit Condition
-                      </BubbleButton>
-                      <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={duplicateShownOption}>
-                        Duplicate Option
-                      </BubbleButton>
-                      <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={deleteShownOption}>
-                        Delete Option
-                      </BubbleButton>
-                    </>
-                  ) : null}
+                <BubbleButton size="sm" tone="ghost" className="min-h-11" onClick={resetPlay}>
+                  Reset
+                </BubbleButton>
+                <BubbleButton
+                  size="sm"
+                  tone="ghost"
+                  className="min-h-11"
+                  disabled={seqCount === 0}
+                  onClick={applyEndState}
+                >
+                  Use End Positions
+                </BubbleButton>
+                <BubbleButton
+                  size="sm"
+                  tone="ghost"
+                  className="min-h-11"
+                  disabled={!canEdit || !activeStep || seqCount <= 1}
+                  onClick={deleteSequence}
+                >
+                  Delete Sequence
+                </BubbleButton>
+              </Panel>
+            ) : null}
+            {optionSheet ? (
+              <Panel aria-label="Add option" className="flex flex-col gap-2 p-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label>Add Play Option</Label>
+                  <Pill tone="grape">
+                    {`Option ${optionLetter(
+                      optionSheet.group
+                        ? frame
+                          ? (nextOptionKey(frame, optionSheet.group) ?? "a")
+                          : "a"
+                        : "a",
+                    )}`}
+                  </Pill>
                 </div>
-              ) : null}
-            </Panel>
-          ) : null}
+                <input
+                  autoFocus
+                  aria-label="Option name"
+                  placeholder="Option name, e.g. Shoot 3"
+                  maxLength={40}
+                  className="min-h-11 rounded-2xl border border-input bg-surface-2/70 px-3 text-sm font-semibold outline-none focus:border-grape"
+                  value={optionSheet.label}
+                  onChange={(e) => setOptionSheet({ ...optionSheet, label: e.target.value })}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <BubbleButton size="sm" tone="flame" className="min-h-11" onClick={createOption}>
+                    Create Option
+                  </BubbleButton>
+                  <BubbleButton
+                    size="sm"
+                    tone="ghost"
+                    className="min-h-11"
+                    onClick={() => setOptionSheet(null)}
+                  >
+                    Cancel
+                  </BubbleButton>
+                </div>
+              </Panel>
+            ) : null}
+            {branchGroup && branchKey && !optionSheet ? (
+              <div className="flex min-w-0 items-center gap-1">
+                <Pill tone="flame" className="shrink-0">
+                  OPTION
+                </Pill>
+                <Pill tone="muted" className="min-w-0 flex-1 truncate normal-case tracking-normal">
+                  {stepName(activeIdx)} ·{" "}
+                  {branchGroup.branches.find((b) => b.key === branchKey)?.label}
+                </Pill>
+                {canEdit ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <BubbleButton
+                        size="sm"
+                        tone="ghost"
+                        className="h-11 w-11 shrink-0 p-0"
+                        aria-label="Option menu"
+                      >
+                        <MoreHorizontal className="size-5" aria-hidden />
+                      </BubbleButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="max-w-[calc(100vw-2rem)]">
+                      <DropdownMenuItem className="min-h-11" onSelect={openAddOption}>
+                        Add Play Option
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="min-h-11"
+                        onSelect={() => editShownOption("label")}
+                      >
+                        Rename Option
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="min-h-11"
+                        onSelect={() => editShownOption("condition")}
+                      >
+                        Edit Condition
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="min-h-11" onSelect={duplicateShownOption}>
+                        Duplicate Option
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="min-h-11" onSelect={deleteShownOption}>
+                        Delete Option
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           {selectedPass ? (
             <Panel className="flex flex-col gap-2">
@@ -1157,7 +1082,7 @@ function PlayDesignerPage() {
               <Label>Create as Option?</Label>
               <Pill tone="muted">
                 This player already has an outcome in this sequence. An OPTION starts here from the
-                same court, and only one option runs at a time.
+                same court. Play shows every OPTION automatically.
               </Pill>
               <div className="flex flex-wrap gap-2">
                 <BubbleButton size="sm" tone="flame" onClick={commitAsOption}>
@@ -1183,7 +1108,6 @@ function PlayDesignerPage() {
             </Panel>
           ) : null}
           <Panel className="flex flex-col gap-3">
-
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
               <Label>Tools</Label>
               <Pill tone="grape">Sequence {stepName(activeIdx)}</Pill>
@@ -1210,21 +1134,32 @@ function PlayDesignerPage() {
             </div>
             <div className="flex flex-wrap gap-2 border-t border-border pt-3">
               <Label>Court view</Label>
-              {([
-                ["right", "Right"],
-                ["left", "Left"],
-                ["top", "Top"],
-                ["bottom", "Bottom"],
-                ["full", "Full"],
-              ] as const).map(([key, label]) => (
-                <BubbleButton key={key} size="sm" tone={zoom === key ? "flame" : "neutral"} onClick={() => chooseZoom(key)}>
+              {(
+                [
+                  ["right", "Right"],
+                  ["left", "Left"],
+                  ["top", "Top"],
+                  ["bottom", "Bottom"],
+                  ["full", "Full"],
+                ] as const
+              ).map(([key, label]) => (
+                <BubbleButton
+                  key={key}
+                  size="sm"
+                  tone={zoom === key ? "flame" : "neutral"}
+                  onClick={() => chooseZoom(key)}
+                >
                   {label}
                 </BubbleButton>
               ))}
               {offView > 0 ? (
                 <>
                   <Pill tone="flame">{offView} off this view</Pill>
-                  <BubbleButton size="sm" tone="grape" onClick={() => chooseZoom(fitZoom(frame?.tokens ?? []))}>
+                  <BubbleButton
+                    size="sm"
+                    tone="grape"
+                    onClick={() => chooseZoom(fitZoom(frame?.tokens ?? []))}
+                  >
                     Fit players
                   </BubbleButton>
                 </>
@@ -1254,7 +1189,12 @@ function PlayDesignerPage() {
 
         <div className="flex flex-col gap-3">
           {canEdit ? (
-            <PlayIndexSheet value={index} onChange={setIndex} suggestions={suggestFromFrames(frames, flip ? "left" : "right")} compact />
+            <PlayIndexSheet
+              value={index}
+              onChange={setIndex}
+              suggestions={suggestFromFrames(frames, flip ? "left" : "right")}
+              compact
+            />
           ) : null}
           {frames.length > 1 ? (
             <details className="rounded-2xl border border-border bg-surface-2/50 p-2">
@@ -1302,7 +1242,6 @@ function PlayDesignerPage() {
               Legend: dotted = pass · solid arrow = cut · curved arrow = curl cut · bumpy line =
               dribble · bar end = screen
             </Pill>
-
           </Panel>
         </div>
       </div>

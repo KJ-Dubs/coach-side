@@ -4,7 +4,6 @@ import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { ExportPlayVideo } from "@/components/court/ExportPlayVideo";
 import type { CourtZoom } from "@/components/court/Court";
 import {
-  buildSteps,
   listOptionGroups,
   sampleStep,
   DO_MS,
@@ -14,6 +13,7 @@ import {
   type PlayStep,
 } from "@/lib/playAnimation";
 
+import { buildSequentialSteps } from "@/lib/playSequence";
 import type { Play, PlayFrame } from "@/lib/types";
 
 /**
@@ -42,12 +42,15 @@ export function normalizePlayForPlayback(
   const steps: NormalizedPlayback["steps"] = [];
   const options: NormalizedPlayback["options"] = [];
   list.forEach((frame, frameIdx) => {
-    for (const step of buildSteps(frame, branch)) steps.push({ step, frameIdx, note: frame.note });
+    for (const step of buildSequentialSteps(frame))
+      steps.push({ step, frameIdx, note: frame.note });
     for (const group of listOptionGroups(frame)) options.push({ frameIdx, group });
   });
   const labels = [
     ...new Set(
-      list.flatMap((f) => f.tokens.filter((t) => (t.team ?? "offense") === "offense").map((t) => t.label)),
+      list.flatMap((f) =>
+        f.tokens.filter((t) => (t.team ?? "offense") === "offense").map((t) => t.label),
+      ),
     ),
   ];
   return {
@@ -61,7 +64,6 @@ export function normalizePlayForPlayback(
   };
 }
 
-
 export function PlayPresenter({
   play,
   frames,
@@ -73,13 +75,8 @@ export function PlayPresenter({
   loading?: boolean;
   className?: string;
 }) {
-  const [branch, setBranch] = useState<BranchSelection>({});
-  const model = useMemo(
-    () => normalizePlayForPlayback(play, frames, branch),
-    [play, frames, branch],
-  );
+  const model = useMemo(() => normalizePlayForPlayback(play, frames), [play, frames]);
   const total = model.steps.length;
-
 
   const [idx, setIdx] = useState(0);
   const [phase, setPhase] = useState<"show" | "do">("show");
@@ -90,28 +87,11 @@ export function PlayPresenter({
   const [zoom, setZoom] = useState<CourtZoom>("full");
   const raf = useRef(0);
 
-  /** Where playback pauses so the viewer chooses an OPTION (first step at each option point). */
-  const pauses = useMemo(
-    () =>
-      model.options
-        .filter((o) => o.group.branches.length > 1)
-        .map((o) => ({
-          group: o.group,
-          idx: model.steps.findIndex((s) => s.frameIdx === o.frameIdx && s.step.seq >= o.group.seq),
-        }))
-        .filter((p) => p.idx >= 0),
-    [model],
-  );
-  const [choosing, setChoosing] = useState<OptionGroup | null>(null);
-  const chosen = useRef(new Set<string>());
-
   useEffect(() => {
     setIdx(0);
     setPhase("show");
     setProgress(0);
     setPlaying(false);
-    setChoosing(null);
-    chosen.current.clear();
   }, [model.name]);
 
   useEffect(() => {
@@ -133,12 +113,6 @@ export function PlayPresenter({
           return 0;
         }
         if (idx + 1 < total) {
-          const stop = pauses.find((p) => p.idx === idx + 1 && !chosen.current.has(p.group.group));
-          if (stop) {
-            setPlaying(false);
-            setChoosing(stop.group);
-            return 1;
-          }
           setIdx(idx + 1);
           setPhase("show");
           return 0;
@@ -150,34 +124,22 @@ export function PlayPresenter({
     };
     raf.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf.current);
-  }, [playing, phase, idx, total, speed, pauses]);
-
-  const choose = (group: OptionGroup, key: string) => {
-    chosen.current.add(group.group);
-    setBranch((prev) => ({ ...prev, [group.group]: key }));
-    const at = pauses.find((p) => p.group.group === group.group)?.idx ?? idx;
-    setChoosing(null);
-    setIdx(at);
-    setPhase("show");
-    setProgress(0);
-    setPlaying(true);
-  };
+  }, [playing, phase, idx, total, speed]);
 
   const current = model.steps[Math.min(idx, Math.max(0, total - 1))];
   const sample = current ? sampleStep(current.step, phase, phase === "do" ? progress : 0) : null;
   const frame = current ? model.frames[current.frameIdx] : model.frames[0];
 
   const goto = (n: number) => {
-    setChoosing(null);
     setIdx(Math.max(0, Math.min(total - 1, n)));
     setPhase("show");
     setProgress(0);
   };
 
   const focusTokenId = focus
-    ? (sample?.tokens ?? frame?.tokens ?? []).find(
+    ? ((sample?.tokens ?? frame?.tokens ?? []).find(
         (t) => t.label === focus && (t.team ?? "offense") === "offense",
-      )?.id ?? null
+      )?.id ?? null)
     : null;
 
   const actions = current
@@ -197,7 +159,15 @@ export function PlayPresenter({
       <div className="flex flex-col gap-2">
         <SectionHeader as="h1" title={model.name} subtitle={model.category || undefined}>
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <Pill tone="flame">Sequence {total ? idx + 1 : 0} of {total}</Pill>
+            <Pill tone="flame">
+              Sequence{" "}
+              {current && "label" in current.step
+                ? String(current.step.label)
+                : total
+                  ? idx + 1
+                  : 0}{" "}
+              of {total}
+            </Pill>
             <Pill tone="neutral">{phase === "show" ? "Showing actions" : "Running play"}</Pill>
           </div>
           {current?.note ? <InfoPanel className="max-w-2xl">{current.note}</InfoPanel> : null}
@@ -220,11 +190,10 @@ export function PlayPresenter({
             {...(focusTokenId ? { focusTokenId } : {})}
           />
           {!playing && idx === 0 && phase === "show" && progress === 0 && total > 0 ? (
-            <button
-              type="button"
+            <BubbleButton
+              tone="ghost"
               aria-label="Play this play"
               onClick={() => {
-                chosen.current.clear();
                 setPlaying(true);
               }}
               className="absolute inset-0 flex items-center justify-center rounded-3xl bg-background/45 backdrop-blur-[1px]"
@@ -232,28 +201,7 @@ export function PlayPresenter({
               <span className="rounded-full border-2 border-flame bg-flame/25 px-8 py-5 text-2xl font-black tracking-widest text-foreground shadow-lg shadow-black/40">
                 ▶ PLAY
               </span>
-            </button>
-          ) : null}
-          {choosing ? (
-            <div className="absolute inset-x-2 bottom-2 flex justify-center">
-              <Panel aria-label="Choose an option" className="flex max-w-full flex-col items-center gap-2 p-3 shadow-lg shadow-black/40">
-                <Pill tone="flame">OPTION</Pill>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {choosing.branches.map((b) => (
-                    <BubbleButton
-                      key={b.key}
-                      size="sm"
-                      tone="grape"
-                      className="min-h-11 flex-col gap-0 px-3 py-1 leading-tight"
-                      onClick={() => choose(choosing, b.key)}
-                    >
-                      <span>{`${b.key.toUpperCase()} — ${b.label}`}</span>
-                      {b.condition ? <span className="text-[11px] font-semibold opacity-80">{b.condition}</span> : null}
-                    </BubbleButton>
-                  ))}
-                </div>
-              </Panel>
-            </div>
+            </BubbleButton>
           ) : null}
         </div>
 
@@ -262,7 +210,6 @@ export function PlayPresenter({
             tone="ghost"
             onClick={() => {
               setPlaying(false);
-              chosen.current.clear();
               goto(0);
             }}
           >
@@ -271,7 +218,7 @@ export function PlayPresenter({
           <BubbleButton tone="neutral" disabled={idx === 0} onClick={() => goto(idx - 1)}>
             ← Previous
           </BubbleButton>
-          <BubbleButton tone="flame" disabled={total === 0 || !!choosing} onClick={() => setPlaying((p) => !p)}>
+          <BubbleButton tone="flame" disabled={total === 0} onClick={() => setPlaying((p) => !p)}>
             {playing ? "❚❚ Pause" : "▶ Play"}
           </BubbleButton>
           <BubbleButton tone="grape" disabled={idx >= total - 1} onClick={() => goto(idx + 1)}>
@@ -279,48 +226,29 @@ export function PlayPresenter({
           </BubbleButton>
         </Panel>
 
-        {model.options.length ? (
-          <Panel className="flex flex-col items-center gap-2">
-            {model.options.map((o) => {
-              const current =
-                branch[o.group.group] ?? o.group.branches[0]?.key ?? "";
-              return (
-                <div key={o.group.group} className="flex flex-wrap items-center justify-center gap-2">
-                  <Pill tone="flame">OPTION</Pill>
-                  {o.group.branches.map((b) => (
-                    <BubbleButton
-                      key={b.key}
-                      size="sm"
-                      tone={current === b.key ? "grape" : "neutral"}
-                      className="min-h-11 flex-col gap-0 leading-tight"
-                      onClick={() => {
-                        chosen.current.add(o.group.group);
-                        setChoosing(null);
-                        setBranch((prev) => ({ ...prev, [o.group.group]: b.key }));
-                      }}
-                    >
-                      <span>{`${b.key.toUpperCase()} — ${b.label}`}</span>
-                      {b.condition ? <span className="text-[11px] font-semibold opacity-80">{b.condition}</span> : null}
-                    </BubbleButton>
-                  ))}
-                </div>
-              );
-            })}
-          </Panel>
-        ) : null}
-
         <ExportPlayVideo model={model} />
-
 
         <Panel className="flex flex-wrap items-center justify-center gap-2">
           <Pill tone="muted">Court view</Pill>
-          <BubbleButton size="sm" tone={zoom === "full" ? "grape" : "neutral"} onClick={() => setZoom("full")}>
+          <BubbleButton
+            size="sm"
+            tone={zoom === "full" ? "grape" : "neutral"}
+            onClick={() => setZoom("full")}
+          >
             Full Court
           </BubbleButton>
-          <BubbleButton size="sm" tone={zoom === "left" ? "grape" : "neutral"} onClick={() => setZoom("left")}>
+          <BubbleButton
+            size="sm"
+            tone={zoom === "left" ? "grape" : "neutral"}
+            onClick={() => setZoom("left")}
+          >
             Zoom Left Half
           </BubbleButton>
-          <BubbleButton size="sm" tone={zoom === "right" ? "grape" : "neutral"} onClick={() => setZoom("right")}>
+          <BubbleButton
+            size="sm"
+            tone={zoom === "right" ? "grape" : "neutral"}
+            onClick={() => setZoom("right")}
+          >
             Zoom Right Half
           </BubbleButton>
         </Panel>
