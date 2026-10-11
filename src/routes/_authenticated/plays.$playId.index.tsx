@@ -371,8 +371,6 @@ function PlayDesignerPage() {
 
   /* ---- action authoring ---- */
 
-  const OPTION_LABELS = ["Option A", "Option B", "Option C", "Option D", "Option E", "Option F"];
-
   const addAction = (drawn: PlayAction, seq: number) => {
     const opt =
       frame && branchGroup && branchKey ? optionForSeq(frame, branchGroup.group, branchKey, seq) : undefined;
