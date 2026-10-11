@@ -219,8 +219,8 @@ function PlaybookPage() {
   const discoveredPlays = useMemo(
     () =>
       sortPlays(
-        listedPlays.filter(
-          (p) => matchesConcepts(p, conceptKeys) && matchesQuery(p, query, folderNames.data?.get(p.id) ?? []),
+        visiblePlays.filter(
+          (p) => matchesDiscovery(p, filterKeys) && matchesQuery(p, query, folderNames.data?.get(p.id) ?? []),
         ),
         sort,
       ),
