@@ -696,7 +696,7 @@ function PlayDesignerPage() {
     const { group, label, condition } = optionSheet;
     const res = group
       ? addOptionBranch(frame, group, label, condition, uuid)
-      : createOptionPoint(frame, seqNumber + 1, label, condition, uuid);
+      : createOptionPoint(frame, seqNumber, label, condition, uuid);
     if (!res) return;
     const groupId = group ?? ("group" in res ? res.group : null);
     if (typeof groupId !== "string") return;
