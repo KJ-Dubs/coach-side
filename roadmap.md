@@ -1,9 +1,10 @@
 # CourtSide Coach — production pass roadmap
 
 ## Compact My Playbook discovery
-- [ ] Merge Play Types, search and sort into one compact area with grouped multi-select filters and concise active summary
-- [ ] Preserve category links, team/folder scope, real-date sorting and generic Create Play
-- [ ] Verify grouped matching, mobile layout and automatic preview checks
+- [x] Merge Play Types, search and sort into one compact area with grouped multi-select filters and concise active summary
+- [x] Preserve category links and multi-type URL state, team/folder scope, real-date sorting; quick create only prefills when exactly one type is selected
+- [x] 48 tests pass; unsaved filter controls verified at desktop and 320/390px with no horizontal overflow; automatic typecheck/build OK
+- [ ] Signed-in team/folder and old-link/back verification — blocked: requester has no matching preview auth account; no saved data changed
 
 ## Sequential Playmaker OPTIONS
 - [x] Dynamic numbered option button between Next and picker; immediate sibling creation and naming; unsaved browser checks at 320/360/390/768/1280px, 44px targets, no overflow, correct 1A/1B and 3A/3B/3C families; six regression tests and automatic build OK
