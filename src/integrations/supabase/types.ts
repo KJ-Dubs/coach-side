@@ -3313,6 +3313,7 @@ export type Database = {
           home_gym: string | null
           id: string
           is_practice: boolean
+          level: string | null
           locker_enabled: boolean
           locker_token: string
           logo_url: string | null
@@ -3340,6 +3341,7 @@ export type Database = {
           home_gym?: string | null
           id?: string
           is_practice?: boolean
+          level?: string | null
           locker_enabled?: boolean
           locker_token?: string
           logo_url?: string | null
@@ -3367,6 +3369,7 @@ export type Database = {
           home_gym?: string | null
           id?: string
           is_practice?: boolean
+          level?: string | null
           locker_enabled?: boolean
           locker_token?: string
           logo_url?: string | null
