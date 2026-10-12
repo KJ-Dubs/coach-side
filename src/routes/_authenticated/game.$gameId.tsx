@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { bonusLabel, countFouls, diffTracking, foulWindow, normalizeHistory, normalizeRules, normalizeTracking, type RulesConfig, type TrackingConfig } from "@/lib/gameConfig";
 import { ClockEditor, TrackingSettingsSheet } from "@/components/game/TrackingSettingsSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { TeamThemeProvider } from "@/components/TeamThemeProvider";
 
 export const Route = createFileRoute("/_authenticated/game/$gameId")({
   head: () => ({
@@ -950,6 +951,7 @@ function LiveGamePage() {
 
   return (
     <div className="min-h-screen p-2 sm:p-3">
+      <TeamThemeProvider teamId={teamId} />
       <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-2">
         {/* SCORE + PERIOD + FOULS — compact and sticky */}
         <Panel className="sticky top-1 z-40 border-grape/50 bg-background/95 p-1.5 backdrop-blur">

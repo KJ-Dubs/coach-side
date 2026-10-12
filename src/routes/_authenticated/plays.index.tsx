@@ -361,6 +361,8 @@ function PlaybookPage() {
   return (
     <AppShell
       title="Playbook"
+      teamTheme={tab !== "library"}
+      themeTeamId={teamFilter === "ALL" ? undefined : teamFilter}
       subtitle={
         tab === "library"
           ? "CoachSide Library"
