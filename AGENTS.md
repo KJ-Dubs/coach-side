@@ -11,7 +11,7 @@
 
 - Play and drill MP4 exports share `src/lib/playVideo.ts`; branding positions derive from the fitted court bounds in logical export pixels, shared by both encoders, so composition and animation cannot drift across formats or fallback resolutions.
 - Intro frames and their duration belong to the shared export frame iterator/counts, gated by content kind and export options, so both MP4 encoders preserve the same playback start and progress.
-- Team accents override centralized tokens through AppShell using the existing current-team identifier and authorized team query; explicit page teams take priority and public/admin surfaces opt out. PlayCanvas and play MP4s share dedicated play accent tokens that bypass the generic court semantic scope, while basketball/rims, defense and court retain dedicated semantic tokens; exports snapshot these tokens once for both encoders to preserve parity and branding.
+- Team accents override centralized root tokens through AppShell using the existing current-team identifier and authorized team query; explicit page teams never fall back to a different team, and Live Game mounts its provider from the game's team ID so dialogs share authoritative colors. Public/admin surfaces opt out. PlayCanvas and play MP4s share dedicated play accent tokens that bypass the generic court semantic scope, while basketball/rims, defense and court retain dedicated semantic tokens; exports snapshot these tokens once for both encoders to preserve parity and branding.
 
 Film Room: film jobs stage AI/manual events in film_job_events; only coach-reviewed events reach game_events via finalize_film_job. Never auto-promote.
 

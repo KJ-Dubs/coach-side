@@ -1,8 +1,9 @@
 # CourtSide Coach — production pass roadmap
 
 ## Live Game and bright team accents
-- [ ] Enforce game's explicit team on root/portals; theme tracking and timeout controls without changing layout or stat semantics
-- [ ] Preserve bright white/yellow, lift dark accents, maintain readable text and distinct defense; verify tests and browser controls
+- [x] Enforce game's explicit team on root/portals without borrowing global team colors during loading; theme tracking and timeout controls without changing layout or stat semantics
+- [x] Preserve bright white/yellow, lift dark accents, maintain readable text and distinct defense; 42 tests and automatic build pass; actual tracking controls and portaled sheet checked at desktop/390px with white fills, dark text, yellow buttons and no overflow
+- [ ] Signed-in game-to-game theme switching — blocked: no matching requester preview account; source/provider inspected and isolated controls verified without changing saved games
 
 ## Playmaker team accents
 - [x] Extend safe primary/secondary accents to PlayCanvas and play MP4s without changing layout; keep ball/rims fixed orange, court neutral and defense distinct
