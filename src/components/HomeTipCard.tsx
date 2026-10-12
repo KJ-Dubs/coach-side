@@ -2,21 +2,9 @@ import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BubbleButton, Label, Panel } from "@/components/Bubbles";
 import { useMyProgress } from "@/components/ProgressCard";
+import { useQuery } from "@tanstack/react-query";
 import { COACHSIDE_TIPS } from "@/lib/tips";
-
-type NextStep = { title: string; body: string; cta: string; link: string };
-
-/** One next action, in priority order, from real progress metrics. */
-function pickNextStep(m: Record<string, number>): NextStep | null {
-  const v = (k: string) => m[k] ?? 0;
-  if (v("teams") < 1) return { title: "Create your first team", body: "Teams unlock rosters, Live Game stats and the Locker Room.", cta: "Create a team", link: "/roster" };
-  if (v("plays_created") < 1) return { title: "Build your first play", body: "Draw it once in Playmaker, then present, share or export it.", cta: "Open Playmaker", link: "/plays/new" };
-  if (v("max_roster") < 5) return { title: "Add your players", body: "A roster of five or more gets you ready for Live Game.", cta: "Add players", link: "/roster" };
-  if (v("library_saved") < 1) return { title: "Add a play from the CoachSide Library", body: "Borrow a proven set from another coach in one tap.", cta: "Browse the Library", link: "/library" };
-  if (v("calendar_connected") < 1) return { title: "Connect your calendar", body: "Bring games and practices into your team Schedule.", cta: "Open Schedule", link: "/lockerroom?area=schedule" };
-  if (v("games") < 1) return { title: "Try Live Game", body: "Tap the court, pick a player, pick a stat. That's it.", cta: "Start Live Game", link: "/games/new" };
-  return null;
-}
+import { fetchOnboarding, pickNextAction } from "@/lib/onboarding";
 
 /** Persistent Home card: one calm tip (changes daily or on request) plus one next step. */
 export function HomeTipCard() {
@@ -28,7 +16,12 @@ export function HomeTipCard() {
     setIdx(day % COACHSIDE_TIPS.length);
   }, []);
   const tip = idx === null ? null : COACHSIDE_TIPS[idx];
-  const next = progress.data ? pickNextStep(progress.data.metrics) : null;
+  const ob = useQuery({ queryKey: ["onboarding"], queryFn: fetchOnboarding });
+  const [standalone, setStandalone] = useState(false);
+  useEffect(() => { setStandalone(window.matchMedia?.("(display-mode: standalone)").matches ?? false); }, []);
+  const next = progress.data
+    ? pickNextAction(progress.data.metrics, ob.data?.interests ?? [], { installed: standalone })
+    : null;
   const go = (link: string) => router.history.push(link);
 
   return (
