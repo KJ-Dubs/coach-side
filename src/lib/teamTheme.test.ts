@@ -15,8 +15,21 @@ describe("team accent layer", () => {
   it.each(["#FFFFFF", "#000000", "#FFFF00", "#1D4ED8", "#D40000", "#FF00FF", "#00FF00"])("derives visible accents and 4.5:1 control text for %s", (hex) => {
     const safe = safeAccent(hex);
     expect(luminance(safe)).toBeGreaterThanOrEqual(0.179);
-    expect(luminance(safe)).toBeLessThanOrEqual(0.381);
     expect(contrast(safe, readableForeground(safe))).toBeGreaterThanOrEqual(4.5);
+  });
+  it.each(["#FFFFFF", "#F8FAFC", "#FFFF00", "#FFD700", "#00FF00"])("preserves vibrant bright branding for %s", (hex) => {
+    expect(safeAccent(hex)).toBe(hex);
+    expect(readableForeground(safeAccent(hex))).toBe("#111111");
+  });
+  it("keeps white main accents and crisp borders while soft variants mix separately", () => {
+    const vars = teamThemeVariables({ primary_color: "#FFFFFF", secondary_color: "#FFFFFF" });
+    expect(vars["--grape"]).toBe("#FFFFFF");
+    expect(vars["--ring"]).toBe("#FFFFFF");
+    expect(vars["--flame"]).toBe("#FFFFFF");
+    expect(vars["--primary-foreground"]).toBe("#111111");
+    expect(vars["--accent-foreground"]).toBe("#111111");
+    expect(vars["--defense-accent"]).toBe("var(--blue)");
+    expect(vars["--grape-soft"]).toContain("color-mix");
   });
   it("never overrides base, court, stat or semantic tokens", () => {
     const vars = teamThemeVariables({ primary_color: "#1D4ED8", secondary_color: "#FFD700" });

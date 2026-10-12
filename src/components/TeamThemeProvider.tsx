@@ -7,7 +7,8 @@ import { teamThemeEnabled, teamThemeVariables } from "@/lib/teamTheme";
 export function TeamThemeProvider({ teamId, enabled = true }: { teamId?: string | undefined; enabled?: boolean | undefined }) {
   const current = useCurrentTeam();
   const path = useLocation({ select: (location) => location.pathname });
-  const team = current.teams.find((t) => t.id === teamId) ?? current.team;
+  // An explicit game/page team never borrows a different team's colors while loading.
+  const team = teamId ? current.teams.find((t) => t.id === teamId) : current.team;
   useLayoutEffect(() => {
     if (!enabled || !teamThemeEnabled(path)) return;
     const style = document.documentElement.style;

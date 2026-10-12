@@ -14,22 +14,21 @@ export function contrast(a: string, b: string) { const x = luminance(a), y = lum
 function mix(hex: string, target: number, amount: number) {
   return `#${channels(hex).map((c) => Math.round(c + (target - c) * amount).toString(16).padStart(2, "0")).join("")}`.toUpperCase();
 }
-/** Keep hue while constraining UI luminance; stored brand colors remain unchanged. */
+/** Preserve bright branding; lift only dark accents for charcoal-surface visibility. */
 export function safeAccent(value: string): string {
   const hex = normalizeHex(value);
   if (!hex) throw new Error("Choose a valid hex color, such as #1D4ED8");
   const light = luminance(hex);
-  if (light >= 0.18 && light <= 0.38) return hex;
-  const target = light < 0.18 ? 255 : 0;
+  if (light >= 0.18) return hex;
   let lo = 0, hi = 1;
   for (let i = 0; i < 24; i++) {
     const mid = (lo + hi) / 2;
-    const l = luminance(mix(hex, target, mid));
-    if (target === 255 ? l < 0.22 : l > 0.32) lo = mid; else hi = mid;
+    const l = luminance(mix(hex, 255, mid));
+    if (l < 0.22) lo = mid; else hi = mid;
   }
-  return mix(hex, target, hi);
+  return mix(hex, 255, hi);
 }
-export function readableForeground(hex: string) { return contrast(hex, "#FFFFFF") >= 4.5 ? "#FFFFFF" : "#111111"; }
+export function readableForeground(hex: string) { return contrast(hex, "#FFFFFF") >= contrast(hex, "#111111") ? "#FFFFFF" : "#111111"; }
 export function similarColors(a: string, b: string) {
   const x = normalizeHex(a), y = normalizeHex(b);
   return !!x && !!y && Math.sqrt(channels(x).reduce((sum, c, i) => sum + (c - (channels(y)[i] ?? 0)) ** 2, 0)) < 65;
@@ -44,9 +43,9 @@ export function teamThemeVariables(team: Pick<Team, "primary_color" | "secondary
     vars["--play-primary"] = color;
     vars["--play-primary-foreground"] = readableForeground(color);
     vars["--play-offense-label"] = color;
-    // White stays distinct from every luminance-constrained team primary;
-    // dashed squares and X labels also preserve non-color identification.
-    vars["--defense-accent"] = "var(--foreground)";
+    // Bright offense gets semantic blue rather than white-on-white defense.
+    // Dashed squares and X labels preserve non-color identification too.
+    vars["--defense-accent"] = luminance(color) >= 0.6 ? "var(--blue)" : "var(--foreground)";
     vars["--sidebar-primary-foreground"] = readableForeground(color);
     vars["--grape-soft"] = `color-mix(in oklab, ${color} 40%, var(--background))`;
     vars["--grape-bright"] = `color-mix(in oklab, ${color} 70%, var(--foreground))`;
