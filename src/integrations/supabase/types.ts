@@ -641,6 +641,48 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_onboarding: {
+        Row: {
+          colors_set: boolean
+          created_at: string
+          events_sent: string[]
+          interests: string[]
+          players_added: number
+          source: string
+          status: string
+          step: number
+          team_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          colors_set?: boolean
+          created_at?: string
+          events_sent?: string[]
+          interests?: string[]
+          players_added?: number
+          source?: string
+          status?: string
+          step?: number
+          team_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          colors_set?: boolean
+          created_at?: string
+          events_sent?: string[]
+          interests?: string[]
+          players_added?: number
+          source?: string
+          status?: string
+          step?: number
+          team_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       complimentary_grants: {
         Row: {
           access_code_id: string | null
@@ -3270,6 +3312,7 @@ export type Database = {
           head_coach_name: string | null
           home_gym: string | null
           id: string
+          is_practice: boolean
           locker_enabled: boolean
           locker_token: string
           logo_url: string | null
@@ -3296,6 +3339,7 @@ export type Database = {
           head_coach_name?: string | null
           home_gym?: string | null
           id?: string
+          is_practice?: boolean
           locker_enabled?: boolean
           locker_token?: string
           logo_url?: string | null
@@ -3322,6 +3366,7 @@ export type Database = {
           head_coach_name?: string | null
           home_gym?: string | null
           id?: string
+          is_practice?: boolean
           locker_enabled?: boolean
           locker_token?: string
           logo_url?: string | null
