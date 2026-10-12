@@ -30,6 +30,7 @@ import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
 import { BackNav } from "@/components/BackNav";
 import { BubbleButton } from "@/components/Bubbles";
 import { TeamThemeProvider } from "@/components/TeamThemeProvider";
+import { useCurrentTeam } from "@/lib/teamContext";
 
 const QUICK = [
   { to: "/plays", label: "Playbook", icon: BookOpen },
@@ -69,6 +70,7 @@ export function AppShell({
   teamTheme?: boolean | undefined;
 }) {
   const me = useMe();
+  const currentTeam = useCurrentTeam();
   const { access } = useAccess();
   const role = resolveRole(access);
   const qc = useQueryClient();
@@ -86,7 +88,7 @@ export function AppShell({
   // membership, never by anything stored on the device.
   if (role.isPlayerOnly) {
     const playerTeam =
-      me.teams.find((t) => t.id === playerTeamId && access.playerTeamIds.includes(t.id)) ?? me.teams.find((t) => access.playerTeamIds.includes(t.id)) ?? null;
+      me.teams.find((t) => t.id === (playerTeamId ?? currentTeam.teamId) && access.playerTeamIds.includes(t.id)) ?? me.teams.find((t) => access.playerTeamIds.includes(t.id)) ?? null;
     return (
       <div className="min-h-screen max-w-full overflow-x-clip px-3 py-3 sm:px-5 sm:py-5">
         <TeamThemeProvider teamId={playerTeam?.id} enabled={teamTheme} />

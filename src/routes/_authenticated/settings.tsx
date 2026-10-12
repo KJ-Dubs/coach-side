@@ -389,6 +389,7 @@ function TeamCard({ team, onSaved }: { team: Team; onSaved: () => void }) {
           />
         </Field>
       </div>
+      <TeamColorFields primary={primary} secondary={secondary} onPrimary={setPrimary} onSecondary={setSecondary} teamName={name || team.name} />
       <div className="flex flex-wrap justify-center gap-2">
         <BubbleButton tone="grape" disabled={save.isPending || resetColors.isPending || (!!primary && !normalizeHex(primary)) || (!!secondary && !normalizeHex(secondary))} onClick={() => save.mutate()}>
           {save.isPending ? "Saving…" : "Save team"}
@@ -397,7 +398,6 @@ function TeamCard({ team, onSaved }: { team: Team; onSaved: () => void }) {
           <BubbleButton tone="ghost">Open roster</BubbleButton>
         </Link>
       </div>
-      <TeamColorFields primary={primary} secondary={secondary} onPrimary={setPrimary} onSecondary={setSecondary} teamName={name || team.name} />
       <div className="flex justify-center"><BubbleButton tone="ghost" disabled={save.isPending || resetColors.isPending} onClick={() => resetColors.mutate()}>Reset to CoachSide colors</BubbleButton></div>
     </div>
   );
