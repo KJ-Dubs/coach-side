@@ -28,6 +28,16 @@ describe("team accent layer", () => {
     expect(similarColors("#112233", "#122334")).toBe(true);
     expect(similarColors("#FF0000", "#0000FF")).toBe(false);
   });
+  it("provides play accents outside the court's generic color scope", () => {
+    const vars = teamThemeVariables({ primary_color: "#1D4ED8", secondary_color: "#FFD700" });
+    expect(vars["--play-primary"]).toBe(vars["--grape"]);
+    expect(vars["--play-secondary"]).toBe(vars["--flame"]);
+    expect(vars["--play-offense-label"]).toBe(vars["--grape"]);
+    expect(vars["--play-primary-foreground"]).toBe(vars["--primary-foreground"]);
+    expect(vars["--basketball"]).toBeUndefined();
+    expect(vars["--defense-accent"]).toBe("var(--foreground)");
+    expect(teamThemeVariables(null)["--defense-accent"]).toBeUndefined();
+  });
   it("keeps non-team public and admin branding default", () => {
     for (const path of ["/", "/auth", "/library", "/library/123", "/coach/kory", "/kpi", "/launch-qa"]) expect(teamThemeEnabled(path)).toBe(false);
     for (const path of ["/settings", "/lockerroom", "/game/1", "/plays"]) expect(teamThemeEnabled(path)).toBe(true);
