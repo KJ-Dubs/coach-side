@@ -26,6 +26,7 @@ import {
 import { EVENT_TYPE_LABEL, type TeamEvent } from "@/lib/types";
 import { useLocker } from "@/lib/useLocker";
 import { EventForm } from "./calendar";
+import { useCurrentTeam } from "@/lib/teamContext";
 
 type Area = "chat" | "schedule" | "playbook" | "plans";
 
@@ -55,9 +56,11 @@ function LockerRoomPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const currentTeam = useCurrentTeam();
   const [teamId, setTeamId] = useState(search.team ?? "");
   const locker = useLocker(teamId || null);
-  useEffect(() => { if (search.team && locker.teams.some((t) => t.id === search.team)) setTeamId(search.team); else if (locker.teams.length && !locker.teams.some((t) => t.id === teamId)) setTeamId(locker.teams[0]?.id ?? ""); }, [locker.teams, teamId, search.team]);
+  useEffect(() => { if (search.team && locker.teams.some((t) => t.id === search.team)) setTeamId(search.team); else if (locker.teams.length && !locker.teams.some((t) => t.id === teamId)) setTeamId(currentTeam.teamId ?? locker.teams[0]?.id ?? ""); }, [locker.teams, teamId, search.team, currentTeam.teamId]);
+  useEffect(() => { if (teamId && locker.teams.some((t) => t.id === teamId) && currentTeam.teamId !== teamId) currentTeam.setTeam(teamId); }, [teamId, locker.teams, currentTeam.teamId, currentTeam.setTeam]);
   const team = locker.teams.find((t) => t.id === teamId) ?? null;
   const area = search.area;
 

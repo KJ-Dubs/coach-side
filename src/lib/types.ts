@@ -4,6 +4,8 @@ export type Team = {
   season: string;
   org_id?: string | null;
   logo_url?: string | null;
+  primary_color?: string | null;
+  secondary_color?: string | null;
   head_coach_name?: string | null;
   assistant_coaches?: string | null;
   default_periods?: number;

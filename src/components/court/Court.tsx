@@ -209,7 +209,7 @@ export function Court({
     >
       <svg
         viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
-        className="absolute inset-0 h-full w-full"
+        className="court-semantic-colors absolute inset-0 h-full w-full"
       >
         <g transform={camera.transform}>
           <rect x={0} y={0} width={view.w} height={view.h} fill="var(--court)" />

@@ -29,6 +29,8 @@ import { aggregatePlayers, fmtMinutes } from "@/lib/stats";
 import type { Player, Team } from "@/lib/types";
 import { useMe } from "@/lib/useMe";
 import { cn } from "@/lib/utils";
+import { TeamBrandingStep } from "@/components/TeamBrandingStep";
+import { useCurrentTeam } from "@/lib/teamContext";
 
 export const Route = createFileRoute("/_authenticated/roster")({
   head: () => ({
@@ -52,6 +54,8 @@ const POSITIONS = ["PG", "SG", "SF", "PF", "C", "G", "F"];
 function RosterPage() {
   const qc = useQueryClient();
   const me = useMe();
+  const currentTeam = useCurrentTeam();
+  const [brandingTeam, setBrandingTeam] = useState<Team | null>(null);
   const teams = useQuery({ queryKey: ["teams"], queryFn: fetchTeams });
   const players = useQuery({ queryKey: ["players", "all"], queryFn: fetchAllPlayers });
   const bundle = useQuery({
@@ -105,6 +109,8 @@ function RosterPage() {
       setTeamNameInput("");
       setOpenForm(null);
       setTeamFilter(t.id);
+      currentTeam.setTeam(t.id);
+      setBrandingTeam(t);
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -156,6 +162,7 @@ function RosterPage() {
   return (
     <AppShell
       title="Rosters"
+      themeTeamId={teamFilter === "ALL" ? undefined : teamFilter}
       subtitle="Player directory — tap a player for their season stats"
       actions={
         <>
@@ -178,6 +185,7 @@ function RosterPage() {
       }
     >
       <StatsTabs />
+      {brandingTeam ? <TeamBrandingStep key={brandingTeam.id} team={brandingTeam} onDone={() => setBrandingTeam(null)} /> : null}
       {openForm === "team" ? (
         <Panel className="mb-3 flex flex-col gap-3 border-grape/50">
            <div className="text-center"><h2 className="text-xl font-black text-foreground">New team</h2><p className="mt-1 text-sm font-semibold text-muted-foreground">Teams share your program&apos;s coaches and plays</p></div>

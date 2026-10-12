@@ -1,5 +1,11 @@
 # CourtSide Coach — production pass roadmap
 
+## Team accent theming
+- [x] Add nullable hex-validated team colors and centralized safe accent overrides; preserve charcoal, semantic stat colors, court diagrams and exports
+- [x] Add skippable post-creation branding with logo upload and Settings edit/reset; synchronize the existing current-team identifier and prioritize explicit page/player teams
+- [x] 73 library tests and automatic typecheck/build pass; isolated real-control desktop/390px checks confirm switching, readable white/black accents, reset, unchanged court/semantic colors and no overflow
+- [ ] Signed-in creation/save/reload and player account verification — blocked: no preview auth account matches requester; no existing team colors changed for testing. Pre-load accent caching deferred; theme reconciles after authorized team data loads.
+
 ## Play export countdown intro
 - [x] Add optional 2.6-second play-only branded countdown in the shared MP4 timeline, preserving animation, branding and outro
 - [x] Five real renderer MP4 fixtures validated with ffprobe/decoded frames: all formats, 3/2/1, Sequence 1 at frame 78, existing outro, disabled intro and drill suppression; 61 library tests pass; automatic build OK

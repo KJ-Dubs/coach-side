@@ -1,0 +1,4 @@
+ALTER TABLE public.teams ADD COLUMN IF NOT EXISTS primary_color text NULL, ADD COLUMN IF NOT EXISTS secondary_color text NULL;
+ALTER TABLE public.teams ADD CONSTRAINT teams_primary_color_hex CHECK (primary_color IS NULL OR primary_color ~ '^#[0-9A-Fa-f]{6}$'), ADD CONSTRAINT teams_secondary_color_hex CHECK (secondary_color IS NULL OR secondary_color ~ '^#[0-9A-Fa-f]{6}$');
+COMMENT ON COLUMN public.teams.primary_color IS 'Optional team primary accent; NULL uses CoachSide defaults.';
+COMMENT ON COLUMN public.teams.secondary_color IS 'Optional team secondary accent; NULL uses CoachSide defaults.';
