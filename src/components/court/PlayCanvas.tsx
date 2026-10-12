@@ -18,13 +18,13 @@ function xf(p: Point, flip: boolean) {
 }
 
 const ACTION_COLOR: Record<string, string> = {
-  pass: "var(--flame)",
-  handoff: "var(--flame)",
-  shot: "var(--flame)",
-  cut: "var(--grape)",
-  move: "var(--grape)",
-  curl: "var(--grape)",
-  dribble: "var(--grape)",
+  pass: "var(--play-secondary)",
+  handoff: "var(--play-secondary)",
+  shot: "var(--play-secondary)",
+  cut: "var(--play-primary)",
+  move: "var(--play-primary)",
+  curl: "var(--play-primary)",
+  dribble: "var(--play-primary)",
   screen: "var(--court-line)",
 };
 
@@ -33,9 +33,10 @@ function ActionShape({ a, flip, dim, vertical }: { a: PlayAction; flip: boolean;
   if (raw.length < 2) return null;
   const freehand = raw.length > 2;
   const pts = raw.map((p) => xf(p, flip));
-  const start = pts[0]!;
-  const end = pts[pts.length - 1]!;
-  const color = ACTION_COLOR[a.type] ?? "var(--grape)";
+  const start = pts[0];
+  const end = pts[pts.length - 1];
+  if (!start || !end) return null;
+  const color = ACTION_COLOR[a.type] ?? "var(--play-primary)";
   const dashed = a.type === "pass" || a.type === "shot";
 
   const prev = pts[pts.length - 2] ?? start;
@@ -44,7 +45,7 @@ function ActionShape({ a, flip, dim, vertical }: { a: PlayAction; flip: boolean;
   const mid = curl
     ? curl.mid
     : freehand
-      ? pts[Math.floor(pts.length / 2)]!
+      ? (pts[Math.floor(pts.length / 2)] ?? start)
       : { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
 
   const d = curl
@@ -89,7 +90,7 @@ function ActionShape({ a, flip, dim, vertical }: { a: PlayAction; flip: boolean;
       {a.type === "shot" ? (
         <circle cx={end.x} cy={end.y} r={11} fill="none" stroke={color} strokeWidth={4} />
       ) : null}
-      <circle cx={mid.x} cy={mid.y} r={14} fill="var(--grape)" stroke="var(--background)" strokeWidth={3} />
+      <circle cx={mid.x} cy={mid.y} r={14} fill="var(--play-primary)" stroke="var(--background)" strokeWidth={3} />
       <text
         x={mid.x}
         y={mid.y + 5}
@@ -97,7 +98,7 @@ function ActionShape({ a, flip, dim, vertical }: { a: PlayAction; flip: boolean;
         textAnchor="middle"
         fontSize={a.option?.branchSeq ? 13 : 16}
         fontWeight={900}
-        fill="var(--primary-foreground)"
+        fill="var(--play-primary-foreground)"
       >
         {seqLabel(a)}
       </text>
@@ -109,7 +110,7 @@ function ActionShape({ a, flip, dim, vertical }: { a: PlayAction; flip: boolean;
           textAnchor="middle"
           fontSize={15}
           fontWeight={900}
-          fill="var(--flame)"
+          fill="var(--play-secondary)"
         >
           {a.option.label}
         </text>
@@ -122,7 +123,7 @@ function ActionShape({ a, flip, dim, vertical }: { a: PlayAction; flip: boolean;
 function BallMark({ p }: { p: { x: number; y: number } }) {
   return (
     <g>
-      <circle cx={p.x} cy={p.y} r={13} fill="var(--flame)" stroke="var(--background)" strokeWidth={3} />
+      <circle cx={p.x} cy={p.y} r={13} fill="var(--basketball)" stroke="var(--background)" strokeWidth={3} />
       <path
         d={`M ${p.x - 13} ${p.y} L ${p.x + 13} ${p.y} M ${p.x} ${p.y - 13} L ${p.x} ${p.y + 13}`}
         stroke="var(--background)"
@@ -145,12 +146,12 @@ function TokenShape({ t, flip, dim, vertical }: { t: PlayToken; flip: boolean; d
           height={38}
           rx={7}
           fill="var(--surface-2)"
-          stroke="var(--flame)"
+          stroke="var(--defense-accent)"
           strokeWidth={4}
           strokeDasharray="7 5"
         />
       ) : (
-        <circle cx={p.x} cy={p.y} r={21} fill="var(--surface-2)" stroke="var(--grape)" strokeWidth={4} />
+        <circle cx={p.x} cy={p.y} r={21} fill="var(--surface-2)" stroke="var(--play-primary)" strokeWidth={4} />
       )}
       <text
         x={p.x}
@@ -158,7 +159,7 @@ function TokenShape({ t, flip, dim, vertical }: { t: PlayToken; flip: boolean; d
         textAnchor="middle"
         fontSize={20}
         fontWeight={900}
-        fill={defense ? "var(--flame)" : "var(--foreground)"}
+        fill={defense ? "var(--defense-accent)" : "var(--play-offense-label)"}
       >
         {defense ? `X${t.label}` : t.label}
       </text>
@@ -296,7 +297,7 @@ export function PlayCanvas({
         <path
           d={polyD(ghostPts.map((p) => xf(p, flip)))}
           fill="none"
-          stroke="var(--flame)"
+          stroke="var(--play-secondary)"
           strokeWidth={4}
           strokeDasharray="10 8"
         />
@@ -310,7 +311,7 @@ export function PlayCanvas({
             height={44}
             rx={22}
             fill="var(--surface-2)"
-            stroke="var(--flame)"
+            stroke="var(--play-secondary)"
             strokeWidth={3}
           />
           <text x={34} y={45} fontSize={20} fontWeight={800} fill="var(--foreground)">
