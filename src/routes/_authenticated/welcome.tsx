@@ -258,7 +258,7 @@ function Welcome() {
   );
 }
 
-function Shell({ step, children, onBack, onSkip, themeTeamId }: { step: number; children: React.ReactNode; onBack?: () => void; onSkip?: () => void; themeTeamId?: string }) {
+function Shell({ step, children, onBack, onSkip, themeTeamId }: { step: number; children: React.ReactNode; onBack?: (() => void) | undefined; onSkip?: (() => void) | undefined; themeTeamId?: string | undefined }) {
   return (
     <div className="min-h-dvh bg-background px-4 pb-10 pt-[max(1rem,env(safe-area-inset-top))]">
       {themeTeamId ? <TeamThemeProvider teamId={themeTeamId} /> : null}

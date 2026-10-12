@@ -85,8 +85,8 @@ export function parseRoster(text: string): { jersey: string; first: string; last
     .filter(Boolean)
     .map((l) => {
       const m = l.match(/^#?\s*(\d{1,3})\s*[,.\-\t ]\s*(.+)$/);
-      const jersey = m ? m[1] : "";
-      const rest = (m ? m[2] : l).replace(/[,\t]+/g, " ").trim().split(/\s+/);
+      const jersey = m?.[1] ?? "";
+      const rest = (m?.[2] ?? l).replace(/[,\t]+/g, " ").trim().split(/\s+/);
       return { jersey, first: rest[0] ?? "", last: rest.slice(1).join(" ") };
     })
     .filter((p) => p.first);
@@ -118,7 +118,7 @@ export function pickNextAction(m: Record<string, number>, interests: Interest[],
 }
 
 /** First-win recommendation (primary + alternatives) for the wizard. */
-export function firstWinOptions(interests: Interest[]): NextAction[] {
+export function firstWinOptions(interests: Interest[]): [NextAction, ...NextAction[]] {
   const all: Record<Interest, NextAction> = {
     plays: { key: "plays", title: "Add your first play", body: "Save a proven set from the CoachSide Library.", cta: "Browse CoachSide Library", link: "/library" },
     stats: { key: "stats", title: "Try Live Game", body: "Run a quick game with your team to see stats and shot charts.", cta: "Try Live Game", link: "/games/new" },
@@ -127,5 +127,5 @@ export function firstWinOptions(interests: Interest[]): NextAction[] {
   };
   const order: Interest[] = ["plays", "stats", "coordinate", "practice"];
   const picked = order.filter((i) => interests.includes(i));
-  return (picked.length ? picked : order).map((i) => all[i]);
+  return (picked.length ? picked : order).map((i) => all[i]) as [NextAction, ...NextAction[]];
 }
