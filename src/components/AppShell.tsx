@@ -29,6 +29,7 @@ import { useMe } from "@/lib/useMe";
 import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
 import { BackNav } from "@/components/BackNav";
 import { BubbleButton } from "@/components/Bubbles";
+import { TeamThemeProvider } from "@/components/TeamThemeProvider";
 
 const QUICK = [
   { to: "/plays", label: "Playbook", icon: BookOpen },
@@ -50,6 +51,7 @@ export function AppShell({
   backLabel = "Back",
   compact = false,
   playerTeamId,
+  themeTeamId,
 }: {
   children: ReactNode;
   title: string;
@@ -62,6 +64,7 @@ export function AppShell({
   backLabel?: string | undefined;
   compact?: boolean | undefined;
   playerTeamId?: string | undefined;
+  themeTeamId?: string | undefined;
 }) {
   const me = useMe();
   const { access } = useAccess();
@@ -84,6 +87,7 @@ export function AppShell({
       me.teams.find((t) => t.id === playerTeamId && access.playerTeamIds.includes(t.id)) ?? me.teams.find((t) => access.playerTeamIds.includes(t.id)) ?? null;
     return (
       <div className="min-h-screen max-w-full overflow-x-clip px-3 py-3 sm:px-5 sm:py-5">
+        <TeamThemeProvider teamId={playerTeam?.id} />
         <div className="mx-auto w-full min-w-0 max-w-3xl">
           <header className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-3xl border border-border/70 bg-surface/85 p-2.5 shadow-lg shadow-black/30 backdrop-blur">
             <span className="inline-flex items-center rounded-2xl border border-border/70 bg-surface-2/70 px-3 py-1.5">
@@ -136,6 +140,7 @@ export function AppShell({
 
   return (
     <div className={cn("min-h-screen max-w-full overflow-x-clip", compact ? "px-1.5 py-1.5 sm:px-2 sm:py-2" : "px-3 py-3 sm:px-5 sm:py-5")}>
+      <TeamThemeProvider teamId={themeTeamId ?? playerTeamId} />
       <div className={cn("mx-auto w-full min-w-0 max-w-full", wide ? "max-w-[1600px]" : "max-w-6xl")}>
         <header className={cn("rounded-3xl border border-border/70 bg-surface/85 shadow-lg shadow-black/30 backdrop-blur", compact ? "mb-1.5 p-1.5" : "mb-4 p-2.5")}>
           <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 lg:grid-cols-[1fr_minmax(520px,auto)_1fr]">

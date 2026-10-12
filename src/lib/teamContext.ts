@@ -23,14 +23,21 @@ export function useCurrentTeam(): {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setStored(window.localStorage.getItem(KEY));
+    const read = () => { try { setStored(window.localStorage.getItem(KEY)); } catch { setStored(null); } };
+    read();
+    window.addEventListener("storage", read);
+    window.addEventListener("coachside:team-changed", read);
+    return () => { window.removeEventListener("storage", read); window.removeEventListener("coachside:team-changed", read); };
   }, []);
 
   const teams = me.teams;
   const team = teams.find((t) => t.id === stored) ?? teams[0] ?? null;
 
   const setTeam = useCallback((id: string) => {
-    if (typeof window !== "undefined") window.localStorage.setItem(KEY, id);
+    if (typeof window !== "undefined") {
+      try { window.localStorage.setItem(KEY, id); } catch { /* private browsing */ }
+      window.dispatchEvent(new CustomEvent("coachside:team-changed"));
+    }
     setStored(id);
   }, []);
 

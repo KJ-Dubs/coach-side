@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { alertTeam } from "./teamAlerts";
+import { normalizeHex } from "./teamTheme";
 import type {
   CalendarConnection,
   CalendarMapping,
@@ -750,6 +751,8 @@ export async function updateTeam(
       | "name"
       | "season"
       | "logo_url"
+      | "primary_color"
+      | "secondary_color"
       | "head_coach_name"
       | "assistant_coaches"
       | "default_periods"
@@ -768,8 +771,19 @@ export async function updateTeam(
     >
   >,
 ) {
-  const { error } = await supabase.from("teams").update(patch as never).eq("id", id);
+  const normalized = { ...patch };
+  for (const key of ["primary_color", "secondary_color"] as const) {
+    if (patch[key] === undefined) continue;
+    if (patch[key] === null || patch[key] === "") normalized[key] = null;
+    else {
+      const color = normalizeHex(patch[key]);
+      if (!color) throw new Error("Choose a valid team hex color");
+      normalized[key] = color;
+    }
+  }
+  const { data, error } = await supabase.from("teams").update(normalized).eq("id", id).select("*").single();
   if (error) throw error;
+  return data as Team;
 }
 
 export async function uploadTeamLogo(teamId: string, file: File): Promise<string> {

@@ -75,11 +75,13 @@
   --card-foreground: oklch(0.97 0.005 285);
   --popover: oklch(0.24 0.02 286);
   --popover-foreground: oklch(0.97 0.005 285);
-  --primary: oklch(0.62 0.22 300);
+  --coachside-grape: oklch(0.62 0.22 300);
+  --coachside-flame: oklch(0.72 0.19 51);
+  --primary: var(--coachside-grape);
   --primary-foreground: oklch(0.99 0.005 300);
-  --grape: oklch(0.62 0.22 300);
+  --grape: var(--coachside-grape);
   --grape-soft: oklch(0.36 0.11 300);
-  --flame: oklch(0.72 0.19 51);
+  --flame: var(--coachside-flame);
   --flame-soft: oklch(0.42 0.11 51);
   --grape-bright: oklch(0.76 0.18 300);
   --blue: oklch(0.7 0.16 260);
@@ -138,6 +140,13 @@
 
   button {
     touch-action: manipulation;
+  }
+
+  /* Diagram language stays CoachSide-colored even inside a team environment. */
+  .court-semantic-colors {
+    --grape: var(--coachside-grape);
+    --flame: var(--coachside-flame);
+    --primary-foreground: oklch(0.99 0.005 300);
   }
 }
 
