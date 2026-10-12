@@ -33,6 +33,9 @@ import {
 } from "@/lib/data";
 import { useMe } from "@/lib/useMe";
 import { ROLE_LABEL, type CoachInvite, type CoachRole, type Team } from "@/lib/types";
+import { TeamColorFields } from "@/components/TeamColorFields";
+import { normalizeHex } from "@/lib/teamTheme";
+import { useCurrentTeam } from "@/lib/teamContext";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -48,6 +51,8 @@ export const Route = createFileRoute("/_authenticated/settings")({
         property: "og:description",
         content: "Team info, game defaults and coach access in one place.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SettingsPage,
@@ -60,16 +65,14 @@ function SettingsPage() {
   const me = useMe();
   const queryClient = useQueryClient();
   const teams = useQuery({ queryKey: ["teams"], queryFn: fetchTeams, enabled: !!me.user });
-  const [teamId, setTeamId] = useState<string>("");
-
-  useEffect(() => {
-    if (!teamId && teams.data?.length) setTeamId(teams.data[0]!.id);
-  }, [teams.data, teamId]);
+  const currentTeam = useCurrentTeam();
+  const teamId = currentTeam.teamId ?? "";
+  const setTeamId = currentTeam.setTeam;
 
   const team = teams.data?.find((t) => t.id === teamId) ?? null;
 
   return (
-    <AppShell title="Settings" subtitle="Account, team, game defaults and coach access" backTo="/dashboard" backLabel="Home">
+    <AppShell title="Settings" themeTeamId={teamId} subtitle="Account, team, game defaults and coach access" backTo="/dashboard" backLabel="Home">
       <div className="grid gap-3 lg:grid-cols-2">
         <AccountCard
           email={me.user?.email ?? me.profile?.email ?? ""}
@@ -232,6 +235,9 @@ function AccountCard({
 /* ---------------- team ---------------- */
 
 function TeamCard({ team, onSaved }: { team: Team; onSaved: () => void }) {
+  const qc = useQueryClient();
+  const [primary, setPrimary] = useState(team.primary_color ?? "");
+  const [secondary, setSecondary] = useState(team.secondary_color ?? "");
   const [name, setName] = useState(team.name);
   const [season, setSeason] = useState(team.season);
   const [headCoach, setHeadCoach] = useState(team.head_coach_name ?? "");
@@ -257,8 +263,11 @@ function TeamCard({ team, onSaved }: { team: Team; onSaved: () => void }) {
         season: season.trim() || team.season,
         head_coach_name: headCoach.trim() || null,
         assistant_coaches: assistants.trim() || null,
+        primary_color: primary || null,
+        secondary_color: secondary || null,
       }),
-    onSuccess: () => {
+    onSuccess: (updated) => {
+      qc.setQueryData<Team[]>(["teams"], (teams) => teams?.map((t) => t.id === team.id ? updated : t));
       onSaved();
       toast.success("Team saved");
     },
@@ -295,6 +304,16 @@ function TeamCard({ team, onSaved }: { team: Team; onSaved: () => void }) {
       setLogo(null);
       onSaved();
       toast.success("Logo removed");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const resetColors = useMutation({
+    mutationFn: () => updateTeam(team.id, { primary_color: null, secondary_color: null }),
+    onSuccess: (updated) => {
+      setPrimary(""); setSecondary("");
+      qc.setQueryData<Team[]>(["teams"], (teams) => teams?.map((t) => t.id === team.id ? updated : t));
+      onSaved(); toast.success("CoachSide colors restored");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -371,13 +390,15 @@ function TeamCard({ team, onSaved }: { team: Team; onSaved: () => void }) {
         </Field>
       </div>
       <div className="flex flex-wrap justify-center gap-2">
-        <BubbleButton tone="grape" disabled={save.isPending} onClick={() => save.mutate()}>
+        <BubbleButton tone="grape" disabled={save.isPending || resetColors.isPending || (!!primary && !normalizeHex(primary)) || (!!secondary && !normalizeHex(secondary))} onClick={() => save.mutate()}>
           {save.isPending ? "Saving…" : "Save team"}
         </BubbleButton>
         <Link to="/roster" search={{ team: team.id }}>
           <BubbleButton tone="ghost">Open roster</BubbleButton>
         </Link>
       </div>
+      <TeamColorFields primary={primary} secondary={secondary} onPrimary={setPrimary} onSecondary={setSecondary} teamName={name || team.name} />
+      <div className="flex justify-center"><BubbleButton tone="ghost" disabled={save.isPending || resetColors.isPending} onClick={() => resetColors.mutate()}>Reset to CoachSide colors</BubbleButton></div>
     </div>
   );
 }

@@ -781,7 +781,7 @@ export async function updateTeam(
       normalized[key] = color;
     }
   }
-  const { data, error } = await supabase.from("teams").update(normalized).eq("id", id).select("*").single();
+  const { data, error } = await supabase.from("teams").update(normalized as never).eq("id", id).select("*").single();
   if (error) throw error;
   return data as Team;
 }

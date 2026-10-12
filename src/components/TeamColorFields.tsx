@@ -19,7 +19,7 @@ export function TeamColorFields({ primary, secondary, onPrimary, onSecondary, te
       })}
     </div>
     {similarColors(primary || defaults[0], secondary || defaults[1]) ? <Note>These colors are similar. You can still save them.</Note> : null}
-    <div style={vars as CSSProperties} className="flex flex-wrap items-center justify-center gap-2 rounded-xl border border-grape/50 bg-surface-2 p-3" aria-label="Team color preview">
+    <div style={vars as CSSProperties} className="team-color-preview flex flex-wrap items-center justify-center gap-2 rounded-xl border border-grape/50 bg-surface-2 p-3" aria-label="Team color preview">
       <span className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-center font-black text-foreground">{teamName}</span>
       <BubbleButton tone="grape" tabIndex={-1}>Primary</BubbleButton><BubbleButton tone="flame" tabIndex={-1}>Secondary</BubbleButton>
     </div>

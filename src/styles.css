@@ -148,6 +148,12 @@
     --flame: var(--coachside-flame);
     --primary-foreground: oklch(0.99 0.005 300);
   }
+  .team-color-preview {
+    --grape: var(--coachside-grape);
+    --flame: var(--coachside-flame);
+    --primary-foreground: oklch(0.99 0.005 300);
+    --accent-foreground: oklch(0.16 0.02 51);
+  }
 }
 
 @utility bubble-pop {

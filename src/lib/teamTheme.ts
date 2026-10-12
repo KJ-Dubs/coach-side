@@ -8,7 +8,7 @@ export function normalizeHex(value: unknown): string | null {
 }
 function channels(hex: string) { return [1, 3, 5].map((n) => parseInt(hex.slice(n, n + 2), 16)); }
 export function luminance(hex: string): number {
-  return channels(hex).map((c) => { const s = c / 255; return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; }).reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
+  return channels(hex).map((c) => { const s = c / 255; return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; }).reduce((sum, c, i) => sum + c * ([0.2126, 0.7152, 0.0722][i] ?? 0), 0);
 }
 export function contrast(a: string, b: string) { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
 function mix(hex: string, target: number, amount: number) {
@@ -32,7 +32,7 @@ export function safeAccent(value: string): string {
 export function readableForeground(hex: string) { return contrast(hex, "#FFFFFF") >= 4.5 ? "#FFFFFF" : "#111111"; }
 export function similarColors(a: string, b: string) {
   const x = normalizeHex(a), y = normalizeHex(b);
-  return !!x && !!y && Math.sqrt(channels(x).reduce((sum, c, i) => sum + (c - channels(y)[i]) ** 2, 0)) < 65;
+  return !!x && !!y && Math.sqrt(channels(x).reduce((sum, c, i) => sum + (c - (channels(y)[i] ?? 0)) ** 2, 0)) < 65;
 }
 export function teamThemeVariables(team: Pick<Team, "primary_color" | "secondary_color"> | null | undefined): Record<string, string> {
   const vars: Record<string, string> = {};
