@@ -951,7 +951,7 @@ function LiveGamePage() {
 
   return (
     <div className="min-h-screen p-2 sm:p-3">
-      <TeamThemeProvider teamId={teamId} />
+      <TeamThemeProvider teamId={game.data?.team_id} enabled={!!game.data?.team_id} />
       <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-2">
         {/* SCORE + PERIOD + FOULS — compact and sticky */}
         <Panel className="sticky top-1 z-40 border-grape/50 bg-background/95 p-1.5 backdrop-blur">
@@ -989,12 +989,12 @@ function LiveGamePage() {
         <Panel className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 p-1.5 sm:flex sm:flex-wrap">
           <div className="flex min-w-0 flex-wrap gap-2">
             <BubbleButton size="sm" tone="neutral" onClick={() => navigate({ to: "/dashboard" })}>⌂ Home</BubbleButton>
-            <BubbleButton size="sm" tone="neutral" aria-label="Tracking settings" onClick={() => setSettingsOpen(true)}>⚙ Tracking</BubbleButton>
+            <BubbleButton size="sm" tone="grape" aria-label="Tracking settings" onClick={() => setSettingsOpen(true)}>⚙ Tracking</BubbleButton>
             <BubbleButton size="sm" tone="grape" onClick={() => { void trackActivity("board_used_in_game", { entityId: gameId }); navigate({ to: "/board" }); }}>✎ Timeout Board</BubbleButton>
             {rules.timeoutsFull + rules.timeouts30 > 0 ? (
               <div className="flex items-center gap-1 rounded-full border border-border bg-surface-2/70 p-0.5">
-                {rules.timeoutsFull > 0 ? <BubbleButton size="sm" tone="neutral" className="min-h-11 px-2 text-xs" disabled={timeoutsLeftFull === 0} onClick={() => addEvent({ event_type: "TIMEOUT", result: "FULL" })}>TO Full: {timeoutsLeftFull}</BubbleButton> : null}
-                {rules.timeouts30 > 0 ? <BubbleButton size="sm" tone="neutral" className="min-h-11 px-2 text-xs" disabled={timeoutsLeft30 === 0} onClick={() => addEvent({ event_type: "TIMEOUT", result: "30" })}>30s: {timeoutsLeft30}</BubbleButton> : null}
+                {rules.timeoutsFull > 0 ? <BubbleButton size="sm" tone="flame" className="min-h-11 px-2 text-xs" disabled={timeoutsLeftFull === 0} onClick={() => addEvent({ event_type: "TIMEOUT", result: "FULL" })}>TO Full: {timeoutsLeftFull}</BubbleButton> : null}
+                {rules.timeouts30 > 0 ? <BubbleButton size="sm" tone="flame" className="min-h-11 px-2 text-xs" disabled={timeoutsLeft30 === 0} onClick={() => addEvent({ event_type: "TIMEOUT", result: "30" })}>30s: {timeoutsLeft30}</BubbleButton> : null}
                 {events.some((e) => e.event_type === "TIMEOUT") ? (
                   <BubbleButton size="sm" tone="ghost" className="h-11 min-h-11 w-11 px-0" aria-label="Undo last timeout" onClick={() => { const t = [...events].reverse().find((e) => e.event_type === "TIMEOUT"); if (t) deleteEvent(t.id); }}>↺</BubbleButton>
                 ) : null}

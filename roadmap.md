@@ -1,5 +1,9 @@
 # CourtSide Coach — production pass roadmap
 
+## Live Game and bright team accents
+- [ ] Enforce game's explicit team on root/portals; theme tracking and timeout controls without changing layout or stat semantics
+- [ ] Preserve bright white/yellow, lift dark accents, maintain readable text and distinct defense; verify tests and browser controls
+
 ## Playmaker team accents
 - [x] Extend safe primary/secondary accents to PlayCanvas and play MP4s without changing layout; keep ball/rims fixed orange, court neutral and defense distinct
 - [x] 39 regression tests and automatic build pass; real PlayCanvas fixture verifies blue/gold, identical accents, red/white, defaults and 390px without overflow; actual H.264 MP4 decoded and visually checked for matching blue/gold routes, white defense and orange basketball
