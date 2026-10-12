@@ -29,6 +29,7 @@ export type ExportOptions = {
   showWatermark: boolean;
   showSequenceNumbers: boolean;
   holdEnd: boolean;
+  showIntro?: boolean;
 };
 
 export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
@@ -38,6 +39,7 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   showWatermark: true,
   showSequenceNumbers: true,
   holdEnd: true,
+  showIntro: true,
 };
 
 export type ExportModel = {
@@ -585,21 +587,75 @@ function paintFrame(
 /* ---------------- frame timeline ---------------- */
 
 const FPS = 30;
+export const VIDEO_INTRO_MESSAGE = "INCOMING BASKETBALL PLAY";
+export const INTRO_SECONDS = 2.6;
 const OUTRO_SECONDS = 1.8;
 const OUTRO_FRAMES = Math.round(FPS * OUTRO_SECONDS);
 
-function frameCounts(model: ExportModel, opts: ExportOptions) {
+export function frameCounts(model: ExportModel, opts: ExportOptions) {
   const factor = SPEED_FACTOR[opts.speed];
   const showFrames = Math.max(6, Math.round((SHOW_MS / factor / 1000) * FPS));
   const doFrames = Math.max(8, Math.round((DO_MS / factor / 1000) * FPS));
   const holdFrames = opts.holdEnd ? Math.round(FPS * 1.2) : 0;
+  const introFrames = model.kind !== "drill" && opts.showIntro !== false ? Math.round(FPS * INTRO_SECONDS) : 0;
   return {
     showFrames,
     doFrames,
     holdFrames,
+    introFrames,
     outroFrames: OUTRO_FRAMES,
-    total: model.steps.length * (showFrames + doFrames) + holdFrames + OUTRO_FRAMES,
+    total: introFrames + model.steps.length * (showFrames + doFrames) + holdFrames + OUTRO_FRAMES,
   };
+}
+
+/** Fixed wall-clock countdown, independent of the play's selected speed. */
+export function introState(seconds: number) {
+  const time = Math.max(0, Math.min(INTRO_SECONDS, seconds));
+  const stage = time < 0.8 ? 0 : time < 1.4 ? 1 : time < 2 ? 2 : 3;
+  const start = stage === 0 ? 0 : 0.8 + (stage - 1) * 0.6;
+  const duration = stage === 0 ? 0.8 : 0.6;
+  const progress = Math.min(1, Math.max(0, (time - start) / duration));
+  const eased = 1 - Math.pow(1 - progress, 3);
+  return {
+    numeral: stage === 0 ? null : String(4 - stage),
+    opacity: Math.max(0, Math.min(1, (time + 1 / FPS) / 0.15)),
+    numeralOpacity: Math.max(0, Math.min(1, (progress + 1 / (FPS * duration)) / 0.15, (1 - progress) / 0.12)),
+    scale: 0.88 + eased * 0.12,
+  };
+}
+
+function paintIntro(ctx: CanvasRenderingContext2D, opts: ExportOptions, p: Palette, mark: CanvasImageSource, seconds: number) {
+  const { w, h } = FORMAT_SIZE[opts.format];
+  const unit = Math.min(w, h) / 1080;
+  const state = introState(seconds);
+  const logoSize = 180 * unit;
+  const centerY = h / 2;
+  ctx.fillStyle = p.bg;
+  ctx.fillRect(0, 0, w, h);
+  ctx.save();
+  ctx.globalAlpha = state.opacity;
+  ctx.drawImage(mark, (w - logoSize) / 2, centerY - 330 * unit, logoSize, logoSize);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = p.text;
+  const fitted = titleLayout(ctx, VIDEO_INTRO_MESSAGE, w - 120 * unit, 64 * unit, 44 * unit);
+  ctx.font = `900 ${fitted.size}px system-ui, sans-serif`;
+  fitted.lines.forEach((line, index) => ctx.fillText(line, w / 2, centerY - 90 * unit + index * fitted.size * 1.12));
+  ctx.strokeStyle = p.grape;
+  ctx.lineWidth = 6 * unit;
+  ctx.beginPath();
+  ctx.moveTo(w / 2 - 70 * unit, centerY + 35 * unit);
+  ctx.lineTo(w / 2 + 70 * unit, centerY + 35 * unit);
+  ctx.stroke();
+  if (state.numeral) {
+    ctx.globalAlpha = state.opacity * state.numeralOpacity;
+    ctx.translate(w / 2, centerY + 190 * unit);
+    ctx.scale(state.scale, state.scale);
+    ctx.fillStyle = p.flame;
+    ctx.font = `900 ${230 * unit}px system-ui, sans-serif`;
+    ctx.fillText(state.numeral, 0, 0);
+  }
+  ctx.restore();
 }
 
 function drillFrameState(model: ExportModel, entryIndex: number, sampleTokens: PlayToken[], progress: number) {
@@ -671,8 +727,13 @@ async function eachFrame(
   mark: CanvasImageSource,
   emit: () => Promise<void>,
 ) {
-  const { showFrames, doFrames, holdFrames, outroFrames } = frameCounts(model, opts);
+  const { showFrames, doFrames, holdFrames, outroFrames, introFrames } = frameCounts(model, opts);
   const totalSteps = model.steps.length;
+
+  for (let f = 0; f < introFrames; f++) {
+    paintIntro(ctx, opts, p, mark, f / FPS);
+    await emit();
+  }
 
   for (let s = 0; s < totalSteps; s++) {
     const entry = model.steps[s]!;

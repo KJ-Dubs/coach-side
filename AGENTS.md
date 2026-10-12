@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 - Play and drill MP4 exports share `src/lib/playVideo.ts`; branding positions derive from the fitted court bounds in logical export pixels, shared by both encoders, so composition and animation cannot drift across formats or fallback resolutions.
+- Intro frames and their duration belong to the shared export frame iterator/counts, gated by content kind and export options, so both MP4 encoders preserve the same playback start and progress.
 
 Film Room: film jobs stage AI/manual events in film_job_events; only coach-reviewed events reach game_events via finalize_film_job. Never auto-promote.
 

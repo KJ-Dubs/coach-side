@@ -1,5 +1,9 @@
 # CourtSide Coach — production pass roadmap
 
+## Play export countdown intro
+- [x] Add optional 2.6-second play-only branded countdown in the shared MP4 timeline, preserving animation, branding and outro
+- [x] Five real renderer MP4 fixtures validated with ffprobe/decoded frames: all formats, 3/2/1, Sequence 1 at frame 78, existing outro, disabled intro and drill suppression; 61 library tests pass; automatic build OK
+
 ## Compact My Playbook discovery
 - [x] Merge Play Types, search and sort into one compact area with grouped multi-select filters and concise active summary
 - [x] Preserve category links and multi-type URL state, team/folder scope, real-date sorting; quick create only prefills when exactly one type is selected
