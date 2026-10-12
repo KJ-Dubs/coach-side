@@ -27,6 +27,17 @@ export const COACHSIDE_TIPS: CoachTip[] = [
   { text: "Play Types say what a play is; Folders say when your team uses it. A play can live in many folders.", link: "/plays", cta: "Organize Playbook" },
   { text: "Pin important coach messages in Team Chat so players see them first.", link: "/lockerroom?area=chat", cta: "Open Team Chat" },
   { text: "Check your CoachSide Progress on Home to find features you haven't tried.", link: "/achievements", cta: "See Progress" },
+  { text: "Use Filters in Playbook to find plays by type, concept, defense, and outcome.", link: "/plays", cta: "Open Playbook" },
+  { text: "Add Play Options like 3A and 3B to teach alternate outcomes from the same action.", link: "/plays/new", cta: "Open Playmaker" },
+  { text: "Team colors carry into Playmaker and Live Game so CoachSide feels like your program.", link: "/settings", cta: "Set team colors" },
+  { text: "Turn stat categories on or off during a game from Tracking Settings." },
+  { text: "Tap the score, period, or foul tiles in Live Game to correct them." },
+  { text: "Game Reports show when a stat category was only tracked for part of the game." },
+  { text: "Export a play as a branded MP4 with the CoachSide countdown intro.", link: "/plays", cta: "Open My Playbook" },
+  { text: "Create folders for how you use plays: zone offense, opponent scout, end game.", link: "/plays", cta: "Organize Playbook" },
+  { text: "Players only see the Locker Room tools they need: Chat, Schedule, Playbook, Plans.", link: "/lockerroom", cta: "Open Locker Room" },
+  { text: "Follow coaches in the Library to keep up with their new plays.", link: "/library", cta: "Browse the Library" },
+  { text: "Use a Practice Team to test CoachSide before adding a real roster.", link: "/settings", cta: "Restart setup guide" },
 ];
 
 export const TIP_MIN_MS = 4500;

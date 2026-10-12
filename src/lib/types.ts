@@ -23,6 +23,8 @@ export type Team = {
   default_practice_reminder_minutes?: number;
   default_game_reminder_minutes?: number;
   created_at?: string;
+  is_practice?: boolean;
+  level?: string | null;
 };
 
 export type Player = {

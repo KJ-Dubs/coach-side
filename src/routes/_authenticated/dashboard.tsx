@@ -11,7 +11,8 @@ import { fetchMyMemberships, isCoachRole } from "@/lib/locker";
 import { useMe } from "@/lib/useMe";
 import { PlayerQrPanel } from "@/components/PlayerQrPanel";
 import { useAccess, resolveRole } from "@/lib/access";
-import { consumePendingInvite } from "@/lib/pendingInvite";
+import { consumePendingInvite, peekPendingInvite } from "@/lib/pendingInvite";
+import { fetchOnboarding } from "@/lib/onboarding";
 import { TrialStatus } from "@/components/billing/TrialStatus";
 import { HelpCard, ProgressCard } from "@/components/ProgressCard";
 import { HomeTipCard } from "@/components/HomeTipCard";
@@ -49,7 +50,22 @@ function useRedirectPlayersToLockerRoom() {
     }
     if (playerOnly) navigate({ to: "/lockerroom", replace: true });
   }, [playerOnly, navigate]);
-  return { isCoach: role.isCoach && !playerOnly };
+  return { isCoach: role.isCoach && !playerOnly, membershipsReady: memberships.isSuccess, membershipCount: rows.length, accessLoading: loading };
+}
+
+/** Brand-new, empty coach accounts (no onboarding row yet, or mid-wizard) go to the setup guide. */
+function useFirstSignInRedirect(gate: ReturnType<typeof useRedirectPlayersToLockerRoom>, teamCount: number, teamsLoading: boolean) {
+  const navigate = useNavigate();
+  const ob = useQuery({ queryKey: ["onboarding"], queryFn: fetchOnboarding });
+  const ready = !gate.accessLoading && gate.membershipsReady && !teamsLoading && ob.isSuccess;
+  useEffect(() => {
+    if (!ready || !gate.isCoach) return;
+    if (peekPendingInvite()) return;
+    const row = ob.data;
+    if (row?.status === "in_progress" || (!row && gate.membershipCount === 0 && teamCount === 0)) {
+      navigate({ to: "/welcome", replace: true });
+    }
+  }, [ready, gate.isCoach, gate.membershipCount, teamCount, ob.data, navigate]);
 }
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -167,8 +183,10 @@ function MembershipCard({ teamId }: { teamId: string | null }) {
 }
 
 function Dashboard() {
-  const { isCoach } = useRedirectPlayersToLockerRoom();
+  const gate = useRedirectPlayersToLockerRoom();
+  const { isCoach } = gate;
   const me = useMe();
+  useFirstSignInRedirect(gate, me.teams.length, me.loading);
   const { teams, team, teamId, setTeam } = useCurrentTeam();
   const games = useQuery({ queryKey: ["games"], queryFn: fetchGames });
   const teamLogo = useQuery({

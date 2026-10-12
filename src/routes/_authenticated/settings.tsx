@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { LockerAccessPanel } from "@/components/locker/AccessPanel";
 import { AppShell } from "@/components/AppShell";
+import { RestartSetupGuide } from "@/components/RestartSetupGuide";
 import { PublicProfilePanel } from "@/components/community/PublicProfilePanel";
 import {
   BubbleButton,
@@ -151,6 +152,7 @@ function SettingsPage() {
           teams={teams.data ?? []}
         />
       </div>
+      <RestartSetupGuide />
     </AppShell>
   );
 }

@@ -50,6 +50,20 @@
       "when": 1791835880168,
       "tag": "0006_team_accent_colors",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791838552392,
+      "tag": "0007_coach_onboarding",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791838566619,
+      "tag": "0008_team_level",
+      "breakpoints": true
     }
   ]
 }

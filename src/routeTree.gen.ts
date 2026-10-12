@@ -26,6 +26,7 @@ import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedRosterRouteImport } from './routes/_authenticated/roster'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedToolsRouteImport } from './routes/_authenticated/tools'
+import { Route as AuthenticatedWelcomeRouteImport } from './routes/_authenticated/welcome'
 import { Route as CoachUsernameRouteImport } from './routes/coach.$username'
 import { Route as DrillsDrillIdRouteImport } from './routes/drills.$drillId'
 import { Route as GameReportTokenRouteImport } from './routes/game-report.$token'
@@ -147,6 +148,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
 const AuthenticatedToolsRoute = AuthenticatedToolsRouteImport.update({
   id: '/tools',
   path: '/tools',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWelcomeRoute = AuthenticatedWelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const CoachUsernameRoute = CoachUsernameRouteImport.update({
@@ -361,6 +367,7 @@ export interface FileRoutesByFullPath {
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tools': typeof AuthenticatedToolsRoute
+  '/welcome': typeof AuthenticatedWelcomeRoute
   '/coach/$username': typeof CoachUsernameRoute
   '/drills/$drillId': typeof DrillsDrillIdRoute
   '/game-report/$token': typeof GameReportTokenRoute
@@ -416,6 +423,7 @@ export interface FileRoutesByTo {
   '/roster': typeof AuthenticatedRosterRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tools': typeof AuthenticatedToolsRoute
+  '/welcome': typeof AuthenticatedWelcomeRoute
   '/coach/$username': typeof CoachUsernameRoute
   '/drills/$drillId': typeof DrillsDrillIdRoute
   '/game-report/$token': typeof GameReportTokenRoute
@@ -473,6 +481,7 @@ export interface FileRoutesById {
   '/_authenticated/roster': typeof AuthenticatedRosterRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tools': typeof AuthenticatedToolsRoute
+  '/_authenticated/welcome': typeof AuthenticatedWelcomeRoute
   '/coach/$username': typeof CoachUsernameRoute
   '/drills/$drillId': typeof DrillsDrillIdRoute
   '/game-report/$token': typeof GameReportTokenRoute
@@ -530,6 +539,7 @@ export interface FileRouteTypes {
     | '/roster'
     | '/settings'
     | '/tools'
+    | '/welcome'
     | '/coach/$username'
     | '/drills/$drillId'
     | '/game-report/$token'
@@ -585,6 +595,7 @@ export interface FileRouteTypes {
     | '/roster'
     | '/settings'
     | '/tools'
+    | '/welcome'
     | '/coach/$username'
     | '/drills/$drillId'
     | '/game-report/$token'
@@ -641,6 +652,7 @@ export interface FileRouteTypes {
     | '/_authenticated/roster'
     | '/_authenticated/settings'
     | '/_authenticated/tools'
+    | '/_authenticated/welcome'
     | '/coach/$username'
     | '/drills/$drillId'
     | '/game-report/$token'
@@ -824,6 +836,13 @@ declare module '@tanstack/react-router' {
       path: '/tools'
       fullPath: '/tools'
       preLoaderRoute: typeof AuthenticatedToolsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/welcome': {
+      id: '/_authenticated/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof AuthenticatedWelcomeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/coach/$username': {
@@ -1103,6 +1122,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRosterRoute: typeof AuthenticatedRosterRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
+  AuthenticatedWelcomeRoute: typeof AuthenticatedWelcomeRoute
   AuthenticatedDrillsNewRoute: typeof AuthenticatedDrillsNewRoute
   AuthenticatedFilmJobIdRoute: typeof AuthenticatedFilmJobIdRoute
   AuthenticatedFilmNewRoute: typeof AuthenticatedFilmNewRoute
@@ -1138,6 +1158,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRosterRoute: AuthenticatedRosterRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedToolsRoute: AuthenticatedToolsRoute,
+  AuthenticatedWelcomeRoute: AuthenticatedWelcomeRoute,
   AuthenticatedDrillsNewRoute: AuthenticatedDrillsNewRoute,
   AuthenticatedFilmJobIdRoute: AuthenticatedFilmJobIdRoute,
   AuthenticatedFilmNewRoute: AuthenticatedFilmNewRoute,
