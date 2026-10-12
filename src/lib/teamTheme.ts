@@ -41,6 +41,12 @@ export function teamThemeVariables(team: Pick<Team, "primary_color" | "secondary
     const color = safeAccent(primary);
     for (const key of ["grape", "primary", "ring", "sidebar-primary", "chart-1"]) vars[`--${key}`] = color;
     vars["--primary-foreground"] = readableForeground(color);
+    vars["--play-primary"] = color;
+    vars["--play-primary-foreground"] = readableForeground(color);
+    vars["--play-offense-label"] = color;
+    // White stays distinct from every luminance-constrained team primary;
+    // dashed squares and X labels also preserve non-color identification.
+    vars["--defense-accent"] = "var(--foreground)";
     vars["--sidebar-primary-foreground"] = readableForeground(color);
     vars["--grape-soft"] = `color-mix(in oklab, ${color} 40%, var(--background))`;
     vars["--grape-bright"] = `color-mix(in oklab, ${color} 70%, var(--foreground))`;
@@ -49,6 +55,7 @@ export function teamThemeVariables(team: Pick<Team, "primary_color" | "secondary
     const color = safeAccent(secondary);
     for (const key of ["flame", "accent", "chart-2"]) vars[`--${key}`] = color;
     vars["--accent-foreground"] = readableForeground(color);
+    vars["--play-secondary"] = color;
     vars["--flame-soft"] = `color-mix(in oklab, ${color} 40%, var(--background))`;
   }
   return vars;

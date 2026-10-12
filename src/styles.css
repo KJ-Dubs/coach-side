@@ -77,6 +77,12 @@
   --popover-foreground: oklch(0.97 0.005 285);
   --coachside-grape: oklch(0.62 0.22 300);
   --coachside-flame: oklch(0.72 0.19 51);
+  --basketball: var(--coachside-flame);
+  --defense-accent: var(--coachside-flame);
+  --play-primary: var(--coachside-grape);
+  --play-secondary: var(--coachside-flame);
+  --play-primary-foreground: oklch(0.99 0.005 300);
+  --play-offense-label: var(--foreground);
   --primary: var(--coachside-grape);
   --primary-foreground: oklch(0.99 0.005 300);
   --grape: var(--coachside-grape);

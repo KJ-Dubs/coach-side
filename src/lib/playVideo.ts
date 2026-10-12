@@ -5,7 +5,7 @@
 // *painter* for the same normalized play data.
 
 import { curlGeom, dribbleD, polyD, PW, PH, type Point } from "./playPath";
-import { sampleStep, SHOW_MS, DO_MS, type PlayStep } from "./playAnimation";
+import { sampleStep, seqLabel, SHOW_MS, DO_MS, type PlayStep } from "./playAnimation";
 import type { PlayAction, PlayFrame, PlayToken } from "./types";
 import type { DrillFrame, DrillObject } from "./drills";
 import { drillStateAtSequenceStart, sampleDrillBalls } from "./drillBalls";
@@ -67,6 +67,12 @@ type Palette = {
   flame: string;
   text: string;
   surface2: string;
+  playPrimary: string;
+  playSecondary: string;
+  playForeground: string;
+  offenseLabel: string;
+  basketball: string;
+  defense: string;
 };
 
 function cssVar(name: string, fallback: string) {
@@ -75,16 +81,23 @@ function cssVar(name: string, fallback: string) {
   return v || fallback;
 }
 
-function palette(): Palette {
+export function videoPalette(kind?: "play" | "drill", read = cssVar): Palette {
+  const grape = read("--coachside-grape", "#8b5cf6");
+  const flame = read("--coachside-flame", "#f97316");
+  const text = read("--foreground", "#f5f5f7");
   return {
-    bg: cssVar("--background", "#141417"),
-    panel: cssVar("--surface-1", "#1d1d22"),
-    court: cssVar("--court", "#23232a"),
-    line: cssVar("--court-line", "#6b6b78"),
-    grape: cssVar("--grape", "#8b5cf6"),
-    flame: cssVar("--flame", "#f97316"),
-    text: cssVar("--foreground", "#f5f5f7"),
-    surface2: cssVar("--surface-2", "#2a2a31"),
+    bg: read("--background", "#141417"),
+    panel: read("--surface", "#1d1d22"),
+    court: read("--court", "#23232a"),
+    line: read("--court-line", "#6b6b78"),
+    grape, flame, text,
+    surface2: read("--surface-2", "#2a2a31"),
+    playPrimary: kind === "drill" ? grape : read("--play-primary", grape),
+    playSecondary: kind === "drill" ? flame : read("--play-secondary", flame),
+    playForeground: kind === "drill" ? text : read("--play-primary-foreground", text),
+    offenseLabel: kind === "drill" ? text : read("--play-offense-label", text),
+    basketball: read("--basketball", flame),
+    defense: kind === "drill" ? flame : read("--defense-accent", flame),
   };
 }
 
@@ -108,7 +121,7 @@ function halfLines(ctx: CanvasRenderingContext2D, p: Palette, mirrored: boolean)
   ctx.stroke();
   ctx.lineWidth = 2;
   ctx.stroke(new Path2D("M 52.5 210 A 40 40 0 0 1 52.5 290"));
-  ctx.strokeStyle = p.flame;
+  ctx.strokeStyle = p.basketball;
   ctx.lineWidth = 6;
   ctx.beginPath();
   ctx.moveTo(40, 220);
@@ -153,9 +166,9 @@ const xf = (pt: Point, flip: boolean) => ({
 });
 
 function actionColor(type: string, p: Palette) {
-  if (type === "pass" || type === "handoff" || type === "shot") return p.flame;
+  if (type === "pass" || type === "handoff" || type === "shot") return p.playSecondary;
   if (type === "screen") return p.line;
-  return p.grape;
+  return p.playPrimary;
 }
 
 function drawAction(
@@ -171,8 +184,9 @@ function drawAction(
   if (raw.length < 2) return;
   const freehand = raw.length > 2;
   const pts = raw.map((q) => xf(q, flip));
-  const start = pts[0]!;
-  const end = pts[pts.length - 1]!;
+  const start = pts[0];
+  const end = pts[pts.length - 1];
+  if (!start || !end) return;
   const color = actionColor(a.type, p);
   const prev = pts[pts.length - 2] ?? start;
   const curl = !freehand && a.type === "curl" ? curlGeom(start, end) : null;
@@ -180,7 +194,7 @@ function drawAction(
   const mid = curl
     ? curl.mid
     : freehand
-      ? pts[Math.floor(pts.length / 2)]!
+      ? (pts[Math.floor(pts.length / 2)] ?? start)
       : { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
 
   const d = curl
@@ -237,17 +251,23 @@ function drawAction(
       ctx.stroke();
     }
     if (showSeq) {
-      ctx.fillStyle = p.grape;
+      ctx.fillStyle = p.playPrimary;
       ctx.strokeStyle = p.bg;
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(mid.x, mid.y, 14, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "900 16px system-ui, sans-serif";
+      ctx.fillStyle = p.playForeground;
+      ctx.font = `900 ${a.option?.branchSeq ? 13 : 16}px system-ui, sans-serif`;
       ctx.textAlign = "center";
-      ctx.fillText(String(a.seq), mid.x, mid.y + 6);
+      ctx.fillText(seqLabel(a), mid.x, mid.y + 5);
+    }
+    if (a.option) {
+      ctx.fillStyle = p.playSecondary;
+      ctx.font = "900 15px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(a.option.label, mid.x, mid.y + 34);
     }
   }
   ctx.restore();
@@ -260,7 +280,7 @@ function drawToken(ctx: CanvasRenderingContext2D, t: PlayToken, flip: boolean, p
   ctx.fillStyle = p.surface2;
   ctx.lineWidth = 4;
   if (defense) {
-    ctx.strokeStyle = p.flame;
+    ctx.strokeStyle = p.defense;
     ctx.setLineDash([7, 5]);
     ctx.beginPath();
     ctx.roundRect(q.x - 19, q.y - 19, 38, 38, 7);
@@ -268,13 +288,13 @@ function drawToken(ctx: CanvasRenderingContext2D, t: PlayToken, flip: boolean, p
     ctx.stroke();
     ctx.setLineDash([]);
   } else {
-    ctx.strokeStyle = p.grape;
+    ctx.strokeStyle = p.playPrimary;
     ctx.beginPath();
     ctx.arc(q.x, q.y, 21, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
   }
-  ctx.fillStyle = defense ? p.flame : p.text;
+  ctx.fillStyle = defense ? p.defense : p.offenseLabel;
   ctx.font = "900 20px system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(defense ? `X${t.label}` : t.label, q.x, q.y + 7);
@@ -283,7 +303,7 @@ function drawToken(ctx: CanvasRenderingContext2D, t: PlayToken, flip: boolean, p
 
 function drawBall(ctx: CanvasRenderingContext2D, q: Point, p: Palette) {
   ctx.save();
-  ctx.fillStyle = p.flame;
+  ctx.fillStyle = p.basketball;
   ctx.strokeStyle = p.bg;
   ctx.lineWidth = 3;
   ctx.beginPath();
@@ -736,7 +756,8 @@ async function eachFrame(
   }
 
   for (let s = 0; s < totalSteps; s++) {
-    const entry = model.steps[s]!;
+    const entry = model.steps[s];
+    if (!entry) continue;
     const step = entry.step;
     for (let f = 0; f < showFrames; f++) {
       const sample = sampleStep(step, "show", 0);
@@ -789,7 +810,8 @@ async function eachFrame(
   }
 
   if (holdFrames > 0 && totalSteps > 0) {
-    const last = model.steps[totalSteps - 1]!;
+    const last = model.steps[totalSteps - 1];
+    if (!last) return;
     const sample = sampleStep(last.step, "do", 1);
     const drill = drillFrameState(model, totalSteps - 1, sample.tokens, 1);
     for (let f = 0; f < holdFrames; f++) {
@@ -946,7 +968,8 @@ export async function renderPlayVideo(
   onProgress?: (fraction: number) => void,
 ): Promise<Blob> {
   if (!model.steps.length) throw new Error("This play has no actions to animate yet.");
-  const p = palette();
+  // Snapshot once so both encoder paths keep the coach's starting team palette.
+  const p = videoPalette(model.kind);
 
   if (canExportVideo()) {
     try {

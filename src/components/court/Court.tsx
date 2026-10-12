@@ -120,9 +120,9 @@ function HalfLines({ mirrored = false }: { mirrored?: boolean }) {
       {/* restricted + rim */}
       <path d={`M 52.5 210 A 40 40 0 0 1 52.5 290`} strokeWidth={2} />
       {/* backboard */}
-      <line x1={40} y1={220} x2={40} y2={280} strokeWidth={6} stroke="var(--flame)" />
-      <line x1={40} y1={250} x2={49} y2={250} strokeWidth={3} stroke="var(--flame)" />
-      <circle cx={52.5} cy={250} r={9} stroke="var(--flame)" strokeWidth={3} />
+      <line x1={40} y1={220} x2={40} y2={280} strokeWidth={6} stroke="var(--basketball)" />
+      <line x1={40} y1={250} x2={49} y2={250} strokeWidth={3} stroke="var(--basketball)" />
+      <circle cx={52.5} cy={250} r={9} stroke="var(--basketball)" strokeWidth={3} />
       {/* three point line */}
       <path
         d={`M 0 52.5 L 52.5 52.5 A 197.5 197.5 0 0 1 52.5 447.5 L 0 447.5`}

@@ -1,5 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_EXPORT_OPTIONS, FORMAT_SIZE, INTRO_SECONDS, VIDEO_COURT_CTA, VIDEO_INTRO_MESSAGE, frameCounts, introState, videoComposition, type ExportModel } from "./playVideo";
+import { DEFAULT_EXPORT_OPTIONS, FORMAT_SIZE, INTRO_SECONDS, VIDEO_COURT_CTA, VIDEO_INTRO_MESSAGE, frameCounts, introState, videoComposition, videoPalette, type ExportModel } from "./playVideo";
+
+describe("play video palette parity", () => {
+  const values: Record<string, string> = {
+    "--coachside-grape": "purple", "--coachside-flame": "orange",
+    "--play-primary": "blue", "--play-secondary": "gold",
+    "--play-primary-foreground": "dark", "--play-offense-label": "blue",
+    "--basketball": "orange", "--defense-accent": "white",
+  };
+  const read = (name: string, fallback: string) => values[name] ?? fallback;
+  it("uses the screen's play tokens but preserves ball, court and branding", () => {
+    const p = videoPalette("play", read);
+    expect([p.playPrimary, p.playSecondary, p.playForeground, p.offenseLabel, p.defense]).toEqual(["blue", "gold", "dark", "blue", "white"]);
+    expect([p.grape, p.flame, p.basketball]).toEqual(["purple", "orange", "orange"]);
+    expect(p.court).toBe("#23232a");
+    expect(p.line).toBe("#6b6b78");
+  });
+  it("leaves drill diagram colors on their existing semantic defaults", () => {
+    const p = videoPalette("drill", read);
+    expect([p.playPrimary, p.playSecondary, p.defense, p.basketball]).toEqual(["purple", "orange", "orange", "orange"]);
+  });
+});
 
 describe("play-only intro timeline", () => {
   const model: ExportModel = { name: "Test play", category: "Offense", flip: false, frames: [], steps: [] };
