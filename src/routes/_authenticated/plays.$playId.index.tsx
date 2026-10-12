@@ -11,6 +11,7 @@ import {
   inferPassReceiver,
   listOptionGroups,
   nearestTokenAt,
+  resolveLegacyActors,
   sampleStep,
   sampleTimeline,
   scorePassReceivers,
@@ -186,7 +187,8 @@ function PlayDesignerPage() {
 
   useEffect(() => {
     if (framesQ.data) {
-      setFrames(framesQ.data.length ? framesQ.data : [blankFrame(playId, 0)]);
+      // Editor validation and explicit saves must share playback's legacy bindings.
+      setFrames(framesQ.data.length ? framesQ.data.map(resolveLegacyActors) : [blankFrame(playId, 0)]);
     }
   }, [framesQ.data, playId]);
 

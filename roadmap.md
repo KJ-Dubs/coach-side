@@ -1,5 +1,9 @@
 # CourtSide Coach — production pass roadmap
 
+## Older saved-play compatibility
+- [x] Restore legacy bindings before editor validation/save; 12 regression tests and automatic build pass, preserving explicit links/geometry and genuine repair checks
+- [ ] Signed-in older-play Next/save/reopen check — blocked: requester has no matching preview account; projected binding, validation and serialized reload verified in tests
+
 ## Live Game and bright team accents
 - [x] Enforce game's explicit team on root/portals without borrowing global team colors during loading; theme tracking and timeout controls without changing layout or stat semantics
 - [x] Preserve bright white/yellow, lift dark accents, maintain readable text and distinct defense; 42 tests and automatic build pass; actual tracking controls and portaled sheet checked at desktop/390px with white fills, dark text, yellow buttons and no overflow
