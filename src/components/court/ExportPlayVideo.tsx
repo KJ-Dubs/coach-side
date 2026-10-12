@@ -26,7 +26,7 @@ function ExportPlayVideoInner({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [opts, setOpts] = useState<ExportOptions>(DEFAULT_EXPORT_OPTIONS);
+  const [opts, setOpts] = useState<ExportOptions>(() => ({ ...DEFAULT_EXPORT_OPTIONS, showIntro: model.kind !== "drill" }));
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -162,6 +162,16 @@ function ExportPlayVideoInner({
 
                 <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-2/50 p-3">
                   <Pill tone="muted">Include</Pill>
+                  {model.kind !== "drill" ? (
+                    <BubbleButton
+                      size="sm"
+                      tone={opts.showIntro !== false ? "grape" : "neutral"}
+                      aria-pressed={opts.showIntro !== false}
+                      onClick={() => toggle("showIntro", opts.showIntro === false)}
+                    >
+                      {opts.showIntro !== false ? "✓ Intro countdown" : "Intro countdown off"}
+                    </BubbleButton>
+                  ) : null}
                   <BubbleButton
                     size="sm"
                     tone={opts.showWatermark ? "grape" : "neutral"}
