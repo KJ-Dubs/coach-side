@@ -43,6 +43,13 @@
       "when": 1791747948280,
       "tag": "0005_plays_updated_at",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791835880168,
+      "tag": "0006_team_accent_colors",
+      "breakpoints": true
     }
   ]
 }

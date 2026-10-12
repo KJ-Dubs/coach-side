@@ -1,5 +1,10 @@
 # CourtSide Coach — production pass roadmap
 
+## Team accent theming
+- [ ] Add nullable validated team colors and safe centralized accent overrides, preserving semantic court/stat colors
+- [ ] Add skippable creation branding and Settings edit/reset with immediate active-team/player updates
+- [ ] Verify contrast, switching, persistence, public defaults, mobile controls and preview build
+
 ## Play export countdown intro
 - [x] Add optional 2.6-second play-only branded countdown in the shared MP4 timeline, preserving animation, branding and outro
 - [x] Five real renderer MP4 fixtures validated with ffprobe/decoded frames: all formats, 3/2/1, Sequence 1 at frame 78, existing outro, disabled intro and drill suppression; 61 library tests pass; automatic build OK

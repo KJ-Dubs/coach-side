@@ -3275,8 +3275,10 @@ export type Database = {
           logo_url: string | null
           name: string
           org_id: string | null
+          primary_color: string | null
           require_ack_default: boolean
           season: string
+          secondary_color: string | null
           timezone: string
         }
         Insert: {
@@ -3299,8 +3301,10 @@ export type Database = {
           logo_url?: string | null
           name: string
           org_id?: string | null
+          primary_color?: string | null
           require_ack_default?: boolean
           season?: string
+          secondary_color?: string | null
           timezone?: string
         }
         Update: {
@@ -3323,8 +3327,10 @@ export type Database = {
           logo_url?: string | null
           name?: string
           org_id?: string | null
+          primary_color?: string | null
           require_ack_default?: boolean
           season?: string
+          secondary_color?: string | null
           timezone?: string
         }
         Relationships: [
