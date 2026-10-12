@@ -1,5 +1,56 @@
 import { describe, expect, it } from "vitest";
-import { FORMAT_SIZE, VIDEO_COURT_CTA, videoComposition } from "./playVideo";
+import { DEFAULT_EXPORT_OPTIONS, FORMAT_SIZE, INTRO_SECONDS, VIDEO_COURT_CTA, VIDEO_INTRO_MESSAGE, frameCounts, introState, videoComposition, type ExportModel } from "./playVideo";
+
+describe("play-only intro timeline", () => {
+  const model: ExportModel = { name: "Test play", category: "Offense", flip: false, frames: [], steps: [] };
+
+  it("defaults to a fixed 78-frame silent intro and keeps the 54-frame outro", () => {
+    expect(DEFAULT_EXPORT_OPTIONS.showIntro).toBe(true);
+    expect(INTRO_SECONDS).toBe(2.6);
+    expect(VIDEO_INTRO_MESSAGE).toBe("INCOMING BASKETBALL PLAY");
+    const on = frameCounts(model, DEFAULT_EXPORT_OPTIONS);
+    const off = frameCounts(model, { ...DEFAULT_EXPORT_OPTIONS, showIntro: false });
+    expect(on.introFrames).toBe(78);
+    expect(on.outroFrames).toBe(54);
+    expect(on.total - off.total).toBe(78);
+    expect(on.showFrames).toBe(off.showFrames);
+    expect(on.doFrames).toBe(off.doFrames);
+    expect(on.holdFrames).toBe(off.holdFrames);
+  });
+
+  it("never adds an intro to drills, even with the toggle enabled", () => {
+    expect(frameCounts({ ...model, kind: "drill" }, DEFAULT_EXPORT_OPTIONS).introFrames).toBe(0);
+  });
+
+  it("preserves play defaults for legacy callers without showIntro", () => {
+    const { showIntro: _intro, ...legacy } = DEFAULT_EXPORT_OPTIONS;
+    expect(frameCounts(model, legacy).introFrames).toBe(78);
+  });
+
+  for (const format of ["vertical", "square", "landscape"] as const) {
+    for (const speed of ["slow", "normal", "fast"] as const) {
+      it(`${format}/${speed}: keeps intro timing independent of animation speed`, () => {
+        expect(frameCounts(model, { ...DEFAULT_EXPORT_OPTIONS, format, speed }).introFrames).toBe(78);
+      });
+    }
+  }
+
+  it("shows message first, then exactly 3 → 2 → 1 at the requested boundaries", () => {
+    expect(introState(0).numeral).toBeNull();
+    expect(introState(23 / 30).numeral).toBeNull();
+    expect(introState(0.8).numeral).toBe("3");
+    expect(introState(1.4).numeral).toBe("2");
+    expect(introState(2).numeral).toBe("1");
+    expect(introState(77 / 30).numeral).toBe("1");
+    for (let f = 0; f < 78; f++) {
+      const state = introState(f / 30);
+      expect(state.opacity).toBeGreaterThan(0);
+      expect(state.opacity).toBeLessThanOrEqual(1);
+      expect(state.scale).toBeGreaterThanOrEqual(0.88);
+      expect(state.scale).toBeLessThanOrEqual(1);
+    }
+  });
+});
 
 describe("downloaded video social composition", () => {
   it("uses the exact persistent sideline message", () => {
