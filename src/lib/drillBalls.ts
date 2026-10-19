@@ -1,6 +1,7 @@
 import type { DrillFrame, DrillObject } from "./drills";
 import type { PlayAction, PlayToken } from "./types";
 import { getPointAlongPath, resolvePath, type Point } from "./playPath";
+import { inferPassReceiver } from "./playAnimation";
 
 export type DrillBallState = {
   id: string;
@@ -95,6 +96,44 @@ export function ballOwnedBy(balls: DrillBallState[], tokenId: string) {
     .sort((a, b) => b.assignedOrder - a.assignedOrder)[0] ?? null;
 }
 
+export type ShownDrillBall = { id: string; point: Point; ownerId: string | null };
+
+/** Recover explicit visible/setup assignment, never proximity to a free ball. */
+export function resolveDrillAuthoringBall(frame: DrillFrame, index: number, actor: string, shownBalls: ShownDrillBall[], shownTokens: PlayToken[]) {
+  const active = drillStateAtSequenceStart(frame, index);
+  const owned = ballOwnedBy(active.balls, actor);
+  if (owned) return { frame, ball: owned };
+  const token = shownTokens.find((item) => item.id === actor);
+  const sequences = actionsBySequence(frame);
+  const seq = sequences[index] ?? ((sequences.at(-1) ?? 0) + 1);
+  const visible = shownBalls.find((item) => item.ownerId === actor && active.balls.some((ball) => ball.id === item.id));
+  const persisted = token ? shownBalls.find((item) => {
+    const ball = active.balls.find((candidate) => candidate.id === item.id);
+    if (!ball || ball.ownerTokenId !== null || item.ownerId !== null) return false;
+    const object = frame.objects.find((candidate) => candidate.id === item.id);
+    const setup = object?.ballSetups?.filter((candidate) => candidate.seq <= seq).sort((a, b) => b.seq - a.seq)[0];
+    const owner = setup ? setup.ownerTokenId : object?.ownerTokenId;
+    return owner === actor && Math.hypot(item.point.x - token.x, item.point.y - token.y) <= 0.06;
+  }) : undefined;
+  const candidate = visible ?? persisted;
+  if (!candidate || !token) return { frame, ball: null };
+  const next = setDrillBallSetup(materializeDrillBalls(frame), candidate.id, seq, token, actor);
+  return { frame: next, ball: ballOwnedBy(drillStateAtSequenceStart(next, index).balls, actor) };
+}
+
+/** Complete authoring path shared by the editor and possession regression tests. */
+export function addDrillAction(frame: DrillFrame, index: number, action: PlayAction, shownBalls: ShownDrillBall[], shownTokens: PlayToken[]) {
+  if (!action.actor) return null;
+  const resolved = resolveDrillAuthoringBall(frame, index, action.actor, shownBalls, shownTokens);
+  if ((action.type === "pass" || action.type === "dribble") && !resolved.ball) return null;
+  const base = { ...action, ...(resolved.ball ? { ballId: resolved.ball.id } : {}) };
+  const receiver = action.type === "pass" ? inferPassReceiver(shownTokens, frame.actions.filter((item) => item.seq === action.seq && !["pass", "handoff", "shot"].includes(item.type)), base) : null;
+  const bound: PlayAction = action.type === "pass"
+    ? { ...base, ...(receiver ? { target: receiver.id } : {}), transfersBall: !!receiver, passTo: receiver ? "receiver" : "space" }
+    : base;
+  return { frame: { ...resolved.frame, actions: [...resolved.frame.actions, bound] }, action: bound, receiver };
+}
+
 function actionsBySequence(frame: DrillFrame) {
   return [...new Set(frame.actions.map((action) => action.seq))].sort((a, b) => a - b);
 }
@@ -105,18 +144,20 @@ function endTokensForSequence(tokens: PlayToken[], actions: PlayAction[]) {
     if (action.type === "pass" || action.type === "handoff" || action.type === "shot") continue;
     const end = resolvePath(action).at(-1);
     const index = next.findIndex((token) => token.id === action.actor);
-    if (end && index >= 0) next[index] = { ...next[index]!, x: end.x, y: end.y };
+    const token = next[index];
+    if (end && token) next[index] = { ...token, x: end.x, y: end.y };
   }
   return next;
 }
 
-function advanceBalls(balls: DrillBallState[], startTokens: PlayToken[], endTokens: PlayToken[], actions: PlayAction[]) {
+function advanceBalls(balls: DrillBallState[], endTokens: PlayToken[], actions: PlayAction[]) {
   const next = balls.map((ball) => ({ ...ball }));
   for (const action of actions.slice().sort((a, b) => a.id.localeCompare(b.id))) {
     if (!action.ballId || !action.actor) continue;
     const index = next.findIndex((ball) => ball.id === action.ballId && ball.ownerTokenId === action.actor);
     if (index < 0) continue;
-    const current = next[index]!;
+    const current = next[index];
+    if (!current) continue;
     const end = resolvePath(action).at(-1);
     if (action.type === "pass" && action.passTo !== "space" && action.target) {
       const target = tokenPoint(endTokens, action.target);
@@ -140,8 +181,11 @@ export function drillStateAtSequenceStart(frame: DrillFrame, index: number) {
   const sequences = actionsBySequence(frame);
   const requestedSeq = sequences[index] ?? ((sequences.at(-1) ?? 0) + 1);
   balls = balls.filter((ball) => ball.startSeq <= requestedSeq);
-  for (let i = 0; i < Math.min(index, sequences.length); i += 1) {
-    const currentSeq = sequences[i]!;
+  const historySequences = [...new Set([
+    ...sequences.slice(0, index),
+    ...frame.objects.flatMap((object) => (object.ballSetups ?? []).map((setup) => setup.seq)),
+  ])].filter((seq) => seq < requestedSeq).sort((a, b) => a - b);
+  for (const currentSeq of historySequences) {
     balls = balls.map((ball) => {
       const setup = frame.objects.find((item) => item.id === ball.id)?.ballSetups
         ?.find((item) => item.seq === currentSeq);
@@ -149,9 +193,12 @@ export function drillStateAtSequenceStart(frame: DrillFrame, index: number) {
         ? { ...ball, x: setup.x, y: setup.y, ownerTokenId: setup.ownerTokenId, assignedOrder: setup.assignedOrder, state: setup.ownerTokenId ? "possessed" as const : "free" as const }
         : ball;
     });
-    const actions = frame.actions.filter((action) => action.seq === sequences[i]);
+    const actions = frame.actions.filter((action) => action.seq === currentSeq);
     const endTokens = endTokensForSequence(tokens, actions);
-    balls = advanceBalls(balls, tokens, endTokens, actions);
+    balls = [
+      ...advanceBalls(balls.filter((ball) => ball.startSeq <= currentSeq), endTokens, actions),
+      ...balls.filter((ball) => ball.startSeq > currentSeq),
+    ];
     tokens = endTokens;
   }
   balls = balls.map((ball) => {
@@ -159,6 +206,10 @@ export function drillStateAtSequenceStart(frame: DrillFrame, index: number) {
     const setup = object?.ballSetups?.find((item) => item.seq === requestedSeq);
     if (!setup) return ball;
     return { ...ball, x: setup.x, y: setup.y, ownerTokenId: setup.ownerTokenId, assignedOrder: setup.assignedOrder, state: setup.ownerTokenId ? "possessed" : "free" };
+  });
+  balls = balls.map((ball) => {
+    const owner = tokenPoint(tokens, ball.ownerTokenId);
+    return owner ? { ...ball, ...owner } : ball;
   });
   return { tokens, balls };
 }
