@@ -9,11 +9,11 @@ import { BubbleButton, Field, InfoPanel, Label, Panel, Pill, PrimaryCTA, SelectI
 import { DrillCanvas } from "@/components/court/DrillCanvas";
 import type { CourtZoom } from "@/components/court/Court";
 import { DIFFICULTIES, DRILL_CATEGORIES, DRILL_STYLES, EQUIPMENT_OPTIONS, GROUP_SIZES, SKILL_FOCUS, createDrill, saveDrillFrames, type DrillFrame, type DrillObject } from "@/lib/drills";
-import { buildSteps, inferPassReceiver, nearestTokenAt, sampleTimeline, stateAtSequenceStart, DO_MS, SHOW_MS } from "@/lib/playAnimation";
+import { buildSteps, nearestTokenAt, sampleTimeline, DO_MS, SHOW_MS } from "@/lib/playAnimation";
 import { simplifyPath, type Point } from "@/lib/playPath";
-import type { PlayAction, PlayActionType, PlayFrame, PlayToken } from "@/lib/types";
+import type { PlayActionType, PlayFrame, PlayToken } from "@/lib/types";
 import { uuid } from "@/lib/offline";
-import { ballOwnedBy, ballsToObjects, drillStateAtSequenceStart, materializeDrillBalls, normalizeDrillBalls, sampleDrillBalls, setDrillBallSetup } from "@/lib/drillBalls";
+import { addDrillAction, drillStateAtSequenceStart, materializeDrillBalls, sampleDrillBalls, setDrillBallSetup } from "@/lib/drillBalls";
 
 export const Route = createFileRoute("/_authenticated/drills/new")({
   head: () => ({ meta: [
@@ -80,13 +80,13 @@ function DrillMakerPage() {
   const activeIdx = Math.min(seqIdx, seqCount);
   const activeStep = steps[activeIdx];
   const seqNumber = activeStep?.seq ?? (steps[seqCount - 1]?.seq ?? 0) + 1;
-  const projected = useMemo(() => stateAtSequenceStart(playFrame, activeIdx), [playFrame, activeIdx]);
+  const activeState = useMemo(() => drillStateAtSequenceStart(frame, activeIdx), [frame, activeIdx]);
   const timeline = useMemo(() => ({ steps, totalMs: steps.length * STEP_MS }), [steps]);
   const rangeStart = mode === "preview" ? activeIdx * STEP_MS : 0;
   const rangeEnd = mode === "preview" ? (activeIdx + 1) * STEP_MS : timeline.totalMs;
   const live = mode === "idle" ? null : sampleTimeline(timeline, timeMs);
-  const drillProjected = useMemo(() => drillStateAtSequenceStart(frame, live?.index ?? activeIdx), [frame, live?.index, activeIdx]);
-  const shownTokens = (live?.sample.tokens ?? projected.tokens).map((token) => ({ ...token, ball: false }));
+  const drillProjected = live ? drillStateAtSequenceStart(frame, live.index) : activeState;
+  const shownTokens = (live?.sample.tokens ?? activeState.tokens).map((token) => ({ ...token, ball: false }));
   const shownActions = live?.step.actions ?? activeStep?.actions ?? [];
   const shownBalls = useMemo(() => sampleDrillBalls(
     drillProjected.balls,
@@ -252,19 +252,16 @@ function DrillMakerPage() {
     if (tool === "equipment" || tool === "erase" || tool === "position") return;
 
     const type: PlayActionType = tool === "cut" ? "move" : tool;
-    const ownedBall = ballOwnedBy(drillProjected.balls, actor);
-    if ((type === "pass" || type === "dribble") && !ownedBall) {
+    const added = addDrillAction(frame, activeIdx, { id: uid(), type, seq: seqNumber, points: drawn, actor }, shownBalls, shownTokens);
+    if (!added) {
       toast.info("Give this player a ball first", { duration: 1800 });
       return;
     }
-    const base: PlayAction = { id: uid(), type, seq: seqNumber, points: drawn, actor, ...(ownedBall ? { ballId: ownedBall.id } : {}) };
+    commit(added.frame);
     if (type === "pass") {
-      const receiver = inferPassReceiver(projected.tokens, frame.actions.filter((action) => action.seq === seqNumber), base);
-      commit({ ...frame, actions: [...frame.actions, receiver ? { ...base, target: receiver.id, transfersBall: true, passTo: "receiver" } : { ...base, passTo: "space", transfersBall: false }] });
+      const receiver = added.receiver;
       toast[receiver ? "success" : "info"](receiver ? `Pass linked to #${receiver.label}` : "Pass saved to open space", { duration: 1800 });
-      return;
     }
-    commit({ ...frame, actions: [...frame.actions, base] });
   };
 
   const preview = () => { if (!activeStep) return; setTimeMs(activeIdx * STEP_MS); setMode("preview"); };

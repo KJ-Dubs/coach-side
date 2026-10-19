@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 - Play and drill MP4 exports share `src/lib/playVideo.ts`; branding positions derive from the fitted court bounds in logical export pixels, shared by both encoders, so composition and animation cannot drift across formats or fallback resolutions.
-- Intro frames and their duration belong to the shared export frame iterator/counts, gated by content kind and export options, so both MP4 encoders preserve the same playback start and progress.
+- Both MP4 encoders share intro frames/counts gated by content kind/options, preserving start and progress.
 - Team accents override centralized root tokens through AppShell using the existing current-team identifier and authorized team query; explicit page teams never fall back to a different team, and Live Game mounts its provider from the game's team ID so dialogs share authoritative colors. Public/admin surfaces opt out. PlayCanvas and play MP4s share dedicated play accent tokens that bypass the generic court semantic scope, while basketball/rims, defense and court retain dedicated semantic tokens; exports snapshot these tokens once for both encoders to preserve parity and branding.
 
 Film Room: film jobs stage AI/manual events in film_job_events; only coach-reviewed events reach game_events via finalize_film_job. Never auto-promote.
@@ -32,4 +32,6 @@ Film Room: film jobs stage AI/manual events in film_job_events; only coach-revie
 - Mid-game tracking toggles append to games.tracking_history (never rewritten); report coverage, partial badges and season per-game rates all derive from computeCoverage in src/lib/gameConfig.ts, and coach corrections live in tracking_coverage_override without touching game_events, so untracked stats never read as zeros.
 - Playmaker OPTIONS retain action metadata and empty markers, with edits through `playOptions.ts`; editor/presenter teaching playback uses `playSequence.ts` to interleave every alternative from its main-path anchor without contaminating siblings or continuation, preserving the legacy selected-branch API and saved data.
 - Playmaker option creation resolves the active step's base-family anchor and stages an empty branch before naming; naming updates that branch rather than creating a second one, so sibling numbering and edit navigation stay consistent.
-- Onboarding state lives in coach_onboarding (no row = new coach); funnel events dedupe via events_sent so the wizard never re-shows.
+- Onboarding uses coach_onboarding (no row = new); events_sent dedupes funnel events.
+
+- Drill Maker shares active ball state for rendering/authoring; normalize explicit visible/setup ownership, never free-ball proximity, so independent transfers persist.
