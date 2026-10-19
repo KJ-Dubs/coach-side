@@ -1,8 +1,9 @@
 # CourtSide Coach — production pass roadmap
 
 ## Drill Maker ball passing
-- [ ] Unify active rendered/authoring ball ownership, authoritative drag assignment, and current-position receiver detection without changing layout
-- [ ] Verify independent multi-ball transfers, next-step possession, free-ball rejection, replay and serialized reload with regression tests and preview checks
+- [x] Unify active rendered/authoring ball ownership, explicit visible/setup assignment, and current-position receiver detection without changing layout
+- [x] 12 drill regressions plus 32 related tests pass: independent transfers, next-step pass/dribble, free-ball rejection, replay, JSON reload, setup-only gaps, and future ball activation; automatic build OK
+- [ ] Signed-in drag/pass/save/reopen walkthrough — blocked: no preview account matches requester; no saved drills changed, persisted transfers verified by JSON regression tests
 
 ## Older saved-play compatibility
 - [x] Restore legacy bindings before editor validation/save; 12 regression tests and automatic build pass, preserving explicit links/geometry and genuine repair checks
