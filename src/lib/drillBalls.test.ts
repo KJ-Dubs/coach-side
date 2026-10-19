@@ -78,10 +78,12 @@ describe("Drill Maker ball authoring", () => {
   });
   it("normalizes a visibly attached ball before saving the new action", () => {
     const frame = fresh();
-    frame.objects[0].ownerTokenId = null;
+    const object = frame.objects[0];
+    if (!object) throw new Error("Missing test ball");
+    object.ownerTokenId = null;
     const result = resolveDrillAuthoringBall(frame, 0, "p1", [{ id: "A", point: { x: .58, y: .5 }, ownerId: "p1" }], frame.tokens);
     expect(result.ball?.ownerTokenId).toBe("p1");
-    expect(result.frame.objects[0].ownerTokenId).toBe("p1");
+    expect(result.frame.objects[0]?.ownerTokenId).toBe("p1");
   });
   it("does not move a ball introduced in Step 2 through Step 1", () => {
     const frame = fresh();
@@ -89,5 +91,17 @@ describe("Drill Maker ball authoring", () => {
     frame.objects.push({ id: "B", type: "ball", x: .8, y: .7, ownerTokenId: null, startSeq: 2 });
     expect(drillStateAtSequenceStart(frame, 0).balls.map((ball) => ball.id)).toEqual(["A"]);
     expect(drillStateAtSequenceStart(frame, 1).balls.find((ball) => ball.id === "B")).toMatchObject({ x: .8, y: .7, ownerTokenId: null });
+  });
+  it("retains a setup when its step actions have been erased", () => {
+    let frame = required(author(fresh(), 0, "p1", "p2")).frame;
+    frame = setDrillBallSetup(frame, "A", 2, { x: .8, y: .7 }, "p4");
+    frame.actions.push({ id: "later", seq: 3, type: "move", actor: "p5", points: [{ x: .9, y: .4 }, { x: .9, y: .5 }] });
+    expect(ballOwnedBy(drillStateAtSequenceStart(frame, 1).balls, "p4")?.id).toBe("A");
+  });
+  it("allows a receiver who is passing a different ball in the same sequence", () => {
+    const frame = fresh();
+    frame.objects.push({ id: "B", type: "ball", x: .8, y: .7, ownerTokenId: "p4" });
+    const first = required(author(frame, 0, "p4", "p5")).frame;
+    expect(required(author(first, 0, "p1", "p4")).action.target).toBe("p4");
   });
 });

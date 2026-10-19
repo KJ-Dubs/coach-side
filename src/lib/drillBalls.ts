@@ -127,9 +127,9 @@ export function addDrillAction(frame: DrillFrame, index: number, action: PlayAct
   const resolved = resolveDrillAuthoringBall(frame, index, action.actor, shownBalls, shownTokens);
   if ((action.type === "pass" || action.type === "dribble") && !resolved.ball) return null;
   const base = { ...action, ...(resolved.ball ? { ballId: resolved.ball.id } : {}) };
-  const receiver = action.type === "pass" ? inferPassReceiver(shownTokens, frame.actions.filter((item) => item.seq === action.seq), base) : null;
-  const bound = action.type === "pass"
-    ? { ...base, target: receiver?.id, transfersBall: !!receiver, passTo: receiver ? "receiver" as const : "space" as const }
+  const receiver = action.type === "pass" ? inferPassReceiver(shownTokens, frame.actions.filter((item) => item.seq === action.seq && !["pass", "handoff", "shot"].includes(item.type)), base) : null;
+  const bound: PlayAction = action.type === "pass"
+    ? { ...base, ...(receiver ? { target: receiver.id } : {}), transfersBall: !!receiver, passTo: receiver ? "receiver" : "space" }
     : base;
   return { frame: { ...resolved.frame, actions: [...resolved.frame.actions, bound] }, action: bound, receiver };
 }
@@ -181,9 +181,11 @@ export function drillStateAtSequenceStart(frame: DrillFrame, index: number) {
   const sequences = actionsBySequence(frame);
   const requestedSeq = sequences[index] ?? ((sequences.at(-1) ?? 0) + 1);
   balls = balls.filter((ball) => ball.startSeq <= requestedSeq);
-  for (let i = 0; i < Math.min(index, sequences.length); i += 1) {
-    const currentSeq = sequences[i];
-    if (currentSeq === undefined) continue;
+  const historySequences = [...new Set([
+    ...sequences.slice(0, index),
+    ...frame.objects.flatMap((object) => (object.ballSetups ?? []).map((setup) => setup.seq)),
+  ])].filter((seq) => seq < requestedSeq).sort((a, b) => a - b);
+  for (const currentSeq of historySequences) {
     balls = balls.map((ball) => {
       const setup = frame.objects.find((item) => item.id === ball.id)?.ballSetups
         ?.find((item) => item.seq === currentSeq);
@@ -191,7 +193,7 @@ export function drillStateAtSequenceStart(frame: DrillFrame, index: number) {
         ? { ...ball, x: setup.x, y: setup.y, ownerTokenId: setup.ownerTokenId, assignedOrder: setup.assignedOrder, state: setup.ownerTokenId ? "possessed" as const : "free" as const }
         : ball;
     });
-    const actions = frame.actions.filter((action) => action.seq === sequences[i]);
+    const actions = frame.actions.filter((action) => action.seq === currentSeq);
     const endTokens = endTokensForSequence(tokens, actions);
     balls = [
       ...advanceBalls(balls.filter((ball) => ball.startSeq <= currentSeq), endTokens, actions),
