@@ -1,14 +1,21 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { XIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import aiMark from "@/assets/coachside-ai-mark.png";
-import { AI_UPGRADE_BODY, AI_UPGRADE_PRICE, AI_UPGRADE_TITLE } from "@/lib/aiAccess";
+import { AI_UPGRADE_BODY, AI_UPGRADE_CTA, AI_UPGRADE_PRICE, AI_UPGRADE_TITLE } from "@/lib/aiAccess";
+import { ALL_MODULES } from "@/lib/entitlements";
 import { cn } from "@/lib/utils";
 
 const ctaBase =
-  "inline-flex min-h-11 w-full items-center justify-center rounded-full border px-4 text-sm font-black tracking-wide shadow-lg shadow-black/20 transition-all active:scale-95";
+  "inline-flex min-h-11 w-full items-center justify-center rounded-full border px-4 text-sm font-black tracking-wide shadow-lg shadow-black/20 transition-all active:scale-95 disabled:opacity-60";
 
-/** CoachSide Complete upsell for the AI Assistant. Keeps the team in the link. */
+/**
+ * CoachSide Complete upsell for the AI Assistant. Keeps the team in context.
+ * Teams without a subscription go straight to Square's hosted checkout, where
+ * the coach confirms payment; teams that already pay (or a legacy plan) go to
+ * Membership with Complete preselected so the plan change is confirmed there.
+ * Nothing here ever charges a card by itself.
+ */
 export function AiUpgradeContent({
   teamId,
   onNavigate,
@@ -19,6 +26,40 @@ export function AiUpgradeContent({
   className?: string;
 }) {
   const team = teamId ?? undefined;
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  const toMembership = () => {
+    onNavigate?.();
+    void navigate({ to: "/membership", search: { plan: "complete", team } });
+  };
+
+  const upgrade = async () => {
+    if (busy) return;
+    setProblem(null);
+    if (!teamId) return toMembership();
+    setBusy(true);
+    try {
+      const { getTeamBilling, startTeamCheckout } = await import("@/lib/billing.functions");
+      const billing = await getTeamBilling({ data: { teamId } });
+      if (billing.hasSubscription || billing.provider !== "square") return toMembership();
+      if (!billing.checkoutAvailable) {
+        setProblem("Checkout is temporarily unavailable. Try again shortly, or open membership options.");
+        return;
+      }
+      const r = await startTeamCheckout({
+        data: { teamId, modules: [...ALL_MODULES], origin: window.location.origin },
+      });
+      if (r.ok) window.location.assign(r.url);
+      else setProblem(r.reason);
+    } catch {
+      setProblem("Checkout couldn't start. Try again, or open membership options.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className={cn("flex flex-col items-center gap-3 text-center", className)}>
       <img src={aiMark} alt="" width={56} height={56} className="h-14 w-14 object-contain" />
@@ -34,15 +75,20 @@ export function AiUpgradeContent({
       <p className="rounded-full border border-flame/60 bg-flame/15 px-3 py-1.5 text-xs font-black text-foreground">
         {AI_UPGRADE_PRICE}
       </p>
+      {problem ? (
+        <p role="alert" className="rounded-2xl border border-destructive/60 bg-destructive/15 px-3 py-2 text-xs font-bold text-foreground">
+          {problem}
+        </p>
+      ) : null}
       <div className="flex w-full flex-col gap-2">
-        <Link
-          to="/membership"
-          search={{ plan: "complete", team }}
-          onClick={onNavigate}
+        <button
+          type="button"
+          onClick={() => void upgrade()}
+          disabled={busy}
           className={cn(ctaBase, "border-flame bg-flame text-accent-foreground hover:bg-flame/90")}
         >
-          Upgrade to Complete
-        </Link>
+          {busy ? "Opening secure checkout…" : AI_UPGRADE_CTA}
+        </button>
         <Link
           to="/membership"
           search={{ team }}
@@ -51,6 +97,9 @@ export function AiUpgradeContent({
         >
           See membership options
         </Link>
+        <p className="rounded-2xl border border-border/60 bg-surface/70 px-3 py-1.5 text-[11px] font-semibold leading-snug text-muted-foreground">
+          You'll confirm payment on Square's secure checkout. Nothing is charged until you do.
+        </p>
       </div>
     </div>
   );

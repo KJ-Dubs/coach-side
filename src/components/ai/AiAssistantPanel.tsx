@@ -269,7 +269,7 @@ export default function AiAssistantPanel({
                 CoachSide AI Assistant
               </h2>
               <p id="coachside-ai-subtitle" className="text-[11px] font-semibold leading-snug text-muted-foreground">
-                Ask about your team, roster, schedule, plays, stats, or basketball.
+                Ask about your team, roster, schedule, or basketball coaching.
               </p>
             </div>
             <button
