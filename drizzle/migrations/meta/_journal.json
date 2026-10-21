@@ -64,6 +64,13 @@
       "when": 1791838566619,
       "tag": "0008_team_level",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792610209489,
+      "tag": "0009_chatgpt_mcp_connections",
+      "breakpoints": true
     }
   ]
 }

@@ -1783,6 +1783,84 @@ export type Database = {
           },
         ]
       }
+      mcp_audit_log: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          id: string
+          summary: string
+          target_id: string | null
+          team_id: string | null
+          tool_name: string
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          summary: string
+          target_id?: string | null
+          team_id?: string | null
+          tool_name: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          summary?: string
+          target_id?: string | null
+          team_id?: string | null
+          tool_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mcp_connections: {
+        Row: {
+          client_id: string
+          client_name: string | null
+          client_uri: string | null
+          created_at: string
+          id: string
+          last_used_at: string | null
+          permissions: string[]
+          rate_window_count: number
+          rate_window_start: string | null
+          revoked_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          client_name?: string | null
+          client_uri?: string | null
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          permissions?: string[]
+          rate_window_count?: number
+          rate_window_start?: string | null
+          revoked_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          client_name?: string | null
+          client_uri?: string | null
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          permissions?: string[]
+          rate_window_count?: number
+          rate_window_start?: string | null
+          revoked_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       message_attachments: {
         Row: {
           attachment_type: string
@@ -3561,6 +3639,29 @@ export type Database = {
           tags: string[]
           time_pressure: string
         }[]
+      }
+      mcp_begin_call: { Args: { p_permission: string }; Returns: Json }
+      mcp_log_action: {
+        Args: {
+          p_summary: string
+          p_target: string
+          p_team: string
+          p_tool: string
+        }
+        Returns: undefined
+      }
+      mcp_record_consent: {
+        Args: {
+          p_client_id: string
+          p_client_name: string
+          p_client_uri: string
+          p_permissions: string[]
+        }
+        Returns: string
+      }
+      mcp_revoke_connection: {
+        Args: { p_client_id: string }
+        Returns: undefined
       }
       my_access: { Args: never; Returns: Json }
       my_achievement_metrics: { Args: never; Returns: Json }
