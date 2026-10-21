@@ -21,6 +21,7 @@ import { useAccess, resolveRole } from "@/lib/access";
 import {
   ALL_MODULES,
   COMPLETE_BLURB,
+  COMPLETE_EXCLUSIVES,
   COMPLETE_NAME,
   COMPLETE_PRICE,
   FREE_CORE,
@@ -50,7 +51,7 @@ export const Route = createFileRoute("/_authenticated/membership")({
       {
         name: "description",
         content:
-          "Choose Playbook+, GameDay+ or Team Hub+ for your team, or CoachSide Complete for all three on one monthly charge.",
+          "Choose Playbook+, GameDay+ or Team Hub+ for your team, or CoachSide Complete for all three plus the CoachSide AI Assistant on one monthly charge.",
       },
       { property: "og:title", content: "Membership — CoachSide" },
       {
@@ -61,8 +62,23 @@ export const Route = createFileRoute("/_authenticated/membership")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
+  // Upgrade links (e.g. from the AI Assistant) can preselect Complete and keep
+  // the team. Checkout return params are kept as-is for the page to read.
+  validateSearch: (s: Record<string, unknown>): MembershipSearch => ({
+    plan: s["plan"] === "complete" ? "complete" : undefined,
+    team: typeof s["team"] === "string" ? s["team"] : undefined,
+    checkout: typeof s["checkout"] === "string" ? s["checkout"] : undefined,
+    changed: typeof s["changed"] === "string" ? s["changed"] : undefined,
+  }),
   component: MembershipPage,
 });
+
+type MembershipSearch = {
+  plan?: "complete";
+  team?: string;
+  checkout?: string;
+  changed?: string;
+};
 
 function Money({ amount }: { amount: number }) {
   return (
@@ -239,6 +255,23 @@ function MembershipPage() {
   const total = priceFor(picked);
   const complete = isComplete(picked);
   const [codeInput, setCodeInput] = useState("");
+
+  // "Upgrade to Complete" links: switch to the team they came from and
+  // preselect Complete so checkout is one tap away.
+  const search = Route.useSearch();
+  useEffect(() => {
+    if (search.team && teams.some((t) => t.id === search.team) && search.team !== teamId) {
+      setTeam(search.team);
+    }
+    if (search.plan === "complete") {
+      setSelected([...ALL_MODULES]);
+      window.setTimeout(
+        () => document.getElementById("complete-plan")?.scrollIntoView({ behavior: "smooth", block: "center" }),
+        150,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.plan, search.team, teams.length]);
 
   // Players and parents never see membership.
   useEffect(() => {
@@ -428,7 +461,7 @@ function MembershipPage() {
         })}
       </div>
 
-      <Panel className="mb-3 flex flex-col gap-3 border-flame/60 bg-flame/10">
+      <Panel id="complete-plan" className="mb-3 flex flex-col gap-3 border-flame/60 bg-flame/10">
         <div className="flex justify-center">
           <Label>Best value</Label>
         </div>
@@ -441,7 +474,10 @@ function MembershipPage() {
         <div className="flex justify-center">
           <Note className="text-center">{COMPLETE_BLURB}</Note>
         </div>
-        <InfoList items={MODULE_LIST.flatMap((m) => m.benefits)} tone="flame" />
+        <InfoList items={[...COMPLETE_EXCLUSIVES, ...MODULE_LIST.flatMap((m) => m.benefits)]} tone="flame" />
+        <div className="flex justify-center">
+          <Pill tone="grape">AI Assistant is only in Complete — not the $6 or $12 plans</Pill>
+        </div>
         <div className="flex justify-center">
           <BubbleButton tone="grape" size="lg" onClick={() => setSelected([...ALL_MODULES])}>
             Choose Complete
@@ -456,7 +492,7 @@ function MembershipPage() {
           {picked.length === 0
             ? "Free Core only"
             : complete
-              ? `${COMPLETE_NAME} — all three modules`
+              ? `${COMPLETE_NAME} — all three modules + AI Assistant`
               : picked.map((m) => MODULES[m].name).join(" + ")}
         </Pill>
         <Note className="w-full">
