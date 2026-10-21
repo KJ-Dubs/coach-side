@@ -1,6 +1,7 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { runSharedTool } from "../run";
 import { TOOL_INPUTS } from "../executor";
+import { MAX_BULK_PLAYERS } from "../service";
 
 export default defineTool({
   name: "add_players_bulk",
