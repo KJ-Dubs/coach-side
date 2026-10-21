@@ -247,7 +247,6 @@ export async function createTeam(
   if (error || !data) throw new CoachSideError("SERVER_ERROR", "Could not create the team.");
   const team = data as TeamRow;
   access.coachTeamIds.add(team.id);
-  access.orgRoles.set(orgId, access.orgRoles.get(orgId)!);
   await logAction(db, "create_team", team.id, team.id, `Created team ${name} (${season})`);
   return { team: teamSummary(access, team) };
 }
