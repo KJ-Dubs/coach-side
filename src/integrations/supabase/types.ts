@@ -3699,6 +3699,7 @@ export type Database = {
         Args: { _player_id?: string; _token: string }
         Returns: Json
       }
+      ai_assistant_enabled: { Args: never; Returns: boolean }
       can_post_conversation: { Args: { _conv: string }; Returns: boolean }
       can_read_conversation: { Args: { _conv: string }; Returns: boolean }
       copy_drill_for_me: {
