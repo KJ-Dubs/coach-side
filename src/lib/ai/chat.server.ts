@@ -18,6 +18,8 @@ import {
 import { buildSystemPrompt } from "./prompt";
 import { buildAssistantTools } from "./tools.server";
 import { AI_LIMITS, dataUrlBytes, isAllowedAttachmentType, maxBytesFor } from "./limits";
+import { billingEnforced, teamHasAiAccess } from "./access.server";
+import { AI_COMPLETE_REQUIRED_MESSAGE, AI_SETUP_MESSAGE } from "@/lib/aiAccess";
 
 const fail = (status: number, code: string, message: string) =>
   new Response(JSON.stringify({ error: code, message }), {
@@ -131,11 +133,6 @@ export async function handleAiChat(request: Request): Promise<Response> {
   if (!auth) return fail(401, "UNAUTHORIZED", "Sign in to CoachSide to use the AI Assistant.");
   const { db, userId } = auth;
 
-  const config = readAiConfig();
-  if (!config.apiKey) return fail(503, "AI_NOT_CONFIGURED", "CoachSide AI isn't available yet.");
-  if (!(await readAssistantEnabled(db)))
-    return fail(503, "AI_DISABLED", "CoachSide AI is turned off right now.");
-
   let body: z.infer<typeof bodySchema>;
   try {
     body = bodySchema.parse(await request.json());
@@ -146,6 +143,19 @@ export async function handleAiChat(request: Request): Promise<Response> {
   const access = await loadAccess(db).catch(() => null);
   if (!access?.isCoach)
     return fail(403, "COACH_ONLY", "The CoachSide AI Assistant is for coach accounts.");
+
+  // Only teams this coach is staff on; anything else is ignored.
+  const teams = (await listTeams(db).catch(() => ({ teams: [] }))).teams;
+  const teamId = body.teamId && teams.some((t) => t.id === body.teamId) ? body.teamId : null;
+
+  // Paywall: CoachSide Complete only, checked here before any model call so the
+  // endpoint cannot be used directly to skip the upgrade.
+  if (!(await teamHasAiAccess(db, teamId, await billingEnforced())))
+    return fail(402, "COMPLETE_REQUIRED", AI_COMPLETE_REQUIRED_MESSAGE);
+
+  const config = readAiConfig();
+  if (!config.apiKey) return fail(503, "AI_UNAVAILABLE", AI_SETUP_MESSAGE);
+  if (!(await readAssistantEnabled(db))) return fail(503, "AI_UNAVAILABLE", AI_SETUP_MESSAGE);
 
   // Prompt and attachment guards.
   const text = body.message.parts
@@ -205,8 +215,6 @@ export async function handleAiChat(request: Request): Promise<Response> {
   }
 
   // Conversation must belong to this coach (row security hides anyone else's).
-  const teams = (await listTeams(db).catch(() => ({ teams: [] }))).teams;
-  const teamId = body.teamId && teams.some((t) => t.id === body.teamId) ? body.teamId : null;
   const { data: convo } = await db
     .from("ai_conversations")
     .select("id")
