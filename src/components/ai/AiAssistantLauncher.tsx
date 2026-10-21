@@ -2,29 +2,11 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import aiMark from "@/assets/coachside-ai-mark.png";
 import { resolveRole, useAccess } from "@/lib/access";
+import { fabModeFor } from "@/lib/ai/fabPlacement";
 import { onOpenAiAssistant, useAiAvailability } from "@/lib/aiAssistant";
 import { cn } from "@/lib/utils";
 
 const AiAssistantPanel = lazy(() => import("./AiAssistantPanel"));
-
-export type FabMode = "normal" | "edge" | "hidden";
-
-/**
- * Where the floating button may sit. Live tracking and the whiteboard keep
- * every pixel for the court; court-first editors get a slim edge tab so the
- * controls under the court stay clear.
- */
-export function fabModeFor(pathname: string): FabMode {
-  if (pathname.startsWith("/game/") || pathname.startsWith("/board")) return "hidden";
-  if (
-    pathname.startsWith("/plays/new") ||
-    /^\/plays\/[^/]+\/?$/.test(pathname) ||
-    pathname.startsWith("/drills/new") ||
-    pathname.startsWith("/film/")
-  )
-    return "edge";
-  return "normal";
-}
 
 /**
  * Coach-only floating CoachSide AI button plus the assistant panel. Mounted
