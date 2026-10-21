@@ -1,10 +1,11 @@
 import { useChat } from "@ai-sdk/react";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import {
+  ChevronDownIcon,
   FileTextIcon,
   ImageIcon,
+  MinusIcon,
   PaperclipIcon,
   PlusIcon,
   RotateCcwIcon,
@@ -173,111 +174,156 @@ export default function AiAssistantPanel({
     startNewChat();
   };
 
-  return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0" />
-        <DialogPrimitive.Content
-          className={cn(
-            "fixed inset-0 z-50 flex flex-col bg-background shadow-2xl shadow-black/60 outline-none",
-            "sm:inset-y-3 sm:left-auto sm:right-3 sm:w-[460px] sm:overflow-hidden sm:rounded-3xl sm:border sm:border-border/70",
-            "data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom-4 sm:data-[state=open]:slide-in-from-right-4",
-          )}
-          onOpenAutoFocus={(e) => {
-            // Keep the phone keyboard closed until the coach taps the box.
-            if (window.matchMedia("(pointer: coarse)").matches) e.preventDefault();
-          }}
-        >
-          <header className="flex flex-col gap-2 border-b border-border/70 bg-surface/90 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
-            <div className="flex items-start gap-2">
-              <img
-                src={aiMark}
-                alt="CoachSide AI"
-                width={40}
-                height={40}
-                className="h-10 w-10 shrink-0 object-contain"
-              />
-              <div className="min-w-0 flex-1">
-                <DialogPrimitive.Title className="text-base font-black leading-tight text-foreground">
-                  CoachSide AI Assistant
-                </DialogPrimitive.Title>
-                <DialogPrimitive.Description className="text-xs font-semibold leading-snug text-muted-foreground">
-                  Ask about your team, roster, schedule, plays, stats, or basketball.
-                </DialogPrimitive.Description>
-              </div>
-              <DialogPrimitive.Close
-                aria-label="Close CoachSide AI Assistant"
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2/70 text-foreground hover:border-grape/60"
-              >
-                <XIcon className="h-5 w-5" />
-              </DialogPrimitive.Close>
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {coachTeams.length > 1 ? (
-                <label className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border border-grape/50 bg-grape/15 pl-3 pr-1 text-xs font-black text-foreground">
-                  Using:
-                  <select
-                    value={teamId ?? ""}
-                    onChange={(e) => setTeamId(e.target.value)}
-                    aria-label="Team the assistant should use"
-                    className="min-h-8 max-w-[180px] truncate rounded-full border-none bg-transparent pr-1 text-xs font-black text-foreground outline-none"
-                  >
-                    {coachTeams.map((t) => (
-                      <option key={t.id} value={t.id} className="bg-popover text-foreground">
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : (
-                <Pill tone="grape">{team ? `Using: ${team.name}` : "No team yet"}</Pill>
-              )}
-              <div className="ml-auto flex gap-1.5">
-                <button
-                  type="button"
-                  onClick={startNewChat}
-                  className="inline-flex min-h-9 items-center gap-1 rounded-full border border-border bg-surface-2/70 px-3 text-xs font-black text-foreground hover:border-grape/60"
-                >
-                  <PlusIcon className="h-3.5 w-3.5" /> New chat
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void resetChat()}
-                  aria-label="Clear this conversation"
-                  className="inline-flex min-h-9 items-center gap-1 rounded-full border border-border bg-surface-2/70 px-3 text-xs font-black text-muted-foreground hover:border-destructive/60"
-                >
-                  <RotateCcwIcon className="h-3.5 w-3.5" /> Reset
-                </button>
-              </div>
-            </div>
-          </header>
+  // The panel stays mounted while minimized so the conversation, a reply that
+  // is still streaming, and a half-typed message all survive. Minimizing only
+  // hides it.
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const phone = window.matchMedia("(max-width: 639px)").matches;
+    const prevOverflow = document.body.style.overflow;
+    if (phone) document.body.style.overflow = "hidden";
+    // Keep the phone keyboard closed until the coach taps the box.
+    if (!window.matchMedia("(pointer: coarse)").matches) {
+      window.setTimeout(() => {
+        const box = panelRef.current?.querySelector<HTMLTextAreaElement>("[data-ai-composer] textarea");
+        (box ?? panelRef.current)?.focus();
+      }, 30);
+    } else {
+      panelRef.current?.focus();
+    }
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open]);
 
-          {!available ? (
-            <div className="flex flex-1 items-center justify-center p-4">
-              <InfoPanel tone="grape" className="text-center">
-                {configured
-                  ? "CoachSide AI is turned off right now. Check back soon."
-                  : "CoachSide AI isn't available yet. Check back soon."}
-              </InfoPanel>
+  return (
+    <>
+      {open ? (
+        <div
+          aria-hidden
+          onClick={() => onOpenChange(false)}
+          className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm animate-in fade-in-0 sm:hidden"
+        />
+      ) : null}
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal={false}
+        aria-labelledby="coachside-ai-title"
+        aria-describedby="coachside-ai-subtitle"
+        tabIndex={-1}
+        hidden={!open}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.stopPropagation();
+            onOpenChange(false);
+          }
+        }}
+        className={cn(
+          "fixed z-50 flex flex-col overflow-hidden bg-background shadow-2xl shadow-black/60 outline-none",
+          // Phone: near-fullscreen sheet rising from the bottom.
+          "inset-x-0 bottom-0 top-[max(0.75rem,env(safe-area-inset-top))] rounded-t-3xl border-t border-border/70",
+          // Tablet/desktop: compact floating panel in the bottom-right corner.
+          "sm:inset-x-auto sm:bottom-4 sm:right-4 sm:top-auto sm:h-[min(720px,calc(100dvh-2rem))] sm:w-[420px] sm:rounded-3xl sm:border sm:border-grape/40",
+          "animate-in fade-in-0 slide-in-from-bottom-4",
+          !open && "hidden",
+        )}
+      >
+        <header className="flex flex-col gap-1.5 border-b border-border/70 bg-surface/90 px-3 pb-2 pt-2.5">
+          <div className="flex items-center gap-2">
+            <img
+              src={aiMark}
+              alt=""
+              width={32}
+              height={32}
+              className="h-8 w-8 shrink-0 object-contain"
+            />
+            <div className="min-w-0 flex-1">
+              <h2 id="coachside-ai-title" className="text-sm font-black leading-tight text-foreground">
+                CoachSide AI Assistant
+              </h2>
+              <p id="coachside-ai-subtitle" className="text-[11px] font-semibold leading-snug text-muted-foreground">
+                Ask about your team, roster, schedule, plays, stats, or basketball.
+              </p>
             </div>
-          ) : !conversationId || history.isLoading ? (
-            <div className="flex flex-1 items-center justify-center p-4">
-              <Pill tone="muted">Loading your conversation…</Pill>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              aria-label="Minimize CoachSide AI Assistant"
+              title="Minimize"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2/70 text-foreground hover:border-grape/60"
+            >
+              <ChevronDownIcon className="h-5 w-5 sm:hidden" />
+              <MinusIcon className="hidden h-5 w-5 sm:block" />
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {coachTeams.length > 1 ? (
+              <label className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border border-grape/50 bg-grape/15 pl-3 pr-1 text-xs font-black text-foreground">
+                Using:
+                <select
+                  value={teamId ?? ""}
+                  onChange={(e) => setTeamId(e.target.value)}
+                  aria-label="Team the assistant should use"
+                  className="min-h-8 max-w-[160px] truncate rounded-full border-none bg-transparent pr-1 text-xs font-black text-foreground outline-none"
+                >
+                  {coachTeams.map((t) => (
+                    <option key={t.id} value={t.id} className="bg-popover text-foreground">
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <Pill tone="grape">{team ? `Using: ${team.name}` : "No team yet"}</Pill>
+            )}
+            <div className="ml-auto flex gap-1.5">
+              <button
+                type="button"
+                onClick={startNewChat}
+                className="inline-flex min-h-9 items-center gap-1 rounded-full border border-border bg-surface-2/70 px-3 text-xs font-black text-foreground hover:border-grape/60"
+              >
+                <PlusIcon className="h-3.5 w-3.5" /> New chat
+              </button>
+              <button
+                type="button"
+                onClick={() => void resetChat()}
+                aria-label="Clear this conversation"
+                className="inline-flex min-h-9 items-center gap-1 rounded-full border border-border bg-surface-2/70 px-3 text-xs font-black text-muted-foreground hover:border-destructive/60"
+              >
+                <RotateCcwIcon className="h-3.5 w-3.5" /> Reset
+              </button>
             </div>
-          ) : (
-            <PromptInputProvider key={conversationId}>
-              <ChatWindow
-                conversationId={conversationId}
-                initialMessages={history.data ?? []}
-                teamId={teamId}
-                initialPrompt={initialPrompt}
-                onPromptUsed={onPromptUsed}
-              />
-            </PromptInputProvider>
-          )}
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+          </div>
+        </header>
+
+        {!available ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4 text-center">
+            <img src={aiMark} alt="" width={64} height={64} className="h-16 w-16 object-contain opacity-80" />
+            <InfoPanel tone="grape" className="text-center">
+              {configured
+                ? "CoachSide AI is turned off right now. Check back soon."
+                : "CoachSide AI is still being set up. Check back soon."}
+            </InfoPanel>
+          </div>
+        ) : !conversationId || history.isLoading ? (
+          <div className="flex flex-1 items-center justify-center p-4">
+            <Pill tone="muted">Loading your conversation…</Pill>
+          </div>
+        ) : (
+          <PromptInputProvider key={conversationId}>
+            <ChatWindow
+              conversationId={conversationId}
+              initialMessages={history.data ?? []}
+              teamId={teamId}
+              initialPrompt={initialPrompt}
+              onPromptUsed={onPromptUsed}
+            />
+          </PromptInputProvider>
+        )}
+      </div>
+    </>
   );
 }
 

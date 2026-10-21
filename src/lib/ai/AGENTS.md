@@ -3,3 +3,4 @@
 - Uploaded files are never stored: user messages keep a `data-attachment` marker only, reasoning parts are dropped, and history replay is bounded by `AI_LIMITS`. Usage rows in `ai_usage` drive per-user rate limits.
 - Preview rules (no invented dates/times/jerseys, duplicate/conflict flags) are pure in `preview.ts` and covered by `preview.test.ts`.
 - `src/lib/coachside/` is internal-only (no public route). Every action re-checks coach membership via `my_access` before RLS-scoped access and never trusts caller-supplied ids. Legacy `mcp_*` tables/RPCs stay in the database unused; do not write to them.
+- The floating launcher is mounted once in the `_authenticated` layout (coach-only via `resolveRole`) and the panel is hidden, not unmounted, when minimized, so chats and in-flight replies survive navigation. Route placement (hidden/edge/normal) is pure in `fabPlacement.ts`. Why: one shared chat and court controls stay clear.

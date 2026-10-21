@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserAccess, resolveRole } from "@/lib/access";
 import { purgeDeviceRoleCache } from "@/lib/roleCache";
 import { flushQueue } from "@/lib/offline";
+import { AiAssistantLauncher } from "@/components/ai/AiAssistantLauncher";
 
 /**
  * Sign-in gate for every coach-only page. Client-only because the session
@@ -70,5 +71,11 @@ function AuthenticatedLayout() {
       window.removeEventListener("online", sync);
     };
   }, []);
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      {/* Coach-only; lives here so the chat persists across pages. */}
+      <AiAssistantLauncher />
+    </>
+  );
 }
