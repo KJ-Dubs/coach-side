@@ -35,3 +35,4 @@ Film Room: film jobs stage AI/manual events in film_job_events; only coach-revie
 - Onboarding uses coach_onboarding (no row = new); events_sent dedupes funnel events.
 
 - Drill Maker shares active ball state for rendering/authoring; normalize explicit visible/setup ownership, never free-ball proximity, so independent transfers persist.
+- ChatGPT/MCP connector: `@lovable.dev/mcp-js` server in `src/lib/mcp/` (generated `/mcp` + protected-resource routes) on the managed Cloud OAuth server — never hand-rolled token/code/client tables. The managed server only issues identity scopes, so CoachSide permissions live in `mcp_connections` (written only by `mcp_record_consent` from a normal session), and every tool calls `mcp_begin_call` (connection, permission, revoke, rate limit) and re-checks coach membership via `my_access` before RLS-scoped access; writes log via `mcp_log_action`. This keeps revocation instant and team checks independent of caller-supplied ids.
