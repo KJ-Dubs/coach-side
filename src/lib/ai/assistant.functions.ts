@@ -45,11 +45,32 @@ export const resolveAiAction = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => input)
   .handler(async ({ data, context }) => {
     const { confirmInput, resolveAction } = await import("./actions.server");
+    const { aiEntitledTeamIds, billingEnforced, teamHasAiAccess } = await import("./access.server");
+    const { AI_COMPLETE_REQUIRED_MESSAGE } = await import("@/lib/aiAccess");
     const { loadAccess } = await import("@/lib/coachside/service");
     const parsed = confirmInput.parse(data);
     const db = context.supabase as unknown as Db;
     const access = await loadAccess(db);
     if (!access.isCoach) throw new Error("Only coach accounts can make changes.");
+
+    // Paywall for AI-staged writes too: confirming needs Complete on the
+    // change's team (or, for team-less changes, any Complete team). Cancelling
+    // writes nothing, so it is always allowed.
+    if (parsed.decision !== "cancel") {
+      const enforced = await billingEnforced();
+      if (enforced) {
+        const { data: row } = await db
+          .from("ai_pending_actions")
+          .select("team_id")
+          .eq("id", parsed.actionId)
+          .maybeSingle();
+        const teamId = (row as { team_id: string | null } | null)?.team_id ?? null;
+        const ok = teamId
+          ? access.coachTeamIds.has(teamId) && (await teamHasAiAccess(db, teamId, true))
+          : (await aiEntitledTeamIds(db, [...access.coachTeamIds], true)).length > 0;
+        if (!ok) throw new Error(AI_COMPLETE_REQUIRED_MESSAGE);
+      }
+    }
     return resolveAction(db, context.userId, parsed);
   });
 
