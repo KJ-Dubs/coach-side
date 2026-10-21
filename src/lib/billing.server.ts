@@ -99,7 +99,7 @@ export function squareDiagnostics(): SquareDiagnostics {
   };
 }
 
-/** Enforcement stays off until this is explicitly switched on. */
+/** Membership limits; setting the secret to anything but "true" is the kill switch. */
 export function enforcementEnabled(): boolean {
   return (env("BILLING_ENFORCEMENT_ENABLED") ?? "").toLowerCase() === "true";
 }
