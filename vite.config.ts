@@ -6,6 +6,7 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { VitePWA } from "vite-plugin-pwa";
+import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 
 export default defineConfig({
   tanstackStart: {
@@ -14,6 +15,7 @@ export default defineConfig({
     server: { entry: "server" },
   },
   plugins: [
+    mcpPlugin(),
     VitePWA({
       strategies: "generateSW",
       registerType: "autoUpdate",
@@ -39,14 +41,14 @@ export default defineConfig({
         skipWaiting: true,
         navigateFallback: null,
         // Never intercept auth, OAuth callbacks, API or token-scoped routes.
-        navigateFallbackDenylist: [/^\/api\//, /^\/auth/, /^\/locker\//, /^\/share\//, /^\/join\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/auth/, /^\/mcp/, /^\/\.well-known\//, /^\/\.lovable\//, /^\/locker\//, /^\/share\//, /^\/join\//],
         runtimeCaching: [
           {
             // HTML navigations: always try the network first so a new release lands.
             urlPattern: ({ request, url }: { request: Request; url: URL }) =>
               request.mode === "navigate" &&
               url.origin === self.location.origin &&
-              !/^\/(api|auth)/.test(url.pathname),
+              !/^\/(api|auth|mcp|\.well-known|\.lovable)/.test(url.pathname),
             handler: "NetworkFirst",
             options: {
               cacheName: "coachside-pages",
