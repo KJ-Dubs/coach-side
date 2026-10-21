@@ -9,8 +9,7 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- Play and drill MP4 exports share `src/lib/playVideo.ts`; branding positions derive from the fitted court bounds in logical export pixels, shared by both encoders, so composition and animation cannot drift across formats or fallback resolutions.
-- Both MP4 encoders share intro frames/counts gated by content kind/options, preserving start and progress.
+- Play and drill MP4 exports share `src/lib/playVideo.ts`; branding positions derive from the fitted court bounds in logical export pixels, shared by both encoders, so composition and animation cannot drift across formats or fallback resolutions; both encoders share intro frames gated by content kind/options.
 - Team accents override root tokens via AppShell from the current team (explicit page teams never fall back; Live Game uses the game's team). Public/admin opt out. PlayCanvas and play MP4s share play accent tokens; basketball/rims, defense and court keep semantic tokens; exports snapshot tokens once for both encoders.
 
 Film Room: film jobs stage AI/manual events in film_job_events; only coach-reviewed events reach game_events via finalize_film_job. Never auto-promote.
@@ -35,5 +34,5 @@ Film Room: film jobs stage AI/manual events in film_job_events; only coach-revie
 - Onboarding uses coach_onboarding (no row = new); events_sent dedupes funnel events.
 
 - Drill Maker shares active ball state for rendering/authoring; normalize explicit visible/setup ownership, never free-ball proximity, so independent transfers persist.
-- ChatGPT/MCP connector and native AI Assistant share one permission-checked executor (`src/lib/mcp/executor.ts`); see `src/lib/mcp/AGENTS.md` and `src/lib/ai/AGENTS.md`.
+- Native AI Assistant uses the internal executor in `src/lib/coachside/`; no public MCP connector. See `src/lib/ai/AGENTS.md`.
 - Subdirectories may have their own `AGENTS.md`; read it before changing files there.

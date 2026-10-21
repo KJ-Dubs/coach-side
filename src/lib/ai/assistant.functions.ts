@@ -5,9 +5,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { MCP_TOOL_NAMES } from "@/lib/mcp/permissions";
+import { COACHSIDE_TOOL_NAMES } from "@/lib/coachside/executor";
 import { PROPOSE_TOOLS } from "./limits";
-import type { Db } from "@/lib/mcp/service";
+import type { Db } from "@/lib/coachside/service";
 
 type Rpc = { rpc: (fn: string) => PromiseLike<{ data: unknown; error: unknown }> };
 async function assertAdmin(supabase: unknown) {
@@ -19,7 +19,7 @@ export const getAiAssistantAvailability = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { readAiConfig, readAssistantEnabled } = await import("./config.server");
-    const { loadAccess } = await import("@/lib/mcp/service");
+    const { loadAccess } = await import("@/lib/coachside/service");
     const db = context.supabase as unknown as Db;
     const config = readAiConfig();
     const [enabled, access] = await Promise.all([
@@ -39,7 +39,7 @@ export const resolveAiAction = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => input)
   .handler(async ({ data, context }) => {
     const { confirmInput, resolveAction } = await import("./actions.server");
-    const { loadAccess } = await import("@/lib/mcp/service");
+    const { loadAccess } = await import("@/lib/coachside/service");
     const parsed = confirmInput.parse(data);
     const db = context.supabase as unknown as Db;
     const access = await loadAccess(db);
@@ -105,7 +105,7 @@ export const getAiDiagnostics = createServerFn({ method: "GET" })
       enabled: await readAssistantEnabled(db),
       endpoint,
       tools: [
-        ...MCP_TOOL_NAMES.filter((n) => ["list_teams", "get_roster", "list_schedule"].includes(n)),
+        ...COACHSIDE_TOOL_NAMES.filter((n) => ["list_teams", "get_roster", "list_schedule"].includes(n)),
         ...PROPOSE_TOOLS,
       ],
       tablesOk: tables.every((t) => !t.error),

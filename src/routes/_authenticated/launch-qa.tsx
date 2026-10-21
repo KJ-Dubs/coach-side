@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, EmptyState, Label, Note, Panel, Pill, SelectInput, StatTile, TextInput } from "@/components/Bubbles";
 import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
-import { McpDiagnosticsPanel } from "@/components/admin/McpDiagnosticsPanel";
 import { AiDiagnosticsPanel } from "@/components/admin/AiDiagnosticsPanel";
 import {
   getLaunchQa,
@@ -337,7 +336,6 @@ function LaunchQaPage() {
             </div>
           </Panel>
 
-          <McpDiagnosticsPanel />
           <AiDiagnosticsPanel />
         </div>
       )}

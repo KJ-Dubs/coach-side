@@ -84,8 +84,8 @@ export function AiDiagnosticsPanel() {
         </div>
       ) : null}
       <Note>
-        Uses the same team, roster and schedule rules as the ChatGPT connector. Changes always need
-        the coach's Confirm tap.
+        Uses CoachSide's team, roster and schedule rules for the signed-in coach. Changes always
+        need the coach's Confirm tap.
       </Note>
     </Panel>
   );

@@ -1,6 +1,6 @@
 /**
- * Canonical same-origin path for post-sign-in returns (including the
- * connector consent URL). Anything else falls back to "/".
+ * Canonical same-origin path for post-sign-in returns. Anything
+ * else falls back to "/".
  */
 export function oauthReturnPath(value: unknown): string {
   if (

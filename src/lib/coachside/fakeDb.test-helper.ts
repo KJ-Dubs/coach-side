@@ -1,6 +1,6 @@
 /**
  * Minimal in-memory stand-in for the token-scoped database client used by
- * connector actions. Supports only the query shapes the service uses.
+ * CoachSide actions. Supports only the query shapes the service uses.
  */
 import type { Db } from "./service";
 
@@ -10,8 +10,6 @@ type Filter = (r: Row) => boolean;
 export type FakeState = {
   tables: Record<string, Row[]>;
   access: Record<string, unknown>;
-  connection: { permissions: string[]; revoked: boolean; calls: number; limit: number } | null;
-  audit: Row[];
   rpcCalls: string[];
 };
 
@@ -82,7 +80,13 @@ class Query implements PromiseLike<{ data: unknown; error: unknown }> {
     let out: Row[];
     if (this.mode === "insert") {
       const list = Array.isArray(this.payload) ? this.payload : [this.payload as Row];
-      out = list.map((r) => ({ id: uid(), active: true, source: "coachside", status: "scheduled", ...r }));
+      out = list.map((r) => ({
+        id: uid(),
+        active: true,
+        source: "coachside",
+        status: "scheduled",
+        ...r,
+      }));
       rows.push(...out);
     } else if (this.mode === "update") {
       out = rows.filter((r) => this.filters.every((f) => f(r)));
@@ -97,10 +101,16 @@ class Query implements PromiseLike<{ data: unknown; error: unknown }> {
     if (this.max != null) out = out.slice(0, this.max);
     const copy = out.map((r) => ({ ...r }));
     if (this.pick === "maybe") return { data: copy[0] ?? null, error: null };
-    if (this.pick === "one") return copy[0] ? { data: copy[0], error: null } : { data: null, error: { message: "no rows" } };
+    if (this.pick === "one")
+      return copy[0]
+        ? { data: copy[0], error: null }
+        : { data: null, error: { message: "no rows" } };
     return { data: copy, error: null };
   }
-  then<A, B>(ok?: ((v: { data: unknown; error: unknown }) => A | PromiseLike<A>) | null, bad?: ((e: unknown) => B | PromiseLike<B>) | null) {
+  then<A, B>(
+    ok?: ((v: { data: unknown; error: unknown }) => A | PromiseLike<A>) | null,
+    bad?: ((e: unknown) => B | PromiseLike<B>) | null,
+  ) {
     return Promise.resolve(this.run()).then(ok, bad);
   }
 }
@@ -110,21 +120,6 @@ export function fakeDb(state: FakeState): Db {
     rpc: async (name: string, args: Record<string, unknown>) => {
       state.rpcCalls.push(name);
       if (name === "my_access") return { data: state.access, error: null };
-      if (name === "mcp_log_action") {
-        state.audit.push(args);
-        return { data: null, error: null };
-      }
-      if (name === "mcp_begin_call") {
-        const c = state.connection;
-        if (!c) return { data: { ok: false, code: "NOT_CONNECTED" }, error: null };
-        if (c.revoked) return { data: { ok: false, code: "CONNECTION_REVOKED" }, error: null };
-        if (!c.permissions.includes(String(args["p_permission"]))) {
-          return { data: { ok: false, code: "PERMISSION_NOT_GRANTED" }, error: null };
-        }
-        if (c.calls >= c.limit) return { data: { ok: false, code: "RATE_LIMITED" }, error: null };
-        c.calls += 1;
-        return { data: { ok: true }, error: null };
-      }
       return { data: null, error: { message: `unknown rpc ${name}` } };
     },
   } as unknown as Db;

@@ -1,5 +1,5 @@
 /**
- * Team-timezone date helpers for connector schedule tools. Pure and
+ * Team-timezone date helpers for CoachSide schedule tools. Pure and
  * runtime-agnostic (Intl only), so they run on Workers and in tests.
  */
 export const DEFAULT_TIMEZONE = "America/Los_Angeles";
@@ -29,7 +29,14 @@ function partsIn(ms: number, tz: string): Parts {
   });
   const get = (type: string) =>
     Number(fmt.formatToParts(new Date(ms)).find((p) => p.type === type)?.value ?? 0);
-  return { y: get("year"), mo: get("month"), d: get("day"), h: get("hour") % 24, mi: get("minute"), s: get("second") };
+  return {
+    y: get("year"),
+    mo: get("month"),
+    d: get("day"),
+    h: get("hour") % 24,
+    mi: get("minute"),
+    s: get("second"),
+  };
 }
 
 /** Offset (ms) of `tz` from UTC at instant `ms`. */
@@ -86,8 +93,16 @@ export function parseDayStart(input: string, tz: string, addDays = 0): string | 
   const m = DATE_ONLY.exec(input.trim());
   if (!m) return parseEventDateTime(input, tz);
   const base = new Date(Date.UTC(+m[1]!, +m[2]! - 1, +m[3]! + addDays));
-  const p: Parts = { y: base.getUTCFullYear(), mo: base.getUTCMonth() + 1, d: base.getUTCDate(), h: 0, mi: 0, s: 0 };
-  if (!validParts(p) || !validParts({ y: +m[1]!, mo: +m[2]!, d: +m[3]!, h: 0, mi: 0, s: 0 })) return null;
+  const p: Parts = {
+    y: base.getUTCFullYear(),
+    mo: base.getUTCMonth() + 1,
+    d: base.getUTCDate(),
+    h: 0,
+    mi: 0,
+    s: 0,
+  };
+  if (!validParts(p) || !validParts({ y: +m[1]!, mo: +m[2]!, d: +m[3]!, h: 0, mi: 0, s: 0 }))
+    return null;
   return new Date(zonedWallTimeToUtc(p, tz)).toISOString();
 }
 

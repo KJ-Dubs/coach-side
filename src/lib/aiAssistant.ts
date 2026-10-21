@@ -1,12 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client";
 import { getAiAssistantAvailability } from "@/lib/ai/assistant.functions";
 
-/** Settings anchor for the external ChatGPT connector section. */
-export const AI_ASSISTANT_ANCHOR = "chatgpt-integration";
-
-export const AI_ASSISTANT_STATUS_KEY = ["ai-assistant-status"] as const;
 export const AI_AVAILABILITY_KEY = ["ai-assistant-availability"] as const;
 
 const OPEN_EVENT = "coachside:open-ai-assistant";
@@ -32,22 +27,5 @@ export function useAiAvailability(enabled = true) {
     enabled,
     staleTime: 5 * 60_000,
     retry: 1,
-  });
-}
-
-/** Whether the signed-in coach has at least one active external ChatGPT connection. */
-export function useAiAssistantStatus(enabled = true) {
-  return useQuery({
-    queryKey: AI_ASSISTANT_STATUS_KEY,
-    enabled,
-    staleTime: 60_000,
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("mcp_connections")
-        .select("id", { count: "exact", head: true })
-        .is("revoked_at", null);
-      if (error) throw error;
-      return { activeCount: count ?? 0 };
-    },
   });
 }

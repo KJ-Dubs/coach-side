@@ -2,3 +2,4 @@
 - The model may read via the shared executor but writes only through `propose_*` tools that stage `ai_pending_actions`; `resolveAction` rebuilds the preview from fresh data plus coach edits and runs the shared executor once (status claim first). Never execute writes straight from model output.
 - Uploaded files are never stored: user messages keep a `data-attachment` marker only, reasoning parts are dropped, and history replay is bounded by `AI_LIMITS`. Usage rows in `ai_usage` drive per-user rate limits.
 - Preview rules (no invented dates/times/jerseys, duplicate/conflict flags) are pure in `preview.ts` and covered by `preview.test.ts`.
+- `src/lib/coachside/` is internal-only (no public route). Every action re-checks coach membership via `my_access` before RLS-scoped access and never trusts caller-supplied ids. Legacy `mcp_*` tables/RPCs stay in the database unused; do not write to them.

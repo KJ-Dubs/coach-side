@@ -5,8 +5,8 @@
  */
 import { convertToModelMessages, isStepCount, streamText, type UIMessage } from "ai";
 import { z } from "zod";
-import { listTeams, loadAccess, type Db } from "@/lib/mcp/service";
-import { safeTimeZone } from "@/lib/mcp/time";
+import { listTeams, loadAccess, type Db } from "@/lib/coachside/service";
+import { safeTimeZone } from "@/lib/coachside/time";
 import { authenticateRequest } from "./auth.server";
 import {
   aiProviderOptions,

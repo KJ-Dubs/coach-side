@@ -5,9 +5,9 @@
  */
 import { tool } from "ai";
 import { z } from "zod";
-import { executeTool, TOOL_INPUTS } from "@/lib/mcp/executor";
-import { CoachSideError, getRoster, requireCoachTeam, type Db } from "@/lib/mcp/service";
-import { parseEventDateTime, safeTimeZone, toLocalLabel } from "@/lib/mcp/time";
+import { executeTool, TOOL_INPUTS } from "@/lib/coachside/executor";
+import { CoachSideError, getRoster, requireCoachTeam, type Db } from "@/lib/coachside/service";
+import { parseEventDateTime, safeTimeZone, toLocalLabel } from "@/lib/coachside/time";
 import { stageAction, existingEventsFor } from "./actions.server";
 import { buildEventPreview, buildRosterPreview, previewCounts } from "./preview";
 import { AI_LIMITS } from "./limits";

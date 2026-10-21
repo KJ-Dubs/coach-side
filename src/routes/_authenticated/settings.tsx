@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { LockerAccessPanel } from "@/components/locker/AccessPanel";
 import { AppShell } from "@/components/AppShell";
 import { RestartSetupGuide } from "@/components/RestartSetupGuide";
-import { ChatGptIntegrationCard } from "@/components/ChatGptIntegrationCard";
 import { PublicProfilePanel } from "@/components/community/PublicProfilePanel";
 import {
   BubbleButton,
@@ -153,7 +152,6 @@ function SettingsPage() {
           teams={teams.data ?? []}
         />
 
-        <ChatGptIntegrationCard />
       </div>
       <RestartSetupGuide />
     </AppShell>
