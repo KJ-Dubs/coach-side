@@ -80,7 +80,13 @@ class Query implements PromiseLike<{ data: unknown; error: unknown }> {
     let out: Row[];
     if (this.mode === "insert") {
       const list = Array.isArray(this.payload) ? this.payload : [this.payload as Row];
-      out = list.map((r) => ({ id: uid(), active: true, source: "coachside", status: "scheduled", ...r }));
+      out = list.map((r) => ({
+        id: uid(),
+        active: true,
+        source: "coachside",
+        status: "scheduled",
+        ...r,
+      }));
       rows.push(...out);
     } else if (this.mode === "update") {
       out = rows.filter((r) => this.filters.every((f) => f(r)));
@@ -95,10 +101,16 @@ class Query implements PromiseLike<{ data: unknown; error: unknown }> {
     if (this.max != null) out = out.slice(0, this.max);
     const copy = out.map((r) => ({ ...r }));
     if (this.pick === "maybe") return { data: copy[0] ?? null, error: null };
-    if (this.pick === "one") return copy[0] ? { data: copy[0], error: null } : { data: null, error: { message: "no rows" } };
+    if (this.pick === "one")
+      return copy[0]
+        ? { data: copy[0], error: null }
+        : { data: null, error: { message: "no rows" } };
     return { data: copy, error: null };
   }
-  then<A, B>(ok?: ((v: { data: unknown; error: unknown }) => A | PromiseLike<A>) | null, bad?: ((e: unknown) => B | PromiseLike<B>) | null) {
+  then<A, B>(
+    ok?: ((v: { data: unknown; error: unknown }) => A | PromiseLike<A>) | null,
+    bad?: ((e: unknown) => B | PromiseLike<B>) | null,
+  ) {
     return Promise.resolve(this.run()).then(ok, bad);
   }
 }
