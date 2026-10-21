@@ -1,5 +1,5 @@
 /**
- * Team-timezone date helpers for connector schedule tools. Pure and
+ * Team-timezone date helpers for CoachSide schedule tools. Pure and
  * runtime-agnostic (Intl only), so they run on Workers and in tests.
  */
 export const DEFAULT_TIMEZONE = "America/Los_Angeles";

@@ -4,7 +4,7 @@
  */
 import { createOpenAI } from "@ai-sdk/openai";
 import { APICallError } from "ai";
-import type { Db } from "@/lib/mcp/service";
+import type { Db } from "@/lib/coachside/service";
 
 /** Cost-conscious multimodal model with image/PDF input and tool calling. Override with OPENAI_MODEL. */
 export const DEFAULT_AI_MODEL = "gpt-5-mini";

@@ -81,7 +81,7 @@ export async function requireCoach(db: Db): Promise<CoachAccess> {
   if (!access.isCoach) {
     throw new CoachSideError(
       "COACH_ONLY",
-      "CoachSide connectors are for coach accounts. Player and parent accounts cannot use these tools.",
+      "CoachSide AI tools are for coach accounts. Player and parent accounts cannot use them.",
     );
   }
   return access;

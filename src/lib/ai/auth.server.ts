@@ -4,7 +4,7 @@
  * here acts as that user, so row security applies to every query.
  */
 import { createClient } from "@supabase/supabase-js";
-import type { Db } from "@/lib/mcp/service";
+import type { Db } from "@/lib/coachside/service";
 
 function supabaseFetch(key: string): typeof fetch {
   return (input, init) => {

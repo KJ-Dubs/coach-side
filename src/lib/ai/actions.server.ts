@@ -5,14 +5,14 @@
  * the shared permission-checked CoachSide executor. Server-only.
  */
 import { z } from "zod";
-import { executeTool } from "@/lib/mcp/executor";
+import { executeTool } from "@/lib/coachside/executor";
 import {
   CoachSideError,
   listSchedule,
   requireCoachTeam,
   getRoster,
   type Db,
-} from "@/lib/mcp/service";
+} from "@/lib/coachside/service";
 import {
   buildEventPreview,
   buildRosterPreview,
