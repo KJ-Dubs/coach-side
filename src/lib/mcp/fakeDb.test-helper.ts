@@ -25,7 +25,7 @@ class Query implements PromiseLike<{ data: unknown; error: unknown }> {
   private filters: Filter[] = [];
   private mode: "select" | "insert" | "update" = "select";
   private payload: Row[] | Row | null = null;
-  private single: "one" | "maybe" | null = null;
+  private pick: "one" | "maybe" | null = null;
   private orderKey: string | null = null;
   private max: number | null = null;
   constructor(
@@ -70,10 +70,13 @@ class Query implements PromiseLike<{ data: unknown; error: unknown }> {
     return this;
   }
   maybeSingle() {
-    this.single = "maybe";
+    this.pick = "maybe";
     return this;
   }
-  // `single` collides with the field name; expose via defineProperty below.
+  single() {
+    this.pick = "one";
+    return this;
+  }
   run(): { data: unknown; error: unknown } {
     const rows = (this.state.tables[this.table] ??= []);
     let out: Row[];
@@ -93,22 +96,14 @@ class Query implements PromiseLike<{ data: unknown; error: unknown }> {
     }
     if (this.max != null) out = out.slice(0, this.max);
     const copy = out.map((r) => ({ ...r }));
-    if (this.single === "maybe") return { data: copy[0] ?? null, error: null };
-    if (this.single === "one") return copy[0] ? { data: copy[0], error: null } : { data: null, error: { message: "no rows" } };
+    if (this.pick === "maybe") return { data: copy[0] ?? null, error: null };
+    if (this.pick === "one") return copy[0] ? { data: copy[0], error: null } : { data: null, error: { message: "no rows" } };
     return { data: copy, error: null };
   }
   then<A, B>(ok?: ((v: { data: unknown; error: unknown }) => A | PromiseLike<A>) | null, bad?: ((e: unknown) => B | PromiseLike<B>) | null) {
     return Promise.resolve(this.run()).then(ok, bad);
   }
 }
-Object.defineProperty(Query.prototype, "single", {
-  value(this: Query & { single: unknown }) {
-    (this as unknown as { single: string }).single = "one";
-    return this;
-  },
-  writable: true,
-});
-
 export function fakeDb(state: FakeState): Db {
   return {
     from: (table: string) => new Query(state, table),
