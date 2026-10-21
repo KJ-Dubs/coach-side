@@ -67,6 +67,12 @@ function CoachAiLauncher() {
   const mode = fabModeFor(pathname);
   const available = !!availability.data?.available;
 
+  // Entering live tracking or the whiteboard tucks the chat away (it keeps
+  // its state) so it can never cover the court.
+  useEffect(() => {
+    if (mode === "hidden") setOpen(false);
+  }, [mode]);
+
   return (
     <>
       {!open && mode !== "hidden" ? (
