@@ -217,19 +217,16 @@
                   "jersey": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 4,
-                    "description": "Jersey number."
+                    "maxLength": 4
                   },
                   "name": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 80,
-                    "description": "Player name."
+                    "maxLength": 80
                   },
                   "position": {
                     "type": "string",
-                    "maxLength": 20,
-                    "description": "Position."
+                    "maxLength": 20
                   }
                 },
                 "required": [
@@ -240,7 +237,7 @@
               },
               "minItems": 1,
               "maxItems": 50,
-              "description": "1–50 players."
+              "description": "Players to add, e.g. [{jersey:'4', name:'John Smith'}]."
             }
           },
           "required": [
