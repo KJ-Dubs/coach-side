@@ -9,11 +9,10 @@ async function runChecks(): Promise<Check[]> {
   const checks: Check[] = [];
   let authServer: string | null = null;
   try {
-    const r = await fetch("/.well-known/oauth-protected-resource/mcp");
-    const fallback = r.ok ? r : await fetch("/.well-known/oauth-protected-resource");
-    const j = (await fallback.json()) as { resource?: string; authorization_servers?: string[] };
+    const r = await fetch("/.well-known/oauth-protected-resource");
+    const j = (await r.json()) as { resource?: string; authorization_servers?: string[] };
     authServer = j.authorization_servers?.[0] ?? null;
-    checks.push({ label: "Protected-resource metadata", ok: fallback.ok && !!j.resource, detail: j.resource ?? `HTTP ${fallback.status}` });
+    checks.push({ label: "Protected-resource metadata", ok: r.ok && !!j.resource, detail: j.resource ?? `HTTP ${r.status}` });
   } catch (e) {
     checks.push({ label: "Protected-resource metadata", ok: false, detail: (e as Error).message });
   }
