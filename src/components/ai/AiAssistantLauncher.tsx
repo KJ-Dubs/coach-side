@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import aiMark from "@/assets/coachside-ai-mark.png";
 import { AiUpgradePanel } from "@/components/ai/AiUpgradeCard";
@@ -36,7 +36,7 @@ function CoachAiLauncher() {
 
   // The server decides which teams are on CoachSide Complete. With none, the
   // basketball stays visible but opens the Complete upgrade instead of a chat.
-  const entitledTeamIds = availability.data?.entitledTeamIds ?? [];
+  const entitledTeamIds = useMemo(() => availability.data?.entitledTeamIds ?? [], [availability.data]);
   const locked = !!availability.data && entitledTeamIds.length === 0;
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
