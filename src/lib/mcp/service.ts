@@ -221,7 +221,7 @@ export async function listTeams(db: Db): Promise<{ teams: TeamSummary[] }> {
 export async function createTeam(
   db: Db,
   userId: string,
-  input: { name: string; season?: string | null; level?: string | null },
+  input: { name: string; season?: string | null | undefined; level?: string | null | undefined },
 ): Promise<{ team: TeamSummary }> {
   const access = await requireCoach(db);
   const name = cleanName(input.name, "Team name", 80);
@@ -284,7 +284,7 @@ export async function getRoster(
   return { team: { id: team.id, name: team.name }, players: rows.sort(jerseySort).map(playerSummary) };
 }
 
-export type PlayerInput = { jersey: string; name: string; position?: string | null };
+export type PlayerInput = { jersey: string; name: string; position?: string | null | undefined };
 
 export async function addPlayer(db: Db, teamId: string, input: PlayerInput): Promise<{ player: PlayerSummary }> {
   const { team } = await requireCoachTeam(db, teamId);
@@ -359,7 +359,7 @@ export async function addPlayersBulk(
   return { team: { id: team.id, name: team.name }, created, rejected };
 }
 
-export type PlayerPatch = { jersey?: string; name?: string; position?: string | null; active?: boolean };
+export type PlayerPatch = { jersey?: string | undefined; name?: string | undefined; position?: string | null | undefined; active?: boolean | undefined };
 
 export async function updatePlayer(
   db: Db,
@@ -492,7 +492,7 @@ const MAX_RANGE_DAYS = 400;
 
 export async function listSchedule(
   db: Db,
-  input: { team_id: string; start_date?: string | null; end_date?: string | null; event_type?: EventType | null; now?: number },
+  input: { team_id: string; start_date?: string | null | undefined; end_date?: string | null | undefined; event_type?: EventType | null | undefined; now?: number | undefined },
 ): Promise<{ team: { id: string; name: string; timezone: string }; range: { start: string; end: string }; events: EventSummary[] }> {
   const { team } = await requireCoachTeam(db, input.team_id);
   const tz = safeTimeZone(team.timezone);
@@ -532,12 +532,12 @@ export type NewEventInput = {
   event_type: EventType;
   title: string;
   starts_at: string;
-  ends_at?: string | null;
-  opponent?: string | null;
-  home_away?: (typeof HOME_AWAY)[number] | null;
-  location?: string | null;
-  notes?: string | null;
-  arrival_minutes_before?: number | null;
+  ends_at?: string | null | undefined;
+  opponent?: string | null | undefined;
+  home_away?: (typeof HOME_AWAY)[number] | null | undefined;
+  location?: string | null | undefined;
+  notes?: string | null | undefined;
+  arrival_minutes_before?: number | null | undefined;
 };
 
 export async function createScheduleEvent(db: Db, userId: string, input: NewEventInput): Promise<{ event: EventSummary }> {
@@ -588,16 +588,16 @@ export async function createScheduleEvent(db: Db, userId: string, input: NewEven
 }
 
 export type EventPatch = {
-  title?: string;
-  event_type?: EventType;
-  starts_at?: string;
-  ends_at?: string | null;
-  opponent?: string | null;
-  home_away?: (typeof HOME_AWAY)[number] | null;
-  location?: string | null;
-  notes?: string | null;
-  arrival_minutes_before?: number | null;
-  status?: "scheduled" | "cancelled";
+  title?: string | undefined;
+  event_type?: EventType | undefined;
+  starts_at?: string | undefined;
+  ends_at?: string | null | undefined;
+  opponent?: string | null | undefined;
+  home_away?: (typeof HOME_AWAY)[number] | null | undefined;
+  location?: string | null | undefined;
+  notes?: string | null | undefined;
+  arrival_minutes_before?: number | null | undefined;
+  status?: "scheduled" | "cancelled" | undefined;
 };
 
 export async function updateScheduleEvent(
