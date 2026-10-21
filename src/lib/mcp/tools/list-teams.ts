@@ -6,7 +6,7 @@ export default defineTool({
   name: "list_teams",
   title: "List teams",
   description:
-    "List the CoachSide teams the connected coach coaches (id, name, season, level, role, timezone). Call this first to resolve a team name like 'Aliso Sophomores' to its team_id before any roster or schedule tool. Read-only.",
+    "List the CoachSide teams the connected coach coaches (id, name, season, level, role, timezone). Call this first to resolve a team name like 'East High' to its team_id before any roster or schedule tool. Read-only.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: (_args, ctx) =>
