@@ -43,6 +43,9 @@ import {
   type ToolPart,
 } from "@/components/ai-elements/tool";
 import { AiActionCard } from "@/components/ai/AiActionCard";
+import { AiUpgradeContent } from "@/components/ai/AiUpgradeCard";
+import { AI_SETUP_MESSAGE } from "@/lib/aiAccess";
+import { AI_AVAILABILITY_KEY } from "@/lib/aiAssistant";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccess } from "@/lib/access";
 import { useAuth } from "@/lib/auth";
@@ -73,6 +76,15 @@ async function loadConversation(conversationId: string): Promise<UIMessage[]> {
   }));
 }
 
+function isCompleteRequired(error: Error | undefined): boolean {
+  if (!error) return false;
+  try {
+    return (JSON.parse(error.message) as { error?: string }).error === "COMPLETE_REQUIRED";
+  } catch {
+    return false;
+  }
+}
+
 function friendlyError(error: Error | undefined): string | null {
   if (!error) return null;
   try {
@@ -91,15 +103,20 @@ function friendlyError(error: Error | undefined): string | null {
 export default function AiAssistantPanel({
   open,
   onOpenChange,
+  ready,
   available,
-  configured,
+  entitledTeamIds,
   initialPrompt,
   onPromptUsed,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Availability has loaded from the server. */
+  ready: boolean;
+  /** The AI service is set up and switched on. */
   available: boolean;
-  configured: boolean;
+  /** Coach teams on CoachSide Complete (server-decided). */
+  entitledTeamIds: string[];
   initialPrompt: string | null;
   onPromptUsed: () => void;
 }) {
@@ -113,10 +130,18 @@ export default function AiAssistantPanel({
   const [teamId, setTeamId] = useState<string | null>(null);
   useEffect(() => {
     if (teamId && coachTeams.some((t) => t.id === teamId)) return;
-    const preferred = coachTeams.find((t) => t.id === current.teamId) ?? coachTeams[0] ?? null;
+    // Prefer the current team when it is on Complete, then any Complete team.
+    const ok = (id: string) => entitledTeamIds.includes(id);
+    const preferred =
+      coachTeams.find((t) => t.id === current.teamId && ok(t.id)) ??
+      coachTeams.find((t) => ok(t.id)) ??
+      coachTeams.find((t) => t.id === current.teamId) ??
+      coachTeams[0] ??
+      null;
     setTeamId(preferred?.id ?? null);
-  }, [coachTeams, current.teamId, teamId]);
+  }, [coachTeams, current.teamId, teamId, entitledTeamIds]);
   const team = coachTeams.find((t) => t.id === teamId) ?? null;
+  const locked = ready && (!teamId || !entitledTeamIds.includes(teamId));
 
   // Only a pointer to the coach's own conversation lives on the device; the
   // messages load from the database under row security.
@@ -144,7 +169,7 @@ export default function AiAssistantPanel({
   const history = useQuery({
     queryKey: ["ai-messages", conversationId],
     queryFn: () => loadConversation(conversationId!),
-    enabled: !!conversationId && available,
+    enabled: !!conversationId && available && !locked && ready,
     staleTime: Infinity,
   });
 
@@ -298,13 +323,23 @@ export default function AiAssistantPanel({
           </div>
         </header>
 
-        {!available ? (
+        {!ready ? (
+          <div className="flex flex-1 items-center justify-center p-4">
+            <Pill tone="muted">Loading…</Pill>
+          </div>
+        ) : locked ? (
+          <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto p-4">
+            <AiUpgradeContent
+              teamId={teamId}
+              onNavigate={() => onOpenChange(false)}
+              className="w-full max-w-sm"
+            />
+          </div>
+        ) : !available ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4 text-center">
             <img src={aiMark} alt="" width={64} height={64} className="h-16 w-16 object-contain opacity-80" />
             <InfoPanel tone="grape" className="text-center">
-              {configured
-                ? "CoachSide AI is turned off right now. Check back soon."
-                : "CoachSide AI is still being set up. Check back soon."}
+              {AI_SETUP_MESSAGE}
             </InfoPanel>
           </div>
         ) : !conversationId || history.isLoading ? (
@@ -319,6 +354,7 @@ export default function AiAssistantPanel({
               teamId={teamId}
               initialPrompt={initialPrompt}
               onPromptUsed={onPromptUsed}
+              onNavigate={() => onOpenChange(false)}
             />
           </PromptInputProvider>
         )}
@@ -333,12 +369,14 @@ function ChatWindow({
   teamId,
   initialPrompt,
   onPromptUsed,
+  onNavigate,
 }: {
   conversationId: string;
   initialMessages: UIMessage[];
   teamId: string | null;
   initialPrompt: string | null;
   onPromptUsed: () => void;
+  onNavigate: () => void;
 }) {
   const teamRef = useRef(teamId);
   teamRef.current = teamId;
@@ -406,7 +444,14 @@ function ChatWindow({
     window.setTimeout(focusBox, 30);
   };
 
-  const errorText = friendlyError(error);
+  // The server is the paywall: if it says this team needs Complete, show the
+  // upgrade instead of an error and refresh which teams qualify.
+  const needsComplete = isCompleteRequired(error);
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (needsComplete) void qc.invalidateQueries({ queryKey: AI_AVAILABILITY_KEY });
+  }, [needsComplete, qc]);
+  const errorText = needsComplete ? null : friendlyError(error);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -447,6 +492,11 @@ function ChatWindow({
                 <Shimmer>Thinking…</Shimmer>
               </MessageContent>
             </Message>
+          ) : null}
+          {needsComplete ? (
+            <div className="rounded-3xl border border-flame/50 bg-surface/80 p-4">
+              <AiUpgradeContent teamId={teamId} onNavigate={onNavigate} />
+            </div>
           ) : null}
           {errorText ? (
             <InfoPanel tone="danger" className="flex flex-wrap items-center justify-between gap-2">
