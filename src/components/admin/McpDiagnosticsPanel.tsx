@@ -55,7 +55,7 @@ export function McpDiagnosticsPanel() {
   const [busy, setBusy] = useState(false);
   return (
     <Panel className="flex flex-col gap-2">
-      <Label>9 · ChatGPT connector (MCP)</Label>
+      <Label>9 · CoachSide AI Assistant (MCP)</Label>
       <div className="flex flex-wrap gap-2">
         <BubbleButton
           size="sm"

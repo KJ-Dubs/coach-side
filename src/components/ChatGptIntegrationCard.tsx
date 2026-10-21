@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { BubbleButton, EmptyState, Heading, InfoPanel, Label, Note, Panel, Pill } from "@/components/Bubbles";
 import { CANONICAL_MCP_URL, PERMISSION_LABEL, isCoachSidePermission } from "@/lib/mcp/permissions";
+import { AI_ASSISTANT_ANCHOR, AI_ASSISTANT_STATUS_KEY } from "@/lib/aiAssistant";
 
 type ConnectionRow = {
   id: string;
@@ -31,13 +32,30 @@ async function fetchConnections() {
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "Never");
 
-/** Settings: ChatGPT / connector access for the signed-in coach. */
+/** Settings: CoachSide AI Assistant (ChatGPT connector) access for the signed-in coach. */
 export function ChatGptIntegrationCard() {
   const qc = useQueryClient();
   const [help, setHelp] = useState(false);
   const q = useQuery({ queryKey: ["mcp-connections"], queryFn: fetchConnections });
   const active = (q.data?.connections ?? []).filter((c) => !c.revoked_at);
   const revoked = (q.data?.connections ?? []).filter((c) => c.revoked_at);
+  const stepsRef = useRef<HTMLDivElement>(null);
+  const connectionsRef = useRef<HTMLDivElement>(null);
+  const arrivedFromLink = useRef(false);
+
+  // Home's AI Assistant card links here with the section anchor: scroll to it once
+  // the page settles and, for coaches who aren't connected yet, open the steps.
+  useEffect(() => {
+    if (window.location.hash !== `#${AI_ASSISTANT_ANCHOR}`) return;
+    arrivedFromLink.current = true;
+    const timers = [80, 450].map((ms) =>
+      window.setTimeout(() => document.getElementById(AI_ASSISTANT_ANCHOR)?.scrollIntoView({ behavior: "smooth", block: "start" }), ms),
+    );
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, []);
+  useEffect(() => {
+    if (arrivedFromLink.current && q.isSuccess && active.length === 0) setHelp(true);
+  }, [q.isSuccess, active.length]);
 
   const revoke = useMutation({
     mutationFn: async (clientId: string) => {
@@ -52,6 +70,7 @@ export function ChatGptIntegrationCard() {
     onSuccess: () => {
       toast.success("Connection revoked — your CoachSide data was not changed");
       void qc.invalidateQueries({ queryKey: ["mcp-connections"] });
+      void qc.invalidateQueries({ queryKey: AI_ASSISTANT_STATUS_KEY });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -65,16 +84,39 @@ export function ChatGptIntegrationCard() {
     }
   };
 
+  /** Connection starts in ChatGPT: reveal the steps and copy the address to paste there. */
+  const startConnect = async () => {
+    setHelp(true);
+    window.setTimeout(() => stepsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+    try {
+      await navigator.clipboard.writeText(CANONICAL_MCP_URL);
+      toast.success("Connector address copied — add it in ChatGPT Apps/Plugins");
+    } catch {
+      toast("Copy the connector address below, then add it in ChatGPT Apps/Plugins");
+    }
+  };
+  const manage = () => connectionsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+
   return (
-    <Panel className="flex flex-col gap-3 lg:col-span-2" id="chatgpt-integration">
+    <Panel className="flex scroll-mt-24 flex-col gap-3 lg:col-span-2" id={AI_ASSISTANT_ANCHOR}>
       <div className="flex justify-center">
-        <Heading tone="grape" className="text-center">ChatGPT integration</Heading>
+        <Heading tone="grape" className="text-center">CoachSide AI Assistant</Heading>
       </div>
       <InfoPanel>
         <p className="text-center text-sm">
           Connect CoachSide to compatible ChatGPT apps so you can manage teams, rosters, and schedules from chat.
         </p>
       </InfoPanel>
+
+      <div className="flex justify-center">
+        {active.length ? (
+          <BubbleButton tone="grape" size="lg" onClick={manage}>Manage Connection</BubbleButton>
+        ) : (
+          <BubbleButton tone="flame" size="lg" disabled={q.isLoading} onClick={() => void startConnect()}>
+            Connect Chat GPT
+          </BubbleButton>
+        )}
+      </div>
 
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Label>Connector address</Label>
@@ -86,6 +128,7 @@ export function ChatGptIntegrationCard() {
       </div>
 
       {help ? (
+        <div ref={stepsRef} className="scroll-mt-24">
         <InfoPanel tone="grape">
           <ol className="list-decimal space-y-1 pl-5 text-left text-sm">
             <li>Connecting starts in ChatGPT, not here. In ChatGPT's apps/connectors settings, add a custom app (developer mode may be required).</li>
@@ -97,9 +140,10 @@ export function ChatGptIntegrationCard() {
             Availability of custom apps and write actions depends on your ChatGPT plan and workspace settings.
           </p>
         </InfoPanel>
+        </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-center gap-2">
+      <div ref={connectionsRef} className="flex scroll-mt-24 flex-wrap items-center justify-center gap-2">
         <Label>Status</Label>
         {q.isLoading ? (
           <Pill tone="muted">Loading…</Pill>
