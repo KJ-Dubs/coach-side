@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, EmptyState, Label, Note, Panel, Pill, SelectInput, StatTile, TextInput } from "@/components/Bubbles";
 import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
+import { McpDiagnosticsPanel } from "@/components/admin/McpDiagnosticsPanel";
 import {
   getLaunchQa,
   grantPilotAccess,
@@ -334,6 +335,8 @@ function LaunchQaPage() {
               {d.funnel.map((f) => <StatTile key={f.event} label={f.event} value={f.count} />)}
             </div>
           </Panel>
+
+          <McpDiagnosticsPanel />
         </div>
       )}
     </AppShell>
