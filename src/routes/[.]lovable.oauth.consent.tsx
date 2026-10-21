@@ -184,7 +184,7 @@ function Consent() {
             </div>
           ) : null}
           <Note>
-            This doesn't bypass CoachSide's coach permissions. You can revoke it anytime in Settings → ChatGPT
+            This doesn't bypass CoachSide's coach permissions. You can revoke it anytime in Settings → CoachSide
             AI Assistant.
           </Note>
         </div>
