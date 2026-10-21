@@ -246,3 +246,11 @@
 - [x] Live Game hides disabled controls; score-only mode skips Who? prompts
 - [x] Editable score/period/foul tiles with event-backed reconciliation and team-only SCORE adjustments
 - [x] End-game scoreboard check, foul-out notice, bonus labels, timeout tracker
+
+## Native CoachSide AI Assistant (Phase 1)
+- [x] Coach-only floating AI button + chat panel with team context, new chat/reset, suggested prompts, photo/PDF attach
+- [x] Server-only OpenAI streaming endpoint with session, coach, feature-switch, size, rate and step limits
+- [x] Shared executor for MCP + assistant; staged previews with Confirm/Review/Cancel for schedule, roster, team edits
+- [x] Conversations, staged actions, usage logging tables; Launch QA AI diagnostics + on/off switch
+- [x] Home card opens the assistant; external ChatGPT moved to an Advanced Settings section
+- [ ] Live end-to-end chat test — blocked until OPENAI_API_KEY is added in Project Settings → Secrets
