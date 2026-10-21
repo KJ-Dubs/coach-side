@@ -17,8 +17,9 @@ export function hasAiAssistant(modules: readonly string[] | null | undefined, en
 
 export const AI_UPGRADE_TITLE = "CoachSide AI Assistant";
 export const AI_UPGRADE_BODY =
-  "Use the AI coaching assistant to help manage your team, roster, schedule, and games — plus get basketball coaching help — as part of CoachSide Complete.";
-export const AI_UPGRADE_PRICE = "Included with CoachSide Complete · $15/month per team";
+  "Your AI coaching assistant can help manage your team, roster, schedule, and games—all included in the $15/month Complete package.";
+export const AI_UPGRADE_PRICE = "One monthly charge per team · Free Core stays free";
+export const AI_UPGRADE_CTA = "Upgrade to Complete — $15/month";
 export const AI_COMPLETE_REQUIRED_MESSAGE =
   "The CoachSide AI Assistant is included with CoachSide Complete. Upgrade this team to use it.";
 export const AI_SETUP_MESSAGE = "CoachSide AI is temporarily unavailable while setup is completed.";
