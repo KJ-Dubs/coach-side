@@ -476,7 +476,9 @@ function MembershipPage() {
         </div>
         <InfoList items={[...COMPLETE_EXCLUSIVES, ...MODULE_LIST.flatMap((m) => m.benefits)]} tone="flame" />
         <div className="flex justify-center">
-          <Pill tone="grape">AI Assistant is only in Complete — not the $6 or $12 plans</Pill>
+          <span className="rounded-2xl border border-grape/50 bg-grape/15 px-3 py-1.5 text-center text-xs font-black leading-snug text-foreground">
+            The AI Assistant is only in Complete — not the $6 or $12 plans
+          </span>
         </div>
         <div className="flex justify-center">
           <BubbleButton tone="grape" size="lg" onClick={() => setSelected([...ALL_MODULES])}>
