@@ -252,5 +252,5 @@
 - [x] Server-only OpenAI streaming endpoint with session, coach, feature-switch, size, rate and step limits
 - [x] Shared executor for MCP + assistant; staged previews with Confirm/Review/Cancel for schedule, roster, team edits
 - [x] Conversations, staged actions, usage logging tables; Launch QA AI diagnostics + on/off switch
-- [x] Home card opens the assistant; external ChatGPT moved to an Advanced Settings section
+- [x] Home card opens the assistant; old external ChatGPT connector UI, public /mcp route and consent screen removed
 - [ ] Live end-to-end chat test — blocked until OPENAI_API_KEY is added in Project Settings → Secrets
