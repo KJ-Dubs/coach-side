@@ -1,5 +1,12 @@
 # CourtSide Coach — production pass roadmap
 
+## ChatGPT / MCP connector (phase 1: teams, roster, schedule)
+- [x] Managed OAuth server enabled (PKCE S256, client registration, refresh/offline_access); consent page + sign-in return
+- [x] `/mcp` endpoint with 9 tools, per-connection permissions, instant revoke, rate limit, audit log
+- [x] Settings "ChatGPT integration" card; Launch QA connector checks; 29 tests
+- [ ] Signed-in end-to-end connect from a real ChatGPT custom app — needs publish + a coach account test
+
+
 ## Drill Maker ball passing
 - [x] Unify active rendered/authoring ball ownership, explicit visible/setup assignment, and current-position receiver detection without changing layout
 - [x] 12 drill regressions plus 32 related tests pass: independent transfers, next-step pass/dribble, free-ball rejection, replay, JSON reload, setup-only gaps, and future ball activation; automatic build OK

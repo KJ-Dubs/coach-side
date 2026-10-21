@@ -11,7 +11,7 @@
 
 - Play and drill MP4 exports share `src/lib/playVideo.ts`; branding positions derive from the fitted court bounds in logical export pixels, shared by both encoders, so composition and animation cannot drift across formats or fallback resolutions.
 - Both MP4 encoders share intro frames/counts gated by content kind/options, preserving start and progress.
-- Team accents override centralized root tokens through AppShell using the existing current-team identifier and authorized team query; explicit page teams never fall back to a different team, and Live Game mounts its provider from the game's team ID so dialogs share authoritative colors. Public/admin surfaces opt out. PlayCanvas and play MP4s share dedicated play accent tokens that bypass the generic court semantic scope, while basketball/rims, defense and court retain dedicated semantic tokens; exports snapshot these tokens once for both encoders to preserve parity and branding.
+- Team accents override root tokens via AppShell from the current team (explicit page teams never fall back; Live Game uses the game's team). Public/admin opt out. PlayCanvas and play MP4s share play accent tokens; basketball/rims, defense and court keep semantic tokens; exports snapshot tokens once for both encoders.
 
 Film Room: film jobs stage AI/manual events in film_job_events; only coach-reviewed events reach game_events via finalize_film_job. Never auto-promote.
 
@@ -35,3 +35,5 @@ Film Room: film jobs stage AI/manual events in film_job_events; only coach-revie
 - Onboarding uses coach_onboarding (no row = new); events_sent dedupes funnel events.
 
 - Drill Maker shares active ball state for rendering/authoring; normalize explicit visible/setup ownership, never free-ball proximity, so independent transfers persist.
+- ChatGPT/MCP connector runs on the managed Cloud OAuth server, never hand-rolled token tables; see `src/lib/mcp/AGENTS.md`.
+- Subdirectories may have their own `AGENTS.md`; read it before changing files there.

@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authenticated/achievements'
 import { Route as AuthenticatedBoardRouteImport } from './routes/_authenticated/board'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
@@ -36,6 +38,7 @@ import { Route as LibraryIndexRouteImport } from './routes/library.index'
 import { Route as LibraryPlayIdRouteImport } from './routes/library.$playId'
 import { Route as LockerTokenRouteImport } from './routes/locker.$token'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedDrillsIndexRouteImport } from './routes/_authenticated/drills.index'
 import { Route as AuthenticatedDrillsNewRouteImport } from './routes/_authenticated/drills.new'
 import { Route as AuthenticatedFilmIndexRouteImport } from './routes/_authenticated/film.index'
@@ -79,6 +82,17 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedAchievementsRoute =
   AuthenticatedAchievementsRouteImport.update({
     id: '/achievements',
@@ -198,6 +212,11 @@ const LockerTokenRoute = LockerTokenRouteImport.update({
 const ShareTokenRoute = ShareTokenRouteImport.update({
   id: '/share/$token',
   path: '/share/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDrillsIndexRoute =
@@ -353,6 +372,8 @@ const ApiPublicLockerTokenCalendarRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/achievements': typeof AuthenticatedAchievementsRoute
   '/board': typeof AuthenticatedBoardRoute
   '/calendar': typeof AuthenticatedCalendarRoute
@@ -377,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/drills/new': typeof AuthenticatedDrillsNewRoute
   '/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/film/new': typeof AuthenticatedFilmNewRoute
@@ -409,6 +431,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/achievements': typeof AuthenticatedAchievementsRoute
   '/board': typeof AuthenticatedBoardRoute
   '/calendar': typeof AuthenticatedCalendarRoute
@@ -433,6 +457,7 @@ export interface FileRoutesByTo {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library': typeof LibraryIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/drills/new': typeof AuthenticatedDrillsNewRoute
   '/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/film/new': typeof AuthenticatedFilmNewRoute
@@ -467,6 +492,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/achievements': typeof AuthenticatedAchievementsRoute
   '/_authenticated/board': typeof AuthenticatedBoardRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
@@ -491,6 +518,7 @@ export interface FileRoutesById {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/drills/new': typeof AuthenticatedDrillsNewRoute
   '/_authenticated/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/_authenticated/film/new': typeof AuthenticatedFilmNewRoute
@@ -525,6 +553,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/mcp'
+    | '/.well-known/oauth-protected-resource'
     | '/achievements'
     | '/board'
     | '/calendar'
@@ -549,6 +579,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library/'
+    | '/.lovable/oauth/consent'
     | '/drills/new'
     | '/film/$jobId'
     | '/film/new'
@@ -581,6 +612,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/mcp'
+    | '/.well-known/oauth-protected-resource'
     | '/achievements'
     | '/board'
     | '/calendar'
@@ -605,6 +638,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library'
+    | '/.lovable/oauth/consent'
     | '/drills/new'
     | '/film/$jobId'
     | '/film/new'
@@ -638,6 +672,8 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/mcp'
+    | '/.well-known/oauth-protected-resource'
     | '/_authenticated/achievements'
     | '/_authenticated/board'
     | '/_authenticated/calendar'
@@ -662,6 +698,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library/'
+    | '/.lovable/oauth/consent'
     | '/_authenticated/drills/new'
     | '/_authenticated/film/$jobId'
     | '/_authenticated/film/new'
@@ -696,6 +733,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  McpRoute: typeof McpRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   CoachUsernameRoute: typeof CoachUsernameRoute
   DrillsDrillIdRoute: typeof DrillsDrillIdRoute
   GameReportTokenRoute: typeof GameReportTokenRoute
@@ -705,6 +744,7 @@ export interface RootRouteChildren {
   LockerTokenRoute: typeof LockerTokenRoute
   ShareTokenRoute: typeof ShareTokenRoute
   LibraryIndexRoute: typeof LibraryIndexRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   SharePlayTokenRoute: typeof SharePlayTokenRoute
   ApiPublicCronDailyRoute: typeof ApiPublicCronDailyRoute
   ApiPublicFilmClaimRoute: typeof ApiPublicFilmClaimRoute
@@ -738,6 +778,20 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/achievements': {
@@ -906,6 +960,13 @@ declare module '@tanstack/react-router' {
       path: '/share/$token'
       fullPath: '/share/$token'
       preLoaderRoute: typeof ShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/drills/': {
@@ -1186,6 +1247,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  McpRoute: McpRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   CoachUsernameRoute: CoachUsernameRoute,
   DrillsDrillIdRoute: DrillsDrillIdRoute,
   GameReportTokenRoute: GameReportTokenRoute,
@@ -1195,6 +1259,7 @@ const rootRouteChildren: RootRouteChildren = {
   LockerTokenRoute: LockerTokenRoute,
   ShareTokenRoute: ShareTokenRoute,
   LibraryIndexRoute: LibraryIndexRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   SharePlayTokenRoute: SharePlayTokenRoute,
   ApiPublicCronDailyRoute: ApiPublicCronDailyRoute,
   ApiPublicFilmClaimRoute: ApiPublicFilmClaimRoute,
