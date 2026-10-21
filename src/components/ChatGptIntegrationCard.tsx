@@ -32,10 +32,11 @@ async function fetchConnections() {
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "Never");
 
-/** Settings: CoachSide AI Assistant (ChatGPT connector) access for the signed-in coach. */
+/** Settings → Advanced: external ChatGPT connector access for the signed-in coach. */
 export function ChatGptIntegrationCard() {
   const qc = useQueryClient();
   const [help, setHelp] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const q = useQuery({ queryKey: ["mcp-connections"], queryFn: fetchConnections });
   const active = (q.data?.connections ?? []).filter((c) => !c.revoked_at);
   const revoked = (q.data?.connections ?? []).filter((c) => c.revoked_at);
@@ -48,6 +49,7 @@ export function ChatGptIntegrationCard() {
   useEffect(() => {
     if (window.location.hash !== `#${AI_ASSISTANT_ANCHOR}`) return;
     arrivedFromLink.current = true;
+    setExpanded(true);
     const timers = [80, 450].map((ms) =>
       window.setTimeout(() => document.getElementById(AI_ASSISTANT_ANCHOR)?.scrollIntoView({ behavior: "smooth", block: "start" }), ms),
     );
@@ -55,6 +57,7 @@ export function ChatGptIntegrationCard() {
   }, []);
   useEffect(() => {
     if (arrivedFromLink.current && q.isSuccess && active.length === 0) setHelp(true);
+    if (active.length > 0) setExpanded(true);
   }, [q.isSuccess, active.length]);
 
   const revoke = useMutation({
@@ -99,14 +102,21 @@ export function ChatGptIntegrationCard() {
 
   return (
     <Panel className="flex scroll-mt-24 flex-col gap-3 lg:col-span-2" id={AI_ASSISTANT_ANCHOR}>
-      <div className="flex justify-center">
-        <Heading tone="grape" className="text-center">CoachSide AI Assistant</Heading>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Pill tone="muted">Advanced</Pill>
+        <Heading tone="neutral" className="text-center text-base">Connect external ChatGPT</Heading>
       </div>
       <InfoPanel>
         <p className="text-center text-sm">
-          Connect CoachSide to compatible ChatGPT apps so you can manage teams, rosters, and schedules from chat.
+          Optional: link your own ChatGPT account to CoachSide. Most coaches can simply use the CoachSide AI Assistant button instead — no ChatGPT account needed.
         </p>
       </InfoPanel>
+      {!expanded ? (
+        <div className="flex justify-center">
+          <BubbleButton size="sm" tone="ghost" onClick={() => setExpanded(true)}>Show external ChatGPT setup</BubbleButton>
+        </div>
+      ) : (
+      <>
 
       <div className="flex justify-center">
         {active.length ? (
@@ -203,6 +213,8 @@ export function ChatGptIntegrationCard() {
         </div>
       ) : null}
       <Note>Revoking stops the app right away and never deletes teams, players or events.</Note>
+      </>
+      )}
     </Panel>
   );
 }
