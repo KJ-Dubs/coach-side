@@ -2,7 +2,15 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import aiMark from "@/assets/coachside-ai-mark.png";
-import { AI_UPGRADE_BODY, AI_UPGRADE_CTA, AI_UPGRADE_PRICE, AI_UPGRADE_TITLE } from "@/lib/aiAccess";
+import {
+  AI_COMING_SOON_BODY,
+  AI_COMING_SOON_INCLUDED,
+  AI_COMING_SOON_PLAN,
+  AI_UPGRADE_BODY,
+  AI_UPGRADE_CTA,
+  AI_UPGRADE_PRICE,
+  AI_UPGRADE_TITLE,
+} from "@/lib/aiAccess";
 import { ALL_MODULES } from "@/lib/entitlements";
 import { cn } from "@/lib/utils";
 
@@ -20,11 +28,18 @@ export function AiUpgradeContent({
   teamId,
   onNavigate,
   className,
+  mode = "upgrade",
+  complete = false,
 }: {
   teamId: string | null;
   onNavigate?: () => void;
   className?: string;
+  /** "coming_soon" while the assistant is not launched yet. */
+  mode?: "upgrade" | "coming_soon";
+  /** The team already has CoachSide Complete (coming-soon mode only). */
+  complete?: boolean;
 }) {
+  const soon = mode === "coming_soon";
   const team = teamId ?? undefined;
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
@@ -69,17 +84,28 @@ export function AiUpgradeContent({
       >
         {AI_UPGRADE_TITLE}
       </h2>
+      {soon ? (
+        <span className="rounded-full border border-flame/60 bg-flame/15 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-foreground">
+          Coming Soon
+        </span>
+      ) : null}
       <p className="rounded-2xl border border-border/70 bg-surface-2/60 px-3 py-2 text-sm font-semibold leading-snug text-foreground">
-        {AI_UPGRADE_BODY}
+        {soon ? AI_COMING_SOON_BODY : AI_UPGRADE_BODY}
       </p>
-      <p className="rounded-full border border-flame/60 bg-flame/15 px-3 py-1.5 text-xs font-black text-foreground">
-        {AI_UPGRADE_PRICE}
+      <p className="rounded-2xl border border-flame/60 bg-flame/15 px-3 py-1.5 text-xs font-black leading-snug text-foreground">
+        {soon ? AI_COMING_SOON_PLAN : AI_UPGRADE_PRICE}
       </p>
+      {soon && complete ? (
+        <p className="rounded-2xl border border-grape/60 bg-grape/15 px-3 py-2 text-sm font-black leading-snug text-foreground">
+          {AI_COMING_SOON_INCLUDED}
+        </p>
+      ) : null}
       {problem ? (
         <p role="alert" className="rounded-2xl border border-destructive/60 bg-destructive/15 px-3 py-2 text-xs font-bold text-foreground">
           {problem}
         </p>
       ) : null}
+      {soon && complete ? null : (
       <div className="flex w-full flex-col gap-2">
         <button
           type="button"
@@ -87,7 +113,7 @@ export function AiUpgradeContent({
           disabled={busy}
           className={cn(ctaBase, "border-flame bg-flame text-accent-foreground hover:bg-flame/90")}
         >
-          {busy ? "Opening secure checkout…" : AI_UPGRADE_CTA}
+          {busy ? "Opening secure checkout…" : soon ? "Upgrade to Complete" : AI_UPGRADE_CTA}
         </button>
         <Link
           to="/membership"
@@ -98,9 +124,12 @@ export function AiUpgradeContent({
           See membership options
         </Link>
         <p className="rounded-2xl border border-border/60 bg-surface/70 px-3 py-1.5 text-[11px] font-semibold leading-snug text-muted-foreground">
-          You'll confirm payment on Square's secure checkout. Nothing is charged until you do.
+          {soon
+            ? "Complete today includes Playbook+, GameDay+ and Team Hub+; the AI Assistant is added when it launches. You'll confirm payment on Square's secure checkout."
+            : "You'll confirm payment on Square's secure checkout. Nothing is charged until you do."}
         </p>
       </div>
+      )}
     </div>
   );
 }
@@ -110,10 +139,14 @@ export function AiUpgradePanel({
   open,
   onOpenChange,
   teamId,
+  mode = "upgrade",
+  complete = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   teamId: string | null;
+  mode?: "upgrade" | "coming_soon";
+  complete?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -150,7 +183,13 @@ export function AiUpgradePanel({
         >
           <XIcon className="h-5 w-5" />
         </button>
-        <AiUpgradeContent teamId={teamId} onNavigate={() => onOpenChange(false)} className="pt-2" />
+        <AiUpgradeContent
+          teamId={teamId}
+          onNavigate={() => onOpenChange(false)}
+          className="pt-2"
+          mode={mode}
+          complete={complete}
+        />
       </div>
     </>
   );

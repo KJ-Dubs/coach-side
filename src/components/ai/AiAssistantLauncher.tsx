@@ -34,10 +34,16 @@ function CoachAiLauncher() {
   const fabRef = useRef<HTMLButtonElement>(null);
   const wasOpen = useRef(false);
 
-  // The server decides which teams are on CoachSide Complete. With none, the
-  // basketball stays visible but opens the Complete upgrade instead of a chat.
+  // The server decides. Until the assistant is launched (key present AND
+  // switch on) the basketball opens a Coming Soon teaser. Once live, teams
+  // without CoachSide Complete get the upgrade panel instead of a chat.
   const entitledTeamIds = useMemo(() => availability.data?.entitledTeamIds ?? [], [availability.data]);
-  const locked = !!availability.data && entitledTeamIds.length === 0;
+  const completeTeamIds = availability.data?.completeTeamIds ?? [];
+  const comingSoon = !!availability.data && !availability.data.available;
+  const locked = comingSoon || (!!availability.data && entitledTeamIds.length === 0);
+  const teamIsComplete = currentTeamId
+    ? completeTeamIds.includes(currentTeamId)
+    : completeTeamIds.length > 0;
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
 
@@ -127,7 +133,13 @@ function CoachAiLauncher() {
           />
         </Suspense>
       ) : null}
-      <AiUpgradePanel open={upsellOpen} onOpenChange={setUpsellOpen} teamId={currentTeamId} />
+      <AiUpgradePanel
+        open={upsellOpen}
+        onOpenChange={setUpsellOpen}
+        teamId={currentTeamId}
+        mode={comingSoon ? "coming_soon" : "upgrade"}
+        complete={teamIsComplete}
+      />
     </>
   );
 }
