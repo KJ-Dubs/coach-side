@@ -2,12 +2,23 @@ import { useChat } from "@ai-sdk/react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { FileTextIcon, ImageIcon, PaperclipIcon, PlusIcon, RotateCcwIcon, XIcon } from "lucide-react";
+import {
+  FileTextIcon,
+  ImageIcon,
+  PaperclipIcon,
+  PlusIcon,
+  RotateCcwIcon,
+  XIcon,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import aiMark from "@/assets/coachside-ai-mark.png";
 import { InfoPanel, Pill } from "@/components/Bubbles";
-import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import {
   PromptInput,
@@ -22,7 +33,14 @@ import {
   usePromptInputController,
 } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
-import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput, type ToolPart } from "@/components/ai-elements/tool";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+  type ToolPart,
+} from "@/components/ai-elements/tool";
 import { AiActionCard } from "@/components/ai/AiActionCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccess } from "@/lib/access";
@@ -47,7 +65,11 @@ async function loadConversation(conversationId: string): Promise<UIMessage[]> {
     .order("created_at", { ascending: true })
     .limit(80);
   if (error) throw error;
-  return (data ?? []).map((r) => ({ id: r.ui_id, role: r.role as "user" | "assistant", parts: r.parts as UIMessage["parts"] }));
+  return (data ?? []).map((r) => ({
+    id: r.ui_id,
+    role: r.role as "user" | "assistant",
+    parts: r.parts as UIMessage["parts"],
+  }));
 }
 
 function friendlyError(error: Error | undefined): string | null {
@@ -58,8 +80,11 @@ function friendlyError(error: Error | undefined): string | null {
   } catch {
     /* plain text */
   }
-  if (/failed to fetch|network/i.test(error.message)) return "Couldn't reach CoachSide. Check your connection and try again.";
-  return error.message && error.message.length < 240 ? error.message : "CoachSide AI couldn't finish that. Try again.";
+  if (/failed to fetch|network/i.test(error.message))
+    return "Couldn't reach CoachSide. Check your connection and try again.";
+  return error.message && error.message.length < 240
+    ? error.message
+    : "CoachSide AI couldn't finish that. Try again.";
 }
 
 export default function AiAssistantPanel({
@@ -137,7 +162,12 @@ export default function AiAssistantPanel({
   };
   const resetChat = async () => {
     if (!conversationId) return;
-    if (!window.confirm("Clear this conversation? Your teams, rosters and schedules stay as they are.")) return;
+    if (
+      !window.confirm(
+        "Clear this conversation? Your teams, rosters and schedules stay as they are.",
+      )
+    )
+      return;
     await supabase.from("ai_conversations").delete().eq("id", conversationId);
     qc.removeQueries({ queryKey: ["ai-messages", conversationId] });
     startNewChat();
@@ -160,9 +190,17 @@ export default function AiAssistantPanel({
         >
           <header className="flex flex-col gap-2 border-b border-border/70 bg-surface/90 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
             <div className="flex items-start gap-2">
-              <img src={aiMark} alt="CoachSide AI" width={40} height={40} className="h-10 w-10 shrink-0 object-contain" />
+              <img
+                src={aiMark}
+                alt="CoachSide AI"
+                width={40}
+                height={40}
+                className="h-10 w-10 shrink-0 object-contain"
+              />
               <div className="min-w-0 flex-1">
-                <DialogPrimitive.Title className="text-base font-black leading-tight text-foreground">CoachSide AI Assistant</DialogPrimitive.Title>
+                <DialogPrimitive.Title className="text-base font-black leading-tight text-foreground">
+                  CoachSide AI Assistant
+                </DialogPrimitive.Title>
                 <DialogPrimitive.Description className="text-xs font-semibold leading-snug text-muted-foreground">
                   Ask about your team, roster, schedule, plays, stats, or basketball.
                 </DialogPrimitive.Description>
@@ -217,7 +255,9 @@ export default function AiAssistantPanel({
           {!available ? (
             <div className="flex flex-1 items-center justify-center p-4">
               <InfoPanel tone="grape" className="text-center">
-                {configured ? "CoachSide AI is turned off right now. Check back soon." : "CoachSide AI isn't available yet. Check back soon."}
+                {configured
+                  ? "CoachSide AI is turned off right now. Check back soon."
+                  : "CoachSide AI isn't available yet. Check back soon."}
               </InfoPanel>
             </div>
           ) : !conversationId || history.isLoading ? (
@@ -294,7 +334,8 @@ function ChatWindow({
     void sendMessage({ text: initialPrompt });
   }, [initialPrompt, onPromptUsed, sendMessage]);
 
-  const focusBox = () => document.querySelector<HTMLTextAreaElement>("[data-ai-composer] textarea")?.focus();
+  const focusBox = () =>
+    document.querySelector<HTMLTextAreaElement>("[data-ai-composer] textarea")?.focus();
   useEffect(() => {
     if (status === "ready" && !window.matchMedia("(pointer: coarse)").matches) focusBox();
   }, [status]);
@@ -327,9 +368,16 @@ function ChatWindow({
         <ConversationContent className="gap-4 px-3 py-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-6 text-center">
-              <img src={aiMark} alt="" width={72} height={72} className="h-[72px] w-[72px] object-contain" />
+              <img
+                src={aiMark}
+                alt=""
+                width={72}
+                height={72}
+                className="h-[72px] w-[72px] object-contain"
+              />
               <InfoPanel tone="grape" className="text-center">
-                Ask for roster changes, schedule updates, upcoming games, or coaching help. Snap a photo of a schedule or roster and I'll set it up for you to review.
+                Ask for roster changes, schedule updates, upcoming games, or coaching help. Snap a
+                photo of a schedule or roster and I'll set it up for you to review.
               </InfoPanel>
               <div className="flex flex-wrap justify-center gap-1.5">
                 {AI_SUGGESTED_PROMPTS.map((p) => (
@@ -370,7 +418,10 @@ function ChatWindow({
         <ConversationScrollButton />
       </Conversation>
 
-      <div data-ai-composer className="border-t border-border/70 bg-surface/90 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div
+        data-ai-composer
+        className="border-t border-border/70 bg-surface/90 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+      >
         <PromptInput
           accept={AI_ACCEPT}
           multiple
@@ -393,7 +444,11 @@ function ChatWindow({
               toast.error(`Keep messages under ${AI_LIMITS.maxPromptChars} characters.`);
               return;
             }
-            const big = files.find((f) => f.mediaType !== "application/pdf" && (f.url.length * 3) / 4 > AI_LIMITS.maxImageBytes);
+            const big = files.find(
+              (f) =>
+                f.mediaType !== "application/pdf" &&
+                (f.url.length * 3) / 4 > AI_LIMITS.maxImageBytes,
+            );
             if (big) {
               toast.error("Images can be up to 8 MB.");
               return;
@@ -434,7 +489,10 @@ function ComposerAttachments() {
   return (
     <div className="flex w-full flex-wrap gap-1.5 p-1">
       {attachments.files.map((f) => (
-        <span key={f.id} className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border border-grape/50 bg-grape/15 pl-1 pr-1 text-xs font-bold text-foreground">
+        <span
+          key={f.id}
+          className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border border-grape/50 bg-grape/15 pl-1 pr-1 text-xs font-bold text-foreground"
+        >
           {f.mediaType?.startsWith("image/") ? (
             <img src={f.url} alt="" className="h-7 w-7 rounded-full object-cover" />
           ) : (
@@ -460,7 +518,10 @@ type AnyPart = { type: string; [k: string]: unknown };
 function ChatMessage({ message }: { message: UIMessage }) {
   const parts = message.parts as unknown as AnyPart[];
   if (message.role === "user") {
-    const text = parts.filter((p) => p.type === "text").map((p) => String(p["text"] ?? "")).join("\n");
+    const text = parts
+      .filter((p) => p.type === "text")
+      .map((p) => String(p["text"] ?? ""))
+      .join("\n");
     const files = parts.filter((p) => p.type === "file" || p.type === "data-attachment");
     return (
       <Message from="user">
@@ -471,8 +532,15 @@ function ChatMessage({ message }: { message: UIMessage }) {
                 const meta = (f.type === "file" ? f : (f["data"] as AnyPart | undefined)) ?? f;
                 const isImage = String(meta["mediaType"] ?? "").startsWith("image/");
                 return (
-                  <span key={i} className="inline-flex items-center gap-1 rounded-full bg-background/20 px-2 py-0.5 text-xs font-bold">
-                    {isImage ? <ImageIcon className="h-3 w-3" /> : <FileTextIcon className="h-3 w-3" />}
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 rounded-full bg-background/20 px-2 py-0.5 text-xs font-bold"
+                  >
+                    {isImage ? (
+                      <ImageIcon className="h-3 w-3" />
+                    ) : (
+                      <FileTextIcon className="h-3 w-3" />
+                    )}
                     {String(meta["filename"] ?? "Upload")}
                   </span>
                 );
@@ -488,10 +556,13 @@ function ChatMessage({ message }: { message: UIMessage }) {
     <Message from="assistant">
       <MessageContent className="w-full gap-2 bg-transparent p-0 text-foreground">
         {parts.map((p, i) => {
-          if (p.type === "text") return <MessageResponse key={i}>{String(p["text"] ?? "")}</MessageResponse>;
+          if (p.type === "text")
+            return <MessageResponse key={i}>{String(p["text"] ?? "")}</MessageResponse>;
           if (p.type.startsWith("tool-propose_")) {
-            const out = p["output"] as { action_id?: string; error?: { message: string } } | undefined;
-            if (p["state"] === "output-available" && out?.action_id) return <AiActionCard key={i} actionId={out.action_id} />;
+            const out = p["output"] as
+              { action_id?: string; error?: { message: string } } | undefined;
+            if (p["state"] === "output-available" && out?.action_id)
+              return <AiActionCard key={i} actionId={out.action_id} />;
             if (p["state"] === "output-available" && out?.error) {
               return (
                 <InfoPanel key={i} tone="danger" className="text-sm">
@@ -509,8 +580,16 @@ function ChatMessage({ message }: { message: UIMessage }) {
             const name = p.type.slice(5);
             const part = p as unknown as ToolPart;
             return (
-              <Tool key={i} defaultOpen={false} className="mb-0 rounded-2xl border-border/70 bg-surface-2/40">
-                <ToolHeader type={part.type as never} state={part.state} title={READ_TOOL_TITLES[name] ?? "Checked CoachSide"} />
+              <Tool
+                key={i}
+                defaultOpen={false}
+                className="mb-0 rounded-2xl border-border/70 bg-surface-2/40"
+              >
+                <ToolHeader
+                  type={part.type as never}
+                  state={part.state}
+                  title={READ_TOOL_TITLES[name] ?? "Checked CoachSide"}
+                />
                 <ToolContent>
                   <ToolInput input={part.input} />
                   <ToolOutput output={part.output} errorText={part.errorText} />

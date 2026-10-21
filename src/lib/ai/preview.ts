@@ -39,7 +39,12 @@ export type EventPreviewItem = {
   confidence: number;
 };
 
-export type ExistingEvent = { event_type: string; title: string; starts_local: string; status?: string };
+export type ExistingEvent = {
+  event_type: string;
+  title: string;
+  starts_local: string;
+  status?: string;
+};
 
 const DATE = /^(\d{4})-(\d{2})-(\d{2})/;
 
@@ -50,13 +55,16 @@ export function normalizeDate(value: string | null | undefined): string | null {
   const [y, mo, d] = [+m[1]!, +m[2]!, +m[3]!];
   if (y < 2000 || y > 2100) return null;
   const check = new Date(Date.UTC(y, mo - 1, d));
-  if (check.getUTCFullYear() !== y || check.getUTCMonth() !== mo - 1 || check.getUTCDate() !== d) return null;
+  if (check.getUTCFullYear() !== y || check.getUTCMonth() !== mo - 1 || check.getUTCDate() !== d)
+    return null;
   return `${m[1]}-${m[2]}-${m[3]}`;
 }
 
 /** "16:30", "4:30 PM", "4pm", "2026-10-22T16:30" → "16:30"; unreadable → null. */
 export function normalizeTime(value: string | null | undefined): string | null {
-  let v = String(value ?? "").trim().toLowerCase();
+  let v = String(value ?? "")
+    .trim()
+    .toLowerCase();
   if (!v) return null;
   const iso = /t(\d{1,2}):(\d{2})/.exec(v);
   if (iso) v = `${iso[1]}:${iso[2]}`;
@@ -76,7 +84,9 @@ export function normalizeTime(value: string | null | undefined): string | null {
 }
 
 const clean = (v: string | null | undefined, max: number) => {
-  const s = String(v ?? "").replace(/\s+/g, " ").trim();
+  const s = String(v ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
   return s ? s.slice(0, max) : null;
 };
 
@@ -101,12 +111,21 @@ export function to12h(hhmm: string | null): string {
 export function dateLabel(date: string | null): string {
   if (!date) return "Date?";
   const d = new Date(`${date}T12:00:00Z`);
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
 }
 
-export function buildEventPreview(raw: ExtractedEvent[], existing: ExistingEvent[] = []): EventPreviewItem[] {
+export function buildEventPreview(
+  raw: ExtractedEvent[],
+  existing: ExistingEvent[] = [],
+): EventPreviewItem[] {
   const items = raw.slice(0, AI_LIMITS.maxExtractedEvents).map((e, i): EventPreviewItem => {
-    const type: EventPreviewItem["event_type"] = e.event_type === "game" || e.event_type === "practice" ? e.event_type : "event";
+    const type: EventPreviewItem["event_type"] =
+      e.event_type === "game" || e.event_type === "practice" ? e.event_type : "event";
     const opponent = clean(e.opponent, 80);
     const title = clean(e.title, 120) ?? defaultTitle(type, opponent);
     const date = normalizeDate(e.date);
@@ -123,15 +142,21 @@ export function buildEventPreview(raw: ExtractedEvent[], existing: ExistingEvent
     let conflict: string | null = null;
     if (date && start) {
       const local = `${date}T${start}`;
-      const sameDay = existing.filter((x) => x.starts_local.slice(0, 10) === date && x.status !== "cancelled");
+      const sameDay = existing.filter(
+        (x) => x.starts_local.slice(0, 10) === date && x.status !== "cancelled",
+      );
       const dup = sameDay.find(
-        (x) => x.starts_local.slice(0, 16) === local && (x.event_type === type || x.title.toLowerCase() === title.toLowerCase()),
+        (x) =>
+          x.starts_local.slice(0, 16) === local &&
+          (x.event_type === type || x.title.toLowerCase() === title.toLowerCase()),
       );
       if (dup) {
         status = "duplicate";
         issues.push(`Already on the schedule: ${dup.title} at ${to12h(start)}`);
       } else {
-        const near = sameDay.find((x) => Math.abs(minutesOf(x.starts_local.slice(11, 16)) - minutesOf(start)) < 90);
+        const near = sameDay.find(
+          (x) => Math.abs(minutesOf(x.starts_local.slice(11, 16)) - minutesOf(start)) < 90,
+        );
         if (near) conflict = `Close to ${near.title} at ${to12h(near.starts_local.slice(11, 16))}`;
       }
     }
@@ -190,11 +215,17 @@ export type PlayerPreviewItem = {
 export type RosterPlayer = { jersey: string; name: string };
 
 export function normalizeJersey(value: string | null | undefined): string | null {
-  const v = String(value ?? "").trim().replace(/^#/, "").replace(/^no\.?\s*/i, "");
+  const v = String(value ?? "")
+    .trim()
+    .replace(/^#/, "")
+    .replace(/^no\.?\s*/i, "");
   return /^\d{1,3}$/.test(v) ? v : null;
 }
 
-export function buildRosterPreview(raw: ExtractedPlayer[], roster: RosterPlayer[] = []): PlayerPreviewItem[] {
+export function buildRosterPreview(
+  raw: ExtractedPlayer[],
+  roster: RosterPlayer[] = [],
+): PlayerPreviewItem[] {
   const byJersey = new Map(roster.map((p) => [p.jersey, p.name]));
   const byName = new Map(roster.map((p) => [p.name.trim().toLowerCase(), p.jersey]));
   const seenJersey = new Set<string>();

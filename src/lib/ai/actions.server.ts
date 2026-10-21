@@ -6,7 +6,13 @@
  */
 import { z } from "zod";
 import { executeTool } from "@/lib/mcp/executor";
-import { CoachSideError, listSchedule, requireCoachTeam, getRoster, type Db } from "@/lib/mcp/service";
+import {
+  CoachSideError,
+  listSchedule,
+  requireCoachTeam,
+  getRoster,
+  type Db,
+} from "@/lib/mcp/service";
 import {
   buildEventPreview,
   buildRosterPreview,
@@ -43,17 +49,34 @@ export async function stageAction(
     .insert({ user_id: userId, conversation_id: conversationId, team_id: teamId, kind, payload })
     .select("id")
     .single();
-  if (error || !data) throw new CoachSideError("SERVER_ERROR", "Could not prepare this change for review.");
+  if (error || !data)
+    throw new CoachSideError("SERVER_ERROR", "Could not prepare this change for review.");
   return (data as { id: string }).id;
 }
 
 /** Existing events covering the preview's date range (for duplicate/conflict flags). */
-export async function existingEventsFor(db: Db, teamId: string, dates: (string | null)[]): Promise<ExistingEvent[]> {
-  const sorted = dates.map((d) => normalizeDate(d)).filter((d): d is string => !!d).sort();
+export async function existingEventsFor(
+  db: Db,
+  teamId: string,
+  dates: (string | null)[],
+): Promise<ExistingEvent[]> {
+  const sorted = dates
+    .map((d) => normalizeDate(d))
+    .filter((d): d is string => !!d)
+    .sort();
   if (!sorted.length) return [];
   try {
-    const res = await listSchedule(db, { team_id: teamId, start_date: sorted[0]!, end_date: sorted[sorted.length - 1]! });
-    return res.events.map((e) => ({ event_type: e.event_type, title: e.title, starts_local: e.starts_local, status: e.status }));
+    const res = await listSchedule(db, {
+      team_id: teamId,
+      start_date: sorted[0]!,
+      end_date: sorted[sorted.length - 1]!,
+    });
+    return res.events.map((e) => ({
+      event_type: e.event_type,
+      title: e.title,
+      starts_local: e.starts_local,
+      status: e.status,
+    }));
   } catch {
     return [];
   }
@@ -92,9 +115,18 @@ type Failure = { label: string; message: string };
 export type ActionResult = { summary: string; created: number; failed: Failure[] };
 
 const errMessage = (e: unknown) =>
-  e instanceof CoachSideError ? e.message : e instanceof z.ZodError ? "Some details were invalid." : "CoachSide could not save this.";
+  e instanceof CoachSideError
+    ? e.message
+    : e instanceof z.ZodError
+      ? "Some details were invalid."
+      : "CoachSide could not save this.";
 
-async function runSchedule(db: Db, userId: string, row: ActionRow, edits: ConfirmInput["events"]): Promise<ActionResult> {
+async function runSchedule(
+  db: Db,
+  userId: string,
+  row: ActionRow,
+  edits: ConfirmInput["events"],
+): Promise<ActionResult> {
   const team = row.payload["team"] as { id: string; name: string };
   const original = (row.payload["items"] ?? []) as EventPreviewItem[];
   const source = (edits ?? original).slice(0, original.length);
@@ -111,7 +143,14 @@ async function runSchedule(db: Db, userId: string, row: ActionRow, edits: Confir
     confidence: e.confidence,
   }));
   await requireCoachTeam(db, team.id);
-  const rebuilt = buildEventPreview(raw, await existingEventsFor(db, team.id, raw.map((r) => r.date)));
+  const rebuilt = buildEventPreview(
+    raw,
+    await existingEventsFor(
+      db,
+      team.id,
+      raw.map((r) => r.date),
+    ),
+  );
   let created = 0;
   const failed: Failure[] = [];
   for (let i = 0; i < rebuilt.length; i++) {
@@ -138,33 +177,67 @@ async function runSchedule(db: Db, userId: string, row: ActionRow, edits: Confir
       failed.push({ label, message: errMessage(e) });
     }
   }
-  return { summary: `${created} event${created === 1 ? "" : "s"} added to ${team.name}`, created, failed };
+  return {
+    summary: `${created} event${created === 1 ? "" : "s"} added to ${team.name}`,
+    created,
+    failed,
+  };
 }
 
-async function runRoster(db: Db, userId: string, row: ActionRow, edits: ConfirmInput["players"]): Promise<ActionResult> {
+async function runRoster(
+  db: Db,
+  userId: string,
+  row: ActionRow,
+  edits: ConfirmInput["players"],
+): Promise<ActionResult> {
   const team = row.payload["team"] as { id: string; name: string };
   const original = (row.payload["items"] ?? []) as PlayerPreviewItem[];
   const source = (edits ?? original).slice(0, original.length);
   const roster = await getRoster(db, team.id);
   const rebuilt = buildRosterPreview(
-    source.map((p) => ({ jersey: p.jersey, name: p.name, position: p.position, confidence: p.confidence })),
+    source.map((p) => ({
+      jersey: p.jersey,
+      name: p.name,
+      position: p.position,
+      confidence: p.confidence,
+    })),
     roster.players,
   );
   const failed: Failure[] = [];
   const ready: { jersey: string; name: string; position?: string }[] = [];
   rebuilt.forEach((p, i) => {
     if (!source[i]!.include) return;
-    if (p.status !== "ready") failed.push({ label: `#${p.jersey} ${p.name}`.trim(), message: p.issues[0] ?? "Needs review" });
-    else ready.push({ jersey: p.jersey, name: p.name, ...(p.position ? { position: p.position } : {}) });
+    if (p.status !== "ready")
+      failed.push({
+        label: `#${p.jersey} ${p.name}`.trim(),
+        message: p.issues[0] ?? "Needs review",
+      });
+    else
+      ready.push({
+        jersey: p.jersey,
+        name: p.name,
+        ...(p.position ? { position: p.position } : {}),
+      });
   });
   let created = 0;
   if (ready.length) {
-    const out = await executeTool("add_players_bulk", db, userId, { team_id: team.id, players: ready });
-    const data = out.data as { created: unknown[]; rejected: { jersey: string; name: string; message: string }[] };
+    const out = await executeTool("add_players_bulk", db, userId, {
+      team_id: team.id,
+      players: ready,
+    });
+    const data = out.data as {
+      created: unknown[];
+      rejected: { jersey: string; name: string; message: string }[];
+    };
     created = data.created.length;
-    for (const r of data.rejected) failed.push({ label: `#${r.jersey} ${r.name}`, message: r.message });
+    for (const r of data.rejected)
+      failed.push({ label: `#${r.jersey} ${r.name}`, message: r.message });
   }
-  return { summary: `${created} player${created === 1 ? "" : "s"} added to ${team.name}`, created, failed };
+  return {
+    summary: `${created} player${created === 1 ? "" : "s"} added to ${team.name}`,
+    created,
+    failed,
+  };
 }
 
 async function runSingle(db: Db, userId: string, row: ActionRow): Promise<ActionResult> {
@@ -172,16 +245,28 @@ async function runSingle(db: Db, userId: string, row: ActionRow): Promise<Action
   if (row.kind === "schedule_update") {
     const team = p["team"] as { id: string; name: string };
     const event = p["event"] as { id: string; title: string };
-    const out = await executeTool("update_schedule_event", db, userId, { team_id: team.id, event_id: event.id, patch: p["patch"] });
+    const out = await executeTool("update_schedule_event", db, userId, {
+      team_id: team.id,
+      event_id: event.id,
+      patch: p["patch"],
+    });
     return { summary: out.summary, created: 1, failed: [] };
   }
   if (row.kind === "player_update") {
     const team = p["team"] as { id: string };
     const player = p["player"] as { id: string };
-    const out = await executeTool("update_player", db, userId, { team_id: team.id, player_id: player.id, patch: p["patch"] });
+    const out = await executeTool("update_player", db, userId, {
+      team_id: team.id,
+      player_id: player.id,
+      patch: p["patch"],
+    });
     return { summary: out.summary, created: 1, failed: [] };
   }
-  const out = await executeTool("create_team", db, userId, { name: p["name"], season: p["season"] ?? undefined, level: p["level"] ?? undefined });
+  const out = await executeTool("create_team", db, userId, {
+    name: p["name"],
+    season: p["season"] ?? undefined,
+    level: p["level"] ?? undefined,
+  });
   return { summary: out.summary, created: 1, failed: [] };
 }
 
@@ -199,12 +284,16 @@ export async function resolveAction(
   if (error) throw new Error("Could not load this change.");
   const row = data as ActionRow | null;
   if (!row || row.user_id !== userId) throw new Error("This change was not found.");
-  if (row.status !== "pending") return { status: row.status, result: row.result as ActionResult | null };
+  if (row.status !== "pending")
+    return { status: row.status, result: row.result as ActionResult | null };
 
   // Claim it first so a double tap can never run it twice.
   const claim = await db
     .from("ai_pending_actions")
-    .update({ status: input.decision === "cancel" ? "cancelled" : "confirmed", resolved_at: new Date().toISOString() })
+    .update({
+      status: input.decision === "cancel" ? "cancelled" : "confirmed",
+      resolved_at: new Date().toISOString(),
+    })
     .eq("id", row.id)
     .eq("status", "pending")
     .select("id");
@@ -217,9 +306,14 @@ export async function resolveAction(
     else if (row.kind === "roster_add") result = await runRoster(db, userId, row, input.players);
     else result = await runSingle(db, userId, row);
   } catch (e) {
-    result = { summary: "Nothing was saved", created: 0, failed: [{ label: "Change", message: errMessage(e) }] };
+    result = {
+      summary: "Nothing was saved",
+      created: 0,
+      failed: [{ label: "Change", message: errMessage(e) }],
+    };
   }
-  const status: AiActionStatus = result.created === 0 ? "failed" : result.failed.length ? "partial" : "confirmed";
+  const status: AiActionStatus =
+    result.created === 0 ? "failed" : result.failed.length ? "partial" : "confirmed";
   await db.from("ai_pending_actions").update({ status, result }).eq("id", row.id);
   return { status, result };
 }

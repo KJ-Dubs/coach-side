@@ -49,7 +49,8 @@ export const PROPOSE_TOOLS = [
 ] as const;
 export type ProposeToolName = (typeof PROPOSE_TOOLS)[number];
 
-export type AiActionKind = "schedule_create" | "schedule_update" | "roster_add" | "player_update" | "team_create";
+export type AiActionKind =
+  "schedule_create" | "schedule_update" | "roster_add" | "player_update" | "team_create";
 export type AiActionStatus = "pending" | "confirmed" | "partial" | "failed" | "cancelled";
 
 export const AI_SUGGESTED_PROMPTS = [

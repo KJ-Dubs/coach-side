@@ -14,7 +14,9 @@ import { AI_LIMITS } from "./limits";
 
 type Ctx = { db: Db; userId: string; conversationId: string };
 
-async function guard<T>(fn: () => Promise<T>): Promise<T | { error: { code: string; message: string } }> {
+async function guard<T>(
+  fn: () => Promise<T>,
+): Promise<T | { error: { code: string; message: string } }> {
   try {
     return await fn();
   } catch (e) {
@@ -22,7 +24,8 @@ async function guard<T>(fn: () => Promise<T>): Promise<T | { error: { code: stri
       const message = e.code === "COACH_ONLY" ? "Only coach accounts can do this." : e.message;
       return { error: { code: e.code, message } };
     }
-    if (e instanceof z.ZodError) return { error: { code: "INVALID_INPUT", message: "Some details were missing or invalid." } };
+    if (e instanceof z.ZodError)
+      return { error: { code: "INVALID_INPUT", message: "Some details were missing or invalid." } };
     console.error("[ai] tool failed", e instanceof Error ? e.message : e);
     return { error: { code: "SERVER_ERROR", message: "CoachSide could not complete this step." } };
   }
@@ -32,9 +35,17 @@ const AWAITING = "awaiting_coach_confirmation" as const;
 
 const extractedEvent = z.object({
   event_type: z.enum(["game", "practice", "event"]),
-  title: z.string().max(120).nullable().describe("e.g. 'vs Mission Viejo' or 'Practice'. Null to auto-title."),
+  title: z
+    .string()
+    .max(120)
+    .nullable()
+    .describe("e.g. 'vs Mission Viejo' or 'Practice'. Null to auto-title."),
   date: z.string().max(20).nullable().describe("YYYY-MM-DD, or null if unreadable."),
-  starts_at: z.string().max(20).nullable().describe("Local start time HH:mm (24h), or null if unknown."),
+  starts_at: z
+    .string()
+    .max(20)
+    .nullable()
+    .describe("Local start time HH:mm (24h), or null if unknown."),
   ends_at: z.string().max(20).nullable().describe("Local end time HH:mm, or null."),
   opponent: z.string().max(80).nullable().describe("Opponent exactly as written, for games."),
   location: z.string().max(160).nullable().describe("Location exactly as written."),
@@ -52,14 +63,16 @@ const extractedPlayer = z.object({
 export function buildAssistantTools({ db, userId, conversationId }: Ctx) {
   return {
     list_teams: tool({
-      description: "List the coach's CoachSide teams (id, name, season, level, timezone). Read-only.",
+      description:
+        "List the coach's CoachSide teams (id, name, season, level, timezone). Read-only.",
       inputSchema: z.object(TOOL_INPUTS.list_teams),
       execute: () => guard(async () => (await executeTool("list_teams", db, userId, {})).data),
     }),
     get_roster: tool({
       description: "Get a team's roster (player id, jersey, name, position, active). Read-only.",
       inputSchema: z.object(TOOL_INPUTS.get_roster),
-      execute: (args) => guard(async () => (await executeTool("get_roster", db, userId, args)).data),
+      execute: (args) =>
+        guard(async () => (await executeTool("get_roster", db, userId, args)).data),
     }),
     list_schedule: tool({
       description:
@@ -67,7 +80,9 @@ export function buildAssistantTools({ db, userId, conversationId }: Ctx) {
       inputSchema: z.object(TOOL_INPUTS.list_schedule),
       execute: (args) =>
         guard(async () => {
-          const data = (await executeTool("list_schedule", db, userId, args)).data as { events: unknown[] };
+          const data = (await executeTool("list_schedule", db, userId, args)).data as {
+            events: unknown[];
+          };
           return { ...data, events: data.events.slice(0, 60), truncated: data.events.length > 60 };
         }),
     }),
@@ -82,13 +97,27 @@ export function buildAssistantTools({ db, userId, conversationId }: Ctx) {
         guard(async () => {
           const { team } = await requireCoachTeam(db, team_id);
           const tz = safeTimeZone(team.timezone);
-          const items = buildEventPreview(events, await existingEventsFor(db, team.id, events.map((e) => e.date)));
+          const items = buildEventPreview(
+            events,
+            await existingEventsFor(
+              db,
+              team.id,
+              events.map((e) => e.date),
+            ),
+          );
           const counts = previewCounts(items);
-          const action_id = await stageAction(db, userId, conversationId, team.id, "schedule_create", {
-            team: { id: team.id, name: team.name, timezone: tz },
-            source,
-            items,
-          });
+          const action_id = await stageAction(
+            db,
+            userId,
+            conversationId,
+            team.id,
+            "schedule_create",
+            {
+              team: { id: team.id, name: team.name, timezone: tz },
+              source,
+              items,
+            },
+          );
           return {
             action_id,
             status: AWAITING,
@@ -116,23 +145,59 @@ export function buildAssistantTools({ db, userId, conversationId }: Ctx) {
             .eq("id", event_id)
             .eq("team_id", team.id)
             .maybeSingle();
-          const event = ev as { id: string; title: string; event_type: string; starts_at: string; location: string | null; source: string } | null;
-          if (!event) throw new CoachSideError("EVENT_NOT_FOUND", "That event isn't on this team's schedule. Call list_schedule first.");
-          if (event.source !== "coachside") throw new CoachSideError("READ_ONLY_EVENT", "This event comes from a synced calendar and can only be changed there.");
+          const event = ev as {
+            id: string;
+            title: string;
+            event_type: string;
+            starts_at: string;
+            location: string | null;
+            source: string;
+          } | null;
+          if (!event)
+            throw new CoachSideError(
+              "EVENT_NOT_FOUND",
+              "That event isn't on this team's schedule. Call list_schedule first.",
+            );
+          if (event.source !== "coachside")
+            throw new CoachSideError(
+              "READ_ONLY_EVENT",
+              "This event comes from a synced calendar and can only be changed there.",
+            );
           let newStart: string | null = null;
           if (patch.starts_at) {
             const iso = parseEventDateTime(patch.starts_at, tz);
-            if (!iso) throw new CoachSideError("INVALID_DATE", `"${patch.starts_at}" isn't a valid date-time. Use YYYY-MM-DDTHH:mm.`);
+            if (!iso)
+              throw new CoachSideError(
+                "INVALID_DATE",
+                `"${patch.starts_at}" isn't a valid date-time. Use YYYY-MM-DDTHH:mm.`,
+              );
             newStart = toLocalLabel(iso, tz);
           }
-          const before = { id: event.id, title: event.title, event_type: event.event_type, starts_label: toLocalLabel(event.starts_at, tz), location: event.location };
-          const action_id = await stageAction(db, userId, conversationId, team.id, "schedule_update", {
-            team: { id: team.id, name: team.name, timezone: tz },
-            event: before,
-            patch,
-            after: { starts_label: newStart },
-          });
-          return { action_id, status: AWAITING, summary: `Edit to "${event.title}" (${before.starts_label}) staged for review.` };
+          const before = {
+            id: event.id,
+            title: event.title,
+            event_type: event.event_type,
+            starts_label: toLocalLabel(event.starts_at, tz),
+            location: event.location,
+          };
+          const action_id = await stageAction(
+            db,
+            userId,
+            conversationId,
+            team.id,
+            "schedule_update",
+            {
+              team: { id: team.id, name: team.name, timezone: tz },
+              event: before,
+              patch,
+              after: { starts_label: newStart },
+            },
+          );
+          return {
+            action_id,
+            status: AWAITING,
+            summary: `Edit to "${event.title}" (${before.starts_label}) staged for review.`,
+          };
         }),
     }),
     propose_players: tool({
@@ -147,11 +212,18 @@ export function buildAssistantTools({ db, userId, conversationId }: Ctx) {
           const roster = await getRoster(db, team_id);
           const items = buildRosterPreview(players, roster.players);
           const counts = previewCounts(items);
-          const action_id = await stageAction(db, userId, conversationId, roster.team.id, "roster_add", {
-            team: roster.team,
-            source,
-            items,
-          });
+          const action_id = await stageAction(
+            db,
+            userId,
+            conversationId,
+            roster.team.id,
+            "roster_add",
+            {
+              team: roster.team,
+              source,
+              items,
+            },
+          );
           return {
             action_id,
             status: AWAITING,
@@ -162,19 +234,40 @@ export function buildAssistantTools({ db, userId, conversationId }: Ctx) {
         }),
     }),
     propose_player_update: tool({
-      description: "Stage an edit to one player (jersey, name, position, active) for the coach to confirm. Call get_roster first. Saves nothing by itself.",
-      inputSchema: z.object({ team_id: z.string(), player_id: z.string(), patch: TOOL_INPUTS.update_player.patch }),
+      description:
+        "Stage an edit to one player (jersey, name, position, active) for the coach to confirm. Call get_roster first. Saves nothing by itself.",
+      inputSchema: z.object({
+        team_id: z.string(),
+        player_id: z.string(),
+        patch: TOOL_INPUTS.update_player.patch,
+      }),
       execute: ({ team_id, player_id, patch }) =>
         guard(async () => {
           const roster = await getRoster(db, team_id, true);
           const player = roster.players.find((p) => p.id === player_id);
-          if (!player) throw new CoachSideError("PLAYER_NOT_FOUND", "That player isn't on this roster. Call get_roster first.");
-          const action_id = await stageAction(db, userId, conversationId, roster.team.id, "player_update", { team: roster.team, player, patch });
-          return { action_id, status: AWAITING, summary: `Edit to #${player.jersey} ${player.name} staged for review.` };
+          if (!player)
+            throw new CoachSideError(
+              "PLAYER_NOT_FOUND",
+              "That player isn't on this roster. Call get_roster first.",
+            );
+          const action_id = await stageAction(
+            db,
+            userId,
+            conversationId,
+            roster.team.id,
+            "player_update",
+            { team: roster.team, player, patch },
+          );
+          return {
+            action_id,
+            status: AWAITING,
+            summary: `Edit to #${player.jersey} ${player.name} staged for review.`,
+          };
         }),
     }),
     propose_team: tool({
-      description: "Stage creating a new team in the coach's program for the coach to confirm. Only when the coach clearly asks to create a team. Saves nothing by itself.",
+      description:
+        "Stage creating a new team in the coach's program for the coach to confirm. Only when the coach clearly asks to create a team. Saves nothing by itself.",
       inputSchema: z.object(TOOL_INPUTS.create_team),
       execute: ({ name, season, level }) =>
         guard(async () => {

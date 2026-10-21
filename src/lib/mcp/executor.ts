@@ -30,12 +30,19 @@ export const TOOL_INPUTS = {
   list_teams: {},
   get_roster: {
     team_id: teamId,
-    include_inactive: z.boolean().optional().describe("Also return inactive players. Default false."),
+    include_inactive: z
+      .boolean()
+      .optional()
+      .describe("Also return inactive players. Default false."),
   },
   list_schedule: {
     team_id: teamId,
     start_date: z.string().max(40).optional().describe("First day, YYYY-MM-DD. Default today."),
-    end_date: z.string().max(40).optional().describe("Last day (inclusive), YYYY-MM-DD. Default 60 days after start."),
+    end_date: z
+      .string()
+      .max(40)
+      .optional()
+      .describe("Last day (inclusive), YYYY-MM-DD. Default 60 days after start."),
     event_type: z.enum(EVENT_TYPES).optional().describe("Only return game, practice or event."),
   },
   create_team: {
@@ -85,7 +92,13 @@ export const TOOL_INPUTS = {
     home_away: z.enum(HOME_AWAY).optional().describe("For games."),
     location: z.string().max(160).optional(),
     notes: z.string().max(2000).optional(),
-    arrival_minutes_before: z.number().int().min(0).max(240).optional().describe("Player arrival time, minutes before start."),
+    arrival_minutes_before: z
+      .number()
+      .int()
+      .min(0)
+      .max(240)
+      .optional()
+      .describe("Player arrival time, minutes before start."),
   },
   update_schedule_event: {
     team_id: teamId,
@@ -94,7 +107,11 @@ export const TOOL_INPUTS = {
       .object({
         title: z.string().min(1).max(120).optional(),
         event_type: z.enum(EVENT_TYPES).optional(),
-        starts_at: z.string().max(40).optional().describe("'YYYY-MM-DDTHH:mm' in the team's timezone, or ISO with offset."),
+        starts_at: z
+          .string()
+          .max(40)
+          .optional()
+          .describe("'YYYY-MM-DDTHH:mm' in the team's timezone, or ISO with offset."),
         ends_at: z.string().max(40).nullable().optional(),
         opponent: z.string().max(80).nullable().optional(),
         home_away: z.enum(HOME_AWAY).nullable().optional(),
@@ -122,7 +139,10 @@ export async function executeTool<N extends McpToolName>(
   switch (name) {
     case "list_teams": {
       const data = await listTeams(db);
-      return { summary: data.teams.length ? `${data.teams.length} team(s).` : "No coached teams yet.", data };
+      return {
+        summary: data.teams.length ? `${data.teams.length} team(s).` : "No coached teams yet.",
+        data,
+      };
     }
     case "get_roster": {
       const a = args as unknown as ToolArgs<"get_roster">;
@@ -131,7 +151,10 @@ export async function executeTool<N extends McpToolName>(
     }
     case "list_schedule": {
       const data = await listSchedule(db, args as ToolArgs<"list_schedule">);
-      return { summary: `${data.team.name}: ${data.events.length} event(s) (${data.team.timezone}).`, data };
+      return {
+        summary: `${data.team.name}: ${data.events.length} event(s) (${data.team.timezone}).`,
+        data,
+      };
     }
     case "create_team": {
       const data = await createTeam(db, userId, args as unknown as ToolArgs<"create_team">);
@@ -153,15 +176,31 @@ export async function executeTool<N extends McpToolName>(
     case "update_player": {
       const a = args as unknown as ToolArgs<"update_player">;
       const data = await updatePlayer(db, a.team_id, a.player_id, a.patch);
-      return { summary: `Updated #${data.player.jersey} ${data.player.name}: ${data.changed.join(", ")}.`, data };
+      return {
+        summary: `Updated #${data.player.jersey} ${data.player.name}: ${data.changed.join(", ")}.`,
+        data,
+      };
     }
     case "create_schedule_event": {
-      const data = await createScheduleEvent(db, userId, args as unknown as ToolArgs<"create_schedule_event">);
-      return { summary: `Added ${data.event.event_type} "${data.event.title}" on ${data.event.starts_label}.`, data };
+      const data = await createScheduleEvent(
+        db,
+        userId,
+        args as unknown as ToolArgs<"create_schedule_event">,
+      );
+      return {
+        summary: `Added ${data.event.event_type} "${data.event.title}" on ${data.event.starts_label}.`,
+        data,
+      };
     }
     case "update_schedule_event": {
-      const data = await updateScheduleEvent(db, args as unknown as ToolArgs<"update_schedule_event">);
-      return { summary: `Updated "${data.event.title}" (${data.changed.join(", ")}); now ${data.event.starts_label}.`, data };
+      const data = await updateScheduleEvent(
+        db,
+        args as unknown as ToolArgs<"update_schedule_event">,
+      );
+      return {
+        summary: `Updated "${data.event.title}" (${data.changed.join(", ")}); now ${data.event.starts_label}.`,
+        data,
+      };
     }
     default:
       throw new Error(`Unknown CoachSide tool ${String(name)}`);

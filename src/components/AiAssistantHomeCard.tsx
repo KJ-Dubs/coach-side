@@ -17,10 +17,16 @@ export function AiAssistantHomeCard() {
           {!availability.isLoading && !available ? <Pill tone="muted">Coming soon</Pill> : null}
         </div>
         <InfoPanel className="text-sm">
-          Ask CoachSide AI to manage your roster, schedule, and team — or get basketball coaching help.
+          Ask CoachSide AI to manage your roster, schedule, and team — or get basketball coaching
+          help.
         </InfoPanel>
       </div>
-      <BubbleButton tone="grape" className="justify-self-center" disabled={!available} onClick={() => openAiAssistant()}>
+      <BubbleButton
+        tone="grape"
+        className="justify-self-center"
+        disabled={!available}
+        onClick={() => openAiAssistant()}
+      >
         Ask CoachSide AI
       </BubbleButton>
     </Panel>

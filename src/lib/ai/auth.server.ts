@@ -8,10 +8,15 @@ import type { Db } from "@/lib/mcp/service";
 
 function supabaseFetch(key: string): typeof fetch {
   return (input, init) => {
-    const headers = new Headers(typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined);
+    const headers = new Headers(
+      typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
+    );
     if (init?.headers) new Headers(init.headers).forEach((v, k) => headers.set(k, v));
     // New-format keys are opaque, not bearer JWTs.
-    if ((key.startsWith("sb_publishable_") || key.startsWith("sb_secret_")) && headers.get("Authorization") === `Bearer ${key}`) {
+    if (
+      (key.startsWith("sb_publishable_") || key.startsWith("sb_secret_")) &&
+      headers.get("Authorization") === `Bearer ${key}`
+    ) {
       headers.delete("Authorization");
     }
     headers.set("apikey", key);
@@ -19,7 +24,9 @@ function supabaseFetch(key: string): typeof fetch {
   };
 }
 
-export async function authenticateRequest(request: Request): Promise<{ db: Db; userId: string } | null> {
+export async function authenticateRequest(
+  request: Request,
+): Promise<{ db: Db; userId: string } | null> {
   const url = process.env["SUPABASE_URL"];
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
   if (!url || !key) return null;
