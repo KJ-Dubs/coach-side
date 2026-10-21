@@ -36,15 +36,14 @@ export function aiProviderOptions(model: string) {
   };
 }
 
-/** Global on/off switch (Launch QA). No row yet means on. */
+/**
+ * Global on/off switch (Launch QA). No row yet means on. Coaches cannot read
+ * the settings row directly; a narrow database function exposes only the flag.
+ */
 export async function readAssistantEnabled(db: Db): Promise<boolean> {
-  const { data, error } = await db
-    .from("ai_settings")
-    .select("assistant_enabled")
-    .eq("id", true)
-    .maybeSingle();
+  const { data, error } = await db.rpc("ai_assistant_enabled");
   if (error) return true;
-  return data ? !!(data as { assistant_enabled: boolean }).assistant_enabled : true;
+  return data !== false;
 }
 
 /** Plain-language message for any provider failure. Never includes keys or stack traces. */
