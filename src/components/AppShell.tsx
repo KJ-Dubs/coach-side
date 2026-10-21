@@ -31,6 +31,7 @@ import { BackNav } from "@/components/BackNav";
 import { BubbleButton } from "@/components/Bubbles";
 import { TeamThemeProvider } from "@/components/TeamThemeProvider";
 import { useCurrentTeam } from "@/lib/teamContext";
+import { AiAssistantLauncher } from "@/components/ai/AiAssistantLauncher";
 
 const QUICK = [
   { to: "/plays", label: "Playbook", icon: BookOpen },
@@ -259,6 +260,7 @@ export function AppShell({
 
         {children}
       </div>
+      {role.isCoach ? <AiAssistantLauncher /> : null}
     </div>
   );
 }
