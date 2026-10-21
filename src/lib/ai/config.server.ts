@@ -37,13 +37,14 @@ export function aiProviderOptions(model: string) {
 }
 
 /**
- * Global on/off switch (Launch QA). No row yet means on. Coaches cannot read
- * the settings row directly; a narrow database function exposes only the flag.
+ * Global on/off switch (Launch QA). Fails closed: no row, an error or anything
+ * but an explicit true means off. Coaches cannot read the settings row
+ * directly; a narrow database function exposes only the flag.
  */
 export async function readAssistantEnabled(db: Db): Promise<boolean> {
   const { data, error } = await db.rpc("ai_assistant_enabled");
-  if (error) return true;
-  return data !== false;
+  if (error) return false;
+  return data === true;
 }
 
 const SETUP_MESSAGE = "CoachSide AI is temporarily unavailable while setup is completed.";

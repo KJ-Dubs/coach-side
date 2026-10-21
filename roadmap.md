@@ -6,6 +6,7 @@
 - [x] Owner diagnostics (Membership + Launch QA), generic message for coaches when setup is incomplete; 17 billing tests
 - [x] Square production credentials and three plans configured
 - [x] Billing enforcement turned on (owner decision, before a paid test); CoachSide AI Assistant gated to Complete server-side with in-app upgrade panel
+- [x] CoachSide AI shown as a Coming Soon Complete benefit; launch switch off and fail-closed until OpenAI is funded and an admin turns it on
 - [ ] Real paid checkout end-to-end — owner chose to go live first; run one purchase and confirm "Last webhook" in Launch QA
 
 ## ChatGPT / MCP connector (phase 1: teams, roster, schedule)

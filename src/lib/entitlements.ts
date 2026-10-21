@@ -75,13 +75,7 @@ export const ALL_MODULES: ModuleKey[] = MODULE_LIST.map((m) => m.key);
 
 export const COMPLETE_PRICE = 15;
 export const COMPLETE_NAME = "CoachSide Complete";
-export const COMPLETE_BLURB =
-  "All three modules plus the CoachSide AI Assistant on one monthly team charge — $3 off.";
-
-/** Benefits only Complete includes (never the $6 or $12 plans). */
-export const COMPLETE_EXCLUSIVES: string[] = [
-  "CoachSide AI Assistant — manage your roster, schedule, team, and games from chat, and get basketball coaching help.",
-];
+export const COMPLETE_BLURB = "All three modules on one monthly team charge — $3 off.";
 
 /** Free Core features, listed so the membership page can be honest about them. */
 export const FREE_CORE: string[] = [

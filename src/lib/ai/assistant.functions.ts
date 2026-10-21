@@ -35,8 +35,10 @@ export const getAiAssistantAvailability = createServerFn({ method: "GET" })
       isCoach: !!access?.isCoach,
       /** The AI service itself is ready (separate from the team's plan). */
       available: config.configured && enabled && !!access?.isCoach,
-      /** Coach teams on CoachSide Complete (all teams while enforcement is off). */
+      /** Coach teams allowed to chat (all teams while enforcement is off). */
       entitledTeamIds: await aiEntitledTeamIds(db, coachTeamIds, enforced),
+      /** Coach teams actually on CoachSide Complete, whatever the enforcement switch. */
+      completeTeamIds: await aiEntitledTeamIds(db, coachTeamIds, true),
     };
   });
 
