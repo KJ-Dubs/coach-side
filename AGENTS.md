@@ -35,5 +35,5 @@ Film Room: film jobs stage AI/manual events in film_job_events; only coach-revie
 - Onboarding uses coach_onboarding (no row = new); events_sent dedupes funnel events.
 
 - Drill Maker shares active ball state for rendering/authoring; normalize explicit visible/setup ownership, never free-ball proximity, so independent transfers persist.
-- ChatGPT/MCP connector and native AI Assistant share one permission-checked executor (`src/lib/mcp/executor.ts`); see `src/lib/mcp/AGENTS.md` and `src/lib/ai/AGENTS.md`.
+- Native AI Assistant runs team/roster/schedule actions only through the internal coach-scoped executor in `src/lib/coachside/` (no public MCP/OAuth connector); see `src/lib/ai/AGENTS.md`.
 - Subdirectories may have their own `AGENTS.md`; read it before changing files there.

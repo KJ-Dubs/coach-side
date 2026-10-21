@@ -39,14 +39,14 @@ export default defineConfig({
         skipWaiting: true,
         navigateFallback: null,
         // Never intercept auth, OAuth callbacks, API or token-scoped routes.
-        navigateFallbackDenylist: [/^\/api\//, /^\/auth/, /^\/mcp/, /^\/\.well-known\//, /^\/\.lovable\//, /^\/locker\//, /^\/share\//, /^\/join\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/auth/, /^\/\.well-known\//, /^\/\.lovable\//, /^\/locker\//, /^\/share\//, /^\/join\//],
         runtimeCaching: [
           {
             // HTML navigations: always try the network first so a new release lands.
             urlPattern: ({ request, url }: { request: Request; url: URL }) =>
               request.mode === "navigate" &&
               url.origin === self.location.origin &&
-              !/^\/(api|auth|mcp|\.well-known|\.lovable)/.test(url.pathname),
+              !/^\/(api|auth|\.well-known|\.lovable)/.test(url.pathname),
             handler: "NetworkFirst",
             options: {
               cacheName: "coachside-pages",
