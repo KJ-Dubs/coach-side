@@ -74,10 +74,10 @@ export const Route = createFileRoute("/_authenticated/membership")({
 });
 
 type MembershipSearch = {
-  plan?: "complete";
-  team?: string;
-  checkout?: string;
-  changed?: string;
+  plan?: "complete" | undefined;
+  team?: string | undefined;
+  checkout?: string | undefined;
+  changed?: string | undefined;
 };
 
 function Money({ amount }: { amount: number }) {
