@@ -21,7 +21,6 @@ import { useAccess, resolveRole } from "@/lib/access";
 import {
   ALL_MODULES,
   COMPLETE_BLURB,
-  COMPLETE_EXCLUSIVES,
   COMPLETE_NAME,
   COMPLETE_PRICE,
   FREE_CORE,
@@ -43,6 +42,8 @@ import {
   setAccessCodeActive,
 } from "@/lib/billing.functions";
 import { BillingDiagnosticsPanel } from "@/components/admin/BillingDiagnosticsPanel";
+import { AI_FUTURE_BENEFIT_BODY, AI_FUTURE_BENEFIT_TITLE } from "@/lib/aiAccess";
+import { useAiAvailability } from "@/lib/aiAssistant";
 
 export const Route = createFileRoute("/_authenticated/membership")({
   head: () => ({
@@ -51,7 +52,7 @@ export const Route = createFileRoute("/_authenticated/membership")({
       {
         name: "description",
         content:
-          "Choose Playbook+, GameDay+ or Team Hub+ for your team, or CoachSide Complete for all three plus the CoachSide AI Assistant on one monthly charge.",
+          "Choose Playbook+, GameDay+ or Team Hub+ for your team, or CoachSide Complete for all three on one monthly charge.",
       },
       { property: "og:title", content: "Membership — CoachSide" },
       {
@@ -79,6 +80,43 @@ type MembershipSearch = {
   checkout?: string | undefined;
   changed?: string | undefined;
 };
+
+/**
+ * Complete-only AI benefit. Shown as a clearly separated future feature until
+ * the assistant is launched (key present and switch on), so paying today is
+ * never presented as buying AI access.
+ */
+function AiFutureBenefit() {
+  const ai = useAiAvailability();
+  const live = !!ai.data?.available;
+  return (
+    <div className="flex flex-col gap-2 rounded-2xl border-2 border-dashed border-grape/60 bg-grape/10 p-3">
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
+        {live ? (
+          <Pill tone="grape">Complete only</Pill>
+        ) : (
+          <>
+            <Pill tone="grape">Coming Soon</Pill>
+            <Pill tone="muted">Future feature</Pill>
+          </>
+        )}
+      </div>
+      <span className="rounded-2xl border border-grape/50 bg-surface/70 px-3 py-1.5 text-center text-sm font-black leading-tight text-foreground">
+        {live ? "CoachSide AI Assistant" : AI_FUTURE_BENEFIT_TITLE}
+      </span>
+      <Note className="text-center">
+        {live
+          ? "Manage your roster, schedule, team, and games from chat, and get basketball coaching help."
+          : AI_FUTURE_BENEFIT_BODY}
+      </Note>
+      <Note className="text-center">
+        {live
+          ? "Only in CoachSide Complete — not the $6 or $12 plans."
+          : "Not available yet, and not part of the $6 or $12 plans. Complete today includes the three modules above."}
+      </Note>
+    </div>
+  );
+}
 
 function Money({ amount }: { amount: number }) {
   return (
@@ -474,12 +512,8 @@ function MembershipPage() {
         <div className="flex justify-center">
           <Note className="text-center">{COMPLETE_BLURB}</Note>
         </div>
-        <InfoList items={[...COMPLETE_EXCLUSIVES, ...MODULE_LIST.flatMap((m) => m.benefits)]} tone="flame" />
-        <div className="flex justify-center">
-          <span className="rounded-2xl border border-grape/50 bg-grape/15 px-3 py-1.5 text-center text-xs font-black leading-snug text-foreground">
-            The AI Assistant is only in Complete — not the $6 or $12 plans
-          </span>
-        </div>
+        <InfoList items={MODULE_LIST.flatMap((m) => m.benefits)} tone="flame" />
+        <AiFutureBenefit />
         <div className="flex justify-center">
           <BubbleButton tone="grape" size="lg" onClick={() => setSelected([...ALL_MODULES])}>
             Choose Complete
@@ -494,7 +528,7 @@ function MembershipPage() {
           {picked.length === 0
             ? "Free Core only"
             : complete
-              ? `${COMPLETE_NAME} — all three modules + AI Assistant`
+              ? `${COMPLETE_NAME} — all three modules`
               : picked.map((m) => MODULES[m].name).join(" + ")}
         </Pill>
         <Note className="w-full">
