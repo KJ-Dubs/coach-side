@@ -1,22 +1,23 @@
 /**
- * Server-only Square boundary.
+ * Server-only Square boundary — the primary membership processor.
  *
  * No Square token, signature key or catalog id ever reaches the browser, and
  * nothing here invents credentials: when configuration is missing the callers
  * report "setup incomplete" instead of pretending a checkout worked.
  *
- * Required project secrets (add later in Project Settings → Secrets):
+ * Project secrets (Project Settings → Secrets):
  *   SQUARE_ACCESS_TOKEN            server API token
- *   SQUARE_ENVIRONMENT             "sandbox" | "production" (default sandbox)
+ *   SQUARE_ENVIRONMENT             "production" | "sandbox" (default sandbox)
  *   SQUARE_LOCATION_ID             location the subscription is sold from
  *   SQUARE_WEBHOOK_SIGNATURE_KEY   verifies incoming webhooks
  *   SQUARE_APP_ID                  optional, only if a client SDK is added
- *   SQUARE_PLAN_VARIATION_SINGLE   $6/month plan variation id
- *   SQUARE_PLAN_VARIATION_DUO      $12/month plan variation id
- *   SQUARE_PLAN_VARIATION_COMPLETE $15/month plan variation id
+ *   SQUARE_PLAN_VARIATION_SINGLE   $6/month plan variation id (one module)
+ *   SQUARE_PLAN_VARIATION_DUO      $12/month plan variation id (two modules)
+ *   SQUARE_PLAN_VARIATION_COMPLETE $15/month plan variation id (Complete)
  */
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import type { PlanTier } from "./entitlements";
+import type { VariationMap } from "./squareBilling";
 
 export const SQUARE_ENV_KEYS = [
   "SQUARE_ACCESS_TOKEN",
@@ -29,14 +30,20 @@ export const SQUARE_ENV_KEYS = [
 
 export const WEBHOOK_PATH = "/api/public/square/webhook";
 export const PRODUCTION_ORIGIN = "https://coachside.live";
+/** Must match the notification URL registered in Square exactly (it is part of the signature). */
 export const WEBHOOK_URL = `${PRODUCTION_ORIGIN}${WEBHOOK_PATH}`;
 
 function env(name: string): string | null {
-  return process.env[name] ?? null;
+  const v = process.env[name];
+  return v && v.trim() ? v.trim() : null;
+}
+
+export function squareEnvironment(): "production" | "sandbox" {
+  return env("SQUARE_ENVIRONMENT")?.toLowerCase() === "production" ? "production" : "sandbox";
 }
 
 export function squareApiBase(): string {
-  return env("SQUARE_ENVIRONMENT") === "production"
+  return squareEnvironment() === "production"
     ? "https://connect.squareup.com"
     : "https://connect.squareupsandbox.com";
 }
@@ -49,10 +56,46 @@ export function squareConfig(): SquareConfig {
     return {
       configured: false,
       missing: [...missing],
-      reason: `Checkout is not set up yet. Missing server settings: ${missing.join(", ")}.`,
+      reason: `Square checkout is not set up yet. Missing server settings: ${missing.join(", ")}.`,
     };
   }
   return { configured: true, missing: [], reason: null };
+}
+
+export type SquareDiagnostics = {
+  provider: "Square";
+  environment: "production" | "sandbox";
+  environmentExplicit: boolean;
+  accessToken: boolean;
+  location: boolean;
+  webhookSignature: boolean;
+  appId: boolean;
+  variations: { single: boolean; duo: boolean; complete: boolean };
+  webhookUrl: string;
+  configured: boolean;
+  missing: string[];
+};
+
+/** Yes/no only — never a value, prefix or length. */
+export function squareDiagnostics(): SquareDiagnostics {
+  const cfg = squareConfig();
+  return {
+    provider: "Square",
+    environment: squareEnvironment(),
+    environmentExplicit: !!env("SQUARE_ENVIRONMENT"),
+    accessToken: !!env("SQUARE_ACCESS_TOKEN"),
+    location: !!env("SQUARE_LOCATION_ID"),
+    webhookSignature: !!env("SQUARE_WEBHOOK_SIGNATURE_KEY"),
+    appId: !!env("SQUARE_APP_ID"),
+    variations: {
+      single: !!env("SQUARE_PLAN_VARIATION_SINGLE"),
+      duo: !!env("SQUARE_PLAN_VARIATION_DUO"),
+      complete: !!env("SQUARE_PLAN_VARIATION_COMPLETE"),
+    },
+    webhookUrl: WEBHOOK_URL,
+    configured: cfg.configured,
+    missing: cfg.missing,
+  };
 }
 
 /** Enforcement stays off until this is explicitly switched on. */
@@ -60,14 +103,26 @@ export function enforcementEnabled(): boolean {
   return (env("BILLING_ENFORCEMENT_ENABLED") ?? "").toLowerCase() === "true";
 }
 
-export function planVariationId(tier: PlanTier): string | null {
-  if (tier === "single") return env("SQUARE_PLAN_VARIATION_SINGLE");
-  if (tier === "duo") return env("SQUARE_PLAN_VARIATION_DUO");
-  if (tier === "complete") return env("SQUARE_PLAN_VARIATION_COMPLETE");
-  return null;
+export function variationMap(): VariationMap {
+  return {
+    single: env("SQUARE_PLAN_VARIATION_SINGLE"),
+    duo: env("SQUARE_PLAN_VARIATION_DUO"),
+    complete: env("SQUARE_PLAN_VARIATION_COMPLETE"),
+  };
 }
 
-async function squareFetch(path: string, init: RequestInit = {}): Promise<unknown> {
+export function planVariationId(tier: PlanTier): string | null {
+  if (tier === "free") return null;
+  return variationMap()[tier] ?? null;
+}
+
+export class SquareError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
+
+async function squareFetch<T = Record<string, unknown>>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${squareApiBase()}${path}`, {
     ...init,
     headers: {
@@ -79,136 +134,158 @@ async function squareFetch(path: string, init: RequestInit = {}): Promise<unknow
   });
   const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
-    const errs = (body["errors"] as { detail?: string }[] | undefined) ?? [];
-    throw new Error(errs[0]?.detail ?? `Square request failed (${res.status})`);
+    const errs = (body["errors"] as { detail?: string; code?: string }[] | undefined) ?? [];
+    console.error("Square error", path, res.status, errs[0]?.code);
+    throw new SquareError(errs[0]?.detail ?? `Square request failed (${res.status})`, res.status);
   }
-  return body;
+  return body as T;
 }
 
-/** Reuse a Square customer for this billing owner, or create one. */
+/** Reuse the Square customer for this billing owner, or create one. */
 export async function findOrCreateCustomer(input: {
   existingId: string | null;
   email: string | null;
   name: string | null;
   referenceId: string;
+  idempotencyKey: string;
 }): Promise<string> {
   if (input.existingId) return input.existingId;
   if (input.email) {
-    const found = (await squareFetch("/v2/customers/search", {
+    const found = await squareFetch<{ customers?: { id: string }[] }>("/v2/customers/search", {
       method: "POST",
-      body: JSON.stringify({
-        limit: 1,
-        query: { filter: { email_address: { exact: input.email } } },
-      }),
-    })) as { customers?: { id: string }[] };
+      body: JSON.stringify({ limit: 1, query: { filter: { email_address: { exact: input.email } } } }),
+    });
     if (found.customers?.length) return found.customers[0]!.id;
   }
-  const created = (await squareFetch("/v2/customers", {
+  const created = await squareFetch<{ customer?: { id: string } }>("/v2/customers", {
     method: "POST",
     body: JSON.stringify({
-      idempotency_key: crypto.randomUUID(),
+      idempotency_key: input.idempotencyKey,
       email_address: input.email ?? undefined,
       given_name: input.name ?? undefined,
       reference_id: input.referenceId,
     }),
-  })) as { customer?: { id: string } };
+  });
   if (!created.customer?.id) throw new Error("Square did not return a customer.");
   return created.customer.id;
 }
 
-/** Hosted checkout link for one recurring team plan. */
-export async function createSubscriptionCheckout(input: {
-  planVariationId: string;
-  customerId: string;
-  teamId: string;
-  redirectUrl: string;
-  note: string;
-}): Promise<string> {
-  const res = (await squareFetch("/v2/online-checkout/payment-links", {
-    method: "POST",
-    body: JSON.stringify({
-      idempotency_key: crypto.randomUUID(),
-      description: input.note,
-      quick_pay: {
-        name: input.note,
-        price_money: { amount: 0, currency: "USD" },
-        location_id: env("SQUARE_LOCATION_ID"),
-      },
-      checkout_options: {
-        subscription_plan_id: input.planVariationId,
-        redirect_url: input.redirectUrl,
-        ask_for_shipping_address: false,
-      },
-      pre_populated_data: {},
-      payment_note: `team:${input.teamId}`,
-    }),
-  })) as { payment_link?: { url?: string } };
-  if (!res.payment_link?.url) throw new Error("Square did not return a checkout link.");
-  return res.payment_link.url;
+export async function getCustomerEmail(customerId: string): Promise<string | null> {
+  const res = await squareFetch<{ customer?: { email_address?: string } }>(`/v2/customers/${customerId}`);
+  return res.customer?.email_address?.toLowerCase() ?? null;
 }
 
-/** Move an existing subscription between the $6 / $12 / $15 variations. */
-export async function swapSubscriptionPlan(
-  subscriptionId: string,
-  newPlanVariationId: string,
-): Promise<void> {
-  await squareFetch(`/v2/subscriptions/${subscriptionId}/swap-plan`, {
-    method: "POST",
-    body: JSON.stringify({ new_plan_variation_id: newPlanVariationId }),
+/** Square-hosted checkout for one recurring team plan variation. */
+export async function createSubscriptionCheckout(input: {
+  planVariationId: string;
+  priceCents: number;
+  teamId: string;
+  redirectUrl: string;
+  name: string;
+  buyerEmail: string | null;
+  idempotencyKey: string;
+}): Promise<{ id: string; url: string; orderId: string | null }> {
+  const res = await squareFetch<{ payment_link?: { id?: string; url?: string; order_id?: string } }>(
+    "/v2/online-checkout/payment-links",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        idempotency_key: input.idempotencyKey,
+        description: input.name,
+        quick_pay: {
+          name: input.name,
+          price_money: { amount: input.priceCents, currency: "USD" },
+          location_id: env("SQUARE_LOCATION_ID"),
+        },
+        checkout_options: {
+          subscription_plan_id: input.planVariationId,
+          redirect_url: input.redirectUrl,
+          ask_for_shipping_address: false,
+        },
+        pre_populated_data: input.buyerEmail ? { buyer_email: input.buyerEmail } : {},
+        payment_note: `CoachSide team ${input.teamId}`,
+      }),
+    },
+  );
+  const link = res.payment_link;
+  if (!link?.url || !link.id) throw new Error("Square did not return a checkout link.");
+  return { id: link.id, url: link.url, orderId: link.order_id ?? null };
+}
+
+export type SquareSubscription = {
+  id: string;
+  status?: string;
+  plan_variation_id?: string;
+  customer_id?: string;
+  location_id?: string;
+  charged_through_date?: string;
+  canceled_date?: string;
+  invoice_ids?: string[];
+};
+
+type SquareAction = { id: string; type: string; effective_date?: string; new_plan_variation_id?: string };
+
+export async function getSubscription(subscriptionId: string): Promise<{ sub: SquareSubscription; actions: SquareAction[] }> {
+  const res = await squareFetch<{ subscription?: SquareSubscription; actions?: SquareAction[] }>(
+    `/v2/subscriptions/${encodeURIComponent(subscriptionId)}?include=actions`,
+  );
+  if (!res.subscription?.id) throw new Error("Square did not return the subscription.");
+  return { sub: res.subscription, actions: res.actions ?? [] };
+}
+
+/**
+ * Square applies plan swaps at the start of the next billing period. Any
+ * earlier scheduled swap is replaced so only one change is ever pending.
+ */
+export async function swapSubscriptionPlan(subscriptionId: string, newPlanVariationId: string): Promise<SquareSubscription> {
+  const { actions } = await getSubscription(subscriptionId);
+  for (const a of actions.filter((x) => x.type === "SWAP_PLAN")) await deleteSubscriptionAction(subscriptionId, a.id);
+  const res = await squareFetch<{ subscription?: SquareSubscription }>(
+    `/v2/subscriptions/${encodeURIComponent(subscriptionId)}/swap-plan`,
+    { method: "POST", body: JSON.stringify({ new_plan_variation_id: newPlanVariationId }) },
+  );
+  return res.subscription ?? { id: subscriptionId };
+}
+
+export async function deleteSubscriptionAction(subscriptionId: string, actionId: string): Promise<void> {
+  await squareFetch(`/v2/subscriptions/${encodeURIComponent(subscriptionId)}/actions/${encodeURIComponent(actionId)}`, {
+    method: "DELETE",
   });
 }
 
-/** Ends at the end of the paid period; never deletes team data. */
-export async function cancelSubscription(subscriptionId: string): Promise<void> {
-  await squareFetch(`/v2/subscriptions/${subscriptionId}/cancel`, { method: "POST" });
+/** Removes a scheduled cancellation so the membership simply continues. */
+export async function undoScheduledCancel(subscriptionId: string): Promise<boolean> {
+  const { actions } = await getSubscription(subscriptionId);
+  const cancels = actions.filter((a) => a.type === "CANCEL");
+  for (const a of cancels) await deleteSubscriptionAction(subscriptionId, a.id);
+  return cancels.length > 0;
 }
 
-export async function getSubscription(subscriptionId: string): Promise<{
-  status?: string;
-  charged_through_date?: string;
-  plan_variation_id?: string;
-  customer_id?: string;
-}> {
-  const res = (await squareFetch(`/v2/subscriptions/${subscriptionId}`)) as {
-    subscription?: Record<string, string>;
-  };
-  return res.subscription ?? {};
+/** Square ends the subscription at the end of the paid period (canceled_date). Never deletes team data. */
+export async function cancelSubscription(subscriptionId: string): Promise<SquareSubscription> {
+  const res = await squareFetch<{ subscription?: SquareSubscription }>(
+    `/v2/subscriptions/${encodeURIComponent(subscriptionId)}/cancel`,
+    { method: "POST" },
+  );
+  return res.subscription ?? { id: subscriptionId };
 }
 
-/** Square signs notificationUrl + raw body with the webhook signature key. */
-export function verifyWebhookSignature(
-  rawBody: string,
-  signature: string | null,
-  notificationUrl: string,
-): boolean {
+export async function getInvoice(invoiceId: string): Promise<{ order_id?: string; subscription_id?: string } | null> {
+  const res = await squareFetch<{ invoice?: { order_id?: string; subscription_id?: string } }>(
+    `/v2/invoices/${encodeURIComponent(invoiceId)}`,
+  );
+  return res.invoice ?? null;
+}
+
+/** Square signs notificationUrl + raw body with the webhook signature key (HMAC-SHA256, base64). */
+export function verifyWebhookSignature(rawBody: string, signature: string | null, notificationUrl: string): boolean {
   const key = env("SQUARE_WEBHOOK_SIGNATURE_KEY");
   if (!key || !signature) return false;
-  const expected = createHmac("sha256", key)
-    .update(notificationUrl + rawBody)
-    .digest("base64");
+  const expected = createHmac("sha256", key).update(notificationUrl + rawBody).digest("base64");
   const a = Buffer.from(signature);
   const b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
 }
-
-/** Square subscription status → CoachSide billing status. */
-export function mapSquareStatus(status: string | undefined): string {
-  switch ((status ?? "").toUpperCase()) {
-    case "ACTIVE":
-      return "active";
-    case "PENDING":
-      return "pending";
-    case "PAUSED":
-    case "DEACTIVATED":
-      return "grace";
-    case "CANCELED":
-      return "canceled";
-    default:
-      return "free";
-  }
-}
-
-import { createHash } from "node:crypto";
 
 /** Access codes are stored hashed; the plain code is never persisted. */
 export function hashAccessCode(code: string): string {
