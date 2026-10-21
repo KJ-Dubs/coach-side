@@ -46,19 +46,22 @@ export async function readAssistantEnabled(db: Db): Promise<boolean> {
   return data !== false;
 }
 
-/** Plain-language message for any provider failure. Never includes keys or stack traces. */
+const SETUP_MESSAGE = "CoachSide AI is temporarily unavailable while setup is completed.";
+
+/**
+ * Plain-language message for any provider failure. Never includes keys, stack
+ * traces or configuration details: setup problems (key, model, provider
+ * account or credits) all read as "temporarily unavailable" to coaches.
+ */
 export function friendlyAiError(error: unknown): string {
   if (error instanceof Error && error.name === "AbortError") return "Stopped.";
   const status = APICallError.isInstance(error) ? error.statusCode : undefined;
   const text = error instanceof Error ? error.message : String(error ?? "");
-  if (status === 401)
-    return "CoachSide AI isn't set up correctly right now. An admin needs to check the AI key.";
+  if (status === 401 || status === 402 || status === 404) return SETUP_MESSAGE;
   if (status === 403) return "The AI service refused this request.";
-  if (status === 404)
-    return "The configured AI model isn't available. An admin needs to check the AI settings.";
+  if (status === 429 && /quota|billing|credit/i.test(text)) return SETUP_MESSAGE;
   if (status === 429) return "CoachSide AI is busy right now. Wait a minute and try again.";
-  if (status === 400 && /verif/i.test(text))
-    return "The AI provider needs account verification for this model. An admin needs to check the AI settings.";
+  if (status === 400 && /verif/i.test(text)) return SETUP_MESSAGE;
   if (status === 400)
     return "CoachSide AI couldn't process that request. Try rephrasing, or use a smaller or clearer image.";
   if (status && status >= 500) return "The AI service had a problem. Try again in a moment.";

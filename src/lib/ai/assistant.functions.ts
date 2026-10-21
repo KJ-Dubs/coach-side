@@ -19,18 +19,24 @@ export const getAiAssistantAvailability = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { readAiConfig, readAssistantEnabled } = await import("./config.server");
+    const { aiEntitledTeamIds, billingEnforced } = await import("./access.server");
     const { loadAccess } = await import("@/lib/coachside/service");
     const db = context.supabase as unknown as Db;
     const config = readAiConfig();
-    const [enabled, access] = await Promise.all([
+    const [enabled, access, enforced] = await Promise.all([
       readAssistantEnabled(db),
       loadAccess(db).catch(() => null),
+      billingEnforced(),
     ]);
+    const coachTeamIds = access ? [...access.coachTeamIds] : [];
     return {
       configured: config.configured,
       enabled,
       isCoach: !!access?.isCoach,
+      /** The AI service itself is ready (separate from the team's plan). */
       available: config.configured && enabled && !!access?.isCoach,
+      /** Coach teams on CoachSide Complete (all teams while enforcement is off). */
+      entitledTeamIds: await aiEntitledTeamIds(db, coachTeamIds, enforced),
     };
   });
 
