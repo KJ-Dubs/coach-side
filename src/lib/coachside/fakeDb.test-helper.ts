@@ -1,6 +1,6 @@
 /**
  * Minimal in-memory stand-in for the token-scoped database client used by
- * connector actions. Supports only the query shapes the service uses.
+ * CoachSide actions. Supports only the query shapes the service uses.
  */
 import type { Db } from "./service";
 
@@ -10,8 +10,6 @@ type Filter = (r: Row) => boolean;
 export type FakeState = {
   tables: Record<string, Row[]>;
   access: Record<string, unknown>;
-  connection: { permissions: string[]; revoked: boolean; calls: number; limit: number } | null;
-  audit: Row[];
   rpcCalls: string[];
 };
 
@@ -110,21 +108,6 @@ export function fakeDb(state: FakeState): Db {
     rpc: async (name: string, args: Record<string, unknown>) => {
       state.rpcCalls.push(name);
       if (name === "my_access") return { data: state.access, error: null };
-      if (name === "mcp_log_action") {
-        state.audit.push(args);
-        return { data: null, error: null };
-      }
-      if (name === "mcp_begin_call") {
-        const c = state.connection;
-        if (!c) return { data: { ok: false, code: "NOT_CONNECTED" }, error: null };
-        if (c.revoked) return { data: { ok: false, code: "CONNECTION_REVOKED" }, error: null };
-        if (!c.permissions.includes(String(args["p_permission"]))) {
-          return { data: { ok: false, code: "PERMISSION_NOT_GRANTED" }, error: null };
-        }
-        if (c.calls >= c.limit) return { data: { ok: false, code: "RATE_LIMITED" }, error: null };
-        c.calls += 1;
-        return { data: { ok: true }, error: null };
-      }
       return { data: null, error: { message: `unknown rpc ${name}` } };
     },
   } as unknown as Db;

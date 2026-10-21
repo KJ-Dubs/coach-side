@@ -1,11 +1,11 @@
 /**
- * CoachSide connector actions. Every function runs with a database client
- * scoped to the connected coach's OAuth token, so existing RLS still applies;
+ * Internal CoachSide team/roster/schedule actions used by the native AI
+ * Assistant. Every function runs with a database client acting as the
+ * signed-in coach, so existing RLS still applies;
  * on top of that each team-scoped action re-checks coach membership from
  * `my_access` and never trusts a team id supplied by the caller alone.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { CoachSidePermission } from "./permissions";
 import {
   currentSeasonLabel,
   parseDayStart,
@@ -20,10 +20,6 @@ import {
 export type Db = SupabaseClient<any, any, any>;
 
 export type CoachSideErrorCode =
-  | "NOT_CONNECTED"
-  | "CONNECTION_REVOKED"
-  | "PERMISSION_NOT_GRANTED"
-  | "RATE_LIMITED"
   | "COACH_ONLY"
   | "NO_ACCESS"
   | "TEAM_NOT_FOUND"
@@ -44,44 +40,6 @@ export class CoachSideError extends Error {
   ) {
     super(message);
     this.name = "CoachSideError";
-  }
-}
-
-const CONNECTION_MESSAGES: Partial<Record<CoachSideErrorCode, string>> = {
-  NOT_CONNECTED: "This app is not connected to a CoachSide account. Reconnect from ChatGPT.",
-  CONNECTION_REVOKED: "The coach revoked this connection in CoachSide Settings. Reconnect to continue.",
-  PERMISSION_NOT_GRANTED:
-    "The coach did not grant this permission. Reconnect and allow it on the CoachSide consent screen.",
-  RATE_LIMITED: "Too many CoachSide requests in the last minute. Wait a moment and try again.",
-};
-
-/** Connection, permission and rate-limit gate for every tool call. */
-export async function beginCall(db: Db, permission: CoachSidePermission): Promise<void> {
-  const { data, error } = await db.rpc("mcp_begin_call", { p_permission: permission });
-  if (error) throw new CoachSideError("SERVER_ERROR", "Could not verify this CoachSide connection.");
-  const result = (data ?? {}) as { ok?: boolean; code?: string };
-  if (result.ok) return;
-  const code = (result.code ?? "NOT_CONNECTED") as CoachSideErrorCode;
-  throw new CoachSideError(code, CONNECTION_MESSAGES[code] ?? "This CoachSide connection is not active.");
-}
-
-/** Lightweight audit entry for a write. Never blocks the action itself. */
-export async function logAction(
-  db: Db,
-  tool: string,
-  teamId: string | null,
-  targetId: string | null,
-  summary: string,
-) {
-  try {
-    await db.rpc("mcp_log_action", {
-      p_tool: tool,
-      p_team: teamId,
-      p_target: targetId,
-      p_summary: summary.slice(0, 500),
-    });
-  } catch {
-    /* audit is best effort */
   }
 }
 
@@ -247,7 +205,6 @@ export async function createTeam(
   if (error || !data) throw new CoachSideError("SERVER_ERROR", "Could not create the team.");
   const team = data as TeamRow;
   access.coachTeamIds.add(team.id);
-  await logAction(db, "create_team", team.id, team.id, `Created team ${name} (${season})`);
   return { team: teamSummary(access, team) };
 }
 
@@ -300,7 +257,6 @@ export async function addPlayer(db: Db, teamId: string, input: PlayerInput): Pro
     .single();
   if (error || !data) throw new CoachSideError("SERVER_ERROR", "Could not add the player.");
   const player = playerSummary(data as PlayerSummary);
-  await logAction(db, "add_player", teamId, player.id, `Added #${jersey} ${name} to ${team.name}`);
   return { player };
 }
 
@@ -348,13 +304,6 @@ export async function addPlayersBulk(
     const { data, error } = await db.from("players").insert(valid).select(PLAYER_COLUMNS);
     if (error) throw new CoachSideError("SERVER_ERROR", "Could not add these players. Nothing was saved.");
     created = ((data ?? []) as PlayerSummary[]).sort(jerseySort).map(playerSummary);
-    await logAction(
-      db,
-      "add_players_bulk",
-      teamId,
-      null,
-      `Added ${created.length} players to ${team.name}: ${created.map((p) => `#${p.jersey}`).join(", ")}`,
-    );
   }
   return { team: { id: team.id, name: team.name }, created, rejected };
 }
@@ -402,7 +351,6 @@ export async function updatePlayer(
     .single();
   if (error || !data) throw new CoachSideError("SERVER_ERROR", "Could not update the player.");
   const player = playerSummary(data as PlayerSummary);
-  await logAction(db, "update_player", teamId, playerId, `Updated #${player.jersey} ${player.name} (${changed.join(", ")})`);
   return { player, changed };
 }
 
@@ -583,7 +531,6 @@ export async function createScheduleEvent(db: Db, userId: string, input: NewEven
   const { data, error } = await db.from("team_events").insert(row).select(EVENT_COLUMNS).single();
   if (error || !data) throw new CoachSideError("SERVER_ERROR", "Could not create the event.");
   const event = eventSummary(data as EventRow, tz);
-  await logAction(db, "create_schedule_event", team.id, event.id, `Added ${event.event_type} "${title}" on ${event.starts_label}`);
   return { event };
 }
 
@@ -668,6 +615,5 @@ export async function updateScheduleEvent(
     .single();
   if (error || !data) throw new CoachSideError("SERVER_ERROR", "Could not update the event.");
   const event = eventSummary(data as EventRow, tz);
-  await logAction(db, "update_schedule_event", team.id, event.id, `Updated "${event.title}" (${changed.join(", ")})`);
   return { event, changed };
 }

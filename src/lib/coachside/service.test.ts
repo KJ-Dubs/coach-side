@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   addPlayer,
   addPlayersBulk,
-  beginCall,
   createScheduleEvent,
   createTeam,
   getRoster,
@@ -14,7 +13,6 @@ import {
   MAX_BULK_PLAYERS,
 } from "./service";
 import { fakeDb, uid, type FakeState } from "./fakeDb.test-helper";
-import { COACHSIDE_PERMISSIONS } from "./permissions";
 
 const USER = uid();
 const ORG = uid();
@@ -37,8 +35,6 @@ function coachAccess() {
 beforeEach(() => {
   state = {
     access: coachAccess(),
-    connection: { permissions: [...COACHSIDE_PERMISSIONS], revoked: false, calls: 0, limit: 60 },
-    audit: [],
     rpcCalls: [],
     tables: {
       profiles: [{ id: USER, org_id: ORG }],
@@ -71,30 +67,6 @@ const code = async (p: Promise<unknown>) => {
   return "NO_ERROR";
 };
 
-describe("connection gate (scope, revoke, rate limit)", () => {
-  it("allows a granted permission", async () => {
-    await expect(beginCall(db(), "coachside:roster:read")).resolves.toBeUndefined();
-  });
-  it("rejects a permission the coach did not grant", async () => {
-    state.connection!.permissions = ["coachside:roster:read"];
-    expect(await code(beginCall(db(), "coachside:roster:write"))).toBe("PERMISSION_NOT_GRANTED");
-  });
-  it("rejects a revoked connection", async () => {
-    state.connection!.revoked = true;
-    expect(await code(beginCall(db(), "coachside:teams:read"))).toBe("CONNECTION_REVOKED");
-  });
-  it("rejects a token with no connection (e.g. a normal app session)", async () => {
-    state.connection = null;
-    expect(await code(beginCall(db(), "coachside:teams:read"))).toBe("NOT_CONNECTED");
-  });
-  it("rate limits per connection", async () => {
-    state.connection!.limit = 2;
-    await beginCall(db(), "coachside:teams:read");
-    await beginCall(db(), "coachside:teams:read");
-    expect(await code(beginCall(db(), "coachside:teams:read"))).toBe("RATE_LIMITED");
-  });
-});
-
 describe("team authorization", () => {
   it("list_teams returns only teams the user coaches", async () => {
     const { teams } = await listTeams(db());
@@ -124,12 +96,10 @@ describe("roster", () => {
     const { players } = await getRoster(db(), ALISO);
     expect(players.map((p) => p.jersey)).toEqual(["1", "3", "5", "11", "20", "24", "32", "33"]);
   });
-  it("add_player writes to the requested team and logs the action", async () => {
+  it("add_player writes to the requested team", async () => {
     const { player } = await addPlayer(db(), ALISO, { jersey: "#4", name: "  John   Smith ", position: "G" });
     expect(player).toMatchObject({ jersey: "4", name: "John Smith", position: "G", active: true });
     expect(state.tables["players"]!.find((p) => p["id"] === player.id)?.["team_id"]).toBe(ALISO);
-    expect(state.audit).toHaveLength(1);
-    expect(state.audit[0]).toMatchObject({ p_tool: "add_player", p_team: ALISO, p_target: player.id });
   });
   it("add_player rejects a jersey already in use", async () => {
     expect(await code(addPlayer(db(), ALISO, { jersey: "24", name: "Dup" }))).toBe("DUPLICATE_JERSEY");

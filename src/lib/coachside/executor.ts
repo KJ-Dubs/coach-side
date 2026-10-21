@@ -1,13 +1,11 @@
 /**
- * Shared CoachSide tool executor. Both the external MCP connector and the
- * native CoachSide AI Assistant call these permission-checked actions, so
- * there is one implementation of every team/roster/schedule rule.
+ * Internal CoachSide tool executor for the native CoachSide AI Assistant:
+ * one implementation of every team/roster/schedule rule.
  *
  * Callers pass a database client acting as the signed-in coach (RLS applies)
  * plus the verified user id; nothing here trusts a caller-supplied user id.
  */
 import { z } from "zod";
-import type { McpToolName } from "./permissions";
 import {
   addPlayer,
   addPlayersBulk,
@@ -22,6 +20,19 @@ import {
   updateScheduleEvent,
   type Db,
 } from "./service";
+
+export const COACHSIDE_TOOL_NAMES = [
+  "list_teams",
+  "create_team",
+  "get_roster",
+  "add_player",
+  "add_players_bulk",
+  "update_player",
+  "list_schedule",
+  "create_schedule_event",
+  "update_schedule_event",
+] as const;
+export type CoachSideToolName = (typeof COACHSIDE_TOOL_NAMES)[number];
 
 const teamId = z.string().describe("Team id from list_teams.");
 
@@ -122,14 +133,14 @@ export const TOOL_INPUTS = {
       })
       .describe("Only the fields to change."),
   },
-} as const satisfies Record<McpToolName, z.ZodRawShape>;
+} as const satisfies Record<CoachSideToolName, z.ZodRawShape>;
 
-export type ToolArgs<N extends McpToolName> = z.infer<z.ZodObject<(typeof TOOL_INPUTS)[N]>>;
+export type ToolArgs<N extends CoachSideToolName> = z.infer<z.ZodObject<(typeof TOOL_INPUTS)[N]>>;
 
 export type ToolOutcome = { summary: string; data: Record<string, unknown> };
 
 /** Runs one CoachSide action as the signed-in coach. Throws CoachSideError on rule failures. */
-export async function executeTool<N extends McpToolName>(
+export async function executeTool<N extends CoachSideToolName>(
   name: N,
   db: Db,
   userId: string,
