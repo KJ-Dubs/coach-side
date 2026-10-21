@@ -55,6 +55,7 @@ import { Route as AuthenticatedReviewGameIdRouteImport } from './routes/_authent
 import { Route as AuthenticatedStatsIndexRouteImport } from './routes/_authenticated/stats.index'
 import { Route as AuthenticatedStatsPlayersRouteImport } from './routes/_authenticated/stats.players'
 import { Route as AuthenticatedStatsTeamRouteImport } from './routes/_authenticated/stats.team'
+import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as SharePlayTokenRouteImport } from './routes/share.play.$token'
 import { Route as AuthenticatedPlaysPlayIdIndexRouteImport } from './routes/_authenticated/plays.$playId.index'
 import { Route as AuthenticatedPlaysPlayIdViewRouteImport } from './routes/_authenticated/plays.$playId.view'
@@ -304,6 +305,11 @@ const AuthenticatedStatsTeamRoute = AuthenticatedStatsTeamRouteImport.update({
   path: '/stats/team',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiAiChatRoute = ApiAiChatRouteImport.update({
+  id: '/api/ai/chat',
+  path: '/api/ai/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SharePlayTokenRoute = SharePlayTokenRouteImport.update({
   id: '/share/play/$token',
   path: '/share/play/$token',
@@ -409,6 +415,7 @@ export interface FileRoutesByFullPath {
   '/review/$gameId': typeof AuthenticatedReviewGameIdRoute
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
   '/share/play/$token': typeof SharePlayTokenRoute
   '/drills/': typeof AuthenticatedDrillsIndexRoute
   '/film/': typeof AuthenticatedFilmIndexRoute
@@ -468,6 +475,7 @@ export interface FileRoutesByTo {
   '/review/$gameId': typeof AuthenticatedReviewGameIdRoute
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
   '/share/play/$token': typeof SharePlayTokenRoute
   '/drills': typeof AuthenticatedDrillsIndexRoute
   '/film': typeof AuthenticatedFilmIndexRoute
@@ -529,6 +537,7 @@ export interface FileRoutesById {
   '/_authenticated/review/$gameId': typeof AuthenticatedReviewGameIdRoute
   '/_authenticated/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/_authenticated/stats/team': typeof AuthenticatedStatsTeamRoute
+  '/api/ai/chat': typeof ApiAiChatRoute
   '/share/play/$token': typeof SharePlayTokenRoute
   '/_authenticated/drills/': typeof AuthenticatedDrillsIndexRoute
   '/_authenticated/film/': typeof AuthenticatedFilmIndexRoute
@@ -590,6 +599,7 @@ export interface FileRouteTypes {
     | '/review/$gameId'
     | '/stats/players'
     | '/stats/team'
+    | '/api/ai/chat'
     | '/share/play/$token'
     | '/drills/'
     | '/film/'
@@ -649,6 +659,7 @@ export interface FileRouteTypes {
     | '/review/$gameId'
     | '/stats/players'
     | '/stats/team'
+    | '/api/ai/chat'
     | '/share/play/$token'
     | '/drills'
     | '/film'
@@ -709,6 +720,7 @@ export interface FileRouteTypes {
     | '/_authenticated/review/$gameId'
     | '/_authenticated/stats/players'
     | '/_authenticated/stats/team'
+    | '/api/ai/chat'
     | '/share/play/$token'
     | '/_authenticated/drills/'
     | '/_authenticated/film/'
@@ -745,6 +757,7 @@ export interface RootRouteChildren {
   ShareTokenRoute: typeof ShareTokenRoute
   LibraryIndexRoute: typeof LibraryIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
+  ApiAiChatRoute: typeof ApiAiChatRoute
   SharePlayTokenRoute: typeof SharePlayTokenRoute
   ApiPublicCronDailyRoute: typeof ApiPublicCronDailyRoute
   ApiPublicFilmClaimRoute: typeof ApiPublicFilmClaimRoute
@@ -1081,6 +1094,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStatsTeamRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/ai/chat': {
+      id: '/api/ai/chat'
+      path: '/api/ai/chat'
+      fullPath: '/api/ai/chat'
+      preLoaderRoute: typeof ApiAiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/share/play/$token': {
       id: '/share/play/$token'
       path: '/share/play/$token'
@@ -1260,6 +1280,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShareTokenRoute: ShareTokenRoute,
   LibraryIndexRoute: LibraryIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
+  ApiAiChatRoute: ApiAiChatRoute,
   SharePlayTokenRoute: SharePlayTokenRoute,
   ApiPublicCronDailyRoute: ApiPublicCronDailyRoute,
   ApiPublicFilmClaimRoute: ApiPublicFilmClaimRoute,

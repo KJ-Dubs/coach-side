@@ -2,6 +2,7 @@ import type { JsonValueInput, ToolContext, ToolHandlerResult } from "@lovable.de
 import { TOOL_PERMISSION, type McpToolName } from "./permissions";
 import { beginCall, CoachSideError, type Db } from "./service";
 import { supabaseForUser } from "./supabase";
+import { executeTool } from "./executor";
 
 type ToolOutcome<T extends JsonValueInput> = { summary: string; data: T };
 
@@ -15,7 +16,8 @@ export async function runTool<T extends JsonValueInput>(
   fn: (db: Db, userId: string) => Promise<ToolOutcome<T>>,
 ): Promise<ToolHandlerResult> {
   const userId = ctx.getUserId();
-  if (!ctx.isAuthenticated() || !userId) return failure("NOT_CONNECTED", "Sign in to CoachSide to use this tool.");
+  if (!ctx.isAuthenticated() || !userId)
+    return failure("NOT_CONNECTED", "Sign in to CoachSide to use this tool.");
   try {
     const db = supabaseForUser(ctx);
     await beginCall(db, TOOL_PERMISSION[tool]);
@@ -37,4 +39,16 @@ function failure(code: string, message: string): ToolHandlerResult {
     content: [{ type: "text", text: `${code}: ${message}` }],
     structuredContent: { error: { code, message } },
   };
+}
+
+/** Runs a shared CoachSide action (see executor.ts) behind the connector gate. */
+export function runSharedTool(
+  tool: McpToolName,
+  ctx: ToolContext,
+  args: unknown,
+): Promise<ToolHandlerResult> {
+  return runTool(tool, ctx, async (db, userId) => {
+    const { summary, data } = await executeTool(tool, db, userId, args);
+    return { summary, data: data as JsonValueInput };
+  });
 }
