@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAppAdmin } from "./useIsAppAdmin";
+import { useAuth } from "./auth";
 import { PERSONAS, PERSONA_EVENT, readPersona, type PersonaKey } from "./personas";
 
 export type ModuleKey = "playbook_plus" | "gameday_plus" | "team_hub_plus";
@@ -208,8 +209,13 @@ async function fetchTeamEntitlement(teamId: string): Promise<RawEntitlement | nu
 /** Server-owned switch. Kept separate so no client value can turn locks on. */
 async function fetchEnforcement(): Promise<boolean> {
   const { getBillingConfig } = await import("./billing.functions");
-  const cfg = await getBillingConfig();
-  return cfg.enforcementEnabled;
+  try {
+    const cfg = await getBillingConfig();
+    return cfg.enforcementEnabled;
+  } catch {
+    // A momentary sign-in or network hiccup must never lock anyone out.
+    return false;
+  }
 }
 
 function usePersona(): PersonaKey | null {
@@ -233,9 +239,11 @@ export function useEntitlement(teamId: string | null): Entitlement {
     enabled: !!teamId,
     staleTime: 60_000,
   });
+  const { user } = useAuth();
   const enforcement = useQuery({
-    queryKey: ["billing-enforcement"],
+    queryKey: ["billing-enforcement", user?.id ?? null],
     queryFn: fetchEnforcement,
+    enabled: !!user,
     staleTime: 300_000,
   });
 
