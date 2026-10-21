@@ -186,7 +186,11 @@ async function runSingle(db: Db, userId: string, row: ActionRow): Promise<Action
 }
 
 /** Confirm or cancel a staged action exactly once. */
-export async function resolveAction(db: Db, userId: string, input: ConfirmInput) {
+export async function resolveAction(
+  db: Db,
+  userId: string,
+  input: ConfirmInput,
+): Promise<{ status: AiActionStatus; result: ActionResult | null }> {
   const { data, error } = await db
     .from("ai_pending_actions")
     .select("id,user_id,team_id,kind,payload,status,result")
@@ -195,7 +199,7 @@ export async function resolveAction(db: Db, userId: string, input: ConfirmInput)
   if (error) throw new Error("Could not load this change.");
   const row = data as ActionRow | null;
   if (!row || row.user_id !== userId) throw new Error("This change was not found.");
-  if (row.status !== "pending") return { status: row.status, result: row.result };
+  if (row.status !== "pending") return { status: row.status, result: row.result as ActionResult | null };
 
   // Claim it first so a double tap can never run it twice.
   const claim = await db
@@ -204,8 +208,8 @@ export async function resolveAction(db: Db, userId: string, input: ConfirmInput)
     .eq("id", row.id)
     .eq("status", "pending")
     .select("id");
-  if (claim.error || !claim.data?.length) return { status: "confirmed" as AiActionStatus, result: row.result };
-  if (input.decision === "cancel") return { status: "cancelled" as AiActionStatus, result: null };
+  if (claim.error || !claim.data?.length) return { status: "confirmed", result: null };
+  if (input.decision === "cancel") return { status: "cancelled", result: null };
 
   let result: ActionResult;
   try {

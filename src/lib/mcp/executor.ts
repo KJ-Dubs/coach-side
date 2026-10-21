@@ -118,14 +118,14 @@ export async function executeTool<N extends McpToolName>(
   userId: string,
   rawArgs: unknown,
 ): Promise<ToolOutcome> {
-  const args = z.object(TOOL_INPUTS[name]).parse(rawArgs ?? {}) as Record<string, never>;
+  const args: unknown = z.object(TOOL_INPUTS[name]).parse(rawArgs ?? {});
   switch (name) {
     case "list_teams": {
       const data = await listTeams(db);
       return { summary: data.teams.length ? `${data.teams.length} team(s).` : "No coached teams yet.", data };
     }
     case "get_roster": {
-      const a = args as ToolArgs<"get_roster">;
+      const a = args as unknown as ToolArgs<"get_roster">;
       const data = await getRoster(db, a.team_id, a.include_inactive ?? false);
       return { summary: `${data.team.name}: ${data.players.length} player(s).`, data };
     }
@@ -134,16 +134,16 @@ export async function executeTool<N extends McpToolName>(
       return { summary: `${data.team.name}: ${data.events.length} event(s) (${data.team.timezone}).`, data };
     }
     case "create_team": {
-      const data = await createTeam(db, userId, args as ToolArgs<"create_team">);
+      const data = await createTeam(db, userId, args as unknown as ToolArgs<"create_team">);
       return { summary: `Created ${data.team.name} (${data.team.season}).`, data };
     }
     case "add_player": {
-      const { team_id, ...player } = args as ToolArgs<"add_player">;
+      const { team_id, ...player } = args as unknown as ToolArgs<"add_player">;
       const data = await addPlayer(db, team_id, player);
       return { summary: `Added #${data.player.jersey} ${data.player.name}.`, data };
     }
     case "add_players_bulk": {
-      const a = args as ToolArgs<"add_players_bulk">;
+      const a = args as unknown as ToolArgs<"add_players_bulk">;
       const data = await addPlayersBulk(db, a.team_id, a.players);
       return {
         summary: `Added ${data.created.length} player(s) to ${data.team.name}${data.rejected.length ? `; ${data.rejected.length} skipped` : ""}.`,
@@ -151,16 +151,16 @@ export async function executeTool<N extends McpToolName>(
       };
     }
     case "update_player": {
-      const a = args as ToolArgs<"update_player">;
+      const a = args as unknown as ToolArgs<"update_player">;
       const data = await updatePlayer(db, a.team_id, a.player_id, a.patch);
       return { summary: `Updated #${data.player.jersey} ${data.player.name}: ${data.changed.join(", ")}.`, data };
     }
     case "create_schedule_event": {
-      const data = await createScheduleEvent(db, userId, args as ToolArgs<"create_schedule_event">);
+      const data = await createScheduleEvent(db, userId, args as unknown as ToolArgs<"create_schedule_event">);
       return { summary: `Added ${data.event.event_type} "${data.event.title}" on ${data.event.starts_label}.`, data };
     }
     case "update_schedule_event": {
-      const data = await updateScheduleEvent(db, args as ToolArgs<"update_schedule_event">);
+      const data = await updateScheduleEvent(db, args as unknown as ToolArgs<"update_schedule_event">);
       return { summary: `Updated "${data.event.title}" (${data.changed.join(", ")}); now ${data.event.starts_label}.`, data };
     }
     default:
