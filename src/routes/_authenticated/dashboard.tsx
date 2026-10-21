@@ -16,6 +16,7 @@ import { fetchOnboarding } from "@/lib/onboarding";
 import { TrialStatus } from "@/components/billing/TrialStatus";
 import { HelpCard, ProgressCard } from "@/components/ProgressCard";
 import { HomeTipCard } from "@/components/HomeTipCard";
+import { AiAssistantHomeCard } from "@/components/AiAssistantHomeCard";
 import { EnablePushCard } from "@/components/EnablePushCard";
 import { useCurrentTeam } from "@/lib/teamContext";
 import { PlayOfTheDayCard } from "@/components/community/PlayOfTheDayCard";
@@ -263,6 +264,8 @@ function Dashboard() {
       <div>
         <PlayOfTheDayCard canAdd={isCoach} />
       </div>
+
+      {isCoach ? <AiAssistantHomeCard /> : null}
 
       <HelpCard />
 
