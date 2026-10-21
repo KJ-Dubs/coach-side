@@ -30,6 +30,8 @@ export type CheckStatus = "pass" | "fail" | "waiting";
 export type LaunchQa = {
   config: {
     enforcementEnabled: boolean;
+    squareConfigured: boolean;
+    squareEnvironment: "production" | "sandbox";
     stripeMode: "not_configured" | "test" | "live";
     webhookConfigured: boolean;
     webhookUrl: string;
@@ -58,19 +60,20 @@ export const getLaunchQa = createServerFn({ method: "GET" })
     await assertAdmin(context.supabase);
     const { adminDb, emailConfigured } = await import("./notify.server");
     const { pushConfigured } = await import("./webpush.server");
-    const { enforcementEnabled } = await import("./billing.server");
+    const { enforcementEnabled, squareConfig, squareEnvironment, WEBHOOK_PATH } = await import("./billing.server");
+    const sqCfg = squareConfig();
     const db = await adminDb();
 
     const st = await import("./stripe.server");
     const scfg = st.stripeConfig();
     const stripeMode = scfg.mode;
-    const webhookConfigured = scfg.webhookSecretPresent;
+    const webhookConfigured = !!process.env["SQUARE_WEBHOOK_SIGNATURE_KEY"];
     const resolved = await st.resolvePrices(db as never);
 
     const [pm, wh, tb, ua, ev, anon, potd, plays, members] = await Promise.all([
       db.from("billing_price_map").select("plan_key, stripe_price_id"),
-      db.from("billing_webhook_events").select("*").eq("provider", "stripe").order("received_at", { ascending: false }).limit(50),
-      db.from("team_billing").select("status, stripe_subscription_id, cancel_at_period_end, modules"),
+      db.from("billing_webhook_events").select("*").eq("provider", "square").order("received_at", { ascending: false }).limit(50),
+      db.from("team_billing").select("status, stripe_subscription_id, square_subscription_id, square_checkout_link_id, cancel_at_period_end, modules"),
       db.from("user_achievements").select("user_id, achievement_key, unlocked_at"),
       db.from("product_activity_events").select("user_id, event_type, created_at").in("event_type", [...FUNNEL_EVENTS]),
       db.from("anon_funnel_events").select("event_type"),
@@ -85,24 +88,23 @@ export const getLaunchQa = createServerFn({ method: "GET" })
       return { planKey: k, priceId: r?.priceId ?? null, source: r?.source ?? "missing" };
     });
     const events = (wh.data ?? []) as { event_id: string; event_type: string; processed: boolean; error: string | null; received_at: string; livemode: boolean | null }[];
-    const billing = (tb.data ?? []) as { status: string; stripe_subscription_id: string | null; cancel_at_period_end: boolean; modules: string[] }[];
+    const billing = (tb.data ?? []) as { status: string; stripe_subscription_id: string | null; square_subscription_id: string | null; square_checkout_link_id: string | null; cancel_at_period_end: boolean; modules: string[] }[];
     const stripeRows = billing.filter((b) => b.stripe_subscription_id);
+    const squareRows = billing.filter((b) => b.square_subscription_id);
     const seen = (t: string) => events.some((e) => e.event_type === t && e.processed);
-    const ready = stripeMode !== "not_configured" && webhookConfigured && priceMap.every((p) => p.priceId);
+    const ready = sqCfg.configured;
     const chk = (key: string, label: string, ok: boolean, detail: string) => ({
       key, label, detail, status: (!ready ? "waiting" : ok ? "pass" : "fail") as CheckStatus,
     });
     const checklist = [
-      chk("checkout", "Checkout started in Stripe TEST mode", seen("checkout.session.completed") || stripeRows.length > 0, "Start checkout from Membership with a test card"),
-      chk("webhook_success", "Success webhook received", seen("checkout.session.completed"), "checkout.session.completed processed"),
-      chk("sub_row", "Subscription row saved", stripeRows.length > 0, `${stripeRows.length} team(s) linked to a Stripe subscription`),
-      chk("unlock", "Entitlement unlocked", stripeRows.some((r) => r.status === "active" && r.modules.length > 0), "Active status with modules"),
-      chk("portal", "Customer portal opened", seen("billing_portal.session.created"), "Open the customer portal from Membership"),
-      chk("upgrade_12", "Upgrade $6 → $12", stripeRows.some((r) => r.modules.length === 2) && seen("customer.subscription.updated"), "subscription.updated with 2 modules"),
-      chk("upgrade_15", "Upgrade $12 → $15", stripeRows.some((r) => r.modules.length === 3) && seen("customer.subscription.updated"), "subscription.updated with 3 modules"),
-      chk("downgrade", "Downgrade at renewal", seen("subscription_schedule.updated") || seen("customer.subscription.updated"), "Change scheduled for period end"),
-      chk("cancel", "Cancellation", stripeRows.some((r) => r.cancel_at_period_end) || seen("customer.subscription.deleted"), "cancel_at_period_end or deleted"),
-      chk("past_due", "Payment failure → past due", seen("invoice.payment_failed") || stripeRows.some((r) => r.status === "past_due"), "Use a declining test card"),
+      chk("checkout", "Square checkout opened", billing.some((b) => b.square_checkout_link_id) || squareRows.length > 0, "Choose a plan on Membership and tap Continue"),
+      chk("webhook_success", "Subscription webhook received", seen("subscription.created"), "subscription.created processed"),
+      chk("sub_row", "Subscription linked to a team", squareRows.length > 0, `${squareRows.length} team(s) linked to a Square subscription`),
+      chk("unlock", "Entitlement unlocked", squareRows.some((r) => r.status === "active" && r.modules.length > 0), "Active status with modules"),
+      chk("paid", "Payment recorded", seen("invoice.payment_made"), "invoice.payment_made processed"),
+      chk("change", "Plan change", seen("subscription.updated"), "subscription.updated after Change plan"),
+      chk("cancel", "Cancellation", squareRows.some((r) => r.cancel_at_period_end || r.status === "canceled"), "Ends at period end, then canceled"),
+      chk("past_due", "Payment failure → grace", seen("invoice.scheduled_charge_failed") || squareRows.some((r) => r.status === "grace" || r.status === "past_due"), "Renewal charge failed"),
       chk("idempotent", "Webhook retry is idempotent", events.length > 0 && events.every((e) => !e.error), "Every event id stored once; no errors"),
     ];
 
@@ -144,9 +146,11 @@ export const getLaunchQa = createServerFn({ method: "GET" })
       },
       config: {
         enforcementEnabled: enforcementEnabled(),
+        squareConfigured: sqCfg.configured,
+        squareEnvironment: squareEnvironment(),
         stripeMode,
         webhookConfigured,
-        webhookUrl: "/api/public/stripe/webhook",
+        webhookUrl: WEBHOOK_PATH,
         emailConfigured: emailConfigured(),
         pushConfigured: pushConfigured(),
         supportEmail: process.env["SUPPORT_EMAIL"] || "support@coachside.live",

@@ -223,6 +223,12 @@ function MembershipPage() {
     },
   });
   const activated = returnState === "checkout" && billing.data?.status === "active";
+  const [, tick] = useState(0);
+  useEffect(() => {
+    if (returnState !== "checkout") return;
+    const t = window.setTimeout(() => tick((x) => x + 1), 121_000);
+    return () => window.clearTimeout(t);
+  }, [returnState]);
   useEffect(() => {
     if (activated) void qc.invalidateQueries({ queryKey: ["team-entitlement", teamId] });
   }, [activated, qc, teamId]);
