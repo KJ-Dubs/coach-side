@@ -36,6 +36,7 @@ import { Route as LibraryIndexRouteImport } from './routes/library.index'
 import { Route as LibraryPlayIdRouteImport } from './routes/library.$playId'
 import { Route as LockerTokenRouteImport } from './routes/locker.$token'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedDrillsIndexRouteImport } from './routes/_authenticated/drills.index'
 import { Route as AuthenticatedDrillsNewRouteImport } from './routes/_authenticated/drills.new'
 import { Route as AuthenticatedFilmIndexRouteImport } from './routes/_authenticated/film.index'
@@ -198,6 +199,11 @@ const LockerTokenRoute = LockerTokenRouteImport.update({
 const ShareTokenRoute = ShareTokenRouteImport.update({
   id: '/share/$token',
   path: '/share/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDrillsIndexRoute =
@@ -377,6 +383,7 @@ export interface FileRoutesByFullPath {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/drills/new': typeof AuthenticatedDrillsNewRoute
   '/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/film/new': typeof AuthenticatedFilmNewRoute
@@ -433,6 +440,7 @@ export interface FileRoutesByTo {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library': typeof LibraryIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/drills/new': typeof AuthenticatedDrillsNewRoute
   '/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/film/new': typeof AuthenticatedFilmNewRoute
@@ -491,6 +499,7 @@ export interface FileRoutesById {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/drills/new': typeof AuthenticatedDrillsNewRoute
   '/_authenticated/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/_authenticated/film/new': typeof AuthenticatedFilmNewRoute
@@ -549,6 +558,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library/'
+    | '/.lovable/oauth/consent'
     | '/drills/new'
     | '/film/$jobId'
     | '/film/new'
@@ -605,6 +615,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library'
+    | '/.lovable/oauth/consent'
     | '/drills/new'
     | '/film/$jobId'
     | '/film/new'
@@ -662,6 +673,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library/'
+    | '/.lovable/oauth/consent'
     | '/_authenticated/drills/new'
     | '/_authenticated/film/$jobId'
     | '/_authenticated/film/new'
@@ -705,6 +717,7 @@ export interface RootRouteChildren {
   LockerTokenRoute: typeof LockerTokenRoute
   ShareTokenRoute: typeof ShareTokenRoute
   LibraryIndexRoute: typeof LibraryIndexRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   SharePlayTokenRoute: typeof SharePlayTokenRoute
   ApiPublicCronDailyRoute: typeof ApiPublicCronDailyRoute
   ApiPublicFilmClaimRoute: typeof ApiPublicFilmClaimRoute
@@ -906,6 +919,13 @@ declare module '@tanstack/react-router' {
       path: '/share/$token'
       fullPath: '/share/$token'
       preLoaderRoute: typeof ShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/drills/': {
@@ -1195,6 +1215,7 @@ const rootRouteChildren: RootRouteChildren = {
   LockerTokenRoute: LockerTokenRoute,
   ShareTokenRoute: ShareTokenRoute,
   LibraryIndexRoute: LibraryIndexRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   SharePlayTokenRoute: SharePlayTokenRoute,
   ApiPublicCronDailyRoute: ApiPublicCronDailyRoute,
   ApiPublicFilmClaimRoute: ApiPublicFilmClaimRoute,

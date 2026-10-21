@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AuthCard } from "@/components/AuthCard";
 import { SignInShowcase } from "@/components/SignInShowcase";
@@ -6,14 +6,15 @@ import { Panel, Pill } from "@/components/Bubbles";
 import { useAuth } from "@/lib/auth";
 import { consumePendingInvite } from "@/lib/pendingInvite";
 import { trackActivity } from "@/lib/activity";
+import { oauthReturnPath } from "@/lib/oauth-return-path";
 
 type AuthSearch = { mode?: "signin" | "signup"; next?: string };
 
-/** Only same-origin in-app paths may be used as a post-sign-in destination. */
+/** Only canonical same-origin in-app paths may be used as a post-sign-in destination. */
 function safeNext(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  if (!value.startsWith("/") || value.startsWith("//")) return null;
-  return value;
+  const path = oauthReturnPath(value);
+  return path === "/" && value !== "/" ? null : path;
 }
 
 export const Route = createFileRoute("/auth")({
@@ -48,18 +49,25 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { session, ready } = useAuth();
   const navigate = useNavigate();
+  const router = useRouter();
   const { mode, next } = Route.useSearch();
   const recovering =
     typeof window !== "undefined" && window.location.hash.includes("type=recovery");
 
-  /** Returns the visitor to where they started (e.g. a shared play), if safe. */
+  /** Returns the visitor to where they started (e.g. a shared play or an app-connection request), if safe. */
   const goHome = () => {
     if (next) {
-      navigate({ to: next, replace: true } as never);
+      // History keeps the query string (e.g. a connection request id) intact.
+      router.history.replace(next);
       return;
     }
     navigate({ to: "/dashboard", replace: true });
   };
+  // Email confirmation and Google sign-in come back here, then continue to `next`.
+  const returnTo =
+    next && typeof window !== "undefined"
+      ? `${window.location.origin}/auth?next=${encodeURIComponent(next)}`
+      : undefined;
 
   useEffect(() => {
     if (!ready || !session || recovering) return;
@@ -94,6 +102,7 @@ function AuthPage() {
         <>
           <AuthCard
             initialMode={recovering ? "reset" : mode === "signup" ? "signup" : "signin"}
+            {...(returnTo ? { returnTo } : {})}
             onDone={() => goHome()}
           />
           <SignInShowcase />
