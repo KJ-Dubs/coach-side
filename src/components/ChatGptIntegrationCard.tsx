@@ -39,7 +39,6 @@ export function ChatGptIntegrationCard() {
   const q = useQuery({ queryKey: ["mcp-connections"], queryFn: fetchConnections });
   const active = (q.data?.connections ?? []).filter((c) => !c.revoked_at);
   const revoked = (q.data?.connections ?? []).filter((c) => c.revoked_at);
-  const panelRef = useRef<HTMLDivElement>(null);
   const stepsRef = useRef<HTMLDivElement>(null);
   const connectionsRef = useRef<HTMLDivElement>(null);
   const arrivedFromLink = useRef(false);
@@ -50,7 +49,7 @@ export function ChatGptIntegrationCard() {
     if (window.location.hash !== `#${AI_ASSISTANT_ANCHOR}`) return;
     arrivedFromLink.current = true;
     const timers = [80, 450].map((ms) =>
-      window.setTimeout(() => panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), ms),
+      window.setTimeout(() => document.getElementById(AI_ASSISTANT_ANCHOR)?.scrollIntoView({ behavior: "smooth", block: "start" }), ms),
     );
     return () => timers.forEach((t) => window.clearTimeout(t));
   }, []);
@@ -99,7 +98,7 @@ export function ChatGptIntegrationCard() {
   const manage = () => connectionsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
 
   return (
-    <Panel ref={panelRef} className="flex scroll-mt-24 flex-col gap-3 lg:col-span-2" id={AI_ASSISTANT_ANCHOR}>
+    <Panel className="flex scroll-mt-24 flex-col gap-3 lg:col-span-2" id={AI_ASSISTANT_ANCHOR}>
       <div className="flex justify-center">
         <Heading tone="grape" className="text-center">CoachSide AI Assistant</Heading>
       </div>
@@ -129,7 +128,8 @@ export function ChatGptIntegrationCard() {
       </div>
 
       {help ? (
-        <InfoPanel ref={stepsRef} tone="grape">
+        <div ref={stepsRef} className="scroll-mt-24">
+        <InfoPanel tone="grape">
           <ol className="list-decimal space-y-1 pl-5 text-left text-sm">
             <li>Connecting starts in ChatGPT, not here. In ChatGPT's apps/connectors settings, add a custom app (developer mode may be required).</li>
             <li>Paste the connector address above and choose OAuth sign-in.</li>
@@ -140,9 +140,10 @@ export function ChatGptIntegrationCard() {
             Availability of custom apps and write actions depends on your ChatGPT plan and workspace settings.
           </p>
         </InfoPanel>
+        </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-center gap-2">
+      <div ref={connectionsRef} className="flex scroll-mt-24 flex-wrap items-center justify-center gap-2">
         <Label>Status</Label>
         {q.isLoading ? (
           <Pill tone="muted">Loading…</Pill>
