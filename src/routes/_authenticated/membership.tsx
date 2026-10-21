@@ -41,6 +41,7 @@ import {
   redeemAccessCode,
   setAccessCodeActive,
 } from "@/lib/billing.functions";
+import { BillingDiagnosticsPanel } from "@/components/admin/BillingDiagnosticsPanel";
 
 export const Route = createFileRoute("/_authenticated/membership")({
   head: () => ({
@@ -185,12 +186,52 @@ function MembershipPage() {
   const redeemFn = useServerFn(redeemAccessCode);
   const cancelFn = useServerFn(cancelTeamMembership);
 
+  // Return from checkout or a plan change. Only the payment webhook unlocks access;
+  // this just tells the coach what is happening while we wait for it.
+  const [returnState, setReturnState] = useState<null | "checkout" | "now" | "renewal" | "stripe">(null);
+  const [waitStarted, setWaitStarted] = useState<number | null>(null);
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const changed = sp.get("changed");
+    const next =
+      sp.get("checkout") === "complete"
+        ? "checkout"
+        : changed === "now" || changed === "renewal" || changed === "stripe"
+          ? changed
+          : null;
+    if (!next) return;
+    const wanted = sp.get("team");
+    if (wanted && teams.some((t) => t.id === wanted) && wanted !== teamId) setTeam(wanted);
+    setReturnState(next);
+    setWaitStarted(Date.now());
+    window.history.replaceState(null, "", window.location.pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teams.length]);
+
   const config = useQuery({ queryKey: ["billing-config"], queryFn: () => configFn({}) });
   const billing = useQuery({
     queryKey: ["team-billing", teamId],
     queryFn: () => billingFn({ data: { teamId: teamId! } }),
     enabled: !!teamId && role.isCoach,
+    refetchInterval: (q) => {
+      const waiting =
+        returnState === "checkout" &&
+        q.state.data?.status !== "active" &&
+        waitStarted !== null &&
+        Date.now() - waitStarted < 120_000;
+      return waiting ? 3000 : false;
+    },
   });
+  const activated = returnState === "checkout" && billing.data?.status === "active";
+  const [, tick] = useState(0);
+  useEffect(() => {
+    if (returnState !== "checkout") return;
+    const t = window.setTimeout(() => tick((x) => x + 1), 121_000);
+    return () => window.clearTimeout(t);
+  }, [returnState]);
+  useEffect(() => {
+    if (activated) void qc.invalidateQueries({ queryKey: ["team-entitlement", teamId] });
+  }, [activated, qc, teamId]);
 
   const owned = useMemo(() => billing.data?.modules ?? [], [billing.data]);
   const [selected, setSelected] = useState<ModuleKey[] | null>(null);
@@ -228,17 +269,20 @@ function MembershipPage() {
       if (r.ok) window.location.assign(r.url);
       else toast.error(r.reason);
     },
-    onError: () => toast.error("Checkout is not available yet."),
+    onError: () => toast.error("Checkout is temporarily unavailable."),
   });
 
   const cancel = useMutation({
     mutationFn: () => cancelFn({ data: { teamId: teamId! } }),
     onSuccess: (r) => {
       toast[r.ok ? "success" : "error"](
-        r.ok ? "Membership ends at the end of the paid period." : (r.reason ?? "Nothing to cancel."),
+        r.ok
+          ? `Membership ends ${r.endsAt ? `on ${new Date(r.endsAt).toLocaleDateString()}` : "at the end of the paid period"}. Access continues until then.`
+          : (r.reason ?? "Nothing to cancel."),
       );
       void qc.invalidateQueries({ queryKey: ["team-billing", teamId] });
     },
+    onError: () => toast.error("Could not cancel right now. Please try again."),
   });
 
   const portal = useMutation({
@@ -250,10 +294,15 @@ function MembershipPage() {
       if (r.ok) window.location.assign(r.url);
       else toast.error(r.reason);
     },
-    onError: () => toast.error("Billing portal is not available yet."),
+    onError: () => toast.error("Billing management is temporarily unavailable."),
   });
 
   const status = (billing.data?.status ?? "free") as BillingStatus;
+  const b = billing.data;
+  const checkoutAvailable = b ? b.checkoutAvailable : !!config.data?.checkoutConfigured;
+  const checkoutReason = b ? b.checkoutReason : (config.data?.checkoutReason ?? null);
+  const samePlan =
+    picked.length === owned.length && picked.every((m) => owned.includes(m)) && !b?.cancelAtPeriodEnd;
 
   return (
     <AppShell title="Membership" subtitle="One monthly membership per team" backTo="/dashboard" backLabel="Home">
@@ -287,8 +336,16 @@ function MembershipPage() {
             </Pill>
           ))
         ) : null}
-        {billing.data?.currentPeriodEnd ? (
-          <Pill tone="muted">Renews {new Date(billing.data.currentPeriodEnd).toLocaleDateString()}</Pill>
+        {b?.currentPeriodEnd && b.hasSubscription ? (
+          <Pill tone={b.cancelAtPeriodEnd ? "danger" : "muted"}>
+            {b.cancelAtPeriodEnd ? "Ends" : "Renews"} {new Date(b.currentPeriodEnd).toLocaleDateString()}
+          </Pill>
+        ) : null}
+        {b?.pendingModules?.length && b.hasSubscription && b.pendingEffectiveAt ? (
+          <Pill tone="grape">
+            Changes to {b.pendingModules.map((m) => MODULES[m].name).join(" + ")} on{" "}
+            {new Date(b.pendingEffectiveAt).toLocaleDateString()}
+          </Pill>
         ) : null}
         {config.data && !config.data.enforcementEnabled ? (
           <Note className="w-full">
@@ -296,6 +353,33 @@ function MembershipPage() {
           </Note>
         ) : null}
       </Panel>
+
+      {returnState ? (
+        <Panel className="mb-3 flex flex-wrap items-center gap-2 border-grape/60 bg-grape/10">
+          <Label>{returnState === "checkout" ? "Checkout" : "Plan change"}</Label>
+          {returnState === "checkout" ? (
+            activated ? (
+              <Pill tone="success">Payment confirmed — your membership is active</Pill>
+            ) : waitStarted !== null && Date.now() - waitStarted >= 120_000 ? (
+              <Note className="w-full">
+                We're still waiting for payment confirmation. It usually arrives within a few minutes — refresh this
+                page shortly. You won't be charged twice.
+              </Note>
+            ) : (
+              <Pill tone="grape">Confirming your payment…</Pill>
+            )
+          ) : returnState === "renewal" ? (
+            <Note className="w-full">
+              Your new plan starts on your next renewal date. Your current features stay on until then.
+            </Note>
+          ) : (
+            <Pill tone="success">Plan updated</Pill>
+          )}
+          <BubbleButton size="sm" tone="ghost" className="ml-auto" onClick={() => setReturnState(null)}>
+            Dismiss
+          </BubbleButton>
+        </Panel>
+      ) : null}
 
       <Panel className="mb-3 flex flex-col gap-3">
         <div className="flex justify-center">
@@ -378,32 +462,60 @@ function MembershipPage() {
         <Note className="w-full">
           One monthly charge for {team?.name ?? "this team"}, not one charge per module.
         </Note>
-        {config.data && !config.data.checkoutConfigured ? (
+        {!checkoutAvailable && checkoutReason ? (
           <Note className="w-full">
-            Checkout setup is not finished yet, so payment cannot be taken. Nothing is locked in the
-            meantime.
+            {checkoutReason}
+            {b?.isAdmin ? "" : " Nothing is locked in the meantime."}
+          </Note>
+        ) : null}
+        {b?.hasSubscription && b.provider === "square" && !samePlan ? (
+          <Note className="w-full">
+            Plan changes start on your next renewal date. Swapping modules at the same price applies right away.
           </Note>
         ) : null}
         <div className="flex w-full flex-wrap items-center justify-center gap-2">
           <BubbleButton
             tone="flame"
             size="lg"
-            disabled={!teamId || !picked.length || !config.data?.checkoutConfigured || checkout.isPending}
+            disabled={
+              !teamId || !picked.length || !checkoutAvailable || checkout.isPending || (b?.hasSubscription && samePlan)
+            }
             onClick={() => checkout.mutate()}
           >
-            {checkout.isPending ? "Opening checkout…" : `Continue — $${total}/month`}
+            {checkout.isPending
+              ? b?.hasSubscription
+                ? "Updating…"
+                : "Opening checkout…"
+              : b?.hasSubscription
+                ? b.cancelAtPeriodEnd
+                  ? `Keep membership — $${total}/month`
+                  : samePlan
+                    ? "Current plan"
+                    : `Change plan — $${total}/month`
+                : `Continue — $${total}/month`}
           </BubbleButton>
-          {billing.data?.subscriptionRef ? (
+          {b?.hasSubscription && b.provider === "stripe" ? (
             <BubbleButton tone="neutral" disabled={portal.isPending} onClick={() => portal.mutate()}>
               {portal.isPending ? "Opening…" : "Manage billing"}
             </BubbleButton>
           ) : null}
-          {billing.data?.subscriptionRef ? (
-            <BubbleButton tone="neutral" onClick={() => cancel.mutate()}>
+          {b?.hasSubscription && !b.cancelAtPeriodEnd ? (
+            <BubbleButton
+              tone="neutral"
+              disabled={cancel.isPending}
+              onClick={() => {
+                if (window.confirm("Cancel this team's membership at the end of the paid period? Nothing you created is deleted.")) cancel.mutate();
+              }}
+            >
               Cancel at period end
             </BubbleButton>
           ) : null}
         </div>
+        {b?.hasSubscription && b.provider === "square" ? (
+          <Note className="w-full text-center">
+            Card or receipt questions? Email support@coachside.live.
+          </Note>
+        ) : null}
       </Panel>
 
       <Panel className="mb-3 flex flex-col gap-2">
@@ -435,9 +547,11 @@ function MembershipPage() {
 
       {billing.data?.isAdmin ? (
         <>
+          <BillingDiagnosticsPanel />
           <Panel className="mb-3 flex flex-wrap items-center gap-2">
-            <Label>Billing diagnostics</Label>
+            <Label>This team's billing record</Label>
             <Pill tone="muted">Status {status}</Pill>
+            <Pill tone="muted">Billed through {billing.data.provider === "stripe" ? "legacy Stripe" : "Square"}</Pill>
             <Pill tone="muted">Subscription {billing.data.subscriptionRef ?? "none"}</Pill>
             <Pill tone="muted">
               Last sync{" "}

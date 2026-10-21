@@ -3159,6 +3159,11 @@ export type Database = {
           modules: string[]
           pending_effective_at: string | null
           pending_modules: string[] | null
+          square_checkout_link_id: string | null
+          square_checkout_order_id: string | null
+          square_checkout_started_at: string | null
+          square_checkout_url: string | null
+          square_checkout_variation_id: string | null
           square_customer_id: string | null
           square_plan_variation_id: string | null
           square_subscription_id: string | null
@@ -3182,6 +3187,11 @@ export type Database = {
           modules?: string[]
           pending_effective_at?: string | null
           pending_modules?: string[] | null
+          square_checkout_link_id?: string | null
+          square_checkout_order_id?: string | null
+          square_checkout_started_at?: string | null
+          square_checkout_url?: string | null
+          square_checkout_variation_id?: string | null
           square_customer_id?: string | null
           square_plan_variation_id?: string | null
           square_subscription_id?: string | null
@@ -3205,6 +3215,11 @@ export type Database = {
           modules?: string[]
           pending_effective_at?: string | null
           pending_modules?: string[] | null
+          square_checkout_link_id?: string | null
+          square_checkout_order_id?: string | null
+          square_checkout_started_at?: string | null
+          square_checkout_url?: string | null
+          square_checkout_variation_id?: string | null
           square_customer_id?: string | null
           square_plan_variation_id?: string | null
           square_subscription_id?: string | null

@@ -12,6 +12,7 @@ import { AppShell } from "@/components/AppShell";
 import { BubbleButton, EmptyState, Label, Note, Panel, Pill, SelectInput, StatTile, TextInput } from "@/components/Bubbles";
 import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
 import { AiDiagnosticsPanel } from "@/components/admin/AiDiagnosticsPanel";
+import { BillingDiagnosticsPanel } from "@/components/admin/BillingDiagnosticsPanel";
 import {
   getLaunchQa,
   grantPilotAccess,
@@ -30,7 +31,7 @@ export const Route = createFileRoute("/_authenticated/launch-qa")({
   head: () => ({
     meta: [
       { title: "Launch QA — CoachSide owner tools" },
-      { name: "description", content: "Owner-only verification of trials, paywalls, achievements, notifications and Stripe." },
+      { name: "description", content: "Owner-only verification of trials, paywalls, achievements, notifications and Square billing." },
       { name: "robots", content: "noindex, nofollow" },
       { property: "og:title", content: "Launch QA — CoachSide" },
       { property: "og:description", content: "Owner-only launch verification." },
@@ -138,33 +139,29 @@ function LaunchQaPage() {
             <Label>1 · Current config</Label>
             <div className="flex flex-wrap gap-2">
               <Pill>Billing enforcement</Pill><OnOff on={d.config.enforcementEnabled} />
-              <Pill>Stripe</Pill>
-              <Pill tone={d.config.stripeMode === "not_configured" ? "danger" : d.config.stripeMode === "live" ? "flame" : "grape"}>
-                {d.config.stripeMode === "not_configured" ? "Not configured" : d.config.stripeMode.toUpperCase()}
-              </Pill>
-              <Pill>Webhook</Pill><OnOff on={d.config.webhookConfigured} yes="Configured" no="Missing" />
+              <Pill>Square checkout</Pill><OnOff on={d.config.squareConfigured} yes="Ready" no="Setup incomplete" />
+              <Pill tone={d.config.squareEnvironment === "production" ? "flame" : "muted"}>{d.config.squareEnvironment}</Pill>
               <Pill>Email</Pill><OnOff on={d.config.emailConfigured} yes="Configured" no="Not configured" />
               <Pill>Push</Pill><OnOff on={d.config.pushConfigured} yes="Configured" no="Missing" />
-              <Pill>Price map</Pill><OnOff on={d.config.priceMapComplete} yes="Complete" no="Incomplete" />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Pill>Stripe server secret</Pill><OnOff on={d.stripe.secretPresent} yes="Present" no="Not configured" />
-              {d.stripe.reason ? <Pill tone="danger">{d.stripe.reason}</Pill> : null}
-              <Pill tone="muted">Last webhook: {d.stripe.lastWebhookAt ? new Date(d.stripe.lastWebhookAt).toLocaleString() : "none yet"}</Pill>
-              {d.stripe.subscriptions.length === 0 ? <Pill tone="muted">No Stripe subscriptions observed</Pill> : d.stripe.subscriptions.map((x) => (
-                <Pill key={x.status} tone="grape">{x.status}: {x.count}</Pill>
-              ))}
             </div>
             <div className="flex flex-wrap gap-2">
               <Pill tone="grape">Support: {d.config.supportEmail}</Pill>
               <Pill tone="muted">From: {d.config.fromEmail}</Pill>
-              <Pill tone="muted">Webhook path: {d.config.webhookUrl}</Pill>
             </div>
           </Panel>
 
+          <BillingDiagnosticsPanel />
+
+          {d.stripe.secretPresent || d.stripe.subscriptions.length ? (
           <Panel className="flex flex-col gap-2">
-            <Label>Stripe price IDs</Label>
-            <Note>Test prices come from your Stripe sandbox. Saving a value here overrides it — map live-mode IDs here after QA.</Note>
+            <Label>Legacy Stripe</Label>
+            <Note>Only teams that already pay through Stripe use these. New memberships go through Square.</Note>
+            <div className="flex flex-wrap gap-2">
+              <Pill>Stripe server secret</Pill><OnOff on={d.stripe.secretPresent} yes="Present" no="Not configured" />
+              {d.stripe.subscriptions.length === 0 ? <Pill tone="muted">No Stripe subscriptions</Pill> : d.stripe.subscriptions.map((x) => (
+                <Pill key={x.status} tone="grape">{x.status}: {x.count}</Pill>
+              ))}
+            </div>
             {d.priceMap.map((row) => (
               <div key={row.planKey} className="grid gap-2 sm:grid-cols-[220px_minmax(0,1fr)_auto] sm:items-center">
                 <Pill tone={row.priceId ? "success" : "danger"}>{PLAN_LABEL[row.planKey]} · {row.source}</Pill>
@@ -179,6 +176,7 @@ function LaunchQaPage() {
               </div>
             ))}
           </Panel>
+          ) : null}
 
           <Panel className="flex flex-col gap-2">
             <Label>2 · Entitlement simulator</Label>
@@ -213,7 +211,7 @@ function LaunchQaPage() {
           </Panel>
 
           <Panel className="flex flex-col gap-2">
-            <Label>4 · Stripe test checklist</Label>
+            <Label>4 · Square checkout checklist</Label>
             {d.checklist.map((c) => (
               <div key={c.key} className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-2/60 px-3 py-2">
                 <Pill tone={c.status === "pass" ? "success" : c.status === "fail" ? "danger" : "muted"}>
@@ -224,7 +222,7 @@ function LaunchQaPage() {
               </div>
             ))}
             <Label>Recent webhook events</Label>
-            {d.webhookEvents.length === 0 ? <EmptyState>No Stripe events received yet</EmptyState> : d.webhookEvents.map((e) => (
+            {d.webhookEvents.length === 0 ? <EmptyState>No Square events received yet</EmptyState> : d.webhookEvents.map((e) => (
               <div key={e.eventId} className="flex flex-wrap gap-2">
                 <Pill tone={e.processed ? "success" : "danger"}>{e.type}</Pill>
                 <Pill tone="muted">{new Date(e.receivedAt).toLocaleString()}</Pill>
