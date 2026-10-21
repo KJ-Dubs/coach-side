@@ -134,7 +134,7 @@ export function ChatGptIntegrationCard() {
             <li>Connecting starts in ChatGPT, not here. In ChatGPT's apps/connectors settings, add a custom app (developer mode may be required).</li>
             <li>Paste the connector address above and choose OAuth sign-in.</li>
             <li>ChatGPT sends you to CoachSide. Sign in, pick what it may do, and tap Allow.</li>
-            <li>Ask things like "Add practice Thursday at 4:30 PM for Aliso Sophomores."</li>
+            <li>Ask things like "Add practice Thursday at 4:30 PM for East High."</li>
           </ol>
           <p className="mt-2 text-center text-xs text-muted-foreground">
             Availability of custom apps and write actions depends on your ChatGPT plan and workspace settings.
