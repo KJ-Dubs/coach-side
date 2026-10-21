@@ -21,6 +21,7 @@ import type { VariationMap } from "./squareBilling";
 
 export const SQUARE_ENV_KEYS = [
   "SQUARE_ACCESS_TOKEN",
+  "SQUARE_ENVIRONMENT",
   "SQUARE_LOCATION_ID",
   "SQUARE_WEBHOOK_SIGNATURE_KEY",
   "SQUARE_PLAN_VARIATION_SINGLE",

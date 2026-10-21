@@ -1,5 +1,12 @@
 # CourtSide Coach — production pass roadmap
 
+## Square membership checkout
+- [x] Square is the primary processor for new checkouts, plan changes and cancel; live legacy Stripe subscriptions stay on Stripe
+- [x] Webhook verifies signature, dedupes events, re-reads the subscription from Square and reconciles team_billing; redirects never unlock access
+- [x] Owner diagnostics (Membership + Launch QA), generic message for coaches when setup is incomplete; 17 billing tests
+- [ ] Enter Square production credentials and plan variation IDs, register the webhook, then run a real $6 checkout end-to-end — blocked: owner must add Square secrets
+- [ ] Turn on billing enforcement — waits on a verified real checkout
+
 ## ChatGPT / MCP connector (phase 1: teams, roster, schedule)
 - [x] Managed OAuth server enabled (PKCE S256, client registration, refresh/offline_access); consent page + sign-in return
 - [x] `/mcp` endpoint with 9 tools, per-connection permissions, instant revoke, rate limit, audit log
