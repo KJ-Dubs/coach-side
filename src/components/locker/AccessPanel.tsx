@@ -10,7 +10,7 @@ import {
   Pill,
 } from "@/components/Bubbles";
 import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/activity";
-import { lockerUrl, resetLockerToken, setLockerSharing, updateTeam } from "@/lib/data";
+import { fetchPlayers, lockerUrl, resetLockerToken, setLockerSharing, updateTeam } from "@/lib/data";
 import {
   ensureTeamInvite,
   fetchTeamDirectory,
@@ -33,6 +33,11 @@ export function LockerAccessPanel({ team }: { team: Team }) {
   const directory = useQuery({
     queryKey: ["team-directory", team.id],
     queryFn: () => fetchTeamDirectory(team.id),
+  });
+
+  const roster = useQuery({
+    queryKey: ["players", team.id],
+    queryFn: () => fetchPlayers(team.id),
   });
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["team-invites", team.id] });
@@ -209,6 +214,27 @@ export function LockerAccessPanel({ team }: { team: Team }) {
           <EmptyState>No players or parents have joined yet</EmptyState>
         )}
       </div>
+      {(() => {
+        const linked = new Set((directory.data ?? []).map((d) => d.player_id).filter(Boolean));
+        const notJoined = (roster.data ?? []).filter((p) => p.active !== false && !linked.has(p.id));
+        if (!roster.data || !directory.data) return null;
+        return (
+          <>
+            <Label>Roster players not joined yet</Label>
+            <div className="flex flex-wrap gap-2">
+              {notJoined.length ? (
+                notJoined.map((p) => (
+                  <Pill key={p.id} tone="muted">
+                    #{p.jersey} {p.name} · Not joined yet
+                  </Pill>
+                ))
+              ) : (
+                <Pill tone="success">Every roster player has joined</Pill>
+              )}
+            </div>
+          </>
+        );
+      })()}
       <Note>
         Removing someone takes away their Locker Room access right away. Share links only with your
         team.
