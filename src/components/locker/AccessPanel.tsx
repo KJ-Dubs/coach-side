@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -41,6 +42,13 @@ export function LockerAccessPanel({ team }: { team: Team }) {
   });
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["team-invites", team.id] });
+
+  // "Manage access" from the Locker Room lands here once the panel renders.
+  useEffect(() => {
+    if (window.location.hash !== "#locker-access") return;
+    const t = setTimeout(() => document.getElementById("locker-access")?.scrollIntoView({ block: "start" }), 150);
+    return () => clearTimeout(t);
+  }, []);
 
   const make = useMutation({
     mutationFn: (type: "player" | "parent") => ensureTeamInvite(team.id, type),
@@ -112,7 +120,7 @@ export function LockerAccessPanel({ team }: { team: Team }) {
   };
 
   return (
-    <Panel className="flex flex-col gap-3 lg:col-span-2">
+    <Panel id="locker-access" className="flex scroll-mt-24 flex-col gap-3 lg:col-span-2">
       <Heading tone="grape">Locker Room access</Heading>
       <div className="grid gap-3 lg:grid-cols-2">
         {row(

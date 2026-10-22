@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ClipboardCheck, Folder, MessageCircle, Plus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { PlayerHub } from "@/components/locker/PlayerHub";
+import { InvitePlayersPanel } from "@/components/locker/InvitePlayersPanel";
 import { PlayThumb } from "@/components/community/PlayThumb";
 import { personalPlans } from "@/lib/playerLocker";
 import { AppShell } from "@/components/AppShell";
@@ -58,6 +59,7 @@ function LockerRoomPage() {
   const qc = useQueryClient();
   const currentTeam = useCurrentTeam();
   const [teamId, setTeamId] = useState(search.team ?? "");
+  const [inviteOpen, setInviteOpen] = useState(false);
   const locker = useLocker(teamId || null);
   useEffect(() => { if (search.team && locker.teams.some((t) => t.id === search.team)) setTeamId(search.team); else if (locker.teams.length && !locker.teams.some((t) => t.id === teamId)) setTeamId(currentTeam.teamId ?? locker.teams[0]?.id ?? ""); }, [locker.teams, teamId, search.team, currentTeam.teamId]);
   useEffect(() => { if (teamId && locker.teams.some((t) => t.id === teamId) && currentTeam.teamId !== teamId) currentTeam.setTeam(teamId); }, [teamId, locker.teams, currentTeam.teamId, currentTeam.setTeam]);
@@ -85,8 +87,9 @@ function LockerRoomPage() {
     {!locker.isPlayer || locker.teams.length > 1 ? <Panel className="mb-3 flex flex-wrap items-center gap-2">
       <Label>Team</Label><SelectInput value={teamId} onChange={(e) => { const next = e.target.value; setTeamId(next); void navigate({ to: "/lockerroom", search: { ...(search.area ? { area: search.area } : {}), team: next } }); }} className="max-w-xs">{locker.teams.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.season}</option>)}</SelectInput>
       {locker.isCoach && locker.role ? <Pill tone="flame">{TEAM_ROLE_LABEL[locker.role]}</Pill> : null}
-      {locker.isCoach ? <Link to="/settings" className="inline-flex min-h-11 items-center rounded-full border border-grape/60 bg-grape/20 px-4 text-sm font-black text-foreground">Invite links &amp; access</Link> : null}
+      {locker.isCoach ? <BubbleButton tone={inviteOpen ? "flame" : "grape"} aria-expanded={inviteOpen} onClick={() => setInviteOpen((v) => !v)}>Invite Players</BubbleButton> : null}
     </Panel> : null}
+    {locker.isCoach && inviteOpen && teamId ? <InvitePlayersPanel key={teamId} teamId={teamId} teamName={locker.teams.find((t) => t.id === teamId)?.name ?? "your team"} onClose={() => setInviteOpen(false)} /> : null}
     {area ? <BubbleButton tone="ghost" className="mb-3" onClick={() => go()}>← Back to Locker Room</BubbleButton> : null}
     {!area && locker.isPlayer ? <PlayerHub teamId={teamId} userId={locker.user?.id ?? null} playerId={locker.playerId} events={events.data ?? []} plans={assignments.data ?? []} targets={targets.data ?? []} announcements={announcements.data ?? []} loading={events.isPending || assignments.isPending || (Boolean(assignments.data?.length) && targets.isPending)} onOpen={(destination) => { void navigate({ to: "/lockerroom", search: { ...destination, team: teamId } }); }} /> : null}
     {!area && !locker.isPlayer ? <Hub events={upcoming} plays={plays.data?.length ?? 0} plans={openPlans} pinned={announcements.data?.filter((a) => a.pinned).length ?? 0} onOpen={go} /> : null}
