@@ -122,7 +122,6 @@ function ChatArea({ teamId, locker, directory, announcements, allowPlayerPosting
   const receipts = useQuery({ queryKey: ["announcement-receipts", teamId, pinnedIds.join(",")], queryFn: () => fetchReceipts(pinnedIds), enabled: pinnedIds.length > 0 });
   // Players/parents seeing pinned updates records a "seen" receipt for coaches.
   useEffect(() => { if (locker.isCoach || sub !== "team" || !locker.user) return; for (const id of pinnedIds) void markAnnouncement(id, { viewed: true }).catch(() => undefined); }, [locker.isCoach, locker.user, sub, pinnedIds.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
-  const playerTotal = directory.filter((d) => d.role === "player").length;
   return <div className="flex flex-col gap-3">
     <Panel className="flex flex-wrap gap-2"><BubbleButton tone={sub === "team" ? "grape" : "neutral"} onClick={() => setSub("team")}>Team Chat</BubbleButton><BubbleButton tone={sub === "messages" ? "flame" : "neutral"} onClick={() => setSub("messages")}>{locker.isCoach ? "Messages" : "Message Coaches"}</BubbleButton></Panel>
     {sub === "team" ? <>
