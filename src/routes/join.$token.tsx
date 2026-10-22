@@ -94,7 +94,7 @@ function JoinPage() {
 
   const goLocker = () => {
     clearPendingInvite();
-    navigate({ to: "/lockerroom", search: teamId ? ({ team: teamId } as never) : undefined, replace: true });
+    navigate({ to: "/lockerroom", search: (teamId ? { team: teamId } : {}) as never, replace: true });
   };
 
   const join = useMutation({

@@ -52,7 +52,7 @@ export function unlinkedPlayerAccounts(memberships: MembershipLite[]): Membershi
  * (revoked/invalid refresh token) should send someone to the sign-in page;
  * network or server trouble keeps the stored session.
  */
-export function isDefinitiveAuthFailure(error: { status?: number; name?: string; message?: string } | null | undefined): boolean {
+export function isDefinitiveAuthFailure(error: { status?: number | undefined; name?: string | undefined; message?: string | undefined } | null | undefined): boolean {
   if (!error) return false;
   if (error.name === "AuthRetryableFetchError") return false;
   const status = error.status ?? 0;
