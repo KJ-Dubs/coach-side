@@ -6,7 +6,8 @@ import { AuthCard } from "@/components/AuthCard";
 import { BubbleButton, EmptyState, Heading, Note, Panel, Pill } from "@/components/Bubbles";
 import wordmark from "@/assets/coachside-wordmark.png.asset.json";
 import { useAuth } from "@/lib/auth";
-import { acceptTeamInvite, fetchInviteRoster, lookupTeamInvite } from "@/lib/locker";
+import { acceptTeamInvite, fetchInviteRoster, fetchMyTeamMembership, lookupTeamInvite } from "@/lib/locker";
+import { joinStateFor } from "@/lib/playerAccess";
 import { clearPendingInvite, joinUrl, setPendingInvite } from "@/lib/pendingInvite";
 
 export const Route = createFileRoute("/join/$token")({
@@ -40,12 +41,12 @@ function JoinPage() {
     setPendingInvite(token);
   }, [token]);
 
-
   const invite = useQuery({
     queryKey: ["team-invite", token],
     queryFn: () => lookupTeamInvite(token),
     enabled: ready,
   });
+  const teamId = invite.data?.team_id ?? null;
 
   const isParent = invite.data?.invite_type === "parent";
   const parentLink =
@@ -66,8 +67,16 @@ function JoinPage() {
     }
   }, [invite.isLoading, invite.data]);
 
+  // The signed-in account's existing place on this team, if any.
+  const membership = useQuery({
+    queryKey: ["my-team-membership", teamId, session?.user.id ?? null],
+    queryFn: () => fetchMyTeamMembership(String(teamId)),
+    enabled: signedIn && !!teamId,
+  });
+  const state = joinStateFor(membership.data ?? null);
+
   const roster = useQuery({
-    queryKey: ["invite-roster", token],
+    queryKey: ["invite-roster", token, session?.user.id ?? null],
     queryFn: () => fetchInviteRoster(token),
     enabled: signedIn && invite.data?.invite_type === "player",
   });
@@ -75,22 +84,30 @@ function JoinPage() {
   const isPlayerInvite = invite.data?.invite_type === "player";
   const rosterRows = roster.data ?? [];
   const canJoin = isPlayerInvite ? !!playerId : true;
+  const myRow =
+    state.kind === "joined" ? rosterRows.find((r) => r.id === state.playerId) ?? null : null;
 
-  // A returning player is preselected on their own name so they can continue.
+  // Already on the team: the invite is done, don't keep it pending.
   useEffect(() => {
-    const mine = rosterRows.find((r) => r.mine);
-    if (mine && !playerId) setPlayerId(mine.id);
-  }, [rosterRows, playerId]);
+    if (state.kind === "joined" || state.kind === "coach" || state.kind === "removed") clearPendingInvite();
+  }, [state.kind]);
+
+  const goLocker = () => {
+    clearPendingInvite();
+    navigate({ to: "/lockerroom", search: (teamId ? { team: teamId } : {}) as never, replace: true });
+  };
 
   const join = useMutation({
     mutationFn: () => acceptTeamInvite(token, isPlayerInvite ? playerId || null : null),
     onSuccess: () => {
       clearPendingInvite();
       toast.success("You're in — welcome to the Locker Room");
-      navigate({ to: "/lockerroom", replace: true });
+      goLocker();
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const checking = invite.isLoading || (signedIn && !!teamId && membership.isLoading);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col items-center gap-4 px-3 py-6">
@@ -135,13 +152,35 @@ function JoinPage() {
             onDone={() => undefined}
           />
         </>
-      ) : invite.isLoading ? (
+      ) : checking ? (
         <Panel className="w-full">
           <EmptyState>Checking this invite link…</EmptyState>
         </Panel>
       ) : !invite.data ? (
         <Panel className="w-full">
           <EmptyState>This invite link is not valid. Ask your coach for a new one.</EmptyState>
+        </Panel>
+      ) : state.kind === "joined" || state.kind === "coach" ? (
+        <Panel className="flex w-full flex-col items-center gap-3 p-4 text-center">
+          <Pill tone="success">{state.kind === "coach" ? "You coach this team" : "You're already on this team"}</Pill>
+          {myRow ? (
+            <span className="inline-flex items-center gap-3 rounded-2xl border border-flame bg-flame/20 px-4 py-3 text-base font-black text-foreground">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-grape/60 bg-grape/20">
+                {myRow.jersey}
+              </span>
+              {myRow.name}
+              <Pill tone="success">You</Pill>
+            </span>
+          ) : null}
+          <BubbleButton size="lg" tone="grape" onClick={goLocker}>
+            Go to the Locker Room
+          </BubbleButton>
+        </Panel>
+      ) : state.kind === "removed" ? (
+        <Panel className="w-full">
+          <EmptyState>
+            Your coach removed your access to {invite.data.team_name}. Ask them to restore it.
+          </EmptyState>
         </Panel>
       ) : invite.data.status !== "active" ? (
         <Panel className="w-full">
@@ -151,13 +190,13 @@ function JoinPage() {
           </EmptyState>
         </Panel>
       ) : (
-
         <Panel className="flex w-full flex-col gap-3 p-4">
           {invite.data.invite_type === "player" ? (
             <>
               <Note tone="grape">
-                You&apos;re joining {invite.data.team_name}. This will not create a new team. Pick
-                your name on the roster to finish.
+                {state.kind === "needs_roster_name"
+                  ? `You're on ${invite.data.team_name}, but your account isn't linked to your roster name yet. Pick your name to finish.`
+                  : `You're joining ${invite.data.team_name}. This will not create a new team. Pick your name on the roster to finish.`}
               </Note>
               <div className="grid gap-2 sm:grid-cols-2">
                 {rosterRows.map((p) => (

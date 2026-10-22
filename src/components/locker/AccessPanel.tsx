@@ -12,6 +12,10 @@ import {
 import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/activity";
 import { fetchPlayers, lockerUrl, resetLockerToken, setLockerSharing, updateTeam } from "@/lib/data";
 import {
+  ensureConversation,
+  fetchConversationReads,
+  fetchTeamMemberships,
+  restoreTeamMember,
   ensureTeamInvite,
   fetchTeamDirectory,
   fetchTeamInvites,
@@ -22,6 +26,7 @@ import {
   TEAM_ROLE_LABEL,
 } from "@/lib/locker";
 import type { Team } from "@/lib/types";
+import { rosterAccessStatus, unlinkedPlayerAccounts } from "@/lib/playerAccess";
 
 /** Head-coach controls for player/parent access to the Locker Room. */
 export function LockerAccessPanel({ team }: { team: Team }) {
@@ -33,11 +38,6 @@ export function LockerAccessPanel({ team }: { team: Team }) {
   const directory = useQuery({
     queryKey: ["team-directory", team.id],
     queryFn: () => fetchTeamDirectory(team.id),
-  });
-
-  const roster = useQuery({
-    queryKey: ["players", team.id],
-    queryFn: () => fetchPlayers(team.id),
   });
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["team-invites", team.id] });
@@ -214,49 +214,167 @@ export function LockerAccessPanel({ team }: { team: Team }) {
           <EmptyState>No players or parents have joined yet</EmptyState>
         )}
       </div>
-      {(() => {
-        const linked = new Set((directory.data ?? []).map((d) => d.player_id).filter(Boolean));
-        const notJoined = (roster.data ?? []).filter((p) => p.active !== false && !linked.has(p.id));
-        if (!roster.data || !directory.data) return null;
-        return (
-          <>
-            <Label>Roster players not joined yet</Label>
-            <div className="flex flex-wrap gap-2">
-              {notJoined.length ? (
-                notJoined.map((p) => (
-                  <Pill key={p.id} tone="muted">
-                    #{p.jersey} {p.name} · Not joined yet
-                  </Pill>
-                ))
-              ) : (
-                <Pill tone="success">Every roster player has joined</Pill>
-              )}
-            </div>
-          </>
-        );
-      })()}
-      <Note>
-        Removing someone takes away their Locker Room access right away. Share links only with your
-        team.
-      </Note>
-      <div className="flex flex-wrap gap-2">
-        {(directory.data ?? [])
-          .filter((d) => d.role === "player" || d.role === "parent")
-          .map((d) => (
-            <BubbleButton
-              key={`remove-${d.user_id}`}
-              size="sm"
-              tone="ghost"
-              onClick={async () => {
-                await removeTeamMember(team.id, d.user_id);
-                await qc.invalidateQueries({ queryKey: ["team-directory", team.id] });
-                toast.success("Access removed");
-              }}
-            >
-              Remove {d.full_name ?? d.player_name ?? d.email ?? "member"}
-            </BubbleButton>
-          ))}
-      </div>
+      <PlayerAccessList team={team} />
     </Panel>
+  );
+}
+
+const fmtRead = (iso: string) =>
+  new Date(iso).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" });
+
+/**
+ * Per roster player: joined / not joined yet / removed, plus how far they've
+ * read team chat. Only real stored data — no guessed "last seen".
+ */
+function PlayerAccessList({ team }: { team: Team }) {
+  const qc = useQueryClient();
+  const roster = useQuery({ queryKey: ["players", team.id], queryFn: () => fetchPlayers(team.id) });
+  const memberships = useQuery({
+    queryKey: ["team-memberships", team.id],
+    queryFn: () => fetchTeamMemberships(team.id),
+  });
+  const directory = useQuery({
+    queryKey: ["team-directory", team.id],
+    queryFn: () => fetchTeamDirectory(team.id),
+  });
+  const teamConv = useQuery({
+    queryKey: ["conversation", team.id, "team"],
+    queryFn: () => ensureConversation(team.id, "team"),
+  });
+  const reads = useQuery({
+    queryKey: ["conversation-reads", teamConv.data],
+    queryFn: () => fetchConversationReads(String(teamConv.data)),
+    enabled: !!teamConv.data,
+  });
+
+  const refresh = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["team-memberships", team.id] }),
+      qc.invalidateQueries({ queryKey: ["team-directory", team.id] }),
+    ]);
+  };
+
+  const rows = memberships.data ?? [];
+  const readOf = (userId: string | undefined) =>
+    userId ? (reads.data ?? []).find((r) => r.user_id === userId)?.last_read_at ?? null : null;
+  const nameOf = (userId: string) => {
+    const d = (directory.data ?? []).find((x) => x.user_id === userId);
+    return d?.full_name ?? d?.email ?? "Player account";
+  };
+  const players = (roster.data ?? []).filter((p) => p.active !== false);
+  const unlinked = unlinkedPlayerAccounts(rows);
+  const parents = rows.filter((m) => m.role === "parent");
+
+  if (!roster.data || !memberships.data) return <Pill tone="muted">Loading player access…</Pill>;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Label>Player access</Label>
+      <div className="flex flex-wrap gap-2">
+        <Pill tone="success">
+          Joined {players.filter((p) => rosterAccessStatus(p.id, rows) === "joined").length}/{players.length}
+        </Pill>
+        <Note>Chat read times come from team chat only. Private messages stay private.</Note>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {players.map((p) => {
+          const status = rosterAccessStatus(p.id, rows);
+          const member =
+            rows.find((m) => m.player_id === p.id && m.role === "player" && m.active) ??
+            rows.find((m) => m.player_id === p.id && m.role === "player");
+          const read = status === "joined" ? readOf(member?.user_id) : null;
+          return (
+            <div
+              key={p.id}
+              className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/70 bg-surface-2/60 p-2"
+            >
+              <Pill tone="grape">#{p.jersey}</Pill>
+              <span className="rounded-xl border border-border/60 bg-background/50 px-2 py-1 text-sm font-black text-foreground">
+                {p.name}
+              </span>
+              <Pill tone={status === "joined" ? "success" : status === "removed" ? "flame" : "muted"}>
+                {status === "joined" ? "Joined" : status === "removed" ? "Removed" : "Not joined yet"}
+              </Pill>
+              {status === "joined" ? (
+                <Pill tone="muted">{read ? `Chat read ${fmtRead(read)}` : "No chat read yet"}</Pill>
+              ) : null}
+              {member && status === "joined" ? (
+                <BubbleButton
+                  size="sm"
+                  tone="ghost"
+                  onClick={async () => {
+                    try {
+                      await removeTeamMember(team.id, member.user_id);
+                      await refresh();
+                      toast.success("Access removed");
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Could not remove access");
+                    }
+                  }}
+                >
+                  Remove
+                </BubbleButton>
+              ) : null}
+              {member && status === "removed" ? (
+                <BubbleButton
+                  size="sm"
+                  tone="neutral"
+                  onClick={async () => {
+                    try {
+                      await restoreTeamMember(team.id, member.user_id, member.player_id);
+                      await refresh();
+                      toast.success("Access restored");
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Could not restore access");
+                    }
+                  }}
+                >
+                  Restore
+                </BubbleButton>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+      {unlinked.length ? (
+        <>
+          <Label>Joined without a roster name</Label>
+          <Note>These accounts can open the player invite link again and pick their name to finish.</Note>
+          <div className="flex flex-wrap gap-2">
+            {unlinked.map((m) => (
+              <Pill key={m.user_id} tone="flame">
+                {nameOf(m.user_id)} · Needs roster name
+              </Pill>
+            ))}
+          </div>
+        </>
+      ) : null}
+      {parents.length ? (
+        <div className="flex flex-wrap gap-2">
+          {parents.map((m) => (
+            <span key={m.user_id} className="inline-flex items-center gap-2">
+              <Pill tone={m.active ? "muted" : "flame"}>
+                {nameOf(m.user_id)} · Parent{m.active ? "" : " · Removed"}
+              </Pill>
+              <BubbleButton
+                size="sm"
+                tone="ghost"
+                onClick={async () => {
+                  if (m.active) await removeTeamMember(team.id, m.user_id);
+                  else await restoreTeamMember(team.id, m.user_id, null);
+                  await refresh();
+                }}
+              >
+                {m.active ? "Remove" : "Restore"}
+              </BubbleButton>
+            </span>
+          ))}
+        </div>
+      ) : null}
+      <Note>
+        Removing someone takes away their Locker Room access right away, and re-opening an invite
+        link won&apos;t bring it back — only Restore does. Share links only with your team.
+      </Note>
+    </div>
   );
 }

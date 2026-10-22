@@ -12,6 +12,7 @@ import { AppShell } from "@/components/AppShell";
 import { BubbleButton, EmptyState, Label, Note, Panel, Pill, SelectInput, StatTile, TextInput } from "@/components/Bubbles";
 import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
 import { AiDiagnosticsPanel } from "@/components/admin/AiDiagnosticsPanel";
+import { AuthPersistencePanel } from "@/components/admin/AuthPersistencePanel";
 import { BillingDiagnosticsPanel } from "@/components/admin/BillingDiagnosticsPanel";
 import {
   getLaunchQa,
@@ -334,6 +335,7 @@ function LaunchQaPage() {
             </div>
           </Panel>
 
+          <AuthPersistencePanel />
           <AiDiagnosticsPanel />
         </div>
       )}

@@ -3,21 +3,30 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { purgeDeviceRoleCache } from "./roleCache";
+import { resumeSession } from "./sessionResume";
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    let alive = true;
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      // The initial state comes from resumeSession, which survives a failed
+      // token refresh on a bad connection instead of reporting "signed out".
+      if (event === "INITIAL_SESSION") return;
       setSession(s);
       setReady(true);
     });
-    void supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    void resumeSession().then(({ session: s }) => {
+      if (!alive) return;
+      setSession(s);
       setReady(true);
     });
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      alive = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   return { session, user: (session?.user ?? null) as User | null, ready };

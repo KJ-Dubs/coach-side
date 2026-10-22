@@ -36,3 +36,5 @@ Film Room: film jobs stage AI/manual events in film_job_events; only coach-revie
 - Drill Maker shares active ball state for rendering/authoring; normalize explicit visible/setup ownership, never free-ball proximity, so independent transfers persist.
 - Native AI Assistant uses the internal executor in `src/lib/coachside/`; no public MCP connector. See `src/lib/ai/AGENTS.md`.
 - Subdirectories may have their own `AGENTS.md`; read it before changing files there.
+- Team membership removal is soft (`team_members.active=false`); `accept_team_invite` is idempotent and refuses to reactivate removed rows, and a self-update trigger blocks members from reactivating or switching roster identity, so only coach Restore brings access back. Join/coach status share pure rules in `playerAccess.ts`.
+- Session startup goes through `resumeSession` (`src/lib/sessionResume.ts`): retry refresh with the stored refresh token and keep the stored session on network failure; only definitive auth rejections redirect to `/auth`.

@@ -292,13 +292,68 @@ export async function acceptTeamInvite(token: string, playerId: string | null) {
   return data as unknown as { team_id: string; role: TeamRole };
 }
 
+/**
+ * Coach removal keeps the row but turns it off, so re-opening an invite link
+ * can never quietly restore access (accept_team_invite refuses it).
+ */
 export async function removeTeamMember(teamId: string, userId: string) {
   const { error } = await supabase
     .from("team_members")
-    .delete()
+    .update({ active: false } as never)
     .eq("team_id", teamId)
     .eq("user_id", userId);
   if (error) throw error;
+}
+
+/** Coach restores a removed player/parent. A roster name claimed by someone else meanwhile is released. */
+export async function restoreTeamMember(teamId: string, userId: string, playerId: string | null) {
+  let keepPlayer = playerId;
+  if (playerId) {
+    const { data } = await supabase
+      .from("team_members")
+      .select("user_id")
+      .eq("player_id", playerId)
+      .eq("active", true)
+      .neq("user_id", userId);
+    if ((data ?? []).length) keepPlayer = null;
+  }
+  const { error } = await supabase
+    .from("team_members")
+    .update({ active: true, player_id: keepPlayer } as never)
+    .eq("team_id", teamId)
+    .eq("user_id", userId);
+  if (error) throw error;
+}
+
+export type TeamMembershipRow = {
+  user_id: string;
+  role: string;
+  player_id: string | null;
+  active: boolean;
+  updated_at: string;
+};
+
+/** All memberships for a team, including coach-removed ones (coach view). */
+export async function fetchTeamMemberships(teamId: string): Promise<TeamMembershipRow[]> {
+  const { data, error } = await supabase
+    .from("team_members")
+    .select("user_id, role, player_id, active, updated_at")
+    .eq("team_id", teamId);
+  if (error) throw error;
+  return (data ?? []) as unknown as TeamMembershipRow[];
+}
+
+/** The signed-in account's membership on one team (active or removed). */
+export async function fetchMyTeamMembership(teamId: string): Promise<TeamMembershipRow | null> {
+  const me = await uid();
+  const { data, error } = await supabase
+    .from("team_members")
+    .select("user_id, role, player_id, active, updated_at")
+    .eq("team_id", teamId)
+    .eq("user_id", me)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as unknown as TeamMembershipRow | null) ?? null;
 }
 
 /* =============== conversations & messages =============== */
@@ -437,6 +492,16 @@ export async function markConversationRead(conversationId: string) {
     { onConflict: "conversation_id,user_id" },
   );
   if (error) throw error;
+}
+
+/** Last-read times for everyone in a conversation the caller can read (team chat for coaches). */
+export async function fetchConversationReads(conversationId: string) {
+  const { data, error } = await supabase
+    .from("conversation_members")
+    .select("user_id, last_read_at")
+    .eq("conversation_id", conversationId);
+  if (error) throw error;
+  return (data ?? []) as { user_id: string; last_read_at: string | null }[];
 }
 
 export async function fetchMyConversationState(conversationId: string) {
