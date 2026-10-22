@@ -3794,6 +3794,7 @@ export type Database = {
         Returns: {
           id: string
           jersey: string
+          mine: boolean
           name: string
           taken: boolean
         }[]

@@ -76,6 +76,12 @@ function JoinPage() {
   const rosterRows = roster.data ?? [];
   const canJoin = isPlayerInvite ? !!playerId : true;
 
+  // A returning player is preselected on their own name so they can continue.
+  useEffect(() => {
+    const mine = rosterRows.find((r) => r.mine);
+    if (mine && !playerId) setPlayerId(mine.id);
+  }, [rosterRows, playerId]);
+
   const join = useMutation({
     mutationFn: () => acceptTeamInvite(token, isPlayerInvite ? playerId || null : null),
     onSuccess: () => {
@@ -171,7 +177,7 @@ function JoinPage() {
                       {p.jersey}
                     </span>
                     <span>{p.name}</span>
-                    {p.taken ? <Pill tone="muted">Claimed</Pill> : null}
+                    {p.mine ? <Pill tone="success">You</Pill> : p.taken ? <Pill tone="muted">Claimed</Pill> : null}
                   </button>
                 ))}
               </div>

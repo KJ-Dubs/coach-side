@@ -257,7 +257,26 @@ export async function lookupTeamInvite(token: string): Promise<TeamInviteLookup 
   return ((data as unknown as TeamInviteLookup[] | null) ?? [])[0] ?? null;
 }
 
-export type InviteRosterRow = { id: string; jersey: string; name: string; taken: boolean };
+/** taken = claimed by someone else; mine = already linked to the signed-in account. */
+export type InviteRosterRow = { id: string; jersey: string; name: string; taken: boolean; mine: boolean };
+
+/**
+ * Records that the signed-in player opened these plans. Never downgrades a
+ * completed or already-viewed status; failures are silent (tracking only).
+ */
+export async function markAssignmentsViewed(
+  items: { assignmentId: string; status: AssignmentStatus | null }[],
+  playerId: string | null,
+) {
+  for (const it of items) {
+    if (it.status === "completed" || it.status === "viewed") continue;
+    try {
+      await setAssignmentStatus({ assignmentId: it.assignmentId, playerId, status: "viewed" });
+    } catch {
+      /* tracking only */
+    }
+  }
+}
 
 export async function fetchInviteRoster(token: string): Promise<InviteRosterRow[]> {
   const { data, error } = await supabase.rpc("invite_roster", { _token: token });
