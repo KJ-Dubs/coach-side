@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { resumeSession } from "@/lib/sessionResume";
 import { getCurrentUserAccess, resolveRole } from "@/lib/access";
 import { purgeDeviceRoleCache } from "@/lib/roleCache";
 import { flushQueue } from "@/lib/offline";
@@ -20,22 +21,26 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
     const next = location.href.startsWith("/") ? location.href : location.pathname;
     const toAuth = () => redirect({ to: "/auth", search: { next } });
-    const { data: local } = await supabase.auth.getSession();
-    if (!local.session) throw toAuth();
-    let user = local.session.user;
-    try {
-      const { data, error } = await supabase.auth.getUser();
-      if (data.user) user = data.user;
-      else {
-        // Only a definitive rejection of the session (expired/revoked) sends
-        // the coach to sign in. Network, timeout and server hiccups keep the
-        // stored session so a live game is never interrupted.
-        const status = (error as { status?: number } | null)?.status;
-        if (status === 401 || status === 403) throw toAuth();
+    // Refreshes an expired access token with the stored refresh token and
+    // keeps the stored session when the auth server is unreachable.
+    const resumed = await resumeSession();
+    if (!resumed.session) throw toAuth();
+    let user = resumed.session.user;
+    if (!resumed.offline) {
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (data.user) user = data.user;
+        else {
+          // Only a definitive rejection of the session (expired/revoked) sends
+          // the person to sign in. Network, timeout and server hiccups keep the
+          // stored session so a live game is never interrupted.
+          const status = (error as { status?: number } | null)?.status;
+          if (status === 401 || status === 403) throw toAuth();
+        }
+      } catch (e) {
+        if (e && typeof e === "object" && "to" in e) throw e;
+        // Offline: trust the stored session; the database still guards the data.
       }
-    } catch (e) {
-      if (e && typeof e === "object" && "to" in e) throw e;
-      // Offline: trust the stored session; the database still guards the data.
     }
 
     // Players may only reach the Locker Room and their own profile.
