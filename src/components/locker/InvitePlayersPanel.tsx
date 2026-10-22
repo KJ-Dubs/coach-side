@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { BubbleButton, Note, Panel, Pill } from "@/components/Bubbles";
+import { useCurrentTeam } from "@/lib/teamContext";
 import { ensureTeamInvite, fetchTeamInvites, joinUrl, rotateTeamInvite } from "@/lib/locker";
 
 /**
@@ -13,6 +14,9 @@ import { ensureTeamInvite, fetchTeamInvites, joinUrl, rotateTeamInvite } from "@
  */
 export function InvitePlayersPanel({ teamId, teamName, onClose }: { teamId: string; teamName: string; onClose: () => void }) {
   const qc = useQueryClient();
+  const current = useCurrentTeam();
+  // Settings follows the current team, so open it on the team shown here.
+  const manage = () => { if (current.teamId !== teamId) current.setTeam(teamId); };
   const [showQr, setShowQr] = useState(false);
   const [confirmReplace, setConfirmReplace] = useState(false);
   const autoCreated = useRef<string | null>(null);
@@ -109,6 +113,7 @@ export function InvitePlayersPanel({ teamId, teamName, onClose }: { teamId: stri
             <Link
               to="/settings"
               hash="locker-access"
+              onClick={manage}
               className="inline-flex min-h-9 items-center rounded-full border border-border bg-surface-2/70 px-3 text-xs font-black text-foreground"
             >
               Manage access
@@ -145,7 +150,7 @@ export function InvitePlayersPanel({ teamId, teamName, onClose }: { teamId: stri
             <BubbleButton size="sm" tone="grape" onClick={() => create.mutate()}>
               Try again
             </BubbleButton>
-            <Link to="/settings" hash="locker-access" className="inline-flex min-h-9 items-center rounded-full border border-border bg-surface-2/70 px-3 text-xs font-black text-foreground">
+            <Link to="/settings" hash="locker-access" onClick={manage} className="inline-flex min-h-9 items-center rounded-full border border-border bg-surface-2/70 px-3 text-xs font-black text-foreground">
               Manage access
             </Link>
           </div>
