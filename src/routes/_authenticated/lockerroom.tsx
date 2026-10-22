@@ -59,6 +59,7 @@ function LockerRoomPage() {
   const qc = useQueryClient();
   const currentTeam = useCurrentTeam();
   const [teamId, setTeamId] = useState(search.team ?? "");
+  const [inviteOpen, setInviteOpen] = useState(false);
   const locker = useLocker(teamId || null);
   useEffect(() => { if (search.team && locker.teams.some((t) => t.id === search.team)) setTeamId(search.team); else if (locker.teams.length && !locker.teams.some((t) => t.id === teamId)) setTeamId(currentTeam.teamId ?? locker.teams[0]?.id ?? ""); }, [locker.teams, teamId, search.team, currentTeam.teamId]);
   useEffect(() => { if (teamId && locker.teams.some((t) => t.id === teamId) && currentTeam.teamId !== teamId) currentTeam.setTeam(teamId); }, [teamId, locker.teams, currentTeam.teamId, currentTeam.setTeam]);
@@ -81,7 +82,6 @@ function LockerRoomPage() {
   if (!locker.loading && !locker.teams.length) return <AppShell title="Locker Room" subtitle="Your team hub"><Panel><EmptyState>You are not on a team yet. Ask your coach for the team invite link.</EmptyState></Panel></AppShell>;
   if (locker.isParent) return <AppShell title="Locker Room" subtitle="Family access"><Panel><EmptyState>Private team chat, Playbook and Plans are available to coaches and players. Use your team’s parent link for Stats and Schedule.</EmptyState></Panel></AppShell>;
 
-  const [inviteOpen, setInviteOpen] = useState(false);
   const go = (next?: Area) => navigate({ to: "/lockerroom", search: next ? { area: next, team: teamId } : { team: teamId } });
   return <AppShell title="Locker Room" subtitle={area ? ({ chat: "Team Chat", schedule: "Schedule", playbook: "Playbook", plans: "Plans" }[area]) : "Your team hub"} logoUrl={logo.data ?? null} playerTeamId={teamId} wide>
     {!locker.isPlayer || locker.teams.length > 1 ? <Panel className="mb-3 flex flex-wrap items-center gap-2">
