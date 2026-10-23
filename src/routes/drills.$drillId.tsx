@@ -15,26 +15,66 @@ import { ExportDrillVideo } from "@/components/court/ExportDrillVideo";
 import { SocialCTA } from "@/components/SocialCTA";
 import { copyDrillForMe, fetchDrill, fetchDrillFrames } from "@/lib/drills";
 import { useAuth } from "@/lib/auth";
+import { getPublicDrillSeo } from "@/lib/publicDrill.functions";
+import { drillSeoDescription, drillSeoKeywords, drillSeoTitle } from "@/lib/drillSeo";
+
+const SITE = "https://coachside.live";
 
 export const Route = createFileRoute("/drills/$drillId")({
-  staticData: { sitemap: false },
-  head: () => ({
-    meta: [
-      { title: "Drill — CoachSide Drill Library" },
-      {
-        name: "description",
-        content:
-          "A full basketball drill with instructions, coaching points, equipment, timing and a court diagram. Free to read on CoachSide.",
-      },
-      { property: "og:title", content: "Drill — CoachSide Drill Library" },
-      {
-        property: "og:description",
-        content: "Instructions, coaching points and a court diagram for a real basketball drill.",
-      },
-      { property: "og:type", content: "article" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
+  staticData: { sitemap: true },
+  loader: async ({ params }) => {
+    const ok = /^[0-9a-f-]{36}$/i.test(params.drillId);
+    return { seo: ok ? await getPublicDrillSeo({ data: { drillId: params.drillId } }) : null };
+  },
+  head: ({ params, loaderData }) => {
+    const url = `${SITE}/drills/${params.drillId}`;
+    const seo = loaderData?.seo ?? null;
+    if (!seo) {
+      return {
+        meta: [
+          { title: "Drill not available — CoachSide Drill Library" },
+          { name: "description", content: "This basketball drill is not published in the CoachSide Library." },
+          { name: "robots", content: "noindex" },
+        ],
+      };
+    }
+    const title = drillSeoTitle(seo);
+    const description = drillSeoDescription(seo);
+    const keywords = drillSeoKeywords(seo);
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { name: "keywords", content: keywords.join(", ") },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "article" },
+        { property: "og:url", content: url },
+        { name: "twitter:card", content: "summary" },
+      ],
+      links: [{ rel: "canonical", href: url }],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "HowTo",
+            name: seo.name,
+            headline: title,
+            description,
+            keywords: keywords.join(", "),
+            url,
+            ...(seo.duration_minutes > 0 ? { totalTime: `PT${Math.round(seo.duration_minutes)}M` } : {}),
+            ...(seo.equipment.length ? { tool: seo.equipment.map((name) => ({ "@type": "HowToTool", name })) } : {}),
+            ...(seo.published_at ? { datePublished: seo.published_at } : {}),
+            step: [{ "@type": "HowToStep", text: seo.instructions }],
+            author: { "@type": "Person", name: seo.library_author_name ?? "CoachSide Coach" },
+            publisher: { "@type": "Organization", name: "CoachSide", url: SITE },
+          }),
+        },
+      ],
+    };
+  },
   component: DrillPage,
   errorComponent: () => <EmptyState>That drill could not be loaded.</EmptyState>,
   notFoundComponent: () => <EmptyState>That drill does not exist.</EmptyState>,
@@ -42,6 +82,7 @@ export const Route = createFileRoute("/drills/$drillId")({
 
 function DrillPage() {
   const { drillId } = Route.useParams();
+  const { seo } = Route.useLoaderData();
   const { user } = useAuth();
   const drill = useQuery({ queryKey: ["drill", drillId], queryFn: () => fetchDrill(drillId) });
   const frames = useQuery({ queryKey: ["drill-frames", drillId], queryFn: () => fetchDrillFrames(drillId) });
@@ -52,7 +93,8 @@ function DrillPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const d = drill.data;
+  // Server-loaded public text renders first (and for Google); the full drill replaces it once fetched.
+  const d = drill.data ?? seo;
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-2 sm:p-4">
@@ -75,6 +117,8 @@ function DrillPage() {
 
       {d ? (
         <>
+          {seo ? <InfoPanel>{drillSeoDescription(seo)}</InfoPanel> : null}
+          {drill.data ? (
           <Panel className="flex flex-col gap-3">
             <DrillCanvas frame={frames.data?.[0]} />
             {frames.data?.[0]?.note ? <InfoPanel>{frames.data[0]!.note}</InfoPanel> : null}
