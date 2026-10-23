@@ -23,6 +23,38 @@ import {
 } from "@/lib/notifications.functions";
 import { currentPushState, subscribeThisDevice, unsubscribeThisDevice, type PushState } from "@/lib/push";
 
+export const NOTIFY_HANDOFF_COPY =
+  "Turn on notifications for team messages, schedule changes, assignments, and Play of the Day.";
+const NOTIFY_SNOOZE_KEY = "coachside.notify.snoozedUntil";
+
+/**
+ * Install → notifications handoff: once CoachSide runs from the home screen
+ * and this device has no subscription yet, ask promptly (snoozable ~24h).
+ * Never shown before install, so iPhone never gets a request it would refuse.
+ */
+export function useNotifyHandoff() {
+  const app = useInstallApp();
+  const [state, setState] = useState<PushState | null>(null);
+  const [snoozed, setSnoozed] = useState(true);
+  useEffect(() => {
+    void currentPushState().then(setState).catch(() => setState(null));
+    try {
+      setSnoozed(Number(localStorage.getItem(NOTIFY_SNOOZE_KEY) || 0) > Date.now());
+    } catch {
+      setSnoozed(false);
+    }
+  }, []);
+  const later = () => {
+    try {
+      localStorage.setItem(NOTIFY_SNOOZE_KEY, String(Date.now() + 24 * 60 * 60 * 1000));
+    } catch {
+      /* private mode */
+    }
+    setSnoozed(true);
+  };
+  return { show: app.standalone && state === "off" && !snoozed, later };
+}
+
 export function EnablePushCard({
   intro,
   surface = "card",
