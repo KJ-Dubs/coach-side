@@ -269,3 +269,10 @@
 - [x] Start a Game / Live Tracking Settings: Score only is free (no lineup needed); GameDay+ stat toggles show a lock and inline upgrade prompt; database trigger switches paid categories off for teams without GameDay+ (honours the kill switch)
 - [ ] Signed-in check as a free coach on Start a Game — blocked: no preview account matches the requester
 - [ ] Team Hub+ items (team chat, plans) and Playbook+ folders are marketed as paid but are not locked in the app yet — needs an owner decision
+
+## Owner usage drilldowns (My KPI)
+- [x] Activity rows carry game/play/team/coach ids; game rows open Game Usage Inspector, other rows and coach names open Coach Usage
+- [x] Read-only Game Usage Inspector: config, rules, coverage/history, usage summary with Not tracked, diagnostics, shot chart, player stats, score progression, subs, timeline, live auto-refresh
+- [x] Read-only Coach Usage: teams/tier, counts only (no message contents), recent games with Inspect, recent activity
+- [x] Server functions require sign-in + is_app_admin before admin reads; signed-out URLs redirect to sign-in; 10 new rule tests, 210 total pass
+- [ ] Signed-in owner walkthrough of both pages — blocked: preview can't sign in as the owner account without approval
