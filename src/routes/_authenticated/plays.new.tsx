@@ -153,6 +153,9 @@ function CreatePlayPage() {
           </Field>
 
           <Field label="Available to">
+            {teams.isSuccess && teams.data.length === 0 ? (
+              <QuickTeam onCreated={(id) => setTeamIds([id])} />
+            ) : null}
             <div className="flex flex-wrap justify-center gap-2">
               {teams.data?.map((t) => (
                 <BubbleButton
