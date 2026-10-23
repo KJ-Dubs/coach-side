@@ -28,6 +28,7 @@ import { bonusLabel, countFouls, diffTracking, foulWindow, normalizeHistory, nor
 import { ClockEditor, TrackingSettingsSheet } from "@/components/game/TrackingSettingsSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TeamThemeProvider } from "@/components/TeamThemeProvider";
+import { hasModule, useEntitlement } from "@/lib/entitlements";
 
 export const Route = createFileRoute("/_authenticated/game/$gameId")({
   head: () => ({
@@ -122,6 +123,9 @@ function LiveGamePage() {
     void supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
   }, []);
   const tracking = useMemo(() => normalizeTracking(game.data?.stat_tracking_config), [game.data?.stat_tracking_config]);
+  // GameDay+ stat categories follow the game's own team membership.
+  const gameEnt = useEntitlement(game.data?.team_id ?? null);
+  const gamedayLocked = !!game.data?.team_id && !gameEnt.loading && !hasModule(gameEnt, "gameday_plus");
   const rules = useMemo(() => normalizeRules(game.data?.rules_config), [game.data?.rules_config]);
   const isMobile = useIsMobile();
 
