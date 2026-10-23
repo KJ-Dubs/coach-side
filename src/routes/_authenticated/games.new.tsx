@@ -330,9 +330,9 @@ function NewGamePage() {
         </StepCard>
 
         <StepCard step="C" title="Starting five" done={stepC}>
-          <div className="flex items-center gap-2">
-            <Label>Tap exactly five</Label>
-            <Pill tone={five.length === 5 ? "grape" : "flame"}>{five.length} / 5</Pill>
+          <div className="flex flex-wrap items-center gap-2">
+            <Label>{fiveOptional ? "Optional in Score only" : "Tap exactly five"}</Label>
+            <Pill tone={stepC ? "grape" : "flame"}>{five.length} / 5</Pill>
           </div>
           {!teamId ? (
             <EmptyState>Pick a team first</EmptyState>
