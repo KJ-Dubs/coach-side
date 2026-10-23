@@ -25,6 +25,7 @@ import {
 type Search = { team?: string | undefined; season?: string | undefined };
 
 export const Route = createFileRoute("/_authenticated/stats/team")({
+  staticData: { sitemap: false },
   validateSearch: (s: Record<string, unknown>): Search => ({
     ...(typeof s["team"] === "string" && s["team"] ? { team: s["team"] as string } : {}),
     ...(typeof s["season"] === "string" && s["season"] ? { season: s["season"] as string } : {}),

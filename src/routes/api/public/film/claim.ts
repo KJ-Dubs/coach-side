@@ -10,6 +10,7 @@ import { verifyWorkerRequest } from "@/lib/film/provider.server";
 const bodySchema = z.object({ worker_id: z.string().min(1) });
 
 export const Route = createFileRoute("/api/public/film/claim")({
+  staticData: { sitemap: false },
   server: {
     handlers: {
       POST: async ({ request }) => {

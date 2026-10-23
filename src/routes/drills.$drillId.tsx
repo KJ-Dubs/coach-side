@@ -17,6 +17,7 @@ import { copyDrillForMe, fetchDrill, fetchDrillFrames } from "@/lib/drills";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/drills/$drillId")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Drill — CoachSide Drill Library" },

@@ -27,6 +27,7 @@ import {
 } from "@/lib/practice";
 
 export const Route = createFileRoute("/_authenticated/practice/$planId")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Practice Plan — CoachSide" },

@@ -9,6 +9,7 @@ function esc(s: string) {
 }
 
 export const Route = createFileRoute("/api/public/locker/$token/calendar")({
+  staticData: { sitemap: false },
   server: {
     handlers: {
       GET: async ({ params }) => {

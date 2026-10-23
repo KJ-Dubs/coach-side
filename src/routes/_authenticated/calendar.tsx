@@ -32,6 +32,7 @@ import { MonthCalendar, dayKey, type MonthDot } from "@/components/MonthCalendar
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Team Calendar — CoachSide" },

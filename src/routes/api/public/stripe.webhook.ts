@@ -23,6 +23,7 @@ async function verify(body: string, header: string, secret: string): Promise<boo
 type Any = any;
 
 export const Route = createFileRoute("/api/public/stripe/webhook")({
+  staticData: { sitemap: false },
   server: {
     handlers: {
       POST: async ({ request }) => {

@@ -8,6 +8,7 @@ import { useIsAppAdmin } from "@/lib/useIsAppAdmin";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/achievements")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "CoachSide Progress — Achievements" },

@@ -18,6 +18,7 @@ import { fetchTeams } from "@/lib/data";
 import { createPracticePlan, fetchPracticePlans } from "@/lib/practice";
 
 export const Route = createFileRoute("/_authenticated/practice/")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Practice Planner — CoachSide" },

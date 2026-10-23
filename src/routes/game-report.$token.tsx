@@ -11,6 +11,7 @@ import { STAT_CATEGORY_FOR, computeCoverage } from "@/lib/gameConfig";
 import { TrackingCoverageCard } from "@/components/game/TrackingCoverage";
 
 export const Route = createFileRoute("/game-report/$token")({
+  staticData: { sitemap: false },
   loader: async ({ params }) => {
     const raw = await getPublicGameReport({ data: { token: params.token } }).catch(() => null);
     return { report: raw ? (JSON.parse(raw) as PublicGameReport) : null };

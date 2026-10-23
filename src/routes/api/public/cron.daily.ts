@@ -6,6 +6,7 @@ import { authenticateCronRequest } from "@/integrations/supabase/cron-auth";
  * the first time any coach opens CoachSide each day, so a day is never skipped.
  */
 export const Route = createFileRoute("/api/public/cron/daily")({
+  staticData: { sitemap: false },
   server: {
     handlers: {
       POST: async ({ request }) => {

@@ -20,6 +20,7 @@ import { COVERAGE_LABEL, STAT_CATEGORY_FOR, TRACKING_LABELS, computeCoverage } f
 import { ShareGameButton } from "@/components/game/ShareGameButton";
 
 export const Route = createFileRoute("/_authenticated/review/$gameId")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Game Report — CoachSide" },

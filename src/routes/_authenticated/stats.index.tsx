@@ -9,6 +9,7 @@ import { aggregateTeam, fmtPct, fmtPer, fmtSplit, gameResult, gameScore, groupBy
 import { useCurrentTeam } from "@/lib/teamContext";
 
 export const Route = createFileRoute("/_authenticated/stats/")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Stats Overview — CoachSide" },

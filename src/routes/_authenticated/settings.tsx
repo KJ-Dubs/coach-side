@@ -39,6 +39,7 @@ import { normalizeHex } from "@/lib/teamTheme";
 import { useCurrentTeam } from "@/lib/teamContext";
 
 export const Route = createFileRoute("/_authenticated/settings")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Settings — CoachSide" },

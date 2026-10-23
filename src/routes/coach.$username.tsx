@@ -12,6 +12,7 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/coach/$username")({
+  staticData: { sitemap: false },
   validateSearch: (search) => searchSchema.parse(search),
   head: () => ({
     meta: [

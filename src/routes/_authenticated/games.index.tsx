@@ -19,6 +19,7 @@ import type { Game } from "@/lib/types";
 import { ShareGameButton } from "@/components/game/ShareGameButton";
 
 export const Route = createFileRoute("/_authenticated/games/")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Game History — CoachSide" },

@@ -69,6 +69,7 @@ function useFirstSignInRedirect(gate: ReturnType<typeof useRedirectPlayersToLock
 }
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Coach Dashboard — CoachSide" },

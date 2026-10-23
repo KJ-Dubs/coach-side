@@ -29,6 +29,7 @@ import { ACHIEVEMENTS } from "@/lib/achievements";
 import { trialMessage, type ModuleKey } from "@/lib/entitlements";
 
 export const Route = createFileRoute("/_authenticated/launch-qa")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Launch QA — CoachSide owner tools" },

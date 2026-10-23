@@ -73,6 +73,7 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_authenticated/plays/")({
+  staticData: { sitemap: false },
   validateSearch: (s) => searchSchema.parse(s),
   head: () => ({
     meta: [

@@ -6,6 +6,7 @@ import { DrillCard } from "@/components/drills/DrillFeed";
 import { fetchMyDrills } from "@/lib/drills";
 
 export const Route = createFileRoute("/_authenticated/drills/")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "My Drills — CoachSide" },

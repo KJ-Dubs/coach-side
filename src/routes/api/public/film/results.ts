@@ -48,6 +48,7 @@ const bodySchema = z.object({
 });
 
 export const Route = createFileRoute("/api/public/film/results")({
+  staticData: { sitemap: false },
   server: {
     handlers: {
       POST: async ({ request }) => {

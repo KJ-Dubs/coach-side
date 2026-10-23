@@ -6,6 +6,7 @@ import { createFileRoute } from "@tanstack/react-router";
  * idempotent per event id and never deletes team content.
  */
 export const Route = createFileRoute("/api/public/square/webhook")({
+  staticData: { sitemap: false },
   server: {
     handlers: {
       POST: async ({ request }) => {

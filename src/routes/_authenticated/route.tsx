@@ -17,6 +17,7 @@ import { AiAssistantLauncher } from "@/components/ai/AiAssistantLauncher";
  * never from anything remembered on this device.
  */
 export const Route = createFileRoute("/_authenticated")({
+  staticData: { sitemap: "exclude-subtree" },
   ssr: false,
   beforeLoad: async ({ location }) => {
     const next = location.href.startsWith("/") ? location.href : location.pathname;

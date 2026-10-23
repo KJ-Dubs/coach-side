@@ -7,6 +7,7 @@ import { createFileRoute } from "@tanstack/react-router";
  * required here. Tokens are stored encrypted and never returned to the browser.
  */
 export const Route = createFileRoute("/api/public/google/calendar/callback")({
+  staticData: { sitemap: false },
   server: {
     handlers: {
       GET: async ({ request }) => {

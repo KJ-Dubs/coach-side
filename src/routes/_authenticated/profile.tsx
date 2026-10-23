@@ -23,6 +23,7 @@ import { useMe } from "@/lib/useMe";
 import { ROLE_LABEL } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/profile")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Coach Profile — CoachSide" },

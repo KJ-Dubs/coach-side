@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
 export const Route = createFileRoute("/_authenticated/tools")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Coach Tools — CoachSide" },

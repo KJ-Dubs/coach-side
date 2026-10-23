@@ -46,6 +46,7 @@ import { AI_FUTURE_BENEFIT_BODY, AI_FUTURE_BENEFIT_TITLE } from "@/lib/aiAccess"
 import { useAiAvailability } from "@/lib/aiAssistant";
 
 export const Route = createFileRoute("/_authenticated/membership")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Membership — CoachSide" },

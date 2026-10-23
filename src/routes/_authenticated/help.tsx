@@ -5,6 +5,7 @@ import { EmptyState, InfoList, Label, Note, Panel, Pill, TextInput } from "@/com
 import { HELP_SECTIONS, SUPPORT_EMAIL } from "@/lib/helpContent";
 
 export const Route = createFileRoute("/_authenticated/help")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "CoachSide Help & FAQ" },

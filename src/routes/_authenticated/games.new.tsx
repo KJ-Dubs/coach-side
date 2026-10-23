@@ -42,6 +42,7 @@ type NewGameSearch = {
 };
 
 export const Route = createFileRoute("/_authenticated/games/new")({
+  staticData: { sitemap: false },
   validateSearch: (search: Record<string, unknown>): NewGameSearch => ({
     team: typeof search['team'] === "string" ? search['team'] : undefined,
     opponent: typeof search['opponent'] === "string" ? search['opponent'] : undefined,

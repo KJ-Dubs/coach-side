@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { consumePendingInvite } from "@/lib/pendingInvite";
 
 export const Route = createFileRoute("/")({
+  staticData: { sitemap: true },
   head: () => ({
     meta: [
       { title: "CoachSide — Basketball Play Maker, Locker Room & GameDay Stats" },

@@ -8,6 +8,7 @@ import { ROLE_LABEL } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/invite/$token")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Coach Invitation — CoachSide" },

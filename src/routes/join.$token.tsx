@@ -11,6 +11,7 @@ import { joinStateFor } from "@/lib/playerAccess";
 import { clearPendingInvite, joinUrl, setPendingInvite } from "@/lib/pendingInvite";
 
 export const Route = createFileRoute("/join/$token")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Join Your Team — CoachSide" },

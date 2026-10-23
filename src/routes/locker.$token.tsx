@@ -18,6 +18,7 @@ import {
 import wordmark from "@/assets/coachside-wordmark.png.asset.json";
 
 export const Route = createFileRoute("/locker/$token")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Team Locker Room — CoachSide" },
