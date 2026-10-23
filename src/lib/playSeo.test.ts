@@ -21,7 +21,7 @@ const indexed = {
 describe("play search titles", () => {
   it("puts the play name, lead concept, type and defense in the title", () => {
     expect(playSeoTitle(indexed)).toBe(
-      "Box Elevator – 5 Out Offense Basketball Play vs Man to man",
+      "Box Elevator – 5 Out Offense Basketball Play vs Man to man | CoachSide",
     );
   });
 
