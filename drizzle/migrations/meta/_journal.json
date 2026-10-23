@@ -113,6 +113,13 @@
       "when": 1792638700058,
       "tag": "0015_player_join_robustness",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792787626960,
+      "tag": "0016_landing_cta_funnel_events",
+      "breakpoints": true
     }
   ]
 }
