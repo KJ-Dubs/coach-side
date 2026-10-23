@@ -72,9 +72,9 @@ function BuildPlay({ size = "lg", className }: { size?: keyof typeof CTA_SIZE; c
   );
 }
 
-function StartFree({ size = "md", label = "Start Free", event = "landing_start_free", className }: { size?: keyof typeof CTA_SIZE; label?: string; event?: AnonEvent; className?: string }) {
+function StartFree({ size = "md", label = "Start Free", event = "landing_start_free", tone = "flame", className }: { size?: keyof typeof CTA_SIZE; label?: string; event?: AnonEvent; tone?: CtaTone; className?: string }) {
   return (
-    <Link to="/auth" search={{ mode: "signup" }} onClick={track(event)} className={ctaCls("flame", size, className)}>
+    <Link to="/auth" search={{ mode: "signup" }} onClick={track(event)} className={ctaCls(tone, size, className)}>
       {label}
     </Link>
   );
@@ -568,7 +568,7 @@ export function Landing() {
           </h2>
           <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-center">
             <ExplorePlays />
-            <StartFree size="lg" label="Create Free Coach Account" event="landing_setup_team" className={ctaCls("grape", "lg")} />
+            <StartFree size="lg" label="Create Free Coach Account" event="landing_setup_team" tone="grape" />
           </div>
           <Pill tone="success">No credit card required</Pill>
         </section>
