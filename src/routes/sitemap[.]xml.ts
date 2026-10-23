@@ -56,6 +56,7 @@ export const Route = createFileRoute("/sitemap.xml")({
               }
             }
             offset += rows.length;
+          }
         }
 
         // Every published Library drill, using the same public filter as the drill page.
@@ -95,7 +96,6 @@ export const Route = createFileRoute("/sitemap.xml")({
             }
             offset += rows.length;
           }
-        }
         }
 
         if (entries.length === 0) {
