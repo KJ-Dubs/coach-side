@@ -1328,6 +1328,8 @@ function LiveGamePage() {
           onTracking={saveTracking}
           onRules={saveRules}
           clockDefaults={{ periodMinutes: game.data?.period_minutes ?? 8, otMinutes: overtimeMinutes, clockSeconds: clock, isOvertime }}
+          gamedayLocked={gamedayLocked}
+          teamId={game.data?.team_id ?? null}
           onClockSetup={({ periodMinutes, otMinutes, clockSeconds }) => {
             patchGame({ period_minutes: periodMinutes, overtime_minutes: otMinutes });
             setClock(clockSeconds);
