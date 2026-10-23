@@ -684,7 +684,6 @@ export function Landing() {
             </div>
             <InstallAppPill />
           </div>
-          </div>
 
           <div className="grid gap-4 md:grid-cols-3">
             {PRODUCTS.map((p) => (
