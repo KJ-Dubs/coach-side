@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { registerAppServiceWorker } from "@/lib/pwa";
+import { startInstallCapture } from "@/components/InstallApp";
 import { supabase } from "@/integrations/supabase/client";
 
 function NotFoundComponent() {
@@ -153,6 +154,7 @@ function RootComponent() {
   // Installable app shell (published site only; never in previews or dev).
   useEffect(() => {
     registerAppServiceWorker();
+    startInstallCapture();
   }, []);
 
   // Single auth listener: identity changes re-run route guards and refresh
