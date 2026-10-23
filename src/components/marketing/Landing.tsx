@@ -148,10 +148,10 @@ function StorySection({
   );
 }
 
-function Shot({ src, alt, caption, className }: { src: string; alt: string; caption: string; className?: string }) {
+function Shot({ src, alt, caption, className, imgClassName = "aspect-[4/5]" }: { src: string; alt: string; caption: string; className?: string; imgClassName?: string }) {
   return (
     <figure className={cn("flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-surface-2/60 p-1.5", className)}>
-      <img src={src} alt={alt} loading="lazy" className="w-full rounded-xl object-cover" />
+      <img src={src} alt={alt} loading="lazy" className={cn("w-full rounded-xl object-cover object-top", imgClassName)} />
       <figcaption className="self-center rounded-full bg-background/60 px-3 py-0.5 text-[11px] font-bold text-muted-foreground">
         {caption}
       </figcaption>
@@ -451,7 +451,7 @@ export function Landing() {
           cta={<AnchorCta href="#gameday-plus" tone="flame">See GameDay+</AnchorCta>}
           media={
             <div className="grid grid-cols-2 gap-2">
-              <Shot src={shotChart} alt="CoachSide shot chart with makes and misses" caption="Shot chart" className="col-span-2" />
+              <Shot src={shotChart} alt="CoachSide shot chart with makes and misses" caption="Shot chart" className="col-span-2" imgClassName="aspect-[16/10]" />
               <Shot src={teamStats} alt="CoachSide team season stats screen" caption="Team stats" />
               <Shot src={leaders} alt="CoachSide season leaders screen" caption="Leaders" />
             </div>
