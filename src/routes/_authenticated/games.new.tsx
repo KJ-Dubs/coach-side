@@ -504,7 +504,7 @@ function NewGamePage() {
   );
 }
 
-function Toggle({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) {
+function Toggle({ on, label, onClick, locked }: { on: boolean; label: string; onClick: () => void; locked?: boolean }) {
   return (
     <button
       type="button"
@@ -514,12 +514,17 @@ function Toggle({ on, label, onClick }: { on: boolean; label: string; onClick: (
       className={cn(
         "flex min-h-11 items-center justify-between gap-2 rounded-2xl border px-3 text-left text-xs font-bold",
         on ? "border-grape/60 bg-grape/20 text-foreground" : "border-border bg-surface-2/60 text-muted-foreground",
+        locked && !on && "border-dashed border-flame/40",
       )}
     >
       <span className="min-w-0">{label}</span>
-      <span className={cn("relative h-5 w-9 shrink-0 rounded-full transition-colors", on ? "bg-grape" : "bg-muted")}>
-        <span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-foreground transition-all", on ? "left-[18px]" : "left-0.5")} />
-      </span>
+      {locked && !on ? (
+        <GameDayLockTag />
+      ) : (
+        <span className={cn("relative h-5 w-9 shrink-0 rounded-full transition-colors", on ? "bg-grape" : "bg-muted")}>
+          <span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-foreground transition-all", on ? "left-[18px]" : "left-0.5")} />
+        </span>
+      )}
     </button>
   );
 }
