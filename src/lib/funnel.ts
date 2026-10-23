@@ -19,7 +19,18 @@ export const FUNNEL_EVENTS = [
 ] as const;
 export type FunnelEvent = (typeof FUNNEL_EVENTS)[number];
 
-export async function trackAnon(event: "landing_view" | "signup_started") {
+/** Anonymous events the database accepts (see the anon_funnel_events insert policy). */
+export type AnonEvent =
+  | "landing_view"
+  | "signup_started"
+  | "landing_explore_plays"
+  | "landing_build_play"
+  | "landing_setup_team"
+  | "landing_start_free"
+  | "landing_pricing_view"
+  | "landing_membership_options";
+
+export async function trackAnon(event: AnonEvent) {
   try {
     const key = `coachside.funnel.${event}`;
     if (sessionStorage.getItem(key)) return;
