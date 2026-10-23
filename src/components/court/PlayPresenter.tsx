@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { autoPlayZoom } from "@/lib/playCamera";
+import { trackActivityOnce } from "@/lib/activity";
 import { BubbleButton, InfoPanel, Label, Panel, Pill, SectionHeader } from "@/components/Bubbles";
 import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { ExportPlayVideo } from "@/components/court/ExportPlayVideo";
@@ -81,6 +82,11 @@ export function PlayPresenter({
 }) {
   const model = useMemo(() => normalizePlayForPlayback(play, frames), [play, frames]);
   const total = model.steps.length;
+
+  // Activation funnel: a signed-in coach watched a play (once per device; skipped when signed out).
+  useEffect(() => {
+    if (play) trackActivityOnce("first_play_viewed", "device");
+  }, [play]);
 
   const [idx, setIdx] = useState(0);
   const [phase, setPhase] = useState<"show" | "do">("show");

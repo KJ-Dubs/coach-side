@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { alertTeam } from "./teamAlerts";
 import { normalizeHex } from "./teamTheme";
+import { trackActivityOnce } from "./activity";
 import type {
   CalendarConnection,
   CalendarMapping,
@@ -571,6 +572,7 @@ export async function createPlay(input: {
   const play = data as unknown as Play;
   const teams = team_ids?.length ? team_ids : row.team_id ? [row.team_id] : [];
   if (teams.length) await setPlayTeams(play.id, teams);
+  trackActivityOnce("first_play_created", auth.user.id);
   return play;
 }
 
@@ -740,6 +742,7 @@ export async function createTeam(input: { name: string; season: string; orgId: s
     .select("*")
     .single();
   if (error) throw error;
+  trackActivityOnce("first_team_created", "device", { teamId: (data as { id: string }).id });
   return data as unknown as Team;
 }
 
