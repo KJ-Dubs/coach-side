@@ -263,3 +263,9 @@
 - [x] Conversations, staged actions, usage logging tables; Launch QA AI diagnostics + on/off switch
 - [x] Home card opens the assistant; old external ChatGPT connector UI, public /mcp route and consent screen removed
 - [ ] Live end-to-end chat test — blocked until OPENAI_API_KEY is added in Project Settings → Secrets
+
+## Landing page product separation + GameDay+ stat paywall
+- [x] Landing rebuilt around Play Maker + Playbook, Locker Room and GameDay Stats with direct Free vs Paid columns; one "More tools included free" section; pricing comparison with AI as a Complete bonus (when AI access is active)
+- [x] Start a Game / Live Tracking Settings: Score only is free (no lineup needed); GameDay+ stat toggles show a lock and inline upgrade prompt; database trigger switches paid categories off for teams without GameDay+ (honours the kill switch)
+- [ ] Signed-in check as a free coach on Start a Game — blocked: no preview account matches the requester
+- [ ] Team Hub+ items (team chat, plans) and Playbook+ folders are marketed as paid but are not locked in the app yet — needs an owner decision
