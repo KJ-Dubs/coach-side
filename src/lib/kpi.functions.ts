@@ -507,6 +507,17 @@ export const getKpiReport = createServerFn({ method: "POST" })
       game_stat_edited: "Post-game stat edited",
       game_stat_added_postgame: "Post-game stat added",
       game_stat_deleted_postgame: "Post-game stat deleted",
+      signup_completed: "Signed up",
+      onboarding_started: "Started onboarding",
+      onboarding_interest_selected: "Picked onboarding interests",
+      install_clicked: "Tapped Install CoachSide",
+      install_dismissed: "Snoozed install prompt",
+      pwa_installed: "App installed",
+      notifications_enabled: "Notifications enabled",
+      first_play_viewed: "Watched first play",
+      first_play_created: "Created first play",
+      first_team_created: "Created first team",
+      onboarding_completed: "Finished onboarding",
     };
     // Funnel plumbing events feed the activation panel, not the activity list.
     const FEED_HIDDEN = new Set(["session_day", "install_prompt_shown", "notification_prompt_shown"]);
