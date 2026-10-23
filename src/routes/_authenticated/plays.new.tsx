@@ -16,7 +16,8 @@ import {
   TextInput,
 } from "@/components/Bubbles";
 import { PlayIndexSheet } from "@/components/PlayIndexSheet";
-import { createPlay, fetchTeams } from "@/lib/data";
+import { createPlay, createTeam, fetchTeams } from "@/lib/data";
+import { useMe } from "@/lib/useMe";
 import { EMPTY_INDEX, indexToRow, type PlayIndex } from "@/lib/playIndex";
 import { PLAY_CATEGORIES, type PlayCategory } from "@/lib/types";
 
@@ -240,5 +241,52 @@ function CreatePlayPage() {
         </Panel>
       </div>
     </AppShell>
+  );
+}
+
+/** "2026-27" from July onward, otherwise the season that started last year. */
+function currentSeason(d = new Date()) {
+  const y = d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1;
+  return `${y}-${String((y + 1) % 100).padStart(2, "0")}`;
+}
+
+/**
+ * A coach who came straight from "Build a Play" may not have a team yet.
+ * Plays are saved to a team playbook, so offer a one-field team here instead
+ * of sending them through the full setup guide first.
+ */
+function QuickTeam({ onCreated }: { onCreated: (id: string) => void }) {
+  const me = useMe();
+  const queryClient = useQueryClient();
+  const [teamName, setTeamName] = useState("");
+  const make = useMutation({
+    mutationFn: () => createTeam({ name: teamName.trim(), season: currentSeason(), orgId: me.profile?.org_id ?? null }),
+    onSuccess: async (t) => {
+      await queryClient.invalidateQueries({ queryKey: ["teams"] });
+      onCreated(t.id);
+      toast.success(`${t.name} is ready — keep building your play`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <InfoPanel tone="grape" className="flex flex-col gap-2">
+      <span>Name your team to save this play. You can add the roster and schedule later.</span>
+      <div className="flex flex-wrap gap-2">
+        <TextInput
+          className="min-w-0 flex-1"
+          placeholder="e.g. East High Varsity"
+          value={teamName}
+          onChange={(e) => setTeamName(e.target.value)}
+          aria-label="Team name"
+        />
+        <BubbleButton
+          tone="grape"
+          disabled={!teamName.trim() || make.isPending}
+          onClick={() => make.mutate()}
+        >
+          {make.isPending ? "Creating…" : "Create team"}
+        </BubbleButton>
+      </div>
+    </InfoPanel>
   );
 }
