@@ -5,9 +5,11 @@
 import { useState } from "react";
 import { BubbleButton, Label } from "@/components/Bubbles";
 import { Sheet } from "@/components/game/LiveTileEditor";
+import { GameDayLockTag, GameDayUpgradeInline } from "@/components/billing/GameDayUpgrade";
 import {
   BONUS_PRESETS,
   TRACKING_LABELS,
+  isPaidTrackingKey,
   type RulesConfig,
   type TrackingConfig,
   type TrackingKey,
@@ -25,6 +27,8 @@ export function TrackingSettingsSheet({
   onClose,
   clockDefaults,
   onClockSetup,
+  gamedayLocked = false,
+  teamId = null,
 }: {
   clockDefaults: { periodMinutes: number; otMinutes: number; clockSeconds: number; isOvertime: boolean };
   onClockSetup: (v: { periodMinutes: number; otMinutes: number; clockSeconds: number }) => void;
@@ -33,8 +37,12 @@ export function TrackingSettingsSheet({
   onTracking: (next: TrackingConfig) => void;
   onRules: (next: RulesConfig) => void;
   onClose: () => void;
+  /** Free team: GameDay+ categories cannot be turned on; an upgrade prompt shows instead. */
+  gamedayLocked?: boolean;
+  teamId?: string | null;
 }) {
   const [confirmKey, setConfirmKey] = useState<TrackingKey | null>(null);
+  const [paywallKey, setPaywallKey] = useState<TrackingKey | null>(null);
   const [clockSetup, setClockSetup] = useState(false);
   const [pm, setPm] = useState(String(clockDefaults.periodMinutes));
   const [om, setOm] = useState(String(clockDefaults.otMinutes));
