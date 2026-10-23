@@ -365,8 +365,11 @@ function NewGamePage() {
               })}
             </div>
           )}
-          {activePlayers.length > 0 && activePlayers.length < 5 ? (
+          {!fiveOptional && activePlayers.length > 0 && activePlayers.length < 5 ? (
             <Note tone="flame">You need at least five active players to start.</Note>
+          ) : null}
+          {fiveOptional && five.length > 0 && five.length < 5 ? (
+            <Note tone="flame">Pick all five starters, or clear them to start without a lineup.</Note>
           ) : null}
         </StepCard>
 
@@ -463,6 +466,8 @@ function NewGamePage() {
             saveDefaults={saveDefaults}
             setSaveDefaults={setSaveDefaults}
             canSaveDefaults={!!teamId}
+            locked={gamedayLocked}
+            teamId={teamId || null}
           />
         </StepCard>
 
@@ -473,9 +478,14 @@ function NewGamePage() {
               {opponent.trim() ? `vs ${opponent.trim()}` : "Opponent"} · {homeAway === "home" ? "Home" : "Away"}
             </Pill>
             <Pill tone="muted">{date}</Pill>
-            <Pill tone={stepC ? "grape" : "muted"}>{five.length}/5 starters</Pill>
+            <Pill tone={stepC ? "grape" : "muted"}>
+              {fiveOptional && five.length === 0 ? "No lineup needed" : `${five.length}/5 starters`}
+            </Pill>
             <Pill tone="muted">
               {tracking.clock ? `${periods} × ${minutes} min · OT ${ot}` : `${periods} periods · no clock`}
+            </Pill>
+            <Pill tone={usesPaidTracking(tracking) ? "grape" : "success"}>
+              {usesPaidTracking(tracking) ? "Player stats" : "Score only · Free"}
             </Pill>
           </div>
           <div className="flex justify-center"><BubbleButton
