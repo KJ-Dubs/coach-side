@@ -56,6 +56,28 @@ function mask(value: string | null): string | null {
   return value.length <= 6 ? "••••" : `••••${value.slice(-6)}`;
 }
 
+/**
+ * Database rules (e.g. GameDay+ stat tracking) read a mirror of the
+ * BILLING_ENFORCEMENT_ENABLED secret. Keep it in step with the secret so the
+ * kill switch reaches them too. Never blocks the caller.
+ */
+async function syncEnforcementMirror(enforced: boolean) {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db = supabaseAdmin as unknown as {
+      from: (t: string) => {
+        select: (c: string) => { eq: (k: string, v: unknown) => { maybeSingle: () => PromiseLike<{ data: { enforced: boolean } | null }> } };
+        upsert: (row: Record<string, unknown>) => PromiseLike<unknown>;
+      };
+    };
+    const { data } = await db.from("billing_runtime").select("enforced").eq("id", true).maybeSingle();
+    if (data?.enforced === enforced) return;
+    await db.from("billing_runtime").upsert({ id: true, enforced, updated_at: new Date().toISOString() });
+  } catch {
+    /* mirror sync is best effort */
+  }
+}
+
 function friendly(e: unknown): string {
   console.error("Membership billing error", e instanceof Error ? e.message : e);
   return `We couldn't reach the payment service. Please try again in a minute, or email ${SUPPORT_EMAIL}.`;
