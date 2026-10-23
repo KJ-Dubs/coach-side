@@ -56,6 +56,7 @@ export function TrackingSettingsSheet({
   };
   const tap = (k: TrackingKey) => {
     if (k === "clock" && !tracking.clock) return setClockSetup((v) => !v);
+    if (gamedayLocked && isPaidTrackingKey(k) && !tracking[k]) return setPaywallKey((v) => (v === k ? null : k));
     if (tracking[k] && CONFIRM_OFF.includes(k) && confirmKey !== k) return setConfirmKey(k);
     set(k, !tracking[k]);
   };
@@ -69,6 +70,7 @@ export function TrackingSettingsSheet({
         {TRACKING_LABELS.map(({ key, label, group }) => {
           const disabled = (group === "opp" && key !== "opponent" && key !== "oppFouls" && !tracking.opponent);
           const label2 = TRACKING_LABELS.find((t) => t.key === key)?.label ?? label;
+          const lockedRow = gamedayLocked && isPaidTrackingKey(key) && !tracking[key];
           return (
             <div key={key} className="flex flex-col gap-1">
               <button
@@ -78,13 +80,21 @@ export function TrackingSettingsSheet({
                 className={cn(
                   "flex min-h-11 items-center justify-between gap-2 rounded-2xl border px-3 text-left text-sm font-bold",
                   tracking[key] ? "border-grape/60 bg-grape/20" : "border-border bg-surface-2/60 text-muted-foreground",
+                  lockedRow && "border-dashed border-flame/40",
                   disabled && "opacity-40",
                 )}
                 aria-pressed={tracking[key]}
               >
                 <span className="truncate">{label2}</span>
-                <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-black", tracking[key] ? "bg-grape text-primary-foreground" : "bg-surface-2")}>{tracking[key] ? "ON" : "OFF"}</span>
+                {lockedRow ? (
+                  <GameDayLockTag />
+                ) : (
+                  <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-black", tracking[key] ? "bg-grape text-primary-foreground" : "bg-surface-2")}>{tracking[key] ? "ON" : "OFF"}</span>
+                )}
               </button>
+              {paywallKey === key ? (
+                <GameDayUpgradeInline feature={label2} teamId={teamId} onClose={() => setPaywallKey(null)} />
+              ) : null}
               {key === "clock" && clockSetup ? (
                 <div className="flex flex-col gap-1.5 rounded-2xl border border-grape/50 bg-grape/10 p-2 text-xs font-bold">
                   <span>Clock starts now — earlier events keep no time. Set the time left on the clock.</span>
