@@ -3,11 +3,11 @@
  * Live Game for one game. Never edits the game and never touches the
  * coach's live session — it only reads through an owner-checked server call.
  */
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronRight, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, EmptyState, InfoPanel, Label, Panel, Pill, SectionHeader, StatTile } from "@/components/Bubbles";
 import { OwnerGate } from "@/components/admin/OwnerGate";
@@ -215,7 +215,7 @@ function InspectorBody({ data, refreshing, onRefresh }: { data: OwnerGamePayload
             <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
               {TRACKING_LABELS.map((t) => (
                 <div key={t.key} className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-surface/60 px-3 py-1.5">
-                  <span>{t.label}{t.group === "opp" ? "" : ""}</span>
+                  <span>{t.label}</span>
                   <Pill tone={cfg[t.key] ? "success" : "muted"}>{cfg[t.key] ? "Enabled" : "Disabled"}</Pill>
                 </div>
               ))}
@@ -392,7 +392,7 @@ function InspectorBody({ data, refreshing, onRefresh }: { data: OwnerGamePayload
   );
 }
 
-function DiagRow({ label, value }: { label: string; value: React.ReactNode }) {
+function DiagRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-2 rounded-2xl border border-border/70 bg-surface-2/60 px-3 py-2 text-sm font-semibold">
       <span>{label}</span>
@@ -424,4 +424,3 @@ function ScoreChart({ points }: { points: { team: number; opp: number; label: st
   );
 }
 
-export { ChevronRight };
