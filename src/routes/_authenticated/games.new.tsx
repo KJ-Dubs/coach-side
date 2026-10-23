@@ -551,9 +551,17 @@ function AdvancedRules(props: {
   saveDefaults: boolean;
   setSaveDefaults: (v: boolean) => void;
   canSaveDefaults: boolean;
+  /** True for a free team: GameDay+ categories show a lock and an upgrade prompt. */
+  locked: boolean;
+  teamId: string | null;
 }) {
-  const { tracking, setTracking, rules, setRules } = props;
-  const flip = (k: keyof TrackingConfig) => {
+  const { tracking, setTracking, rules, setRules, locked } = props;
+  const [paywall, setPaywall] = useState<string | null>(null);
+  const flip = (k: keyof TrackingConfig, label: string) => {
+    if (locked && isPaidTrackingKey(k) && !tracking[k]) {
+      setPaywall(label);
+      return;
+    }
     const next = { ...tracking, [k]: !tracking[k] };
     if (k === "opponent" && !next.opponent) {
       next.oppRebounds = false;
@@ -572,22 +580,46 @@ function AdvancedRules(props: {
     <div className="flex flex-col gap-2 rounded-2xl border border-border bg-surface-2/40 p-2">
       <BubbleButton size="sm" tone={props.open ? "grape" : "neutral"} className="min-h-11 w-full" onClick={props.onToggle} aria-expanded={props.open}>
         {props.open ? "▾" : "▸"} Advanced rules &amp; stat tracking
-        <Pill tone="muted">{isFull ? "Full stats" : isScoreOnly ? "Score only" : "Custom"}</Pill>
+        <Pill tone={locked && isScoreOnly ? "success" : "muted"}>
+          {isFull ? "Full stats" : isScoreOnly ? (locked ? "Score only · Free" : "Score only") : "Custom"}
+        </Pill>
       </BubbleButton>
       {props.open ? (
         <div className="flex flex-col gap-3 bubble-pop">
           <Field label="Stat tracking">
             <div className="flex flex-wrap gap-2">
-              <BubbleButton size="sm" tone={isFull ? "grape" : "neutral"} onClick={() => setTracking({ ...FULL_TRACKING, clock: tracking.clock })}>Full stats</BubbleButton>
-              <BubbleButton size="sm" tone={isScoreOnly ? "grape" : "neutral"} onClick={() => setTracking({ ...SCORE_ONLY_TRACKING, clock: tracking.clock })}>Score only (youth)</BubbleButton>
+              <BubbleButton
+                size="sm"
+                tone={isFull ? "grape" : "neutral"}
+                onClick={() => (locked ? setPaywall("Full stats") : setTracking({ ...FULL_TRACKING, clock: tracking.clock }))}
+              >
+                Full stats {locked ? <GameDayLockTag /> : null}
+              </BubbleButton>
+              <BubbleButton size="sm" tone={isScoreOnly ? "grape" : "neutral"} onClick={() => { setPaywall(null); setTracking({ ...SCORE_ONLY_TRACKING, clock: tracking.clock }); }}>
+                Score only {locked ? <Pill tone="success">Free</Pill> : "(youth)"}
+              </BubbleButton>
             </div>
+            {locked ? (
+              <Note>Score only is free: score, periods, team fouls and the clock. Player and location stats need GameDay+.</Note>
+            ) : null}
+            {paywall ? (
+              <div className="mt-2">
+                <GameDayUpgradeInline feature={paywall} teamId={props.teamId} onClose={() => setPaywall(null)} />
+              </div>
+            ) : null}
             <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
               {statLabels.filter((t) => {
                 if (t.key === "foulDetail") return tracking.fouls;
                 if (t.key === "oppRebounds" || t.key === "oppTurnovers") return tracking.opponent;
                 return true;
               }).map((t) => (
-                <Toggle key={t.key} on={tracking[t.key]} label={`Track ${t.label.toLowerCase()}`} onClick={() => flip(t.key)} />
+                <Toggle
+                  key={t.key}
+                  on={tracking[t.key]}
+                  label={`Track ${t.label.toLowerCase()}`}
+                  locked={locked && isPaidTrackingKey(t.key)}
+                  onClick={() => flip(t.key, t.label)}
+                />
               ))}
             </div>
           </Field>
