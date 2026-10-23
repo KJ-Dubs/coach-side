@@ -119,12 +119,17 @@ function DrillPage() {
         <>
           {seo ? <InfoPanel>{drillSeoDescription(seo)}</InfoPanel> : null}
           {drill.data ? (
-          <Panel className="flex flex-col gap-3">
-            <DrillCanvas frame={frames.data?.[0]} />
-            {frames.data?.[0]?.note ? <InfoPanel>{frames.data[0]!.note}</InfoPanel> : null}
-          </Panel>
+            <Panel className="flex flex-col gap-3">
+              <DrillCanvas frame={frames.data?.[0]} />
+              {frames.data?.[0]?.note ? <InfoPanel>{frames.data[0]!.note}</InfoPanel> : null}
+            </Panel>
+          ) : (
+            <Panel className="flex justify-center">
+              <Pill tone="muted">Loading court diagram…</Pill>
+            </Panel>
+          )}
 
-          {frames.data?.length ? <ExportDrillVideo drill={d} frames={frames.data} /> : null}
+          {drill.data && frames.data?.length ? <ExportDrillVideo drill={drill.data} frames={frames.data} /> : null}
 
           <Panel className="flex flex-col gap-3">
             <div className="flex flex-wrap justify-center gap-2">
