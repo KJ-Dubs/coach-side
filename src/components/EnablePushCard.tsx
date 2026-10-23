@@ -191,7 +191,13 @@ export function EnablePushCard({
         </>
       ) : null}
 
-      {state !== "on" ? (
+      {onLater && state !== "on" ? (
+        <BubbleButton size="sm" tone="ghost" onClick={onLater}>
+          Later
+        </BubbleButton>
+      ) : null}
+
+      {state !== "on" && !installApp.standalone ? (
         <Link
           to="/help"
           hash="notifications"
