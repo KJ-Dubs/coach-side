@@ -46,8 +46,9 @@ export function drillSeoTitle(d: DrillSeoSource): string {
   if (title.length > DRILL_TITLE_MAX) return title;
   const m = minutes(d.duration_minutes);
   const extras = [m ? `, ${m} min` : "", d.group_size ? `, ${d.group_size.trim()}` : ""];
+  // Drill details outrank the brand suffix when space is tight.
   for (const extra of extras) {
-    if (extra && title.length + extra.length <= DRILL_TITLE_MAX - BRAND.length) title += extra;
+    if (extra && title.length + extra.length <= DRILL_TITLE_MAX) title += extra;
   }
   if (title.length + BRAND.length <= DRILL_TITLE_MAX) title += BRAND;
   return title;

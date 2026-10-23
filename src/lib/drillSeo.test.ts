@@ -14,9 +14,7 @@ const mikan = {
 
 describe("drill search titles", () => {
   it("uses name, category, minutes and group size", () => {
-    expect(drillSeoTitle(mikan)).toBe(
-      "Mikan Series – Finishing Basketball Drill, 6 min, Individual | CoachSide",
-    );
+    expect(drillSeoTitle(mikan)).toBe("Mikan Series – Finishing Basketball Drill, 6 min, Individual");
   });
 
   it("drops extras that would make the title too long", () => {
