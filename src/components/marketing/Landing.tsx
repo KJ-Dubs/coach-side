@@ -1,13 +1,22 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import {
-  Bell,
   CalendarDays,
+  Check,
   ClipboardList,
+  Crosshair,
+  Dumbbell,
   FolderOpen,
+  LibraryBig,
   ListChecks,
-  MessagesSquare,
+  Lock,
+  MessageSquareText,
+  PencilRuler,
+  Presentation,
+  QrCode,
   Sparkles,
+  Timer,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import { trackAnon, type AnonEvent } from "@/lib/funnel";
@@ -15,7 +24,7 @@ import { SocialCTA } from "@/components/SocialCTA";
 import { Panel, Pill } from "@/components/Bubbles";
 import { DemoPlay } from "@/components/marketing/DemoPlay";
 import { InstallAppPill } from "@/components/InstallApp";
-import { COMPLETE_NAME, COMPLETE_PRICE, FREE_CORE, MODULE_LIST, MODULES, type ModuleKey } from "@/lib/entitlements";
+import { COMPLETE_NAME, COMPLETE_PRICE, MODULES, type ModuleKey } from "@/lib/entitlements";
 import { cn } from "@/lib/utils";
 import wordmark from "@/assets/coachside-wordmark.png.asset.json";
 import mark from "@/assets/coachside-mark.jpg.asset.json";
@@ -41,7 +50,7 @@ const CTA_SIZE = {
 } as const;
 function ctaCls(tone: CtaTone, size: keyof typeof CTA_SIZE = "md", className?: string) {
   return cn(
-    "inline-flex items-center justify-center gap-2 rounded-full border text-center font-bold tracking-wide shadow-lg shadow-black/20 transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grape",
+    "inline-flex items-center justify-center gap-2 rounded-full border text-center font-bold tracking-wide shadow-lg shadow-background/40 transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grape",
     CTA_TONE[tone],
     CTA_SIZE[size],
     className,
@@ -50,99 +59,292 @@ function ctaCls(tone: CtaTone, size: keyof typeof CTA_SIZE = "md", className?: s
 
 const track = (e: AnonEvent) => () => void trackAnon(e);
 
-function ExplorePlays({ size = "lg", label = "Explore Plays", className }: { size?: keyof typeof CTA_SIZE; label?: string; className?: string }) {
-  return (
-    <Link to="/library" onClick={track("landing_explore_plays")} className={ctaCls("flame", size, className)}>
-      {label}
-    </Link>
-  );
-}
-
-function BuildPlay({ size = "lg", className }: { size?: keyof typeof CTA_SIZE; className?: string }) {
-  // Signed-out coaches create an account, then land straight in play creation.
+/** Sign up, then continue straight to `next` (preserved through auth). */
+function SignupCta({
+  next,
+  event,
+  tone = "flame",
+  size = "md",
+  className,
+  children,
+}: {
+  next?: string;
+  event: AnonEvent;
+  tone?: CtaTone;
+  size?: keyof typeof CTA_SIZE;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
     <Link
       to="/auth"
-      search={{ mode: "signup", next: "/plays/new" }}
-      onClick={track("landing_build_play")}
-      className={ctaCls("grape", size, className)}
+      search={next ? { mode: "signup", next } : { mode: "signup" }}
+      onClick={track(event)}
+      className={ctaCls(tone, size, className)}
     >
-      Build a Play
-    </Link>
-  );
-}
-
-function StartFree({ size = "md", label = "Start Free", event = "landing_start_free", tone = "flame", className }: { size?: keyof typeof CTA_SIZE; label?: string; event?: AnonEvent; tone?: CtaTone; className?: string }) {
-  return (
-    <Link to="/auth" search={{ mode: "signup" }} onClick={track(event)} className={ctaCls(tone, size, className)}>
-      {label}
-    </Link>
-  );
-}
-
-function AnchorCta({ href, children, tone = "neutral" }: { href: string; children: ReactNode; tone?: CtaTone }) {
-  return (
-    <a href={href} className={ctaCls(tone, "md")}>
       {children}
+    </Link>
+  );
+}
+
+function ExplorePlays({ size = "lg", tone = "neutral", className }: { size?: keyof typeof CTA_SIZE; tone?: CtaTone; className?: string }) {
+  return (
+    <Link to="/library" onClick={track("landing_explore_plays")} className={ctaCls(tone, size, className)}>
+      Explore Plays
+    </Link>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* The three primary products.                                        */
+/* ------------------------------------------------------------------ */
+
+type Tone = "grape" | "flame";
+
+type Product = {
+  id: string;
+  module: ModuleKey;
+  tone: Tone;
+  icon: LucideIcon;
+  name: string;
+  tagline: string;
+  tileFree: string;
+  tilePaid: string;
+  heading: string;
+  lead: string;
+  free: string[];
+  paid: string[];
+};
+
+const PRODUCTS: Product[] = [
+  {
+    id: "playmaker",
+    module: "playbook_plus",
+    tone: "grape",
+    icon: PencilRuler,
+    name: "Play Maker + Playbook",
+    tagline: "Draw animated basketball plays and keep your team's playbook in one place.",
+    tileFree: "Create and animate plays",
+    tilePaid: "Save, organize and export your team playbook",
+    heading: "Build plays. Organize your playbook.",
+    lead: "Draw a play, sequence every action and watch it run before your players ever see it.",
+    free: [
+      "Create plays in the Play Maker",
+      "Draw cuts, screens, passes, dribbles and handoffs",
+      "Run animated sequences",
+      "Browse the public CoachSide Play Library",
+    ],
+    paid: [
+      "Save CoachSide Library plays to your team",
+      "Unlimited saved and custom team plays",
+      "Organize plays into team folders",
+      "Publish plays to the Library",
+      "Export plays as MP4 video",
+      "Share organized playbook content with your players",
+    ],
+  },
+  {
+    id: "lockerroom",
+    module: "team_hub_plus",
+    tone: "flame",
+    icon: UsersRound,
+    name: "Locker Room",
+    tagline: "Your team's own space: roster, schedule and everything players need.",
+    tileFree: "Roster, player invites and a basic team space",
+    tilePaid: "Chat, plans, resources and calendar sync",
+    heading: "Run your team from the Locker Room.",
+    lead: "Players scan one code and land in a simple team space built around your roster.",
+    free: [
+      "Create your roster",
+      "Player QR and invite-link onboarding",
+      "Basic team schedule viewing",
+      "Basic Locker Room access",
+      "Players see their team and core information",
+    ],
+    paid: [
+      "Team chat and announcements",
+      "Plans and assignments",
+      "Shared play folders",
+      "Resources",
+      "Google Calendar sync",
+      "Richer parent and family sharing",
+      "Player engagement and read-status tools where supported",
+    ],
+  },
+  {
+    id: "gameday",
+    module: "gameday_plus",
+    tone: "grape",
+    icon: Crosshair,
+    name: "GameDay Stats",
+    tagline: "Run the scoreboard free, or track every shot from the court.",
+    tileFree: "Scoreboard with score and periods",
+    tilePaid: "Tap-the-court player stats and shot charts",
+    heading: "Track the game from the court.",
+    lead: "Tap where it happened, tap the player, tap the stat. The court never leaves the screen.",
+    free: [
+      "Game scoreboard",
+      "Period and quarter tracking",
+      "Team score only",
+      "Team fouls and an optional game clock",
+      "No individual player stats required",
+    ],
+    paid: [
+      "Tap-the-court location stat tracking",
+      "Individual player stats",
+      "Made and missed shots",
+      "Rebounds, assists and steals",
+      "Turnovers, fouls and free throws",
+      "Shot charts",
+      "Substitution and lineup tracking",
+      "Advanced game history and reports",
+    ],
+  },
+];
+
+const TONE = {
+  grape: {
+    border: "border-grape/50",
+    soft: "bg-grape/10",
+    icon: "border-grape/50 bg-grape/20 text-grape-bright",
+    dot: "text-grape-bright",
+  },
+  flame: {
+    border: "border-flame/50",
+    soft: "bg-flame/10",
+    icon: "border-flame/50 bg-flame/20 text-flame",
+    dot: "text-flame",
+  },
+} as const;
+
+function ProductTile({ p }: { p: Product }) {
+  const m = MODULES[p.module];
+  const t = TONE[p.tone];
+  const Icon = p.icon;
+  return (
+    <a
+      href={`#${p.id}`}
+      className={cn(
+        "group flex flex-col gap-4 rounded-3xl border-2 bg-surface/90 p-5 shadow-lg shadow-background/40 transition-colors hover:bg-surface-2/80",
+        t.border,
+      )}
+    >
+      <span aria-hidden className={cn("inline-flex h-14 w-14 items-center justify-center rounded-2xl border", t.icon)}>
+        <Icon className="h-7 w-7" />
+      </span>
+      <span className="flex flex-col gap-1.5">
+        <span className="text-xl font-black uppercase leading-tight tracking-wide text-foreground">{p.name}</span>
+        <span className="text-sm font-semibold leading-relaxed text-muted-foreground">{p.tagline}</span>
+      </span>
+      <span className="mt-auto flex flex-col overflow-hidden rounded-2xl border border-border/70">
+        <span className="flex items-start gap-3 bg-surface-2/60 px-3 py-2.5">
+          <span className="w-14 shrink-0 rounded-full bg-success/20 px-2 py-0.5 text-center text-[11px] font-black text-foreground">FREE</span>
+          <span className="text-sm font-bold text-foreground">{p.tileFree}</span>
+        </span>
+        <span className={cn("flex items-start gap-3 border-t border-border/70 px-3 py-2.5", t.soft)}>
+          <span className="w-14 shrink-0 rounded-full bg-background/60 px-2 py-0.5 text-center text-[11px] font-black text-foreground">${m.price}/mo</span>
+          <span className="text-sm font-bold text-foreground">
+            {m.name}: {p.tilePaid}
+          </span>
+        </span>
+      </span>
+      <span className="self-start rounded-full bg-background/50 px-3 py-1 text-xs font-bold text-muted-foreground group-hover:text-foreground">
+        Free vs paid ↓
+      </span>
     </a>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Story section shell: one surface, one heading, one CTA.            */
-/* ------------------------------------------------------------------ */
-
-function StorySection({
-  id,
-  eyebrow,
+function CompareColumn({
+  kind,
   title,
-  lead,
-  points,
-  cta,
-  media,
-  tone = "grape",
-  reverse = false,
+  price,
+  items,
+  tone,
 }: {
-  id: string;
-  eyebrow: string;
+  kind: "free" | "paid";
   title: string;
-  lead: string;
-  points: string[];
-  cta: ReactNode;
-  media?: ReactNode;
-  tone?: "grape" | "flame";
-  reverse?: boolean;
+  price: string;
+  items: string[];
+  tone: Tone;
 }) {
+  const t = TONE[tone];
   return (
-    <section
-      id={id}
-      aria-labelledby={`${id}-title`}
+    <div
       className={cn(
-        "scroll-mt-20 rounded-3xl border border-l-4 bg-surface/80 p-4 shadow-lg shadow-black/30 sm:p-6",
-        tone === "flame" ? "border-flame/40 border-l-flame" : "border-grape/40 border-l-grape",
+        "flex flex-col gap-3 rounded-2xl border p-4",
+        kind === "free" ? "border-border/70 bg-surface-2/50" : cn(t.border, t.soft),
       )}
     >
-      <div className={cn("grid items-center gap-5", media && "lg:grid-cols-2", reverse && media && "lg:[&>*:first-child]:order-2")}>
-        <div className="flex min-w-0 flex-col gap-3">
-          <Pill tone={tone} className="self-start">{eyebrow}</Pill>
-          <h2 id={`${id}-title`} className="text-2xl font-black leading-tight text-foreground sm:text-4xl">
-            {title}
-          </h2>
-          <p className="text-base font-semibold leading-relaxed text-muted-foreground">{lead}</p>
-          <ul className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
-            {points.map((p) => (
-              <li key={p} className="flex items-start gap-2 text-sm font-semibold text-foreground">
-                <span
-                  aria-hidden
-                  className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", tone === "flame" ? "bg-flame" : "bg-grape")}
-                />
-                <span>{p}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="pt-1">{cta}</div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider",
+            kind === "free" ? "bg-success/20 text-foreground" : "bg-background/60 text-foreground",
+          )}
+        >
+          {kind === "paid" ? <Lock aria-hidden className="h-3.5 w-3.5" /> : null}
+          {title}
+        </span>
+        <span className="rounded-full bg-background/50 px-3 py-1 text-sm font-black text-foreground">{price}</span>
+      </div>
+      <ul className="flex flex-col gap-2">
+        {items.map((it) => (
+          <li key={it} className="flex items-start gap-2 text-sm font-semibold leading-snug text-foreground">
+            <Check aria-hidden className={cn("mt-0.5 h-4 w-4 shrink-0", kind === "free" ? "text-success" : t.dot)} />
+            <span>{it}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ProductSection({
+  p,
+  index,
+  cta,
+  visual,
+  reverse,
+}: {
+  p: Product;
+  index: number;
+  cta: ReactNode;
+  visual: ReactNode;
+  reverse?: boolean;
+}) {
+  const m = MODULES[p.module];
+  const t = TONE[p.tone];
+  const Icon = p.icon;
+  return (
+    <section
+      id={p.id}
+      aria-labelledby={`${p.id}-title`}
+      className={cn("scroll-mt-20 rounded-[2rem] border-2 bg-surface/80 p-5 shadow-xl shadow-background/40 sm:p-8", t.border)}
+    >
+      <div className={cn("grid items-start gap-6 lg:grid-cols-[1.15fr_1fr] lg:gap-8", reverse && "lg:[&>*:first-child]:order-2")}>
+        <div className="flex min-w-0 flex-col gap-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span aria-hidden className={cn("inline-flex h-11 w-11 items-center justify-center rounded-2xl border", t.icon)}>
+              <Icon className="h-5 w-5" />
+            </span>
+            <Pill tone={p.tone}>
+              {String(index).padStart(2, "0")} · {p.name}
+            </Pill>
+          </div>
+          <div className="flex flex-col gap-2">
+            <h2 id={`${p.id}-title`} className="text-3xl font-black leading-tight text-foreground sm:text-4xl">
+              {p.heading}
+            </h2>
+            <p className="text-base font-semibold leading-relaxed text-muted-foreground sm:text-lg">{p.lead}</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <CompareColumn kind="free" title="Free" price="$0" items={p.free} tone={p.tone} />
+            <CompareColumn kind="paid" title={m.name} price={`$${m.price}/month`} items={p.paid} tone={p.tone} />
+          </div>
+          <div>{cta}</div>
         </div>
-        {media ? <div className="min-w-0">{media}</div> : null}
+        <div className="min-w-0">{visual}</div>
       </div>
     </section>
   );
@@ -159,85 +361,121 @@ function Shot({ src, alt, caption, className, imgClassName = "aspect-[4/5]" }: {
   );
 }
 
-const LOCKER_AREAS: { label: string; note: string; icon: LucideIcon }[] = [
-  { label: "Team Chat", note: "Announcements & messages", icon: MessagesSquare },
-  { label: "Schedule", note: "Games & practices", icon: CalendarDays },
-  { label: "Playbook", note: "Shared play folders", icon: FolderOpen },
-  { label: "Plans", note: "Assignments to review", icon: ListChecks },
-];
+/** Generic, illustrative Locker Room preview — no real team data. */
+function LockerPreview() {
+  const rows: { label: string; note: string; icon: LucideIcon; paid: boolean }[] = [
+    { label: "Roster", note: "12 players joined", icon: UsersRound, paid: false },
+    { label: "Schedule", note: "Thu · Practice 4:30 PM", icon: CalendarDays, paid: false },
+    { label: "Team Chat", note: "Coach: Film at 3:45 tomorrow", icon: MessageSquareText, paid: true },
+    { label: "Plans", note: "Review Horns Flex before Friday", icon: ListChecks, paid: true },
+    { label: "Playbook", note: "Shared folder · Press Break", icon: FolderOpen, paid: true },
+  ];
+  return (
+    <div className="mx-auto flex w-full max-w-sm flex-col gap-2 rounded-[2rem] border-2 border-flame/40 bg-background/70 p-3 shadow-xl shadow-background/50">
+      <div className="flex items-center justify-between rounded-2xl bg-surface-2/80 px-3 py-2">
+        <span className="text-sm font-black text-foreground">East High · Locker Room</span>
+        <span className="rounded-full bg-flame/20 px-2 py-0.5 text-[10px] font-black uppercase text-foreground">Preview</span>
+      </div>
+      {rows.map((r) => {
+        const Icon = r.icon;
+        return (
+          <div key={r.label} className="flex items-center gap-3 rounded-2xl border border-border/60 bg-surface/80 px-3 py-2.5">
+            <span aria-hidden className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-flame/40 bg-flame/15 text-flame">
+              <Icon className="h-4 w-4" />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="text-sm font-black text-foreground">{r.label}</span>
+              <span className="truncate text-xs font-semibold text-muted-foreground">{r.note}</span>
+            </span>
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase",
+                r.paid ? "bg-flame/20 text-foreground" : "bg-success/20 text-foreground",
+              )}
+            >
+              {r.paid ? MODULES.team_hub_plus.name : "Free"}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
-const SEASON_ITEMS: { label: string; icon: LucideIcon }[] = [
-  { label: "Practice plans built from your drills", icon: ClipboardList },
-  { label: "One team calendar for games and practices", icon: CalendarDays },
-  { label: "Google Calendar support for the coach's schedule", icon: CalendarDays },
-  { label: "Upcoming games and practices on your Home screen", icon: ListChecks },
-  { label: "Team notifications when the schedule changes", icon: Bell },
-  { label: "Assignments and resources for players", icon: FolderOpen },
-];
+/* ------------------------------------------------------------------ */
+/* More free tools — one section, simple rows.                        */
+/* ------------------------------------------------------------------ */
 
-const AI_PROMPTS = [
-  "Add this schedule from the photo.",
-  "Add these players to my roster.",
-  "What games do we have next week?",
-  "Build a 20-minute press-break segment.",
-  "Move Thursday practice to 5:30.",
+const FREE_TOOLS: { title: string; body: string; note?: string; icon: LucideIcon }[] = [
+  { title: "Coach's Board", body: "Draw up plays quickly during practice, timeouts or meetings.", icon: Presentation },
+  {
+    title: "Scoreboard Mode",
+    body: "Run a game with score and period tracking, no individual player stats needed.",
+    note: `Player and location stats are available with ${MODULES.gameday_plus.name}.`,
+    icon: Timer,
+  },
+  { title: "Drill Maker", body: "Build and save basketball drills visually.", icon: Dumbbell },
+  {
+    title: "Practice Planner",
+    body: "Organize your drills into practice plans.",
+    note: `CoachSide AI Assistant can help build practice plans with Complete when AI access is active.`,
+    icon: ClipboardList,
+  },
+  { title: "Roster + Player Onboarding", body: "Create teams and rosters, then invite players with a QR code or link.", icon: QrCode },
+  { title: "Public Play Library", body: "Browse basketball plays from CoachSide and other coaches.", icon: LibraryBig },
+  { title: "Basic Schedule", body: "View games and practices for your team.", icon: CalendarDays },
 ];
 
 /* ------------------------------------------------------------------ */
-/* Pricing — every number and benefit comes from entitlements.ts.     */
+/* Pricing comparison — names and prices come from entitlements.ts.   */
 /* ------------------------------------------------------------------ */
 
-const MODULE_ANCHOR: Record<ModuleKey, string> = {
-  playbook_plus: "playbook-plus",
-  gameday_plus: "gameday-plus",
-  team_hub_plus: "team-hub-plus",
-};
+const AI_EXAMPLES = [
+  "Add this schedule from a photo",
+  "Add players to my roster",
+  "What games are next week?",
+  "Help build a practice plan",
+];
 
-function PriceCard({
-  id,
-  name,
-  price,
-  blurb,
-  items,
-  highlight,
-  badge,
-  footer,
-}: {
-  id?: string;
-  name: string;
-  price: number;
-  blurb: string;
-  items: ReactNode[];
-  highlight?: boolean;
-  badge?: ReactNode;
-  footer?: ReactNode;
-}) {
+type Tier = { name: string; price: number; summary: string; tone: "free" | Tone; highlight?: boolean };
+
+const TIERS: Tier[] = [
+  {
+    name: "Free Core",
+    price: 0,
+    summary: "Play Maker basics, Coach's Board, score-only GameDay, drill and practice tools, roster and basic schedule.",
+    tone: "free",
+  },
+  { name: MODULES.playbook_plus.name, price: MODULES.playbook_plus.price, summary: "Full Playbook: save, organize, publish and export plays.", tone: "grape" },
+  { name: MODULES.team_hub_plus.name, price: MODULES.team_hub_plus.price, summary: "Full Locker Room and team coordination.", tone: "flame" },
+  { name: MODULES.gameday_plus.name, price: MODULES.gameday_plus.price, summary: "Location-based player stat tracking and analytics.", tone: "grape" },
+];
+
+const GLANCE: { feature: string; plan: string; free: boolean }[] = [
+  { feature: "Create and animate plays", plan: "Free", free: true },
+  { feature: "Coach's Board, Drill Maker, Practice Planner", plan: "Free", free: true },
+  { feature: "Roster, player invites, basic schedule", plan: "Free", free: true },
+  { feature: "Scoreboard: score, periods, team fouls", plan: "Free", free: true },
+  { feature: "Save, organize, publish and export team plays", plan: MODULES.playbook_plus.name, free: false },
+  { feature: "Team chat, plans, resources, calendar sync", plan: MODULES.team_hub_plus.name, free: false },
+  { feature: "Tap-the-court player stats, shot charts, lineups", plan: MODULES.gameday_plus.name, free: false },
+  { feature: "All three paid modules + AI Assistant when active", plan: COMPLETE_NAME, free: false },
+];
+
+function TierCard({ tier }: { tier: Tier }) {
   return (
     <div
-      id={id}
       className={cn(
-        "flex scroll-mt-24 flex-col gap-3 rounded-3xl border p-4 target:ring-2 target:ring-flame",
-        highlight ? "border-2 border-flame bg-flame/10" : "border-border/70 bg-surface-2/60",
+        "flex flex-col gap-2 rounded-3xl border p-4",
+        tier.tone === "free" ? "border-success/40 bg-surface-2/60" : cn(TONE[tier.tone].border, "bg-surface-2/60"),
       )}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-lg font-black text-foreground">{name}</h3>
-        {badge}
-      </div>
-      <div className="flex items-baseline gap-1">
-        <span className="text-4xl font-black text-foreground">${price}</span>
-        <span className="text-sm font-bold text-muted-foreground">{price === 0 ? "forever" : "/ month per team"}</span>
-      </div>
-      <p className="text-sm font-semibold leading-relaxed text-muted-foreground">{blurb}</p>
-      <ul className="flex flex-col gap-1.5">
-        {items.map((it, i) => (
-          <li key={i} className="flex items-start gap-2 text-sm font-semibold text-foreground">
-            <span aria-hidden className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", highlight ? "bg-flame" : "bg-grape")} />
-            <span>{it}</span>
-          </li>
-        ))}
-      </ul>
-      {footer ? <div className="mt-auto pt-1">{footer}</div> : null}
+      <span className="text-sm font-black uppercase tracking-wider text-foreground">{tier.name}</span>
+      <span className="flex items-baseline gap-1">
+        <span className="text-4xl font-black text-foreground">${tier.price}</span>
+        <span className="text-xs font-bold text-muted-foreground">{tier.price === 0 ? "forever" : "/ month per team"}</span>
+      </span>
+      <span className="text-sm font-semibold leading-relaxed text-muted-foreground">{tier.summary}</span>
     </div>
   );
 }
@@ -254,74 +492,125 @@ function Pricing() {
           io.disconnect();
         }
       },
-      { threshold: 0.25 },
+      { threshold: 0.2 },
     );
     io.observe(el);
     return () => io.disconnect();
   }, []);
+
+  const moduleTotal = MODULES.playbook_plus.price + MODULES.team_hub_plus.price + MODULES.gameday_plus.price;
 
   return (
     <section
       ref={ref}
       id="pricing"
       aria-labelledby="pricing-title"
-      className="scroll-mt-20 rounded-3xl border border-border/70 bg-surface/80 p-4 shadow-lg shadow-black/30 sm:p-6"
+      className="scroll-mt-20 rounded-[2rem] border-2 border-border/70 bg-surface/80 p-5 shadow-xl shadow-background/40 sm:p-8"
     >
       <div className="flex flex-col items-center gap-3 text-center">
         <Pill tone="flame">Pricing</Pill>
-        <h2 id="pricing-title" className="text-2xl font-black leading-tight text-foreground sm:text-4xl">
-          Start free. Add only what you use.
+        <h2 id="pricing-title" className="text-3xl font-black leading-tight text-foreground sm:text-4xl">
+          Free to start. Pay only for what you use.
         </h2>
         <div className="flex flex-wrap justify-center gap-2">
-          <Pill tone="success">Start free</Pill>
-          <Pill tone="success">No credit card required to create an account</Pill>
-          <Pill tone="muted">Paid features unlock when you choose a module or Complete</Pill>
+          <Pill tone="success">No credit card required</Pill>
+          <Pill tone="muted">One monthly charge per team</Pill>
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        <PriceCard
-          name="Free Core"
-          price={0}
-          blurb="Everything you need to try CoachSide with your team."
-          items={FREE_CORE}
-        />
-        {MODULE_LIST.map((m) => (
-          <PriceCard
-            key={m.key}
-            id={MODULE_ANCHOR[m.key]}
-            name={m.name}
-            price={m.price}
-            blurb={m.blurb}
-            items={m.benefits}
-          />
-        ))}
-        <PriceCard
-          name={COMPLETE_NAME}
-          price={COMPLETE_PRICE}
-          highlight
-          badge={<Pill tone="flame">Best Value</Pill>}
-          blurb={`All three modules on one monthly team charge — $${MODULE_LIST.reduce((s, m) => s + m.price, 0)} worth for $${COMPLETE_PRICE}.`}
-          items={[
-            `Everything in ${MODULES.playbook_plus.name}, ${MODULES.gameday_plus.name} and ${MODULES.team_hub_plus.name}`,
-            "One recurring charge for the whole team",
-            <span key="ai" className="inline-flex flex-wrap items-center gap-1.5">
-              CoachSide AI Assistant when it launches <Pill tone="muted">Coming soon</Pill>
-            </span>,
-          ]}
-        />
+      <div className="mt-6 grid gap-3 lg:grid-cols-[1fr_1.1fr]">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {TIERS.map((t) => (
+            <TierCard key={t.name} tier={t} />
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-4 rounded-3xl border-2 border-flame bg-flame/10 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-lg font-black uppercase tracking-wider text-foreground">{COMPLETE_NAME}</span>
+            <Pill tone="flame">Best value</Pill>
+          </div>
+          <span className="flex items-baseline gap-1">
+            <span className="text-5xl font-black text-foreground">${COMPLETE_PRICE}</span>
+            <span className="text-sm font-bold text-muted-foreground">/ month per team</span>
+          </span>
+          <ul className="flex flex-col gap-2">
+            {[
+              `${MODULES.playbook_plus.name}, ${MODULES.team_hub_plus.name} and ${MODULES.gameday_plus.name}`,
+              `$${moduleTotal} of modules for $${COMPLETE_PRICE}`,
+              "One recurring charge for the whole team",
+            ].map((it) => (
+              <li key={it} className="flex items-start gap-2 text-sm font-bold text-foreground">
+                <Check aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-flame" />
+                <span>{it}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="flex flex-col gap-3 rounded-2xl border border-grape/50 bg-background/50 p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Sparkles aria-hidden className="h-4 w-4 text-grape-bright" />
+              <span className="text-sm font-black text-foreground">CoachSide AI Assistant</span>
+              <Pill tone="muted">Coming soon</Pill>
+            </div>
+            <span className="text-sm font-semibold text-muted-foreground">
+              Included with Complete when AI access is active.
+            </span>
+            <ul className="flex flex-wrap gap-2">
+              {AI_EXAMPLES.map((p) => (
+                <li
+                  key={p}
+                  className="rounded-2xl rounded-bl-md border border-grape/40 bg-grape/10 px-3 py-1.5 text-xs font-semibold text-foreground"
+                >
+                  “{p}”
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
 
-      <div className="mt-5 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
-        <StartFree size="lg" className="w-full sm:w-auto" />
-        <Link
-          to="/auth"
-          search={{ mode: "signup", next: "/membership" }}
-          onClick={track("landing_membership_options")}
-          className={ctaCls("neutral", "lg", "w-full sm:w-auto")}
-        >
+      <div className="mt-6 overflow-hidden rounded-3xl border border-border/70">
+        <div className="bg-surface-2/80 px-4 py-2.5">
+          <span className="text-sm font-black uppercase tracking-wider text-foreground">Free vs paid at a glance</span>
+        </div>
+        <table className="w-full text-left">
+          <caption className="sr-only">Which CoachSide features are free and which plan includes each paid feature</caption>
+          <thead className="sr-only">
+            <tr>
+              <th scope="col">Feature</th>
+              <th scope="col">Plan</th>
+            </tr>
+          </thead>
+          <tbody>
+            {GLANCE.map((row) => (
+              <tr key={row.feature} className="border-t border-border/60">
+                <th scope="row" className="px-4 py-3 text-sm font-semibold text-foreground">
+                  {row.feature}
+                </th>
+                <td className="w-px whitespace-nowrap px-4 py-3 text-right">
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black",
+                      row.free ? "bg-success/20 text-foreground" : "bg-flame/20 text-foreground",
+                    )}
+                  >
+                    {row.free ? <Check aria-hidden className="h-3.5 w-3.5" /> : <Lock aria-hidden className="h-3.5 w-3.5" />}
+                    {row.plan}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-6 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+        <SignupCta event="landing_start_free" size="lg" className="w-full sm:w-auto">
+          Start Free
+        </SignupCta>
+        <SignupCta next="/membership" event="landing_membership_options" tone="neutral" size="lg" className="w-full sm:w-auto">
           See Membership Options
-        </Link>
+        </SignupCta>
       </div>
     </section>
   );
@@ -330,9 +619,10 @@ function Pricing() {
 /* ------------------------------------------------------------------ */
 
 const NAV = [
-  { href: "#plays", label: "Plays" },
+  { href: "#playmaker", label: "Play Maker" },
+  { href: "#lockerroom", label: "Locker Room" },
   { href: "#gameday", label: "GameDay" },
-  { href: "#team", label: "Team" },
+  { href: "#free-tools", label: "Free tools" },
   { href: "#pricing", label: "Pricing" },
 ];
 
@@ -341,6 +631,8 @@ export function Landing() {
     void trackAnon("landing_view");
   }, []);
 
+  const [playmaker, lockerroom, gameday] = PRODUCTS as [Product, Product, Product];
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/90 backdrop-blur">
@@ -348,7 +640,7 @@ export function Landing() {
           <a href="#top" className="inline-flex shrink-0 items-center rounded-2xl border border-grape/50 bg-grape/15 px-2.5 py-1">
             <img src={wordmark.url} alt="CoachSide" className="h-7 w-auto sm:h-8" />
           </a>
-          <nav aria-label="Sections" className="ml-2 hidden items-center gap-1 md:flex">
+          <nav aria-label="Sections" className="ml-2 hidden items-center gap-1 lg:flex">
             {NAV.map((n) => (
               <a
                 key={n.href}
@@ -363,93 +655,82 @@ export function Landing() {
             <Link to="/auth" search={{ mode: "signin" }} className={ctaCls("ghost", "sm")}>
               Sign In
             </Link>
-            <StartFree size="sm" />
+            <SignupCta event="landing_start_free" size="sm">
+              Start Free
+            </SignupCta>
           </div>
         </div>
       </header>
 
-      <main id="top" className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-3 py-4 sm:gap-6">
-        {/* HERO */}
-        <section
-          aria-labelledby="hero-title"
-          className="rounded-3xl border-2 border-grape/60 bg-grape/10 p-4 shadow-lg shadow-black/30 sm:p-6"
-        >
-          <div className="grid items-center gap-5 lg:grid-cols-[1.05fr_1fr]">
-            <div className="flex min-w-0 flex-col gap-4">
-              <Pill tone="flame" className="self-start">Basketball coaching platform</Pill>
-              <h1 id="hero-title" className="text-4xl font-black leading-[1.05] text-foreground sm:text-6xl">
-                Coach better from one place.
-              </h1>
-              <p className="text-base font-semibold leading-relaxed text-muted-foreground sm:text-lg">
-                Build and find basketball plays, track games and stats, organize your team, and run the
-                season from CoachSide.
-              </p>
-              <div className="grid gap-2 sm:flex sm:flex-wrap">
-                <ExplorePlays />
-                <BuildPlay />
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  to="/auth"
-                  search={{ mode: "signup" }}
-                  onClick={track("landing_setup_team")}
-                  className={ctaCls("neutral", "sm")}
-                >
-                  Set Up My Team
-                </Link>
-                <Pill tone="success">Start free</Pill>
-                <Pill tone="success">No credit card required</Pill>
-              </div>
+      <main id="top" className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-3 py-6 sm:gap-10 sm:py-10">
+        {/* HERO + THREE PRODUCTS */}
+        <section aria-labelledby="hero-title" className="flex flex-col gap-6">
+          <div className="flex flex-col items-center gap-4 rounded-[2rem] border-2 border-grape/50 bg-grape/10 px-5 py-8 text-center sm:py-10">
+            <Pill tone="flame">Basketball coaching platform</Pill>
+            <h1 id="hero-title" className="max-w-3xl text-4xl font-black leading-[1.05] text-foreground sm:text-6xl">
+              Coach better from one place.
+            </h1>
+            <p className="text-lg font-bold text-muted-foreground sm:text-2xl">
+              Build plays. Run your team. Track the game.
+            </p>
+            <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-center">
+              <SignupCta event="landing_start_free" size="lg">
+                Start Free
+              </SignupCta>
+              <ExplorePlays />
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Pill tone="success">No credit card required</Pill>
               <InstallAppPill />
             </div>
-            <div className="rounded-3xl border border-border/70 bg-surface/80 p-2 sm:p-3">
-              <DemoPlay />
-            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {PRODUCTS.map((p) => (
+              <ProductTile key={p.id} p={p} />
+            ))}
           </div>
         </section>
 
-        {/* A — PLAYS */}
-        <StorySection
-          id="plays"
-          eyebrow="Plays"
-          title="Build it. Find it. Teach it."
-          lead="Grab a play from the CoachSide Library or draw your own, then watch it run step by step before your players ever see it."
-          points={[
-            "Browse the CoachSide Play Library",
-            "Animated plays with cuts, screens, passes, dribbles and handoffs",
-            "Sequence every action and play it back",
-            "Options and counters for the same set",
-            "Team playbook folders",
-            "Share links and export play videos",
-            "Players review the plays you assign",
-          ]}
-          cta={<ExplorePlays size="md" label="Explore the Playbook" />}
-          media={
-            <div className="rounded-3xl border border-border/70 bg-surface-2/60 p-2 sm:p-3">
-              <DemoPlay variant="horns" />
+        <ProductSection
+          p={playmaker}
+          index={1}
+          cta={
+            <SignupCta next="/plays/new" event="landing_build_play" tone="grape" size="lg" className="w-full sm:w-auto">
+              Try the Play Maker
+            </SignupCta>
+          }
+          visual={
+            <div className="flex flex-col gap-2 rounded-3xl border border-grape/40 bg-background/50 p-2 sm:p-3">
+              <DemoPlay />
+              <span className="self-center rounded-full bg-surface-2/80 px-3 py-1 text-xs font-bold text-muted-foreground">
+                Live Play Maker preview
+              </span>
             </div>
           }
         />
 
-        {/* B — GAMEDAY */}
-        <StorySection
-          id="gameday"
-          tone="flame"
+        <ProductSection
+          p={lockerroom}
+          index={2}
           reverse
-          eyebrow="GameDay"
-          title="Track the game from the court."
-          lead="Tap where it happened, tap the player, tap the stat. The court never leaves the screen, and the numbers turn into reports the moment the game ends."
-          points={[
-            "Tap shot locations",
-            "Individual player or team-only stats",
-            "Assists, rebounds, turnovers, fouls and free throws",
-            "Choose which stats you track",
-            "Fix stats after the game",
-            "Player and team reports",
-            "Season history and shot charts",
-          ]}
-          cta={<AnchorCta href="#gameday-plus" tone="flame">See GameDay+</AnchorCta>}
-          media={
+          cta={
+            <SignupCta next="/lockerroom" event="landing_setup_team" tone="flame" size="lg" className="w-full sm:w-auto">
+              See the Locker Room
+            </SignupCta>
+          }
+          visual={<LockerPreview />}
+        />
+
+        <ProductSection
+          p={gameday}
+          index={3}
+          cta={
+            <SignupCta next="/games/new" event="landing_start_free" tone="grape" size="lg" className="w-full sm:w-auto">
+              Start a Free Game
+            </SignupCta>
+          }
+          visual={
             <div className="grid grid-cols-2 gap-2">
               <Shot src={shotChart} alt="CoachSide shot chart with makes and misses" caption="Shot chart" className="col-span-2" imgClassName="aspect-[4/3] object-center" />
               <Shot src={teamStats} alt="CoachSide team season stats screen" caption="Team stats" />
@@ -458,102 +739,39 @@ export function Landing() {
           }
         />
 
-        {/* C — TEAM */}
-        <StorySection
-          id="team"
-          eyebrow="Team"
-          title="Your team gets its own Locker Room."
-          lead="Players scan one code and land in a simple team space. Families get a read-only link — no account needed."
-          points={[
-            "Roster and player accounts",
-            "Team chat and announcements",
-            "Schedule",
-            "Shared play folders",
-            "Plans and assignments",
-            "Player and team stats",
-            "Read-only family access",
-          ]}
-          cta={<AnchorCta href="#team-hub-plus" tone="grape">See the Locker Room</AnchorCta>}
-          media={
-            <div className="grid grid-cols-2 gap-2">
-              {LOCKER_AREAS.map((a) => {
-                const Icon = a.icon;
-                return (
-                  <div key={a.label} className="flex flex-col gap-2 rounded-2xl border border-grape/40 bg-grape/10 p-3">
-                    <span aria-hidden className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-grape/50 bg-grape/20 text-grape-bright">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <span className="text-base font-black text-foreground">{a.label}</span>
-                    <span className="text-xs font-semibold text-muted-foreground">{a.note}</span>
-                  </div>
-                );
-              })}
-            </div>
-          }
-        />
-
-        {/* D — SEASON */}
+        {/* MORE FREE TOOLS */}
         <section
-          id="season"
-          aria-labelledby="season-title"
-          className="scroll-mt-20 rounded-3xl border border-l-4 border-flame/40 border-l-flame bg-surface/80 p-4 shadow-lg shadow-black/30 sm:p-6"
+          id="free-tools"
+          aria-labelledby="free-tools-title"
+          className="scroll-mt-20 rounded-[2rem] border-2 border-success/30 bg-surface/80 p-5 shadow-xl shadow-background/40 sm:p-8"
         >
-          <div className="flex flex-col gap-3">
-            <Pill tone="flame" className="self-start">Season</Pill>
-            <h2 id="season-title" className="text-2xl font-black leading-tight text-foreground sm:text-4xl">
-              Practice. Schedule. Prepare.
+          <div className="flex flex-col gap-2">
+            <Pill tone="success" className="self-start">Free</Pill>
+            <h2 id="free-tools-title" className="text-3xl font-black leading-tight text-foreground sm:text-4xl">
+              More tools included free.
             </h2>
-            <p className="text-base font-semibold leading-relaxed text-muted-foreground">
-              Walk into every practice with a plan and every week knowing what's next — and your players do too.
-            </p>
-            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {SEASON_ITEMS.map((s) => {
-                const Icon = s.icon;
-                return (
-                  <li key={s.label} className="flex items-center gap-3 rounded-2xl border border-border/70 bg-surface-2/60 p-3">
-                    <Icon aria-hidden className="h-5 w-5 shrink-0 text-flame" />
-                    <span className="text-sm font-semibold text-foreground">{s.label}</span>
-                  </li>
-                );
-              })}
-            </ul>
-            <div className="pt-1">
-              <StartFree label="Plan My Season" />
-            </div>
           </div>
-        </section>
-
-        {/* E — AI */}
-        <section
-          id="ai"
-          aria-labelledby="ai-title"
-          className="scroll-mt-20 rounded-3xl border border-l-4 border-grape/40 border-l-grape bg-surface/80 p-4 shadow-lg shadow-black/30 sm:p-6"
-        >
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Pill tone="grape">
-                <Sparkles aria-hidden className="h-3.5 w-3.5" /> CoachSide AI Assistant · Complete feature
-              </Pill>
-              <Pill tone="muted">Coming soon</Pill>
-            </div>
-            <h2 id="ai-title" className="text-2xl font-black leading-tight text-foreground sm:text-4xl">
-              Have CoachSide handle the busy work.
-            </h2>
-            <p className="text-base font-semibold leading-relaxed text-muted-foreground">
-              Ask in plain words and review every change before it's saved. Included with {COMPLETE_NAME} when AI
-              access is active.
-            </p>
-            <ul className="flex flex-wrap gap-2">
-              {AI_PROMPTS.map((p) => (
-                <li
-                  key={p}
-                  className="rounded-2xl rounded-bl-md border border-grape/40 bg-grape/10 px-3.5 py-2 text-sm font-semibold text-foreground"
-                >
-                  “{p}”
+          <ul className="mt-5 grid gap-x-8 sm:grid-cols-2">
+            {FREE_TOOLS.map((tool) => {
+              const Icon = tool.icon;
+              return (
+                <li key={tool.title} className="flex items-start gap-3 border-t border-border/60 py-4">
+                  <span aria-hidden className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-success/40 bg-success/10 text-success">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className="flex min-w-0 flex-col gap-1">
+                    <span className="text-base font-black text-foreground">{tool.title}</span>
+                    <span className="text-sm font-semibold leading-relaxed text-muted-foreground">{tool.body}</span>
+                    {tool.note ? (
+                      <span className="mt-1 self-start rounded-full bg-grape/15 px-2.5 py-0.5 text-xs font-bold text-foreground">
+                        {tool.note}
+                      </span>
+                    ) : null}
+                  </span>
                 </li>
-              ))}
-            </ul>
-          </div>
+              );
+            })}
+          </ul>
         </section>
 
         <Pricing />
@@ -561,14 +779,16 @@ export function Landing() {
         {/* FINAL */}
         <section
           aria-labelledby="final-title"
-          className="flex flex-col items-center gap-4 rounded-3xl border-2 border-flame/60 bg-flame/10 p-5 text-center shadow-lg shadow-black/30 sm:p-8"
+          className="flex flex-col items-center gap-4 rounded-[2rem] border-2 border-flame/60 bg-flame/10 p-6 text-center shadow-xl shadow-background/40 sm:p-10"
         >
-          <h2 id="final-title" className="max-w-3xl text-2xl font-black leading-tight text-foreground sm:text-4xl">
-            Start with a play. Build the rest of your season here.
+          <h2 id="final-title" className="max-w-3xl text-3xl font-black leading-tight text-foreground sm:text-4xl">
+            Start free today. Upgrade only when you need more.
           </h2>
           <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-center">
+            <SignupCta event="landing_setup_team" size="lg">
+              Create Free Coach Account
+            </SignupCta>
             <ExplorePlays />
-            <StartFree size="lg" label="Create Free Coach Account" event="landing_setup_team" tone="grape" />
           </div>
           <Pill tone="success">No credit card required</Pill>
         </section>
