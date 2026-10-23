@@ -8,16 +8,17 @@ import { consumePendingInvite } from "@/lib/pendingInvite";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CoachSide — Basketball Coaching Platform: Plan. Track. Coach." },
+      { title: "CoachSide — Basketball Plays, Live Stats & Team Management" },
       {
         name: "description",
         content:
-          "CoachSide runs your basketball season from one place: tap-the-court live stats, season team and player reporting, animated plays, a player Locker Room and a family stats link.",
+          "Basketball plays, live game stats, team management, schedules, player Locker Room, and coaching tools in one platform.",
       },
-      { property: "og:title", content: "CoachSide — Basketball Coaching Platform" },
+      { property: "og:title", content: "CoachSide — Coach better from one place" },
       {
         property: "og:description",
-        content: "Live stats from the court, season reporting, animated plays and a team Locker Room for basketball coaches.",
+        content:
+          "Basketball plays, live game stats, team management, schedules, player Locker Room, and coaching tools in one platform.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://coachside.live/" },

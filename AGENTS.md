@@ -33,6 +33,7 @@ Film Room: film jobs stage AI/manual events in film_job_events; only coach-revie
 - Playmaker OPTIONS edit through `playOptions.ts` (creation stages one empty branch at the base-family anchor; naming updates it) and play via `playSequence.ts`, interleaving alternatives from the main-path anchor without contaminating siblings, continuation, legacy branch API or saved data.
 - Membership billing: Square (`billing.server.ts`) for new/changed plans; live legacy Stripe subs stay on Stripe via `billingProviderFor`. Only the Square webhook grants access, reconciled by pure `squareBilling.ts`, so redirects never unlock features.
 - Onboarding uses coach_onboarding (no row = new); events_sent dedupes funnel events.
+- Public landing pricing renders entitlements.ts constants, and landing CTAs preserve intent via `/auth?next=`; anonymous CTA events must be allow-listed in the anon_funnel_events insert policy, so marketing never drifts from billing.
 
 - Drill Maker shares active ball state for rendering/authoring; normalize explicit visible/setup ownership, never free-ball proximity, so independent transfers persist.
 - Native AI Assistant uses the internal executor in `src/lib/coachside/`; no public MCP connector. See `src/lib/ai/AGENTS.md`.

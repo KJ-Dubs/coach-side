@@ -66,6 +66,35 @@ const DEMO_FRAME: PlayFrame = {
   ],
 };
 
-export function DemoPlay({ className }: { className?: string }) {
-  return <PlayCanvas frame={DEMO_FRAME} zoom="full" className={className} />;
+/** Generic Horns ball screen with a pop and a kick-out pass. */
+const HORNS_FRAME: PlayFrame = {
+  id: "demo-horns",
+  play_id: "demo",
+  idx: 0,
+  note: "Horns: 5 screens for 1, 4 pops, 1 hits 4.",
+  tokens: [
+    { id: "o1", label: "1", x: 0.5, y: 0.84, ball: true, team: "offense" },
+    { id: "o2", label: "2", x: 0.1, y: 0.2, ball: false, team: "offense" },
+    { id: "o3", label: "3", x: 0.9, y: 0.2, ball: false, team: "offense" },
+    { id: "o4", label: "4", x: 0.34, y: 0.56, ball: false, team: "offense" },
+    { id: "o5", label: "5", x: 0.66, y: 0.56, ball: false, team: "offense" },
+  ],
+  actions: [
+    { id: "h1", type: "screen", seq: 1, actor: "o5", points: [{ x: 0.66, y: 0.56 }, { x: 0.56, y: 0.74 }] },
+    { id: "h2", type: "dribble", seq: 2, actor: "o1", points: [{ x: 0.5, y: 0.84 }, { x: 0.7, y: 0.66 }] },
+    { id: "h3", type: "cut", seq: 2, actor: "o4", points: [{ x: 0.34, y: 0.56 }, { x: 0.22, y: 0.72 }] },
+    {
+      id: "h4",
+      type: "pass",
+      seq: 3,
+      actor: "o1",
+      target: "o4",
+      transfersBall: true,
+      points: [{ x: 0.7, y: 0.66 }, { x: 0.22, y: 0.72 }],
+    },
+  ],
+};
+
+export function DemoPlay({ className, variant = "ballScreen" }: { className?: string; variant?: "ballScreen" | "horns" }) {
+  return <PlayCanvas frame={variant === "horns" ? HORNS_FRAME : DEMO_FRAME} zoom="full" className={className} />;
 }
