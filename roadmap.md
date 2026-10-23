@@ -276,3 +276,10 @@
 - [x] Read-only Coach Usage: teams/tier, counts only (no message contents), recent games with Inspect, recent activity
 - [x] Server functions require sign-in + is_app_admin before admin reads; signed-out URLs redirect to sign-in; 10 new rule tests, 210 total pass
 - [ ] Signed-in owner walkthrough of both pages — blocked: preview can't sign in as the owner account without approval
+
+## Install activation
+- [x] Onboarding install step right after interests (native prompt on Chrome/Android, big Share → Add to Home Screen steps on iPhone/iPad), never blocking
+- [x] "Later" snoozes ~24h shared across surfaces; legacy permanent dismissal cleared; prompts stop once installed
+- [x] Home install banner at top, inline header badge on normal coach pages (not Play Maker/Live Game), stronger landing CTA
+- [x] Installed-app notification handoff on onboarding step and Home; funnel events + daily return signal; owner KPI Activation funnel; 11 tests
+- [ ] Signed-in check of the onboarding step, Home banner and KPI funnel — blocked: no preview account matches the requester
