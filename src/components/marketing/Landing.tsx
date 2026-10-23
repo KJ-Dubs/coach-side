@@ -451,7 +451,7 @@ export function Landing() {
           cta={<AnchorCta href="#gameday-plus" tone="flame">See GameDay+</AnchorCta>}
           media={
             <div className="grid grid-cols-2 gap-2">
-              <Shot src={shotChart} alt="CoachSide shot chart with makes and misses" caption="Shot chart" className="col-span-2" imgClassName="aspect-[16/10]" />
+              <Shot src={shotChart} alt="CoachSide shot chart with makes and misses" caption="Shot chart" className="col-span-2" imgClassName="aspect-[4/3] object-center" />
               <Shot src={teamStats} alt="CoachSide team season stats screen" caption="Team stats" />
               <Shot src={leaders} alt="CoachSide season leaders screen" caption="Leaders" />
             </div>
