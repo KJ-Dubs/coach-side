@@ -24,6 +24,7 @@ import { PLAY_CATEGORIES, type PlayCategory } from "@/lib/types";
 const searchSchema = z.object({ category: z.string().optional() });
 
 export const Route = createFileRoute("/_authenticated/plays/new")({
+  staticData: { sitemap: false },
   validateSearch: (s) => searchSchema.parse(s),
   head: () => ({
     meta: [

@@ -12,6 +12,7 @@ import {
 } from "@/lib/boardStore";
 
 export const Route = createFileRoute("/_authenticated/board")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Timeout Board — CoachSide" },

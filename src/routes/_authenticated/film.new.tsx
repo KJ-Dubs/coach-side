@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Player } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/film/new")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "New Film Job — CoachSide" },

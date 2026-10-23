@@ -72,6 +72,7 @@ import {
 import { addHalfCourtDefense } from "@/lib/playDefense";
 
 export const Route = createFileRoute("/_authenticated/plays/$playId/")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Play Designer — CoachSide" },

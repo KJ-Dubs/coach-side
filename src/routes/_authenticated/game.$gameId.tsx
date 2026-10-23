@@ -31,6 +31,7 @@ import { TeamThemeProvider } from "@/components/TeamThemeProvider";
 import { hasModule, useEntitlement } from "@/lib/entitlements";
 
 export const Route = createFileRoute("/_authenticated/game/$gameId")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Live Game — CoachSide" },

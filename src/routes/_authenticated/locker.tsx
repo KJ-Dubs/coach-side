@@ -24,6 +24,7 @@ import {
 import { useMe } from "@/lib/useMe";
 
 export const Route = createFileRoute("/_authenticated/locker")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Share Team Locker Room Link — CoachSide" },

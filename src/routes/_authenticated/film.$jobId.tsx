@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 import type { Player } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/film/$jobId")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Film Review — CoachSide" },

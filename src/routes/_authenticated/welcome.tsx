@@ -21,6 +21,7 @@ import type { Team } from "@/lib/types";
 import mark from "@/assets/coachside-mark.jpg.asset.json";
 
 export const Route = createFileRoute("/_authenticated/welcome")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Welcome to CoachSide — Let's get you coaching" },

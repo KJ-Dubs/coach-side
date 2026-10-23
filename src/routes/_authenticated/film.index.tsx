@@ -9,6 +9,7 @@ import { FILM_STATUS_LABEL, type FilmJob } from "@/lib/film.types";
 import { useCurrentTeam } from "@/lib/teamContext";
 
 export const Route = createFileRoute("/_authenticated/film/")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Film Room — CoachSide" },

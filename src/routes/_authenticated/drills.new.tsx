@@ -16,6 +16,7 @@ import { uuid } from "@/lib/offline";
 import { addDrillAction, drillStateAtSequenceStart, materializeDrillBalls, sampleDrillBalls, setDrillBallSetup } from "@/lib/drillBalls";
 
 export const Route = createFileRoute("/_authenticated/drills/new")({
+  staticData: { sitemap: false },
   head: () => ({ meta: [
     { title: "Drill Maker — CoachSide" },
     { name: "description", content: "Build and animate basketball drills with players, actions, equipment, and repeatable steps." },

@@ -32,6 +32,7 @@ import { useCurrentTeam } from "@/lib/teamContext";
 type Area = "chat" | "schedule" | "playbook" | "plans";
 
 export const Route = createFileRoute("/_authenticated/lockerroom")({
+  staticData: { sitemap: false },
   validateSearch: (s: Record<string, unknown>): { area?: Area; item?: string; folder?: string; team?: string; conversation?: string } => {
     const parsed: { area?: Area; item?: string; folder?: string; team?: string; conversation?: string } = {};
     if ((["chat", "schedule", "playbook", "plans"] as string[]).includes(String(s["area"]))) parsed.area = s["area"] as Area;

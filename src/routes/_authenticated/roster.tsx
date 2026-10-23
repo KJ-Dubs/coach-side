@@ -33,6 +33,7 @@ import { TeamBrandingStep } from "@/components/TeamBrandingStep";
 import { useCurrentTeam } from "@/lib/teamContext";
 
 export const Route = createFileRoute("/_authenticated/roster")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Rosters — CoachSide" },

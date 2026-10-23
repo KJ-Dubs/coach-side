@@ -33,6 +33,7 @@ import {
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/kpi")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "My KPI — CoachSide owner dashboard" },

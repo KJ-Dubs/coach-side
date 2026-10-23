@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 /** CoachSide AI Assistant stream. The handler verifies the coach's session itself. */
 export const Route = createFileRoute("/api/ai/chat")({
+  staticData: { sitemap: false },
   server: {
     handlers: {
       POST: async ({ request }) => {
