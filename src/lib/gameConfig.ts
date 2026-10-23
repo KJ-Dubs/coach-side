@@ -73,6 +73,40 @@ export const TRACKING_LABELS: { key: keyof TrackingConfig; label: string; group:
   { key: "clock", label: "Game clock", group: "us" },
 ];
 
+/**
+ * GameDay+ categories: individual player and location stats. Score, periods,
+ * team fouls and the clock stay free (Score only). Mirrored by the database
+ * trigger enforce_game_tracking_entitlement — keep both lists identical.
+ */
+export const PAID_TRACKING_KEYS: readonly (keyof TrackingConfig)[] = [
+  "players",
+  "shotLocations",
+  "rebounds",
+  "assists",
+  "steals",
+  "turnovers",
+  "blocks",
+  "foulDetail",
+  "opponent",
+  "oppRebounds",
+  "oppTurnovers",
+];
+
+export function isPaidTrackingKey(k: keyof TrackingConfig): boolean {
+  return PAID_TRACKING_KEYS.includes(k);
+}
+
+/** Same config with every GameDay+ category switched off. */
+export function stripPaidTracking(cfg: TrackingConfig): TrackingConfig {
+  const out = { ...cfg };
+  for (const k of PAID_TRACKING_KEYS) out[k] = false;
+  return out;
+}
+
+export function usesPaidTracking(cfg: TrackingConfig): boolean {
+  return PAID_TRACKING_KEYS.some((k) => cfg[k]);
+}
+
 export type BonusRule =
   | { mode: "none" }
   | { mode: "quarter"; bonus: number | null; double: number | null }
