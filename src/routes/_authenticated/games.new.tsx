@@ -20,12 +20,17 @@ import {
   FULL_TRACKING,
   SCORE_ONLY_TRACKING,
   TRACKING_LABELS,
+  isPaidTrackingKey,
   normalizeRules,
   normalizeTracking,
+  stripPaidTracking,
+  usesPaidTracking,
   type BonusRule,
   type RulesConfig,
   type TrackingConfig,
 } from "@/lib/gameConfig";
+import { hasModule, useEntitlement } from "@/lib/entitlements";
+import { GameDayLockTag, GameDayUpgradeInline } from "@/components/billing/GameDayUpgrade";
 import { cn } from "@/lib/utils";
 
 type NewGameSearch = {

@@ -64,7 +64,9 @@ export function GameDayUpgradeInline({
           Get Complete — ${COMPLETE_PRICE}/month
         </Link>
       </div>
-      <span className="sr-only">{COMPLETE_NAME}</span>
+      <span className="rounded-full bg-background/40 px-3 py-1 text-[11px] font-semibold text-muted-foreground">
+        {COMPLETE_NAME} includes {gd.name}, Playbook+ and Team Hub+.
+      </span>
     </div>
   );
 }
