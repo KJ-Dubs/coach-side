@@ -498,6 +498,9 @@ export const getKpiReport = createServerFn({ method: "POST" })
       library_play_added_to_playbook: "Library play added to Playbook",
       play_exported_video: "Play exported as video",
       membership_changed: "Membership changed",
+      game_stat_edited: "Post-game stat edited",
+      game_stat_added_postgame: "Post-game stat added",
+      game_stat_deleted_postgame: "Post-game stat deleted",
     };
     const seenSignIn = new Set<string>();
     for (const e of tracked) {
