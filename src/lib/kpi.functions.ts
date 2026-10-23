@@ -11,6 +11,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { ALL_MODULES, planTier, priceFor, type ModuleKey } from "./entitlements";
+import { FUNNEL_EVENT_TYPES, computeActivationFunnel, type FunnelEventRow, type FunnelStep } from "./activationFunnel";
 
 export const RANGES = ["today", "7d", "30d", "all"] as const;
 export type RangeKey = (typeof RANGES)[number];
@@ -150,8 +151,11 @@ export type Trends = {
   activeCoaches: { day: string; value: number }[];
 };
 
+export type ActivationFunnel = { cohort: number; steps: FunnelStep[] };
+
 export type KpiReport = {
   range: RangeKey;
+  activation: ActivationFunnel;
   generatedAt: string;
   totals: KpiTotals;
   membership: MembershipSnapshot;
@@ -202,7 +206,7 @@ export const getKpiReport = createServerFn({ method: "POST" })
       db
         .from("plays")
         .select(
-          "id, name, team_id, created_at, published_to_library, published_at, published_by, publish_anonymous, library_author_name",
+          "id, name, team_id, created_at, created_by, published_to_library, published_at, published_by, publish_anonymous, library_author_name",
         ),
       db.from("games").select("id, team_id, status, created_at, ended_at, opponent"),
       db.from("play_hearts").select("play_id, user_id, created_at"),
@@ -502,8 +506,11 @@ export const getKpiReport = createServerFn({ method: "POST" })
       game_stat_added_postgame: "Post-game stat added",
       game_stat_deleted_postgame: "Post-game stat deleted",
     };
+    // Funnel plumbing events feed the activation panel, not the activity list.
+    const FEED_HIDDEN = new Set(["session_day", "install_prompt_shown", "notification_prompt_shown"]);
     const seenSignIn = new Set<string>();
     for (const e of tracked) {
+      if (FEED_HIDDEN.has(e.event_type)) continue;
       if (e.event_type === "signed_in") {
         // Collapse legacy duplicates logged within the same minute.
         const k = `${e.user_id}|${String(e.created_at).slice(0, 16)}`;
@@ -589,6 +596,7 @@ export const getKpiReport = createServerFn({ method: "POST" })
       const cur = creatorStats.get(f.creator_id);
       if (cur) cur.followers += 1;
     }
+
     const topCreators = [...creatorStats.entries()]
       .map(([id, s]) => ({ name: nameOf(id), hearts: s.hearts, followers: s.followers }))
       .sort((a, b) => b.hearts - a.hearts || b.followers - a.followers)
@@ -628,8 +636,16 @@ export const getKpiReport = createServerFn({ method: "POST" })
       value: activeCoachDays.get(d.day)?.size ?? 0,
     }));
 
+    const activation = await loadActivationFunnel(db, {
+      since,
+      profiles,
+      coachIds,
+      plays,
+    });
+
     return {
       range: data.range,
+      activation,
       generatedAt: new Date().toISOString(),
       totals: {
         coachAccounts: coachIds.size,
@@ -693,3 +709,47 @@ export const getKpiReport = createServerFn({ method: "POST" })
       },
     };
   });
+
+/**
+ * Early activation funnel for coaches who signed up in the period. Reads only
+ * event names/timestamps, onboarding progress, push-subscription presence and
+ * play authorship — never content.
+ */
+async function loadActivationFunnel(
+  db: Awaited<ReturnType<typeof admin>>,
+  ctx: { since: string | null; profiles: any[]; coachIds: Set<string>; plays: any[] },
+): Promise<ActivationFunnel> {
+  const onboardingR = await db.from("coach_onboarding").select("user_id, step, status");
+  const onboarding = (onboardingR.data ?? []) as { user_id: string; step: number; status: string }[];
+  const onboardingIds = new Set(onboarding.map((o) => o.user_id));
+  const cohort = ctx.profiles
+    .filter((p) => (ctx.coachIds.has(p.id) || onboardingIds.has(p.id)) && inRange(p.created_at, ctx.since))
+    .map((p) => p.id as string);
+  if (!cohort.length) return { cohort: 0, steps: computeActivationFunnel({ cohort: [], events: [] }) };
+
+  const events: FunnelEventRow[] = [];
+  const pushOn = new Set<string>();
+  for (let i = 0; i < cohort.length; i += 150) {
+    const ids = cohort.slice(i, i + 150);
+    for (let from = 0; from < 20_000; from += 1000) {
+      const { data } = await db
+        .from("product_activity_events")
+        .select("user_id, event_type, created_at")
+        .in("user_id", ids)
+        .in("event_type", FUNNEL_EVENT_TYPES as unknown as string[])
+        .order("created_at", { ascending: true })
+        .range(from, from + 999);
+      const rows = (data ?? []) as FunnelEventRow[];
+      events.push(...rows);
+      if (rows.length < 1000) break;
+    }
+    const { data: subs } = await db.from("push_subscriptions").select("user_id").in("user_id", ids).eq("active", true);
+    for (const s of (subs ?? []) as { user_id: string }[]) pushOn.add(s.user_id);
+  }
+  const onboardingStarted = new Set(onboarding.filter((o) => (o.step ?? 0) >= 1).map((o) => o.user_id));
+  const playCreators = new Set(ctx.plays.map((p) => p.created_by).filter(Boolean) as string[]);
+  return {
+    cohort: cohort.length,
+    steps: computeActivationFunnel({ cohort, events, onboardingStarted, pushOn, playCreators }),
+  };
+}
