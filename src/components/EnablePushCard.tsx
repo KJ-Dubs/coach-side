@@ -13,6 +13,7 @@ import { Bell, Check, Download } from "lucide-react";
 import { toast } from "sonner";
 import { BubbleButton, Panel, PrimaryCTA } from "@/components/Bubbles";
 import { useInstallApp } from "@/components/InstallApp";
+import { trackActivity, trackActivityPerSession } from "@/lib/activity";
 import {
   getPushConfig,
   listMyDevices,
@@ -22,7 +23,20 @@ import {
 } from "@/lib/notifications.functions";
 import { currentPushState, subscribeThisDevice, unsubscribeThisDevice, type PushState } from "@/lib/push";
 
-export function EnablePushCard() {
+export function EnablePushCard({
+  intro,
+  surface = "card",
+  onLater,
+  highlight = false,
+}: {
+  /** Replaces the default description (e.g. the post-install handoff copy). */
+  intro?: string;
+  /** Where this card is shown, for the owner activation funnel. */
+  surface?: string;
+  /** Shows a "Later" button when provided. */
+  onLater?: () => void;
+  highlight?: boolean;
+} = {}) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [state, setState] = useState<PushState | null>(null);
@@ -41,6 +55,12 @@ export function EnablePushCard() {
     void currentPushState().then(setState);
   }, []);
 
+  // The permission button is actually on screen (once per session per surface).
+  const askable = state === "off" && !!cfg.data?.publicKey && !(!installApp.installed && installApp.hasPrompt);
+  useEffect(() => {
+    if (askable) trackActivityPerSession("notification_prompt_shown", surface, { metadata: { surface } });
+  }, [askable, surface]);
+
   const enable = useMutation({
     mutationFn: async () => {
       const key = cfg.data?.publicKey;
@@ -51,6 +71,7 @@ export function EnablePushCard() {
     onSuccess: async () => {
       setState(await currentPushState());
       void qc.invalidateQueries({ queryKey: ["push-devices"] });
+      void trackActivity("notifications_enabled", { metadata: { surface } });
       toast.success("Notifications are on for this device");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -82,8 +103,7 @@ export function EnablePushCard() {
   const shouldInstall = state === "needs_install" || (!installApp.installed && installApp.hasPrompt);
 
   const install = async () => {
-    if (installApp.hasPrompt) {
-      await installApp.install();
+    if (await installApp.install("push_card")) {
       setState(await currentPushState());
       return;
     }
@@ -91,12 +111,12 @@ export function EnablePushCard() {
   };
 
   return (
-    <Panel className="flex flex-col items-center gap-2.5 px-4 py-4 text-center">
+    <Panel className={`flex flex-col items-center gap-2.5 px-4 py-4 text-center ${highlight ? "border-2 border-grape/60 bg-grape/10" : ""}`}>
       <h2 className="text-xl font-black leading-tight text-foreground sm:text-2xl">
-        Stay Updated with CoachSide
+        {highlight ? "Turn on CoachSide notifications" : "Stay Updated with CoachSide"}
       </h2>
       <p className="max-w-2xl text-sm font-semibold leading-relaxed text-muted-foreground">
-        Get alerts for team announcements, new plays, assignments, schedule changes, and the daily Play of the Day.
+        {intro ?? "Get alerts for team announcements, new plays, assignments, schedule changes, and the daily Play of the Day."}
       </p>
 
       {state === "needs_install" ? (
