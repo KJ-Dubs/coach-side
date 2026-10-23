@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { autoPlayZoom } from "@/lib/playCamera";
 import { BubbleButton, InfoPanel, Label, Panel, Pill, SectionHeader } from "@/components/Bubbles";
 import { PlayCanvas } from "@/components/court/PlayCanvas";
 import { ExportPlayVideo } from "@/components/court/ExportPlayVideo";
@@ -69,11 +70,14 @@ export function PlayPresenter({
   frames,
   loading,
   className,
+  shareAction,
 }: {
   play: Pick<Play, "name" | "category" | "attack_basket"> | null | undefined;
   frames: PlayFrame[] | undefined;
   loading?: boolean;
   className?: string;
+  /** Optional share control rendered right under the playback controls. */
+  shareAction?: ReactNode;
 }) {
   const model = useMemo(() => normalizePlayForPlayback(play, frames), [play, frames]);
   const total = model.steps.length;
@@ -84,7 +88,11 @@ export function PlayPresenter({
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [focus, setFocus] = useState<string | null>(null);
-  const [zoom, setZoom] = useState<CourtZoom>("full");
+  /** Camera only: automatic per play, until the coach picks a view for this play. */
+  const autoZoom = useMemo(() => autoPlayZoom(model.frames, model.flip), [model.frames, model.flip]);
+  const [zoomOverride, setZoomOverride] = useState<CourtZoom | null>(null);
+  const zoom: CourtZoom = zoomOverride ?? autoZoom;
+  const setZoom = (z: CourtZoom) => setZoomOverride(z);
   const raf = useRef(0);
 
   useEffect(() => {
@@ -92,6 +100,7 @@ export function PlayPresenter({
     setPhase("show");
     setProgress(0);
     setPlaying(false);
+    setZoomOverride(null);
   }, [model.name]);
 
   useEffect(() => {
@@ -225,6 +234,10 @@ export function PlayPresenter({
             Next →
           </BubbleButton>
         </Panel>
+
+        {shareAction ? (
+          <Panel className="flex flex-wrap items-center justify-center gap-2">{shareAction}</Panel>
+        ) : null}
 
         <ExportPlayVideo model={model} />
 
