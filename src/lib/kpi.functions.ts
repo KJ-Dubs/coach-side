@@ -220,6 +220,8 @@ export const getKpiReport = createServerFn({ method: "POST" })
       db
         .from("product_activity_events")
         .select("user_id, event_type, team_id, entity_id, created_at")
+        // Funnel plumbing rows would crowd real actions out of the 500 most recent.
+        .not("event_type", "in", "(session_day,install_prompt_shown,notification_prompt_shown)")
         .order("created_at", { ascending: false })
         .limit(500),
     ]);
