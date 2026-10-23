@@ -139,10 +139,12 @@ function CoachUsagePage() {
                     {g.status === "final" ? <Pill tone="success">Final</Pill> : <Pill tone="flame">Live / in progress</Pill>}
                     <Pill tone="grape">{MODE_LABEL[g.mode]}</Pill>
                     <Pill tone="muted">{g.events} events</Pill>
-                    <Link to="/kpi/game/$gameId" params={{ gameId: g.id }} className="ml-auto">
-                      <BubbleButton size="sm" tone="grape" tabIndex={-1}>
-                        Inspect <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-                      </BubbleButton>
+                    <Link
+                      to="/kpi/game/$gameId"
+                      params={{ gameId: g.id }}
+                      className="ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-full border border-grape bg-grape px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-lg shadow-black/20 transition-all hover:bg-grape/90 active:scale-95"
+                    >
+                      Inspect <ChevronRight className="h-3.5 w-3.5" aria-hidden />
                     </Link>
                   </InfoPanel>
                 </li>
