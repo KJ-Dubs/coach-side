@@ -183,6 +183,14 @@ function NewGamePage() {
     [players.data],
   );
 
+  // Individual/location stats are GameDay+. Free teams run Score only games;
+  // the database applies the same rule to whatever is saved.
+  const ent = useEntitlement(teamId || null);
+  const gamedayLocked = !!teamId && !ent.loading && !hasModule(ent, "gameday_plus");
+  useEffect(() => {
+    if (gamedayLocked && usesPaidTracking(tracking)) setTracking(stripPaidTracking(tracking));
+  }, [gamedayLocked, tracking]);
+
   const toggle = (id: string) =>
     setFive((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : prev.length < 5 ? [...prev, id] : prev,
@@ -190,7 +198,9 @@ function NewGamePage() {
 
   const stepA = !!teamId;
   const stepB = opponent.trim().length > 0 && !!date;
-  const stepC = five.length === 5;
+  // Score only needs no lineup; if starters are picked it must be five.
+  const fiveOptional = !tracking.players;
+  const stepC = five.length === 5 || (fiveOptional && five.length === 0);
   const stepD = !tracking.clock || (minutes > 0 && ot > 0 && periods > 0);
   const ready = stepA && stepB && stepC && stepD;
 
