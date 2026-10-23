@@ -54,7 +54,31 @@ export const MODULE_LIST: ModuleInfo[] = [
       "Advanced game history and reports",
     ],
   },
-...
+  {
+    key: "team_hub_plus",
+    name: "Team Hub+",
+    price: 6,
+    blurb: "Deeper Locker Room, assignments, resources and Google Calendar sync.",
+    benefits: [
+      "Advanced Locker Room messaging and assignments",
+      "Team resources and staff collaboration",
+      "Google Calendar sync",
+      "Richer parent and family sharing",
+    ],
+  },
+];
+
+export const MODULES: Record<ModuleKey, ModuleInfo> = Object.fromEntries(
+  MODULE_LIST.map((m) => [m.key, m]),
+) as Record<ModuleKey, ModuleInfo>;
+
+export const ALL_MODULES: ModuleKey[] = MODULE_LIST.map((m) => m.key);
+
+export const COMPLETE_PRICE = 15;
+export const COMPLETE_NAME = "CoachSide Complete";
+export const COMPLETE_BLURB = "All three modules on one monthly team charge — $3 off.";
+
+/** Free Core features, listed so the membership page can be honest about them. */
 export const FREE_CORE: string[] = [
   "Coach's Board / Timeout Board",
   "Roster and player QR onboarding",
