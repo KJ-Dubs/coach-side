@@ -215,7 +215,7 @@ export const getOwnerCoachUsage = createServerFn({ method: "POST" })
       headCount(db.from("product_activity_events").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("event_type", type));
 
     const [teamsR, billingR, compR, playersR, playsR, legacyPlaysR, gamesR, calR, activityR, counts] = await Promise.all([
-      db.from("teams").select("id, name, season").in("id", teamIds.length ? teamIds : none),
+      db.from("teams").select("id, name, season").in("id", tIds),
       db.from("team_billing").select("team_id, status, modules").in("team_id", tIds),
       db.from("complimentary_grants").select("team_id, active").in("team_id", tIds).eq("active", true),
       db.from("players").select("team_id").in("team_id", tIds),
