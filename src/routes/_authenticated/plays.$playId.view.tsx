@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { AppShell } from "@/components/AppShell";
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/plays/$playId/view")({
   component: PlayViewPage,
 });
 
-export function PlaySlideshow({ playId }: { playId: string }) {
+export function PlaySlideshow({ playId, shareAction }: { playId: string; shareAction?: ReactNode }) {
   const play = useQuery({ queryKey: ["play", playId], queryFn: () => fetchPlay(playId) });
   const frames = useQuery({ queryKey: ["frames", playId], queryFn: () => fetchFrames(playId) });
 
@@ -52,6 +52,7 @@ export function PlaySlideshow({ playId }: { playId: string }) {
       play={play.data}
       frames={frames.data ?? []}
       loading={play.isLoading || frames.isLoading}
+      shareAction={shareAction}
     />
   );
 }
@@ -146,12 +147,6 @@ function PlayViewPage() {
         <>
           {access.isCoach ? (
             <>
-              {currentPlay ? (
-                <BubbleButton size="sm" tone="neutral" onClick={() => void sharePlay()}>
-                  Share
-                </BubbleButton>
-              ) : null}
-
               {canEdit ? (
                 <Link to="/plays/$playId" params={{ playId }}>
                   <BubbleButton size="sm" tone="grape">
@@ -204,7 +199,17 @@ function PlayViewPage() {
           </Panel>
         ) : null}
 
-        <PlaySlideshow key={playId} playId={playId} />
+        <PlaySlideshow
+          key={playId}
+          playId={playId}
+          shareAction={
+            access.isCoach && currentPlay ? (
+              <BubbleButton tone="flame" onClick={() => void sharePlay()}>
+                Share Play
+              </BubbleButton>
+            ) : undefined
+          }
+        />
 
         <Panel className="flex flex-wrap items-center justify-center gap-2">
           <PresenterBackButton source={search.from ?? (access.isCoach ? "playbook" : "lockerroom")} context={search} bottom />
