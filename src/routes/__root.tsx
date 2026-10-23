@@ -85,6 +85,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "google-site-verification", content: "qd31BGzE_XxuNbwZH2uro1VP2u0dXQEBMZPMuSIus8M" },
       { title: "CoachSide — Basketball Live Stats & Playbook" },
       {
         name: "description",
