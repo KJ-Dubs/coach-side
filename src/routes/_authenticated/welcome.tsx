@@ -6,7 +6,8 @@ import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { BubbleButton } from "@/components/Bubbles";
 import { TeamBrandingStep } from "@/components/TeamBrandingStep";
-import { EnablePushCard } from "@/components/EnablePushCard";
+import { EnablePushCard, NOTIFY_HANDOFF_COPY } from "@/components/EnablePushCard";
+import { InstallStepPanel, useInstallApp } from "@/components/InstallApp";
 import { SocialCTA } from "@/components/SocialCTA";
 import { TeamThemeProvider } from "@/components/TeamThemeProvider";
 import { createTeam } from "@/lib/data";
@@ -35,7 +36,7 @@ export const Route = createFileRoute("/_authenticated/welcome")({
   component: Welcome,
 });
 
-const STEPS = 9; // 0 welcome … 8 done
+const STEPS = 10; // 0 welcome · 1 interests · 2 install · 3 team · 4 colors · 5 roster · 6 first win · 7 notifications · 8 social · 9 done
 const LEVELS = ["Youth", "Middle School", "High School", "Club", "College", "Adult", "Other"];
 const inputCls = "h-11 w-full rounded-xl border border-border bg-surface px-3 text-base font-semibold text-foreground placeholder:text-muted-foreground focus:border-grape focus:outline-none";
 
@@ -45,6 +46,7 @@ function Welcome() {
   const qc = useQueryClient();
   const me = useMe();
   const current = useCurrentTeam();
+  const installApp = useInstallApp();
   const ob = useQuery({ queryKey: ["onboarding"], queryFn: fetchOnboarding });
   const [row, setRow] = useState<OnboardingRow | null>(null);
   const [step, setStep] = useState(0);
@@ -58,7 +60,9 @@ function Welcome() {
     if (r && r.status !== "in_progress") { navigate({ to: "/dashboard", replace: true }); return; }
     setRow(r);
     setStep(r?.step ?? 0);
-  }, [ob.isSuccess, ob.data, loaded, navigate]);
+    // Brand-new coach account: first funnel event (deduped per account on the onboarding row).
+    if (!r) void trackOnboardingOnce(null, "signup_completed").then((x) => { if (x) { setRow(x); qc.setQueryData(["onboarding"], x); } });
+  }, [ob.isSuccess, ob.data, loaded, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const team: Team | null = useMemo(
     () => (row?.team_id ? me.teams.find((t) => t.id === row.team_id) ?? null : null),
@@ -116,7 +120,7 @@ function Welcome() {
   const interests = row?.interests ?? [];
 
   return (
-    <Shell step={step} onBack={back} onSkip={step > 0 && step < 8 ? () => void skip() : undefined} themeTeamId={team?.id}>
+    <Shell step={step} onBack={back} onSkip={step > 0 && step < 9 ? () => void skip() : undefined} themeTeamId={team?.id}>
       {step === 0 ? (
         <Center>
           <img src={mark.url} alt="CoachSide" className="h-20 w-20 rounded-2xl object-cover shadow-lg" />
@@ -133,35 +137,45 @@ function Welcome() {
           initial={interests}
           onContinue={async (list) => {
             const r = await persist({ interests: list, step: 2 });
-            await track("onboarding_interests_saved", { count: list.length, picks: list.join(",") }, r);
+            await track("onboarding_interest_selected", { count: list.length, picks: list.join(",") }, r);
             setStep(2);
           }}
         />
       ) : null}
 
       {step === 2 ? (
+        <div className="flex flex-col gap-4">
+          <InstallStepPanel onContinue={() => void go(3)} />
+          {/* Installed and opened from the home screen: ask for notifications right away. */}
+          {installApp.standalone ? (
+            <EnablePushCard highlight intro={NOTIFY_HANDOFF_COPY} surface="onboarding_install" />
+          ) : null}
+        </div>
+      ) : null}
+
+      {step === 3 ? (
         <TeamStep
           teams={me.teams}
-          onUseExisting={async (t) => { current.setTeam(t.id); await go(3, { team_id: t.id }); }}
+          onUseExisting={async (t) => { current.setTeam(t.id); await go(4, { team_id: t.id }); }}
           onCreate={async (name, season, level) => {
             const t = await createTeam({ name, season, orgId: me.profile?.org_id ?? null });
             if (level) await supabase.from("teams").update({ level } as never).eq("id", t.id);
             await qc.invalidateQueries({ queryKey: ["teams"] });
             current.setTeam(t.id);
-            const r = await persist({ team_id: t.id, step: 3 });
+            const r = await persist({ team_id: t.id, step: 4 });
             await track("onboarding_team_created", { practice: false }, r);
-            setStep(3);
+            setStep(4);
           }}
           onPractice={async () => {
             const t = await createPracticeTeam();
-            const r = await persist({ team_id: t.id, step: 3, players_added: PRACTICE_TEAM.players.length });
+            const r = await persist({ team_id: t.id, step: 4, players_added: PRACTICE_TEAM.players.length });
             await track("onboarding_team_created", { practice: true }, r);
-            setStep(3);
+            setStep(4);
           }}
         />
       ) : null}
 
-      {step === 3 ? (
+      {step === 4 ? (
         team ? (
           <div className="flex flex-col gap-3">
             <TeamBrandingStep
@@ -169,50 +183,50 @@ function Welcome() {
               onDone={async () => {
                 const fresh = (qc.getQueryData<Team[]>(["teams"]) ?? []).find((t) => t.id === team.id);
                 const set = !!(fresh?.primary_color || fresh?.secondary_color);
-                const r = await persist({ colors_set: set, step: 4 });
+                const r = await persist({ colors_set: set, step: 5 });
                 await track("onboarding_branding_completed", { colors: set }, r);
-                setStep(4);
+                setStep(5);
               }}
             />
           </div>
-        ) : <Center><p className="text-muted-foreground">Create a team first.</p><BubbleButton tone="grape" onClick={() => void go(2)}>Set up team</BubbleButton></Center>
+        ) : <Center><p className="text-muted-foreground">Create a team first.</p><BubbleButton tone="grape" onClick={() => void go(3)}>Set up team</BubbleButton></Center>
       ) : null}
 
-      {step === 4 ? (
+      {step === 5 ? (
         <RosterStep
           team={team}
           onSaved={async (n) => {
-            const r = await persist({ players_added: (row?.players_added ?? 0) + n, step: 5 });
+            const r = await persist({ players_added: (row?.players_added ?? 0) + n, step: 6 });
             if (n > 0) await track("onboarding_roster_added", { players: n }, r);
-            setStep(5);
+            setStep(6);
             void qc.invalidateQueries({ queryKey: ["players"] });
           }}
         />
       ) : null}
 
-      {step === 5 ? (
+      {step === 6 ? (
         <FirstWinStep
           interests={interests}
           onPick={async (key, link) => {
             await track("onboarding_first_action_selected", { action: key });
-            await persist({ step: 6 });
+            await persist({ step: 7 });
             sessionStorage.setItem("coachside.onboarding.firstAction", link);
-            setStep(6);
-          }}
-        />
-      ) : null}
-
-      {step === 6 ? (
-        <NotifyStep
-          onShown={() => void track("onboarding_push_prompted")}
-          onContinue={async () => {
-            if ((await currentPushState().catch(() => null)) === "on") await track("onboarding_push_enabled");
-            await go(7);
+            setStep(7);
           }}
         />
       ) : null}
 
       {step === 7 ? (
+        <NotifyStep
+          onShown={() => void track("onboarding_push_prompted")}
+          onContinue={async () => {
+            if ((await currentPushState().catch(() => null)) === "on") await track("onboarding_push_enabled");
+            await go(8);
+          }}
+        />
+      ) : null}
+
+      {step === 8 ? (
         <Center>
           <Title>Get more from CoachSide</Title>
           <p className="max-w-sm text-base text-muted-foreground">Follow CoachSide for plays, coaching ideas, and new features.</p>
@@ -220,12 +234,12 @@ function Welcome() {
             <SocialCTA />
           </div>
           <p className="max-w-sm text-sm text-muted-foreground">Publish your plays to the CoachSide Library and your play could be featured on our social accounts.</p>
-          <BubbleButton tone="grape" size="lg" className="w-full max-w-xs justify-center" onClick={() => void go(8)}>Continue</BubbleButton>
-          <BubbleButton tone="ghost" onClick={() => void go(8)}>Publish later</BubbleButton>
+          <BubbleButton tone="grape" size="lg" className="w-full max-w-xs justify-center" onClick={() => void go(9)}>Continue</BubbleButton>
+          <BubbleButton tone="ghost" onClick={() => void go(9)}>Publish later</BubbleButton>
         </Center>
       ) : null}
 
-      {step === 8 ? (
+      {step === 9 ? (
         <Center>
           <Title>You're ready to coach.</Title>
           <ul className="flex w-full max-w-sm flex-col gap-2 text-left">
@@ -244,7 +258,7 @@ function Welcome() {
                 onClick={async () => {
                   setBusy(true);
                   try {
-                    const r = await persist({ status: "completed", step: 8 });
+                    const r = await persist({ status: "completed", step: 9 });
                     await track("onboarding_completed", { players: r.players_added, colors: r.colors_set }, r);
                     sessionStorage.removeItem("coachside.onboarding.firstAction");
                     router.history.replace(link);
@@ -457,8 +471,8 @@ function NotifyStep({ onShown, onContinue }: { onShown: () => void; onContinue: 
   const items: [keyof typeof prefs, string][] = [["team", "Team messages, schedule & Plans"], ["potd", "Play of the Day"], ["news", "New CoachSide features"]];
   return (
     <div className="flex flex-col gap-4">
-      <div className="text-center"><Title>Stay ready</Title><p className="mt-1 text-sm text-muted-foreground">Get Play of the Day, team messages and schedule changes, Plans, and new CoachSide features — only what you choose.</p></div>
-      <EnablePushCard />
+      <div className="text-center"><Title>Stay ready</Title><p className="mt-1 text-sm text-muted-foreground">{NOTIFY_HANDOFF_COPY} Only what you choose.</p></div>
+      <EnablePushCard surface="onboarding_notify" />
       <div className="flex flex-col gap-2">
         {items.map(([k, label]) => (
           <label key={k} className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-border bg-surface px-3 text-sm font-semibold text-foreground">

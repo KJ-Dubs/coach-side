@@ -22,7 +22,17 @@ export type ActivityEventType =
   | "membership_changed"
   | "game_stat_edited"
   | "game_stat_added_postgame"
-  | "game_stat_deleted_postgame";
+  | "game_stat_deleted_postgame"
+  // Early activation funnel (owner KPI). Event names only — never content.
+  | "install_prompt_shown"
+  | "install_clicked"
+  | "install_dismissed"
+  | "notification_prompt_shown"
+  | "notifications_enabled"
+  | "first_play_viewed"
+  | "first_play_created"
+  | "first_team_created"
+  | "session_day";
 
 /** Fired after an achievement-relevant action so Progress refreshes promptly. */
 export const PROGRESS_EVENT = "coachside:progress-changed";
@@ -55,6 +65,44 @@ export async function trackActivity(
  * Records an event at most once per device for a given dedupe key
  * (e.g. once per play per day), to avoid noisy duplicates.
  */
+/** Records an event at most once per browser session for a dedupe key (no same-session noise). */
+export function trackActivityPerSession(
+  eventType: ActivityEventType,
+  dedupeKey: string,
+  opts?: Parameters<typeof trackActivity>[1],
+): void {
+  const k = `coachside.sact.${eventType}.${dedupeKey}`;
+  try {
+    if (sessionStorage.getItem(k)) return;
+    sessionStorage.setItem(k, "1");
+  } catch {
+    /* fall through and record */
+  }
+  void trackActivity(eventType, opts);
+}
+
+/**
+ * Privacy-safe "came back" signal: one row per signed-in coach per UTC day
+ * the app is opened. No pages, no timings, no content.
+ */
+export function trackSessionDay(userId: string): void {
+  const day = new Date().toISOString().slice(0, 10);
+  const k = `coachside.act.sessionDay.${userId}`;
+  try {
+    if (localStorage.getItem(k) === day) return;
+  } catch {
+    /* record anyway */
+  }
+  void (async () => {
+    await trackActivity("session_day");
+    try {
+      localStorage.setItem(k, day);
+    } catch {
+      /* private mode */
+    }
+  })();
+}
+
 export function trackActivityOnce(
   eventType: ActivityEventType,
   dedupeKey: string,

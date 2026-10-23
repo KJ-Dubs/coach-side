@@ -681,8 +681,8 @@ export function Landing() {
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Pill tone="success">No credit card required</Pill>
-              <InstallAppPill />
             </div>
+            <InstallAppPill />
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">

@@ -107,6 +107,39 @@ function TrendPanel({
 
 type SortKey = "newest" | "active" | "inactive";
 
+/** Signups → … → returned. Each bar is % of signups; the pill shows the drop from the step before. */
+function ActivationFunnelPanel({ funnel }: { funnel: KpiReport["activation"] }) {
+  if (!funnel.cohort) return <EmptyState>No coach signups in this period.</EmptyState>;
+  return (
+    <InfoPanel>
+      <ol className="flex flex-col gap-2.5">
+        {funnel.steps.map((s, i) => {
+          const prev = i > 0 ? funnel.steps[i - 1]!.count : null;
+          const drop = prev !== null && prev > 0 ? Math.round(((prev - s.count) / prev) * 100) : null;
+          return (
+            <li key={s.key} className="flex flex-col gap-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="flex items-center gap-2">
+                  <Pill tone={i === 0 ? "grape" : "neutral"}>{i + 1}</Pill>
+                  <span className="font-bold text-foreground">{s.label}</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="font-black text-foreground">{s.count}</span>
+                  <Pill tone="muted">{s.pctOfSignups}%</Pill>
+                  {drop !== null && drop > 0 ? <Pill tone="flame">−{drop}% vs prior</Pill> : null}
+                </span>
+              </div>
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-2">
+                <div className={`h-full rounded-full ${i % 2 ? "bg-flame" : "bg-grape"}`} style={{ width: `${Math.max(2, s.pctOfSignups)}%` }} />
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </InfoPanel>
+  );
+}
+
 function KpiPage() {
   const navigate = useNavigate();
   const checkAdmin = useServerFn(amIAppAdmin);
@@ -241,6 +274,16 @@ function KpiPage() {
                   tone="flame"
                 />
               </div>
+            </Panel>
+
+            {/* 1b — activation funnel */}
+            <Panel className="flex flex-col gap-3">
+              <SectionHeader
+                as="h2"
+                title="Activation funnel"
+                subtitle={`Coaches who signed up in this period (${RANGE_LABEL[r.range]}) and how far each got. Install tracking started Oct 23, 2026, so older signups undercount the install steps.`}
+              />
+              <ActivationFunnelPanel funnel={r.activation} />
             </Panel>
 
             {/* 2 — membership */}

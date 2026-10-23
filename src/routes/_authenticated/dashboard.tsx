@@ -16,7 +16,8 @@ import { fetchOnboarding } from "@/lib/onboarding";
 import { TrialStatus } from "@/components/billing/TrialStatus";
 import { HelpCard, ProgressCard } from "@/components/ProgressCard";
 import { HomeTipCard } from "@/components/HomeTipCard";
-import { EnablePushCard } from "@/components/EnablePushCard";
+import { EnablePushCard, NOTIFY_HANDOFF_COPY, useNotifyHandoff } from "@/components/EnablePushCard";
+import { InstallBanner } from "@/components/InstallApp";
 import { useCurrentTeam } from "@/lib/teamContext";
 import { PlayOfTheDayCard } from "@/components/community/PlayOfTheDayCard";
 import { FollowedCreators } from "@/components/community/FollowedCreators";
@@ -188,6 +189,7 @@ function Dashboard() {
   const { isCoach } = gate;
   const me = useMe();
   useFirstSignInRedirect(gate, me.teams.length, me.loading);
+  const handoff = useNotifyHandoff();
   const { teams, team, teamId, setTeam } = useCurrentTeam();
   const games = useQuery({ queryKey: ["games"], queryFn: fetchGames });
   const teamLogo = useQuery({
@@ -208,6 +210,11 @@ function Dashboard() {
     >
       {isCoach ? <TipInterstitial dest="dashboard" /> : null}
       <div className="space-y-4">
+      {/* Activation first: install, then the notification handoff once installed. */}
+      {isCoach ? <InstallBanner /> : null}
+      {isCoach && handoff.show ? (
+        <EnablePushCard highlight intro={NOTIFY_HANDOFF_COPY} surface="dashboard_handoff" onLater={handoff.later} />
+      ) : null}
       <Panel className="flex flex-col items-center gap-3 px-4 py-4 text-center">
         <div className="min-w-0">
           <Label>Current team</Label>
@@ -268,7 +275,7 @@ function Dashboard() {
 
       <HelpCard />
 
-      <EnablePushCard />
+      {isCoach && handoff.show ? null : <EnablePushCard />}
       </div>
 
       <div className="mt-4">

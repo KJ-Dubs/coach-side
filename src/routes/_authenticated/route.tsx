@@ -6,6 +6,8 @@ import { getCurrentUserAccess, resolveRole } from "@/lib/access";
 import { purgeDeviceRoleCache } from "@/lib/roleCache";
 import { flushQueue } from "@/lib/offline";
 import { AiAssistantLauncher } from "@/components/ai/AiAssistantLauncher";
+import { trackSessionDay } from "@/lib/activity";
+import { startInstallCapture } from "@/components/InstallApp";
 
 /**
  * Sign-in gate for every coach-only page. Client-only because the session
@@ -63,6 +65,13 @@ export const Route = createFileRoute("/_authenticated")({
 
 
 function AuthenticatedLayout() {
+  const { user } = Route.useRouteContext();
+  // Owner funnel "returned" signal (one row per coach per day) and early
+  // capture of the native install prompt so no install surface misses it.
+  useEffect(() => {
+    startInstallCapture();
+    if (user?.id) trackSessionDay(user.id);
+  }, [user?.id]);
   // App-wide offline queue flusher so events recorded in a gym without
   // signal still reach the backend even after leaving the live-game screen.
   useEffect(() => {

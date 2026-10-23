@@ -1,4 +1,5 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { InstallHeaderBadge } from "@/components/InstallApp";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
@@ -75,6 +76,7 @@ export function AppShell({
   const role = resolveRole(access);
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   // Owner-only "My KPI" entry. The database decides; the page re-checks too.
   const { isAdmin } = useIsAppAdmin();
   const isOwner = isAdmin && !role.isPlayerOnly;
@@ -185,6 +187,8 @@ export function AppShell({
 
             <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-1.5">
               {!compact ? actions : null}
+              {/* Inline header badge only; court-first (compact) editors and Home's big banner skip it. */}
+              {!compact && pathname !== "/dashboard" ? <InstallHeaderBadge /> : null}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button

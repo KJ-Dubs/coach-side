@@ -25,7 +25,9 @@ export type OnboardingRow = {
 };
 
 export type OnboardingEvent =
+  | "signup_completed"
   | "onboarding_started"
+  | "onboarding_interest_selected"
   | "onboarding_interests_saved"
   | "onboarding_team_created"
   | "onboarding_branding_completed"

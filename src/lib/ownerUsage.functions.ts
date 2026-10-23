@@ -223,7 +223,7 @@ export const getOwnerCoachUsage = createServerFn({ method: "POST" })
       db.from("plays").select("id, name, team_id, created_at, published_at, published_to_library").is("created_by", null).in("team_id", tIds),
       db.from("games").select(GAME_COLS).in("team_id", tIds).order("created_at", { ascending: false }).limit(200),
       db.from("google_calendar_connections").select("team_id, sync_enabled, created_at").eq("user_id", uid),
-      db.from("product_activity_events").select("event_type, team_id, entity_id, created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(60),
+      db.from("product_activity_events").select("event_type, team_id, entity_id, created_at").eq("user_id", uid).not("event_type", "in", "(session_day,install_prompt_shown,notification_prompt_shown)").order("created_at", { ascending: false }).limit(60),
       Promise.all([
         activityCount("library_play_added_to_playbook"),
         activityCount("play_exported_video"),
