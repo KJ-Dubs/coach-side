@@ -11,6 +11,7 @@ import { publicLibraryClient } from "@/lib/publicPlay.functions";
 
 const BASE_URL = "https://coachside.live";
 const PLAY_ROUTE_ID = "/library/$playId";
+const DRILL_ROUTE_ID = "/drills/$drillId";
 
 export const Route = createFileRoute("/sitemap.xml")({
   staticData: { sitemap: false },
@@ -47,6 +48,45 @@ export const Route = createFileRoute("/sitemap.xml")({
                 hash: "",
               });
               const path = sitemapPathForLocation(router, location, PLAY_ROUTE_ID);
+              if (path) {
+                entries.push({
+                  path,
+                  ...(row.published_at ? { lastmod: row.published_at.slice(0, 10) } : {}),
+                });
+              }
+            }
+            offset += rows.length;
+          }
+        }
+
+        // Every published Library drill, using the same public filter as the drill page.
+        if (isSitemapRouteIncluded(router.routesById[DRILL_ROUTE_ID])) {
+          const sb = publicLibraryClient();
+          const pageSize = 1000;
+          for (let offset = 0; ; ) {
+            const { data, error } = await sb
+              .from("drills")
+              .select("id, published_at")
+              .eq("published_to_library", true)
+              .order("id")
+              .range(offset, offset + pageSize - 1);
+            if (error) {
+              console.error("sitemap drills", error.message);
+              return new Response("Sitemap temporarily unavailable", {
+                status: 503,
+                headers: { "Cache-Control": "no-store" },
+              });
+            }
+            const rows = (data ?? []) as { id: string; published_at: string | null }[];
+            if (rows.length === 0) break;
+            for (const row of rows) {
+              const location = router.buildLocation({
+                to: "/drills/$drillId",
+                params: { drillId: row.id },
+                search: () => ({}),
+                hash: "",
+              });
+              const path = sitemapPathForLocation(router, location, DRILL_ROUTE_ID);
               if (path) {
                 entries.push({
                   path,
