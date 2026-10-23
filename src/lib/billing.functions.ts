@@ -79,8 +79,10 @@ export const getBillingConfig = createServerFn({ method: "GET" })
     const { enforcementEnabled, squareConfig } = await import("./billing.server");
     const cfg = squareConfig();
     const admin = cfg.configured ? false : await isAdmin(context.supabase);
+    const enforced = enforcementEnabled();
+    await syncEnforcementMirror(enforced);
     return {
-      enforcementEnabled: enforcementEnabled(),
+      enforcementEnabled: enforced,
       checkoutConfigured: cfg.configured,
       checkoutReason: cfg.configured ? null : admin ? cfg.reason : GENERIC_UNAVAILABLE,
     };
