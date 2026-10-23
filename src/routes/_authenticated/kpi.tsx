@@ -6,7 +6,8 @@
  * touches the database. Nothing here is customer facing.
  */
 import { useEffect, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
@@ -285,26 +286,54 @@ function KpiPage() {
               <SectionHeader
                 as="h2"
                 title="Coach activity"
-                subtitle="Real actions rebuilt from live data, newest first."
+                subtitle="Real actions rebuilt from live data, newest first. Tap a game to inspect it, or any row for that coach."
               />
               {r.activity.length === 0 ? (
                 <EmptyState>No coach activity in this period.</EmptyState>
               ) : (
                 <InfoPanel className="max-h-[420px] overflow-y-auto">
                   <ul className="flex flex-col gap-2">
-                    {r.activity.map((a, i) => (
-                      <li
-                        key={`${a.at}-${i}`}
-                        className="flex flex-col gap-1 border-b border-border/40 pb-2 last:border-0 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <span className="flex flex-wrap items-center gap-2">
-                          <Pill tone="grape">{a.type}</Pill>
-                          <span className="font-bold">{a.who}</span>
-                          <span className="text-muted-foreground">{a.detail}</span>
-                        </span>
-                        <span className="text-xs font-semibold text-muted-foreground">{fmtWhen(a.at)}</span>
-                      </li>
-                    ))}
+                    {r.activity.map((a, i) => {
+                      const cls =
+                        "flex w-full flex-col gap-1 border-b border-border/40 pb-2 text-left last:border-0 sm:flex-row sm:items-center sm:justify-between";
+                      const body = (
+                        <>
+                          <span className="flex flex-wrap items-center gap-2">
+                            <Pill tone="grape">{a.type}</Pill>
+                            <span className="font-bold">{a.who}</span>
+                            <span className="text-muted-foreground">{a.detail}</span>
+                          </span>
+                          <span className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                            {fmtWhen(a.at)}
+                            {a.gameId ? (
+                              <Pill tone="flame">
+                                Inspect game <ChevronRight className="h-3 w-3" aria-hidden />
+                              </Pill>
+                            ) : a.userId ? (
+                              <Pill tone="muted">
+                                Coach usage <ChevronRight className="h-3 w-3" aria-hidden />
+                              </Pill>
+                            ) : null}
+                          </span>
+                        </>
+                      );
+                      const tap = "rounded-xl px-1 transition-colors hover:bg-surface/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grape";
+                      return (
+                        <li key={`${a.at}-${i}`}>
+                          {a.gameId ? (
+                            <Link to="/kpi/game/$gameId" params={{ gameId: a.gameId }} className={`${cls} ${tap}`}>
+                              {body}
+                            </Link>
+                          ) : a.userId ? (
+                            <Link to="/kpi/coach/$userId" params={{ userId: a.userId }} className={`${cls} ${tap}`}>
+                              {body}
+                            </Link>
+                          ) : (
+                            <div className={cls}>{body}</div>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </InfoPanel>
               )}
@@ -348,7 +377,16 @@ function KpiPage() {
                   <tbody className="font-semibold text-foreground">
                     {coaches.map((c) => (
                       <tr key={c.userId} className="border-t border-border/40">
-                        <td className="px-3 py-2">{c.name}</td>
+                        <td className="px-3 py-2">
+                          <Link
+                            to="/kpi/coach/$userId"
+                            params={{ userId: c.userId }}
+                            className="inline-flex items-center gap-1 font-bold text-foreground underline decoration-grape underline-offset-4 hover:text-grape"
+                          >
+                            {c.name}
+                            <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                          </Link>
+                        </td>
                         <td className="px-3 py-2 text-muted-foreground">{c.email}</td>
                         <td className="px-3 py-2">{fmtDate(c.signedUp)}</td>
                         <td className="px-3 py-2">{fmtDate(c.lastActivity)}</td>

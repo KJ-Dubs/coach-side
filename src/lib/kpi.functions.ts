@@ -38,12 +38,12 @@ function sinceFor(range: RangeKey): string | null {
 
 type Rpc = { rpc: (fn: "is_app_admin") => PromiseLike<{ data: unknown; error: unknown }> };
 
-async function assertOwner(supabase: unknown) {
+export async function assertOwner(supabase: unknown) {
   const { data, error } = await (supabase as Rpc).rpc("is_app_admin");
   if (error || data !== true) throw new Error("CoachSide owners only.");
 }
 
-async function admin() {
+export async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin as unknown as {
     from: (t: string) => any;
@@ -104,6 +104,11 @@ export type ActivityRow = {
   type: string;
   who: string;
   detail: string;
+  /** Safe identifiers for owner drilldowns (never personal data). */
+  userId?: string | null;
+  gameId?: string | null;
+  playId?: string | null;
+  teamId?: string | null;
 };
 
 export type CoachRow = {
@@ -381,6 +386,9 @@ export const getKpiReport = createServerFn({ method: "POST" })
         type: "Play created",
         who: nameOf(owner),
         detail: `${p.name} · ${teamName(p.team_id)}`,
+        userId: owner ?? null,
+        playId: p.id,
+        teamId: p.team_id ?? null,
       });
       if (p.published_at) {
         feed.push({
@@ -388,6 +396,9 @@ export const getKpiReport = createServerFn({ method: "POST" })
           type: "Play published",
           who: nameOf(p.published_by ?? owner),
           detail: p.name,
+          userId: p.published_by ?? owner ?? null,
+          playId: p.id,
+          teamId: p.team_id ?? null,
         });
       }
     }
@@ -397,13 +408,19 @@ export const getKpiReport = createServerFn({ method: "POST" })
         type: "Game started",
         who: nameOf(coachOfTeam.get(g.team_id)),
         detail: `vs ${g.opponent} · ${teamName(g.team_id)}`,
+        userId: coachOfTeam.get(g.team_id) ?? null,
+        gameId: g.id,
+        teamId: g.team_id,
       });
       if (g.ended_at) {
         feed.push({
           at: g.ended_at,
           type: "Game completed",
           who: nameOf(coachOfTeam.get(g.team_id)),
-          detail: `vs ${g.opponent}`,
+          detail: `vs ${g.opponent} · ${teamName(g.team_id)}`,
+          userId: coachOfTeam.get(g.team_id) ?? null,
+          gameId: g.id,
+          teamId: g.team_id,
         });
       }
     }
@@ -420,6 +437,8 @@ export const getKpiReport = createServerFn({ method: "POST" })
         type: "Team created",
         who: staff ? nameOf(staff.user_id) : "No coach on team",
         detail: t.name,
+        userId: staff?.user_id ?? null,
+        teamId: t.id,
       });
     }
     for (const pl of players) {
@@ -428,6 +447,8 @@ export const getKpiReport = createServerFn({ method: "POST" })
         type: "Roster player added",
         who: nameOf(coachOfTeam.get(pl.team_id)),
         detail: `${pl.name} · ${teamName(pl.team_id)}`,
+        userId: coachOfTeam.get(pl.team_id) ?? null,
+        teamId: pl.team_id,
       });
     }
     for (const h of hearts) {
@@ -435,6 +456,8 @@ export const getKpiReport = createServerFn({ method: "POST" })
         at: h.created_at,
         type: "Library play hearted",
         who: nameOf(h.user_id),
+        userId: h.user_id,
+        playId: h.play_id,
         detail: plays.find((p) => p.id === h.play_id)?.name ?? "a Library play",
       });
     }
@@ -443,6 +466,7 @@ export const getKpiReport = createServerFn({ method: "POST" })
         at: f.created_at,
         type: "Followed a coach",
         who: nameOf(f.follower_id),
+        userId: f.follower_id,
         detail: nameOf(f.creator_id),
       });
     }
@@ -452,6 +476,8 @@ export const getKpiReport = createServerFn({ method: "POST" })
         type: "Google Calendar connected",
         who: nameOf(c.user_id),
         detail: teamName(c.team_id),
+        userId: c.user_id,
+        teamId: c.team_id ?? null,
       });
     }
     for (const r of redemptions) {
@@ -460,6 +486,8 @@ export const getKpiReport = createServerFn({ method: "POST" })
         type: "Access code redeemed",
         who: nameOf(r.user_id),
         detail: teamName(r.team_id),
+        userId: r.user_id,
+        teamId: r.team_id ?? null,
       });
     }
     const EVENT_LABELS: Record<string, string> = {
@@ -470,6 +498,9 @@ export const getKpiReport = createServerFn({ method: "POST" })
       library_play_added_to_playbook: "Library play added to Playbook",
       play_exported_video: "Play exported as video",
       membership_changed: "Membership changed",
+      game_stat_edited: "Post-game stat edited",
+      game_stat_added_postgame: "Post-game stat added",
+      game_stat_deleted_postgame: "Post-game stat deleted",
     };
     const seenSignIn = new Set<string>();
     for (const e of tracked) {
@@ -485,6 +516,10 @@ export const getKpiReport = createServerFn({ method: "POST" })
         type: label.charAt(0).toUpperCase() + label.slice(1),
         who: nameOf(e.user_id),
         detail: teamName(e.team_id),
+        userId: e.user_id,
+        teamId: e.team_id ?? null,
+        // Post-game stat corrections point at the game they changed.
+        gameId: String(e.event_type).startsWith("game_stat_") ? (e.entity_id ?? null) : null,
       });
     }
     feed.sort((a, b) => (a.at < b.at ? 1 : -1));

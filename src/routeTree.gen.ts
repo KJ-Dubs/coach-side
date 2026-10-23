@@ -55,6 +55,8 @@ import { Route as AuthenticatedStatsPlayersRouteImport } from './routes/_authent
 import { Route as AuthenticatedStatsTeamRouteImport } from './routes/_authenticated/stats.team'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
 import { Route as SharePlayTokenRouteImport } from './routes/share.play.$token'
+import { Route as AuthenticatedKpiCoachUserIdRouteImport } from './routes/_authenticated/kpi_.coach.$userId'
+import { Route as AuthenticatedKpiGameGameIdRouteImport } from './routes/_authenticated/kpi_.game.$gameId'
 import { Route as AuthenticatedPlaysPlayIdIndexRouteImport } from './routes/_authenticated/plays.$playId.index'
 import { Route as AuthenticatedPlaysPlayIdViewRouteImport } from './routes/_authenticated/plays.$playId.view'
 import { Route as ApiPublicCronDailyRouteImport } from './routes/api/public/cron.daily'
@@ -302,6 +304,18 @@ const SharePlayTokenRoute = SharePlayTokenRouteImport.update({
   path: '/share/play/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedKpiCoachUserIdRoute =
+  AuthenticatedKpiCoachUserIdRouteImport.update({
+    id: '/kpi_/coach/$userId',
+    path: '/kpi/coach/$userId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedKpiGameGameIdRoute =
+  AuthenticatedKpiGameGameIdRouteImport.update({
+    id: '/kpi_/game/$gameId',
+    path: '/kpi/game/$gameId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPlaysPlayIdIndexRoute =
   AuthenticatedPlaysPlayIdIndexRouteImport.update({
     id: '/plays/$playId/',
@@ -408,6 +422,8 @@ export interface FileRoutesByFullPath {
   '/plays/': typeof AuthenticatedPlaysIndexRoute
   '/practice/': typeof AuthenticatedPracticeIndexRoute
   '/stats/': typeof AuthenticatedStatsIndexRoute
+  '/kpi/coach/$userId': typeof AuthenticatedKpiCoachUserIdRoute
+  '/kpi/game/$gameId': typeof AuthenticatedKpiGameGameIdRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
   '/api/public/film/claim': typeof ApiPublicFilmClaimRoute
@@ -466,6 +482,8 @@ export interface FileRoutesByTo {
   '/plays': typeof AuthenticatedPlaysIndexRoute
   '/practice': typeof AuthenticatedPracticeIndexRoute
   '/stats': typeof AuthenticatedStatsIndexRoute
+  '/kpi/coach/$userId': typeof AuthenticatedKpiCoachUserIdRoute
+  '/kpi/game/$gameId': typeof AuthenticatedKpiGameGameIdRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
   '/api/public/film/claim': typeof ApiPublicFilmClaimRoute
@@ -526,6 +544,8 @@ export interface FileRoutesById {
   '/_authenticated/plays/': typeof AuthenticatedPlaysIndexRoute
   '/_authenticated/practice/': typeof AuthenticatedPracticeIndexRoute
   '/_authenticated/stats/': typeof AuthenticatedStatsIndexRoute
+  '/_authenticated/kpi_/coach/$userId': typeof AuthenticatedKpiCoachUserIdRoute
+  '/_authenticated/kpi_/game/$gameId': typeof AuthenticatedKpiGameGameIdRoute
   '/_authenticated/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
   '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
   '/api/public/film/claim': typeof ApiPublicFilmClaimRoute
@@ -586,6 +606,8 @@ export interface FileRouteTypes {
     | '/plays/'
     | '/practice/'
     | '/stats/'
+    | '/kpi/coach/$userId'
+    | '/kpi/game/$gameId'
     | '/plays/$playId/view'
     | '/api/public/cron/daily'
     | '/api/public/film/claim'
@@ -644,6 +666,8 @@ export interface FileRouteTypes {
     | '/plays'
     | '/practice'
     | '/stats'
+    | '/kpi/coach/$userId'
+    | '/kpi/game/$gameId'
     | '/plays/$playId/view'
     | '/api/public/cron/daily'
     | '/api/public/film/claim'
@@ -703,6 +727,8 @@ export interface FileRouteTypes {
     | '/_authenticated/plays/'
     | '/_authenticated/practice/'
     | '/_authenticated/stats/'
+    | '/_authenticated/kpi_/coach/$userId'
+    | '/_authenticated/kpi_/game/$gameId'
     | '/_authenticated/plays/$playId/view'
     | '/api/public/cron/daily'
     | '/api/public/film/claim'
@@ -1067,6 +1093,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SharePlayTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/kpi_/coach/$userId': {
+      id: '/_authenticated/kpi_/coach/$userId'
+      path: '/kpi/coach/$userId'
+      fullPath: '/kpi/coach/$userId'
+      preLoaderRoute: typeof AuthenticatedKpiCoachUserIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/kpi_/game/$gameId': {
+      id: '/_authenticated/kpi_/game/$gameId'
+      path: '/kpi/game/$gameId'
+      fullPath: '/kpi/game/$gameId'
+      preLoaderRoute: typeof AuthenticatedKpiGameGameIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/plays/$playId/': {
       id: '/_authenticated/plays/$playId/'
       path: '/plays/$playId'
@@ -1179,6 +1219,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPlaysIndexRoute: typeof AuthenticatedPlaysIndexRoute
   AuthenticatedPracticeIndexRoute: typeof AuthenticatedPracticeIndexRoute
   AuthenticatedStatsIndexRoute: typeof AuthenticatedStatsIndexRoute
+  AuthenticatedKpiCoachUserIdRoute: typeof AuthenticatedKpiCoachUserIdRoute
+  AuthenticatedKpiGameGameIdRoute: typeof AuthenticatedKpiGameGameIdRoute
   AuthenticatedPlaysPlayIdViewRoute: typeof AuthenticatedPlaysPlayIdViewRoute
   AuthenticatedPlaysPlayIdIndexRoute: typeof AuthenticatedPlaysPlayIdIndexRoute
 }
@@ -1215,6 +1257,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPlaysIndexRoute: AuthenticatedPlaysIndexRoute,
   AuthenticatedPracticeIndexRoute: AuthenticatedPracticeIndexRoute,
   AuthenticatedStatsIndexRoute: AuthenticatedStatsIndexRoute,
+  AuthenticatedKpiCoachUserIdRoute: AuthenticatedKpiCoachUserIdRoute,
+  AuthenticatedKpiGameGameIdRoute: AuthenticatedKpiGameGameIdRoute,
   AuthenticatedPlaysPlayIdViewRoute: AuthenticatedPlaysPlayIdViewRoute,
   AuthenticatedPlaysPlayIdIndexRoute: AuthenticatedPlaysPlayIdIndexRoute,
 }
