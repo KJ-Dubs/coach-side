@@ -595,6 +595,24 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_runtime: {
+        Row: {
+          enforced: boolean
+          id: boolean
+          updated_at: string
+        }
+        Insert: {
+          enforced?: boolean
+          id?: boolean
+          updated_at?: string
+        }
+        Update: {
+          enforced?: boolean
+          id?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       billing_webhook_events: {
         Row: {
           error: string | null
@@ -3715,6 +3733,7 @@ export type Database = {
         Returns: Json
       }
       ai_assistant_enabled: { Args: never; Returns: boolean }
+      billing_enforced: { Args: never; Returns: boolean }
       can_post_conversation: { Args: { _conv: string }; Returns: boolean }
       can_read_conversation: { Args: { _conv: string }; Returns: boolean }
       copy_drill_for_me: {

@@ -45,9 +45,10 @@ export const MODULE_LIST: ModuleInfo[] = [
     key: "gameday_plus",
     name: "GameDay+",
     price: 6,
-    blurb: "Court-location stat tracking, shot charts and deeper game analytics.",
+    blurb: "Court-location stat tracking, individual player stats, shot charts and deeper game analytics.",
     benefits: [
       "Tap-the-court location stat tracking",
+      "Individual player stats: shots, rebounds, assists, steals, turnovers, fouls",
       "Shot charts built from real shot locations",
       "Substitution tracking and lineup insight",
       "Advanced game history and reports",
@@ -84,7 +85,9 @@ export const FREE_CORE: string[] = [
   "Schedule and calendar viewing",
   "Browse the public CoachSide Play Library",
   "Create plays in Playmaker",
-  "Basic stat entry and basic Locker Room",
+  "Score-only games: scoreboard, periods, team fouls and clock",
+  "Drill Maker and Practice Planner",
+  "Basic Locker Room",
 ];
 
 /** One monthly price for the whole selection. Three modules become Complete. */
