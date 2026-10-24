@@ -8,8 +8,8 @@ import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/a
 import { PlayPresenter } from "@/components/court/PlayPresenter";
 import { PresenterBackButton, PresenterNav } from "@/components/court/PresenterNav";
 import { CreateMyVersion } from "@/components/CreateMyVersion";
-import { toast } from "sonner";
-import { createPlayShareLink, fetchFrames, fetchPlay, fetchPlayAssignments, fetchPlays, updatePlay } from "@/lib/data";
+import { PlayActions } from "@/components/playbook/PlayActions";
+import { fetchFrames, fetchPlay, fetchPlayAssignments, fetchPlays, updatePlay } from "@/lib/data";
 import { normalizeCategory } from "@/lib/types";
 import { useAccess } from "@/lib/access";
 import { useMe } from "@/lib/useMe";
@@ -44,7 +44,7 @@ export const Route = createFileRoute("/_authenticated/plays/$playId/view")({
   component: PlayViewPage,
 });
 
-export function PlaySlideshow({ playId, shareAction }: { playId: string; shareAction?: ReactNode }) {
+export function PlaySlideshow({ playId, actions }: { playId: string; actions?: ReactNode }) {
   const play = useQuery({ queryKey: ["play", playId], queryFn: () => fetchPlay(playId) });
   const frames = useQuery({ queryKey: ["frames", playId], queryFn: () => fetchFrames(playId) });
 
@@ -53,7 +53,7 @@ export function PlaySlideshow({ playId, shareAction }: { playId: string; shareAc
       play={play.data}
       frames={frames.data ?? []}
       loading={play.isLoading || frames.isLoading}
-      shareAction={shareAction}
+      actions={actions}
     />
   );
 }
@@ -117,27 +117,6 @@ function PlayViewPage() {
 
   const goTo = (id: string) =>
     navigate({ to: "/plays/$playId/view", params: { playId: id }, search, replace: true });
-
-  /** Turns on the public link if needed, then copies it. */
-  const sharePlay = async () => {
-    try {
-      const token = await createPlayShareLink(playId);
-      if (!token) {
-        toast.error("Could not create a share link");
-        return;
-      }
-      void trackActivity("play_shared", { entityId: playId });
-      const url = `${window.location.origin}/share/${token}`;
-      try {
-        await navigator.clipboard.writeText(url);
-        toast.success("Share link copied");
-      } catch {
-        toast.success(`Share link: ${url}`);
-      }
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  };
 
   return (
     <AppShell
@@ -203,13 +182,7 @@ function PlayViewPage() {
         <PlaySlideshow
           key={playId}
           playId={playId}
-          shareAction={
-            access.isCoach && currentPlay ? (
-              <BubbleButton tone="flame" onClick={() => void sharePlay()}>
-                Share Play
-              </BubbleButton>
-            ) : undefined
-          }
+          actions={access.isCoach && currentPlay ? <PlayActions play={currentPlay} /> : undefined}
         />
 
         <Panel className="flex flex-wrap items-center justify-center gap-2">
