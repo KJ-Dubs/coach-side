@@ -127,6 +127,13 @@
       "when": 1792788907450,
       "tag": "0017_gameday_tracking_entitlement",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792825394781,
+      "tag": "0018_play_preferred_court_view",
+      "breakpoints": true
     }
   ]
 }
