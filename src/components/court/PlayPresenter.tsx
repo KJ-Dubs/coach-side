@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { autoPlayZoom } from "@/lib/playCamera";
+import { isCourtView, playCamera, type CourtView } from "@/lib/playCamera";
 import { trackActivityOnce } from "@/lib/activity";
 import { BubbleButton, InfoPanel, Label, Panel, Pill, SectionHeader } from "@/components/Bubbles";
 import { PlayCanvas } from "@/components/court/PlayCanvas";
@@ -32,11 +32,19 @@ export type NormalizedPlayback = {
   labels: string[];
   /** OPTION points, tagged with the frame they belong to. */
   options: { frameIdx: number; group: OptionGroup }[];
+  /** The play's saved court view (camera only); null = automatic fit. */
+  courtView: CourtView | null;
 };
+
+type PresentablePlay = Pick<Play, "name" | "category" | "attack_basket"> & {
+  preferred_court_view?: string | null;
+};
+
+const savedView = (value: string | null | undefined): CourtView | null => (isCourtView(value) ? value : null);
 
 /** Turn legacy frame plays and newer sequence/action plays into one model. */
 export function normalizePlayForPlayback(
-  play: Pick<Play, "name" | "category" | "attack_basket"> | null | undefined,
+  play: PresentablePlay | null | undefined,
   frames: PlayFrame[] | undefined,
   branch?: BranchSelection,
 ): NormalizedPlayback {
@@ -63,6 +71,7 @@ export function normalizePlayForPlayback(
     steps,
     labels,
     options,
+    courtView: savedView(play?.preferred_court_view),
   };
 }
 
@@ -71,14 +80,14 @@ export function PlayPresenter({
   frames,
   loading,
   className,
-  shareAction,
+  actions: actionBar,
 }: {
-  play: Pick<Play, "name" | "category" | "attack_basket"> | null | undefined;
+  play: PresentablePlay | null | undefined;
   frames: PlayFrame[] | undefined;
   loading?: boolean;
   className?: string;
-  /** Optional share control rendered right under the playback controls. */
-  shareAction?: ReactNode;
+  /** Optional coach action bar rendered right under the playback controls, above Export Video. */
+  actions?: ReactNode;
 }) {
   const model = useMemo(() => normalizePlayForPlayback(play, frames), [play, frames]);
   const total = model.steps.length;
@@ -94,8 +103,11 @@ export function PlayPresenter({
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [focus, setFocus] = useState<string | null>(null);
-  /** Camera only: automatic per play, until the coach picks a view for this play. */
-  const autoZoom = useMemo(() => autoPlayZoom(model.frames, model.flip), [model.frames, model.flip]);
+  /** Camera only: the play's saved view (or automatic fit), until the coach picks a view here. */
+  const autoZoom = useMemo(
+    () => playCamera(model.frames, model.flip, model.courtView),
+    [model.frames, model.flip, model.courtView],
+  );
   const [zoomOverride, setZoomOverride] = useState<CourtZoom | null>(null);
   const zoom: CourtZoom = zoomOverride ?? autoZoom;
   const setZoom = (z: CourtZoom) => setZoomOverride(z);
@@ -107,7 +119,7 @@ export function PlayPresenter({
     setProgress(0);
     setPlaying(false);
     setZoomOverride(null);
-  }, [model.name]);
+  }, [model.name, model.courtView]);
 
   useEffect(() => {
     setIdx((i) => Math.min(i, Math.max(0, total - 1)));
@@ -241,9 +253,7 @@ export function PlayPresenter({
           </BubbleButton>
         </Panel>
 
-        {shareAction ? (
-          <Panel className="flex flex-wrap items-center justify-center gap-2">{shareAction}</Panel>
-        ) : null}
+        {actionBar ?? null}
 
         <ExportPlayVideo model={model} />
 
@@ -269,6 +279,12 @@ export function PlayPresenter({
             onClick={() => setZoom("right")}
           >
             Zoom Right Half
+          </BubbleButton>
+          <BubbleButton size="sm" tone={zoom === "top" ? "grape" : "neutral"} onClick={() => setZoom("top")}>
+            Top Half
+          </BubbleButton>
+          <BubbleButton size="sm" tone={zoom === "bottom" ? "grape" : "neutral"} onClick={() => setZoom("bottom")}>
+            Bottom Half
           </BubbleButton>
         </Panel>
 

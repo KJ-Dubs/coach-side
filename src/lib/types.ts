@@ -195,6 +195,8 @@ export type Play = {
   defenses?: string[];
   outcomes?: string[];
   indexed_at?: string | null;
+  /** Camera-only court view saved with the play (right|left|top|bottom|full); null = automatic. */
+  preferred_court_view?: string | null;
 };
 
 

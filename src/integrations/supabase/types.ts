@@ -2779,6 +2779,7 @@ export type Database = {
           name: string
           outcome: string | null
           outcomes: string[]
+          preferred_court_view: string | null
           primary_actions: string[]
           publish_anonymous: boolean
           published_at: string | null
@@ -2811,6 +2812,7 @@ export type Database = {
           name: string
           outcome?: string | null
           outcomes?: string[]
+          preferred_court_view?: string | null
           primary_actions?: string[]
           publish_anonymous?: boolean
           published_at?: string | null
@@ -2843,6 +2845,7 @@ export type Database = {
           name?: string
           outcome?: string | null
           outcomes?: string[]
+          preferred_court_view?: string | null
           primary_actions?: string[]
           publish_anonymous?: boolean
           published_at?: string | null
