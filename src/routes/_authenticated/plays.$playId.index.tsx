@@ -610,6 +610,8 @@ function PlayDesignerPage() {
             : (play.data?.indexed_at ?? null),
       } as Partial<typeof play.data & object>);
       toast.success("Play saved");
+      // Slideshow and export read the saved row, including its court view.
+      void play.refetch();
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
