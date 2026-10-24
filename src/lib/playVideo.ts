@@ -10,6 +10,7 @@ import type { PlayAction, PlayFrame, PlayToken } from "./types";
 import type { DrillFrame, DrillObject } from "./drills";
 import { drillStateAtSequenceStart, sampleDrillBalls } from "./drillBalls";
 import coachsideMark from "@/assets/coachside-mark.jpg.asset.json";
+import { playCamera, type CourtView } from "./playCamera";
 
 export type ExportFormat = "vertical" | "landscape" | "square";
 export type ExportSpeed = "slow" | "normal" | "fast";
@@ -50,6 +51,8 @@ export type ExportModel = {
   frames: PlayFrame[];
   steps: { step: PlayStep; frameIdx: number; note: string | null }[];
   drillFrames?: DrillFrame[];
+  /** The play's saved court view (camera only); missing/null = automatic fit. */
+  courtView?: string | null;
 };
 
 export function canExportVideo() {
@@ -165,6 +168,17 @@ const xf = (pt: Point, flip: boolean) => ({
   y: (flip ? 1 - pt.y : pt.y) * PH,
 });
 
+/** Rotated (Top/Bottom) views keep labels upright, like PlayCanvas's counter-rotation. */
+function upright(ctx: CanvasRenderingContext2D, cx: number, cy: number, vertical: boolean, draw: () => void) {
+  if (!vertical) return draw();
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-Math.PI / 2);
+  ctx.translate(-cx, -cy);
+  draw();
+  ctx.restore();
+}
+
 function actionColor(type: string, p: Palette) {
   if (type === "pass" || type === "handoff" || type === "shot") return p.playSecondary;
   if (type === "screen") return p.line;
@@ -179,6 +193,7 @@ function drawAction(
   dim: boolean,
   showSeq: boolean,
   reveal: number,
+  vertical = false,
 ) {
   const raw = a.points ?? [];
   if (raw.length < 2) return;
@@ -261,19 +276,20 @@ function drawAction(
       ctx.fillStyle = p.playForeground;
       ctx.font = `900 ${a.option?.branchSeq ? 13 : 16}px system-ui, sans-serif`;
       ctx.textAlign = "center";
-      ctx.fillText(seqLabel(a), mid.x, mid.y + 5);
+      upright(ctx, mid.x, mid.y, vertical, () => ctx.fillText(seqLabel(a), mid.x, mid.y + 5));
     }
     if (a.option) {
       ctx.fillStyle = p.playSecondary;
       ctx.font = "900 15px system-ui, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(a.option.label, mid.x, mid.y + 34);
+      const label = a.option.label;
+      upright(ctx, mid.x, mid.y, vertical, () => ctx.fillText(label, mid.x, mid.y + 34));
     }
   }
   ctx.restore();
 }
 
-function drawToken(ctx: CanvasRenderingContext2D, t: PlayToken, flip: boolean, p: Palette) {
+function drawToken(ctx: CanvasRenderingContext2D, t: PlayToken, flip: boolean, p: Palette, vertical = false) {
   const q = xf(t, flip);
   const defense = t.team === "defense";
   ctx.save();
@@ -297,7 +313,7 @@ function drawToken(ctx: CanvasRenderingContext2D, t: PlayToken, flip: boolean, p
   ctx.fillStyle = defense ? p.defense : p.offenseLabel;
   ctx.font = "900 20px system-ui, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(defense ? `X${t.label}` : t.label, q.x, q.y + 7);
+  upright(ctx, q.x, q.y, vertical, () => ctx.fillText(defense ? `X${t.label}` : t.label, q.x, q.y + 7));
   ctx.restore();
 }
 
@@ -403,32 +419,60 @@ type FrameState = {
   objects?: DrillObject[];
 };
 
-const viewCache = new WeakMap<ExportModel, { x: number; w: number }>();
+/** Display-space camera: size of the shown court region plus its canvas transform. */
+export type VideoCamera = { view: CourtView; w: number; h: number };
+
+const viewCache = new WeakMap<ExportModel, VideoCamera>();
+
+/** Display size of each court view, matching Court.tsx's viewBoxes. */
+export function cameraFor(view: CourtView): VideoCamera {
+  if (view === "full") return { view, w: PW, h: PH };
+  if (view === "top" || view === "bottom") return { view, w: PH, h: PW / 2 };
+  return { view, w: PW / 2, h: PH };
+}
+
+/** Same projection as Court.tsx: half crops, Top/Bottom rotate one half to portrait. */
+function applyCamera(ctx: CanvasRenderingContext2D, camera: VideoCamera) {
+  if (camera.view === "right") ctx.translate(-PW / 2, 0);
+  else if (camera.view === "top") {
+    ctx.translate(PH, 0);
+    ctx.rotate(Math.PI / 2);
+  } else if (camera.view === "bottom") {
+    ctx.translate(PH, -PW / 2);
+    ctx.rotate(Math.PI / 2);
+  }
+}
 
 /**
- * Show the whole court, or zoom to one half when the entire play lives there,
- * so the action fills vertical/square social frames.
+ * Plays use the shared slideshow camera rule (saved view, full-court fallback
+ * when a half would hide authored geometry, automatic fit otherwise). Drills
+ * keep their existing whole-drill half/full fit.
  */
-function courtView(model: ExportModel) {
+export function videoCamera(model: ExportModel): VideoCamera {
   const cached = viewCache.get(model);
   if (cached) return cached;
-  const xs: number[] = [];
-  for (const f of model.frames) {
-    for (const t of f.tokens) xs.push(xf(t, model.flip).x);
-    for (const a of f.actions) for (const q of a.points ?? []) xs.push(xf(q, model.flip).x);
+  let view: CourtView = "full";
+  if (model.kind !== "drill") {
+    view = playCamera(model.frames, model.flip, model.courtView);
+  } else {
+    const xs: number[] = [];
+    for (const f of model.frames) {
+      for (const t of f.tokens) xs.push(xf(t, model.flip).x);
+      for (const a of f.actions) for (const q of a.points ?? []) xs.push(xf(q, model.flip).x);
+    }
+    for (const frame of model.drillFrames ?? []) {
+      for (const object of frame.objects) xs.push(xf(object, model.flip).x);
+    }
+    if (xs.length) {
+      const min = Math.min(...xs);
+      const max = Math.max(...xs);
+      if (max <= PW * 0.53) view = "left";
+      else if (min >= PW * 0.47) view = "right";
+    }
   }
-  for (const frame of model.drillFrames ?? []) {
-    for (const object of frame.objects) xs.push(xf(object, model.flip).x);
-  }
-  let view = { x: 0, w: PW };
-  if (xs.length) {
-    const min = Math.min(...xs);
-    const max = Math.max(...xs);
-    if (max <= PW * 0.53) view = { x: 0, w: PW / 2 };
-    else if (min >= PW * 0.47) view = { x: PW / 2, w: PW / 2 };
-  }
-  viewCache.set(model, view);
-  return view;
+  const camera = cameraFor(view);
+  viewCache.set(model, camera);
+  return camera;
 }
 
 type TitleLayout = { lines: string[]; size: number };
@@ -471,7 +515,7 @@ function titleLayout(ctx: CanvasRenderingContext2D, title: string, maxWidth: num
 export const VIDEO_COURT_CTA = "Add this to your playbook on CoachSide.live";
 
 /** Shared logical-pixel layout; the WASM canvas scales this composition intact. */
-export function videoComposition(format: ExportFormat, viewWidth: number) {
+export function videoComposition(format: ExportFormat, viewWidth: number, viewHeight: number = PH) {
   const { w, h } = FORMAT_SIZE[format];
   const unit = Math.min(w, h) / 1080;
   const vertical = format === "vertical";
@@ -483,9 +527,9 @@ export function videoComposition(format: ExportFormat, viewWidth: number) {
   const titleGap = 30 * unit;
   const courtTop = (vertical ? 490 : 270) * unit;
   const courtBottom = h - (vertical ? 350 : 250) * unit;
-  const scale = Math.min((w - pad * 2) / viewWidth, (courtBottom - courtTop) / PH);
+  const scale = Math.min((w - pad * 2) / viewWidth, (courtBottom - courtTop) / viewHeight);
   const courtW = viewWidth * scale;
-  const courtH = PH * scale;
+  const courtH = viewHeight * scale;
   const courtX = (w - courtW) / 2;
   const courtY = courtTop + (courtBottom - courtTop - courtH) / 2;
   return {
@@ -542,8 +586,9 @@ function paintFrame(
   ctx.fillStyle = p.bg;
   ctx.fillRect(0, 0, w, h);
 
-  const view = courtView(model);
-  const layout = videoComposition(opts.format, view.w);
+  const camera = videoCamera(model);
+  const vertical = camera.view === "top" || camera.view === "bottom";
+  const layout = videoComposition(opts.format, camera.w, camera.h);
   const { pad, scale, courtX, courtY, statusY, unit } = layout;
   drawCourtBranding(ctx, model, opts, p, layout, mark);
 
@@ -552,14 +597,14 @@ function paintFrame(
   ctx.scale(scale, scale);
   ctx.save();
   ctx.beginPath();
-  ctx.roundRect(0, 0, view.w, PH, 18);
+  ctx.roundRect(0, 0, camera.w, camera.h, 18);
   ctx.clip();
-  ctx.translate(-view.x, 0);
+  applyCamera(ctx, camera);
   drawCourt(ctx, p);
   for (const object of state.objects ?? []) drawDrillObject(ctx, object, model.flip, p);
   for (const a of state.actions)
-    drawAction(ctx, a, model.flip, p, a.seq !== state.activeSeq, opts.showSequenceNumbers, state.reveal);
-  for (const t of state.tokens) drawToken(ctx, t, model.flip, p);
+    drawAction(ctx, a, model.flip, p, a.seq !== state.activeSeq, opts.showSequenceNumbers, state.reveal, vertical);
+  for (const t of state.tokens) drawToken(ctx, t, model.flip, p, vertical);
   if (state.ball) {
     const bp = xf(state.ball, model.flip);
     drawBall(ctx, state.ballAttached ? { x: bp.x + 22, y: bp.y - 20 } : bp, p);
