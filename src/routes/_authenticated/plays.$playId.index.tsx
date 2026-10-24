@@ -35,6 +35,7 @@ import {
   type PlayIndex,
 } from "@/lib/playIndex";
 import { fetchFrames, fetchPlay, saveFrames, updatePlay } from "@/lib/data";
+import { isCourtView, playCamera } from "@/lib/playCamera";
 import { useMe } from "@/lib/useMe";
 import { fetchCoachLabel, isPlayOwner } from "@/lib/playOwnership";
 
@@ -199,21 +200,13 @@ function PlayDesignerPage() {
       setCategory(normalizeCategory(play.data.category));
       setFlip(play.data.attack_basket === "left");
       setIndex(normalizeIndex(play.data));
+      // A play's own saved view wins; the device preference only seeds plays without one.
+      const own = play.data.preferred_court_view;
+      const device = window.localStorage.getItem(PLAYMAKER_VIEW_KEY);
+      if (isCourtView(own)) setZoom(own);
+      else if (isCourtView(device)) setZoom(device);
     }
   }, [play.data]);
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(PLAYMAKER_VIEW_KEY);
-    if (
-      saved === "right" ||
-      saved === "left" ||
-      saved === "top" ||
-      saved === "bottom" ||
-      saved === "full"
-    ) {
-      setZoom(saved);
-    }
-  }, []);
 
   const chooseZoom = (next: CourtZoom) => {
     setZoom(next);
@@ -606,6 +599,7 @@ function PlayDesignerPage() {
         name,
         category,
         attack_basket: flip ? "left" : "right",
+        preferred_court_view: zoom,
         ...indexToRow(index),
         indexed_at:
           index.concepts.length ||
@@ -1160,6 +1154,9 @@ function PlayDesignerPage() {
                   {label}
                 </BubbleButton>
               ))}
+              {zoom !== "full" && playCamera(frames, flip, zoom) === "full" ? (
+                <Pill tone="muted">Crosses midcourt — slideshow and video show Full Court</Pill>
+              ) : null}
               {offView > 0 ? (
                 <>
                   <Pill tone="flame">{offView} off this view</Pill>
