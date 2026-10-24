@@ -40,6 +40,8 @@ type PresentablePlay = Pick<Play, "name" | "category" | "attack_basket"> & {
   preferred_court_view?: string | null;
 };
 
+const savedView = (value: string | null | undefined): CourtView | null => (isCourtView(value) ? value : null);
+
 /** Turn legacy frame plays and newer sequence/action plays into one model. */
 export function normalizePlayForPlayback(
   play: PresentablePlay | null | undefined,
@@ -69,7 +71,7 @@ export function normalizePlayForPlayback(
     steps,
     labels,
     options,
-    courtView: isCourtView(play?.preferred_court_view) ? play.preferred_court_view : null,
+    courtView: savedView(play?.preferred_court_view),
   };
 }
 
