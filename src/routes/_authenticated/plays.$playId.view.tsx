@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { AppShell } from "@/components/AppShell";
 import { BubbleButton, Note, Panel, Pill } from "@/components/Bubbles";
-import { trackActivity, trackActivityOnce, notifyProgressChanged } from "@/lib/activity";
 import { PlayPresenter } from "@/components/court/PlayPresenter";
 import { PresenterBackButton, PresenterNav } from "@/components/court/PresenterNav";
 import { CreateMyVersion } from "@/components/CreateMyVersion";

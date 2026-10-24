@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_EXPORT_OPTIONS, FORMAT_SIZE, INTRO_SECONDS, VIDEO_COURT_CTA, VIDEO_INTRO_MESSAGE, frameCounts, introState, videoComposition, videoPalette, type ExportModel } from "./playVideo";
+import { DEFAULT_EXPORT_OPTIONS, FORMAT_SIZE, INTRO_SECONDS, VIDEO_COURT_CTA, VIDEO_INTRO_MESSAGE, frameCounts, introState, videoCamera, videoComposition, videoPalette, type ExportModel } from "./playVideo";
 
 describe("play video palette parity", () => {
   const values: Record<string, string> = {
@@ -100,5 +100,34 @@ describe("downloaded video social composition", () => {
     expect(layout.titlePreferred).toBe(68);
     expect(layout.titleMinimum).toBe(44);
     expect(layout.statusY + 54).toBeLessThanOrEqual(layout.h - 110);
+  });
+});
+describe("video court view follows the play's saved view", () => {
+  const tok = (x: number) => ({ id: `t${x}`, label: "1", x, y: 0.5, ball: false, team: "offense" as const });
+  const play = (xs: number[], courtView: string | null): ExportModel => ({
+    name: "View", category: "Offense", flip: false, courtView, steps: [],
+    frames: [{ id: "f", play_id: "p", idx: 0, tokens: xs.map(tok), actions: [], note: null }],
+  });
+
+  it("crops Right/Left halves and rotates Top/Bottom to portrait", () => {
+    expect(videoCamera(play([0.7, 0.9], "right"))).toEqual({ view: "right", w: 470, h: 500 });
+    expect(videoCamera(play([0.1, 0.3], "left"))).toEqual({ view: "left", w: 470, h: 500 });
+    expect(videoCamera(play([0.1, 0.3], "top"))).toEqual({ view: "top", w: 500, h: 470 });
+    expect(videoCamera(play([0.7, 0.9], "bottom"))).toEqual({ view: "bottom", w: 500, h: 470 });
+    expect(videoCamera(play([0.7, 0.9], "full"))).toEqual({ view: "full", w: 940, h: 500 });
+  });
+
+  it("falls back to Full Court when a saved half would hide geometry", () => {
+    expect(videoCamera(play([0.2, 0.8], "right")).view).toBe("full");
+  });
+
+  it("keeps social format separate from court orientation", () => {
+    for (const format of ["vertical", "square", "landscape"] as const) {
+      const camera = videoCamera(play([0.1, 0.3], "top"));
+      const layout = videoComposition(format, camera.w, camera.h);
+      expect(layout.courtH / layout.courtW).toBeCloseTo(470 / 500);
+      expect(layout.courtX).toBeGreaterThanOrEqual(layout.pad - 1);
+      expect(layout.courtY + layout.courtH).toBeLessThan(layout.ctaY);
+    }
   });
 });
