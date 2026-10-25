@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Search, X } from "lucide-react";
 import { BubbleButton, Label, Panel, Pill, TextInput } from "@/components/Bubbles";
@@ -24,7 +24,6 @@ import { normalizeIndex } from "@/lib/playIndex";
 import { resolveRole, useAccess } from "@/lib/access";
 import { useCurrentTeam } from "@/lib/teamContext";
 import { normalizeCategory, type Play, type PlayToken } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 const PICKER_SORTS: { key: SortKey; label: string }[] = [
   { key: "newest", label: "Newest" },
@@ -75,7 +74,6 @@ export function BoardPlaybookPicker({
   const [folder, setFolder] = useState<string>("ALL");
   const [situations, setSituations] = useState<string[]>([]);
   const [sort, setSort] = useState<SortKey>("newest");
-  const searchRef = useRef<HTMLInputElement>(null);
 
   const plays = useQuery({ queryKey: ["plays"], queryFn: fetchPlays, enabled: open });
   const assignments = useQuery({ queryKey: ["play-assignments"], queryFn: fetchPlayAssignments, enabled: open });
@@ -96,7 +94,7 @@ export function BoardPlaybookPicker({
   useEffect(() => {
     if (!open) return;
     if (typeof window !== "undefined" && window.matchMedia?.("(pointer: fine)").matches) {
-      searchRef.current?.focus();
+      document.getElementById("board-playbook-search")?.focus();
     }
   }, [open]);
 
@@ -192,7 +190,7 @@ export function BoardPlaybookPicker({
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <TextInput
-            ref={searchRef}
+            id="board-playbook-search"
             type="search"
             aria-label="Search this team's plays"
             placeholder="Search plays, tags, folders…"
@@ -379,7 +377,6 @@ export function BoardPlayOverlay({
         }
         onLoadPositions={onLoadPositions}
       />
-      <span className={cn("sr-only")}>Press Escape to return to the board</span>
     </div>
   );
 }
