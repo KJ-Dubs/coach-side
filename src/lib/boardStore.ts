@@ -79,3 +79,39 @@ export function hitTest(o: BoardObject, point: BoardPoint, tol: number) {
   const first = o.pts[0];
   return o.pts.length === 1 && !!first && Math.hypot(first.x - p.x, asp(first).y - p.y) < tol;
 }
+
+/** Board ink for loaded play positions (offense / defense). */
+export const LOADED_OFFENSE_COLOR = "#f8fafc";
+export const LOADED_DEFENSE_COLOR = "#ef4444";
+
+/**
+ * Turn a play's displayed player positions into temporary Board markers.
+ * Positions are mirrored exactly like PlayCanvas when the play attacks the
+ * left basket. Only players become markers — never action paths or the ball.
+ */
+export function boardMarkersFromTokens(
+  tokens: { label: string; x: number; y: number; team?: "offense" | "defense" | undefined }[],
+  flip: boolean,
+): BoardObject[] {
+  return tokens
+    .filter((t) => Number.isFinite(t.x) && Number.isFinite(t.y))
+    .map((t) => {
+      const team = t.team ?? "offense";
+      return {
+        id: newId(),
+        kind: "marker" as const,
+        team,
+        label: t.label,
+        color: team === "offense" ? LOADED_OFFENSE_COLOR : LOADED_DEFENSE_COLOR,
+        x: flip ? 1 - t.x : t.x,
+        y: flip ? 1 - t.y : t.y,
+      };
+    });
+}
+
+/** Board supports Full / Left / Right; Top and Bottom are the rotated left/right halves. */
+export function boardZoomForCamera(view: string): BoardSnapshot["zoom"] {
+  if (view === "left" || view === "top") return "left";
+  if (view === "right" || view === "bottom") return "right";
+  return "full";
+}

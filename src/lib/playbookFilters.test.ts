@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DISCOVERY_FILTERS, matchesDiscovery, matchesQuery, sortPlays } from "./playbookFilters";
+import { BOARD_SITUATIONS, DISCOVERY_FILTERS, matchesDiscovery, matchesQuery, playsForTeam, sortPlays } from "./playbookFilters";
 import type { Play } from "./types";
 
 const play = (patch: Partial<Play> = {}): Play => ({
@@ -46,5 +46,21 @@ describe("grouped Playbook discovery", () => {
     expect(new Set(DISCOVERY_FILTERS.map((f) => f.key)).size).toBe(DISCOVERY_FILTERS.length);
     expect(matchesDiscovery(play(), [])).toBe(true);
     expect(matchesDiscovery(play(), ["retired-filter"])).toBe(true);
+  });
+});
+describe("Timeout Board playbook picker", () => {
+  it("scopes to plays sourced from or assigned to the chosen team only", () => {
+    const own = play({ id: "own", team_id: "t1" });
+    const shared = play({ id: "shared", team_id: "t2" });
+    const other = play({ id: "other", team_id: "t2" });
+    const out = playsForTeam([own, shared, other], [{ play_id: "shared", team_id: "t1" }], "t1");
+    expect(out.map((p) => p.id)).toEqual(["own", "shared"]);
+    expect(playsForTeam([own], [], null)).toEqual([]);
+  });
+  it("situation shortcuts reuse existing discovery filters", () => {
+    for (const s of BOARD_SITUATIONS) expect(DISCOVERY_FILTERS.some((f) => f.key === s.key)).toBe(true);
+    expect(matchesDiscovery(play({ category: "BLOB" }), ["type:BLOB"])).toBe(true);
+    expect(matchesDiscovery(play({ outcomes: ["3-point look"] }), ["three"])).toBe(true);
+    expect(matchesDiscovery(play({ outcomes: ["Rim finish"] }), ["three"])).toBe(false);
   });
 });

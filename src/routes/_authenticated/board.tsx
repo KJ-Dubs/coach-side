@@ -1,8 +1,14 @@
 import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Court, type CourtZoom } from "@/components/court/Court";
+import { BookOpen } from "lucide-react";
 import { BubbleButton, Panel, Pill } from "@/components/Bubbles";
+import { BoardPlaybookPicker, BoardPlayOverlay } from "@/components/board/BoardPlaybook";
+import { resolveRole, useAccess } from "@/lib/access";
+import type { Play, PlayToken } from "@/lib/types";
 import {
+  boardMarkersFromTokens,
+  boardZoomForCamera,
   hitTest,
   newId,
   readBoard,
@@ -174,6 +180,13 @@ function BoardPage() {
   const [xoSymbol, setXoSymbol] = useState<"X" | "O">("X");
   const [compact, setCompact] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const { access } = useAccess();
+  const isCoach = resolveRole(access).isCoach;
+  /** Playbook overlays sit on top of the Board; Board state stays mounted underneath. */
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [presenting, setPresenting] = useState<Play | null>(null);
+  const closePicker = useCallback(() => setPickerOpen(false), []);
+  const closePresenter = useCallback(() => setPresenting(null), []);
 
   const draft = useRef<BoardObject | null>(null);
   const down = useRef(false);
@@ -285,6 +298,20 @@ function BoardPage() {
     force((n) => n + 1);
   };
 
+  /** Explicit, undoable: the play's shown players become temporary Board markers. */
+  const loadPositions = (tokens: PlayToken[], camera: CourtZoom, flip: boolean) => {
+    const markers = boardMarkersFromTokens(tokens, flip);
+    if (!markers.length) return;
+    setObjects((prev) => {
+      setHistory((states) => [...states, prev]);
+      return [...prev, ...markers];
+    });
+    setRedo([]);
+    setZoom(boardZoomForCamera(camera));
+    setTool("marker");
+    setPresenting(null);
+  };
+
   const exit = () => {
     if (window.history.length > 1) router.history.back();
     else void navigate({ to: "/tools" });
@@ -320,6 +347,20 @@ function BoardPage() {
           ← Exit Board
         </BubbleButton>
         <Pill tone="flame">Timeout Board</Pill>
+        {isCoach ? (
+          <BubbleButton
+            size="sm"
+            tone="flame"
+            aria-haspopup="dialog"
+            aria-expanded={pickerOpen}
+            aria-label="Open Playbook"
+            onClick={() => setPickerOpen(true)}
+          >
+            <BookOpen className="h-4 w-4" aria-hidden />
+            <span className="hidden sm:inline">Playbook ▾</span>
+            <span className="sm:hidden">Plays ▾</span>
+          </BubbleButton>
+        ) : null}
         <BubbleButton
           size="sm"
           tone={zoom === "full" ? "grape" : "neutral"}
@@ -499,6 +540,26 @@ function BoardPage() {
           )}
         </Panel>
       )}
+
+      {isCoach && presenting ? (
+        <BoardPlayOverlay
+          play={presenting}
+          pickerOpen={pickerOpen}
+          onClose={closePresenter}
+          onOpenPicker={() => setPickerOpen(true)}
+          onLoadPositions={loadPositions}
+        />
+      ) : null}
+      {isCoach ? (
+        <BoardPlaybookPicker
+          open={pickerOpen}
+          onClose={closePicker}
+          onPick={(play) => {
+            setPickerOpen(false);
+            setPresenting(play);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
