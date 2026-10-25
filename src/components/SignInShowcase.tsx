@@ -70,7 +70,7 @@ const MORE_FREE: { title: string; note?: string }[] = [
   { title: "Drill Maker" },
   {
     title: "Practice Planner",
-    note: "CoachSide AI Assistant can help with practice planning in Complete when AI access is active.",
+    note: "CoachSide AI Assistant can suggest practice plans with Complete.",
   },
   { title: "Coach's Board" },
   { title: "Public Play Library" },
@@ -197,12 +197,12 @@ export function SignInShowcase() {
           <span className="rounded-full bg-flame px-3 py-1 text-sm font-black text-accent-foreground">${COMPLETE_PRICE}/month</span>
         </div>
         <p className="rounded-2xl bg-background/50 px-3 py-2 text-sm font-semibold leading-relaxed text-foreground">
-          All 3 paid modules + CoachSide AI Assistant access when active.
+          All 3 paid modules + the CoachSide AI Assistant.
         </p>
         <div className="flex flex-col gap-2 rounded-2xl border border-grape/40 bg-background/40 p-3">
           <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-grape/20 px-3 py-1 text-xs font-black uppercase tracking-wider text-foreground">
             <Sparkles aria-hidden className="h-3.5 w-3.5" />
-            AI Assistant · Coming soon
+            AI Assistant · Included
           </span>
           <ul className="flex flex-wrap gap-1.5">
             {AI_EXAMPLES.map((ex) => (

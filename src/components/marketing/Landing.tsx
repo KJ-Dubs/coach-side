@@ -418,7 +418,7 @@ const FREE_TOOLS: { title: string; body: string; note?: string; icon: LucideIcon
   {
     title: "Practice Planner",
     body: "Organize your drills into practice plans.",
-    note: `CoachSide AI Assistant can help build practice plans with Complete when AI access is active.`,
+    note: `CoachSide AI Assistant can suggest practice plans with Complete.`,
     icon: ClipboardList,
   },
   { title: "Roster + Player Onboarding", body: "Create teams and rosters, then invite players with a QR code or link.", icon: QrCode },
@@ -459,7 +459,7 @@ const GLANCE: { feature: string; plan: string; free: boolean }[] = [
   { feature: "Save, organize, publish and export team plays", plan: MODULES.playbook_plus.name, free: false },
   { feature: "Team chat, plans, resources, calendar sync", plan: MODULES.team_hub_plus.name, free: false },
   { feature: "Tap-the-court player stats, shot charts, lineups", plan: MODULES.gameday_plus.name, free: false },
-  { feature: "All three paid modules + AI Assistant when active", plan: COMPLETE_NAME, free: false },
+  { feature: "All three paid modules + AI Assistant", plan: COMPLETE_NAME, free: false },
 ];
 
 function TierCard({ tier }: { tier: Tier }) {
@@ -550,10 +550,10 @@ function Pricing() {
             <div className="flex flex-wrap items-center gap-2">
               <Sparkles aria-hidden className="h-4 w-4 text-grape-bright" />
               <span className="text-sm font-black text-foreground">CoachSide AI Assistant</span>
-              <Pill tone="muted">Coming soon</Pill>
+              <Pill tone="grape">Included</Pill>
             </div>
             <span className="text-sm font-semibold text-muted-foreground">
-              Included with Complete when AI access is active.
+              Included with Complete. Ask about your roster, schedule and games, or get coaching help.
             </span>
             <ul className="flex flex-wrap gap-2">
               {AI_EXAMPLES.map((p) => (
