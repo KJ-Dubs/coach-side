@@ -544,6 +544,7 @@ function BoardPage() {
       {isCoach && presenting ? (
         <BoardPlayOverlay
           play={presenting}
+          pickerOpen={pickerOpen}
           onClose={closePresenter}
           onOpenPicker={() => setPickerOpen(true)}
           onLoadPositions={loadPositions}

@@ -343,14 +343,17 @@ export function BoardPlayOverlay({
   onClose,
   onOpenPicker,
   onLoadPositions,
+  pickerOpen = false,
 }: {
   play: Play;
+  /** While the picker is open on top, Escape belongs to the picker. */
+  pickerOpen?: boolean;
   onClose: () => void;
   onOpenPicker: () => void;
   onLoadPositions: (tokens: PlayToken[], camera: CourtZoom, flip: boolean) => void;
 }) {
   const frames = useQuery({ queryKey: ["frames", play.id], queryFn: () => fetchFrames(play.id) });
-  useEscape(true, onClose);
+  useEscape(!pickerOpen, onClose);
   return (
     <div
       role="dialog"
