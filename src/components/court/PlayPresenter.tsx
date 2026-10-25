@@ -16,7 +16,7 @@ import {
 } from "@/lib/playAnimation";
 
 import { buildSequentialSteps } from "@/lib/playSequence";
-import type { Play, PlayFrame } from "@/lib/types";
+import type { Play, PlayFrame, PlayToken } from "@/lib/types";
 
 /**
  * The one authoritative play playback surface.
@@ -75,12 +75,21 @@ export function normalizePlayForPlayback(
   };
 }
 
+/** Court width cap so the whole court fits the viewport height in quick mode. */
+function quickCourtWidth(zoom: CourtZoom) {
+  const ratio = zoom === "full" ? 1.88 : zoom === "top" || zoom === "bottom" ? 1.06 : 0.94;
+  return `min(100%, calc((100dvh - 12.5rem) * ${ratio}))`;
+}
+
 export function PlayPresenter({
   play,
   frames,
   loading,
   className,
   actions: actionBar,
+  compact,
+  headerAction,
+  onLoadPositions,
 }: {
   play: PresentablePlay | null | undefined;
   frames: PlayFrame[] | undefined;
@@ -88,6 +97,12 @@ export function PlayPresenter({
   className?: string;
   /** Optional coach action bar rendered right under the playback controls, above Export Video. */
   actions?: ReactNode;
+  /** Quick-present mode (Timeout Board): court and playback controls only, sized to the screen. */
+  compact?: boolean;
+  /** Quick mode: buttons shown in the title row (e.g. Back to Board). */
+  headerAction?: ReactNode;
+  /** Quick mode: copy the players' currently shown positions somewhere (never action paths). */
+  onLoadPositions?: (tokens: PlayToken[], camera: CourtZoom, flip: boolean) => void;
 }) {
   const model = useMemo(() => normalizePlayForPlayback(play, frames), [play, frames]);
   const total = model.steps.length;
