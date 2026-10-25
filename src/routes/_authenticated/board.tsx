@@ -540,6 +540,25 @@ function BoardPage() {
           )}
         </Panel>
       )}
+
+      {isCoach && presenting ? (
+        <BoardPlayOverlay
+          play={presenting}
+          onClose={closePresenter}
+          onOpenPicker={() => setPickerOpen(true)}
+          onLoadPositions={loadPositions}
+        />
+      ) : null}
+      {isCoach ? (
+        <BoardPlaybookPicker
+          open={pickerOpen}
+          onClose={closePicker}
+          onPick={(play) => {
+            setPickerOpen(false);
+            setPresenting(play);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
