@@ -196,77 +196,119 @@ export function PlayPresenter({
     );
   }
 
+  const sequenceLabel = `Sequence ${
+    current && "label" in current.step ? String(current.step.label) : total ? idx + 1 : 0
+  } of ${total}`;
+
+  const court = (
+    <div className="relative">
+      <PlayCanvas
+        frame={frame}
+        flip={model.flip}
+        zoom={zoom}
+        {...(sample
+          ? {
+              tokens: sample.tokens,
+              ball: sample.ball,
+              actions,
+              activeSeq: current?.step.seq,
+              dimOtherActions: true,
+            }
+          : {})}
+        {...(focusTokenId ? { focusTokenId } : {})}
+      />
+      {!playing && idx === 0 && phase === "show" && progress === 0 && total > 0 ? (
+        <BubbleButton
+          tone="ghost"
+          aria-label="Play this play"
+          onClick={() => {
+            setPlaying(true);
+          }}
+          className="absolute inset-0 flex items-center justify-center rounded-3xl bg-background/45 backdrop-blur-[1px]"
+        >
+          <span className="rounded-full border-2 border-flame bg-flame/25 px-8 py-5 text-2xl font-black tracking-widest text-foreground shadow-lg shadow-black/40">
+            ▶ PLAY
+          </span>
+        </BubbleButton>
+      ) : null}
+    </div>
+  );
+
+  const controls = (
+    <Panel className="flex flex-wrap items-center justify-center gap-2">
+      <BubbleButton
+        tone="ghost"
+        onClick={() => {
+          setPlaying(false);
+          goto(0);
+        }}
+      >
+        ⟲ Restart
+      </BubbleButton>
+      <BubbleButton tone="neutral" disabled={idx === 0} onClick={() => goto(idx - 1)}>
+        ← Previous
+      </BubbleButton>
+      <BubbleButton tone="flame" disabled={total === 0} onClick={() => setPlaying((p) => !p)}>
+        {playing ? "❚❚ Pause" : "▶ Play"}
+      </BubbleButton>
+      <BubbleButton tone="grape" disabled={idx >= total - 1} onClick={() => goto(idx + 1)}>
+        Next →
+      </BubbleButton>
+      {onLoadPositions ? (
+        <BubbleButton
+          tone="neutral"
+          disabled={!(sample?.tokens ?? frame?.tokens ?? []).length}
+          onClick={() => {
+            setPlaying(false);
+            onLoadPositions(sample?.tokens ?? frame?.tokens ?? [], zoom, model.flip);
+          }}
+        >
+          Load positions onto Board
+        </BubbleButton>
+      ) : null}
+    </Panel>
+  );
+
+  if (compact) {
+    return (
+      <div className={className}>
+        <div className="flex flex-col gap-2">
+          <Panel className="flex flex-wrap items-center gap-2 p-2">
+            {headerAction}
+            <Pill tone="grape" className="min-w-0 max-w-full truncate text-sm">{model.name}</Pill>
+            {model.category ? <Pill tone="muted">{model.category}</Pill> : null}
+            <Pill tone="flame">{sequenceLabel}</Pill>
+          </Panel>
+          <div className="mx-auto w-full" style={{ maxWidth: quickCourtWidth(zoom) }}>
+            {court}
+          </div>
+          {current?.note ? <InfoPanel className="mx-auto max-w-2xl">{current.note}</InfoPanel> : null}
+          {controls}
+          {total === 0 ? (
+            <Panel className="flex justify-center">
+              <Label>This play has no actions yet</Label>
+            </Panel>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={className}>
       <div className="flex flex-col gap-2">
         <SectionHeader as="h1" title={model.name} subtitle={model.category || undefined}>
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <Pill tone="flame">
-              Sequence{" "}
-              {current && "label" in current.step
-                ? String(current.step.label)
-                : total
-                  ? idx + 1
-                  : 0}{" "}
-              of {total}
-            </Pill>
+            <Pill tone="flame">{sequenceLabel}</Pill>
             <Pill tone="neutral">{phase === "show" ? "Showing actions" : "Running play"}</Pill>
           </div>
           {current?.note ? <InfoPanel className="max-w-2xl">{current.note}</InfoPanel> : null}
         </SectionHeader>
 
-        <div className="relative">
-          <PlayCanvas
-            frame={frame}
-            flip={model.flip}
-            zoom={zoom}
-            {...(sample
-              ? {
-                  tokens: sample.tokens,
-                  ball: sample.ball,
-                  actions,
-                  activeSeq: current?.step.seq,
-                  dimOtherActions: true,
-                }
-              : {})}
-            {...(focusTokenId ? { focusTokenId } : {})}
-          />
-          {!playing && idx === 0 && phase === "show" && progress === 0 && total > 0 ? (
-            <BubbleButton
-              tone="ghost"
-              aria-label="Play this play"
-              onClick={() => {
-                setPlaying(true);
-              }}
-              className="absolute inset-0 flex items-center justify-center rounded-3xl bg-background/45 backdrop-blur-[1px]"
-            >
-              <span className="rounded-full border-2 border-flame bg-flame/25 px-8 py-5 text-2xl font-black tracking-widest text-foreground shadow-lg shadow-black/40">
-                ▶ PLAY
-              </span>
-            </BubbleButton>
-          ) : null}
-        </div>
+        {court}
 
-        <Panel className="flex flex-wrap items-center justify-center gap-2">
-          <BubbleButton
-            tone="ghost"
-            onClick={() => {
-              setPlaying(false);
-              goto(0);
-            }}
-          >
-            ⟲ Restart
-          </BubbleButton>
-          <BubbleButton tone="neutral" disabled={idx === 0} onClick={() => goto(idx - 1)}>
-            ← Previous
-          </BubbleButton>
-          <BubbleButton tone="flame" disabled={total === 0} onClick={() => setPlaying((p) => !p)}>
-            {playing ? "❚❚ Pause" : "▶ Play"}
-          </BubbleButton>
-          <BubbleButton tone="grape" disabled={idx >= total - 1} onClick={() => goto(idx + 1)}>
-            Next →
-          </BubbleButton>
-        </Panel>
+        {controls}
+
 
         {actionBar ?? null}
 
