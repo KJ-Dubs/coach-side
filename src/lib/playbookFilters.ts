@@ -125,3 +125,28 @@ export function matchesDiscovery(p: Play, keys: string[]): boolean {
   }
   return [...groups.values()].every((choices) => choices.some((f) => f.match(p)));
 }
+
+/**
+ * A coach's team Playbook: plays whose source team is this team plus every
+ * explicit team assignment — the same rule My Playbook uses for a team scope.
+ */
+export function playsForTeam(
+  plays: Play[],
+  assignments: { play_id: string; team_id: string }[],
+  teamId: string | null,
+): Play[] {
+  if (!teamId) return [];
+  const assigned = new Set(assignments.filter((a) => a.team_id === teamId).map((a) => a.play_id));
+  return plays.filter((p) => p.team_id === teamId || assigned.has(p.id));
+}
+
+/** Timeout shortcuts. Each is an existing discovery filter key, never a new tag. */
+export const BOARD_SITUATIONS: { label: string; key: string }[] = [
+  { label: "BLOB", key: "type:BLOB" },
+  { label: "SLOB", key: "type:SLOB" },
+  { label: "Need 3", key: "three" },
+  { label: "vs Zone", key: "zone" },
+  { label: "vs Man", key: "man" },
+  { label: "Press Break", key: "press" },
+  { label: "Late Game", key: "late" },
+];
