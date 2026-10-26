@@ -52,6 +52,7 @@ import { Route as AuthenticatedPracticeIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedPracticePlanIdRouteImport } from './routes/_authenticated/practice.$planId'
 import { Route as AuthenticatedReviewGameIdRouteImport } from './routes/_authenticated/review.$gameId'
 import { Route as AuthenticatedStatsIndexRouteImport } from './routes/_authenticated/stats.index'
+import { Route as AuthenticatedStatsAttendanceRouteImport } from './routes/_authenticated/stats.attendance'
 import { Route as AuthenticatedStatsPlayersRouteImport } from './routes/_authenticated/stats.players'
 import { Route as AuthenticatedStatsTeamRouteImport } from './routes/_authenticated/stats.team'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
@@ -290,6 +291,12 @@ const AuthenticatedStatsIndexRoute = AuthenticatedStatsIndexRouteImport.update({
   path: '/stats/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedStatsAttendanceRoute =
+  AuthenticatedStatsAttendanceRouteImport.update({
+    id: '/stats/attendance',
+    path: '/stats/attendance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedStatsPlayersRoute =
   AuthenticatedStatsPlayersRouteImport.update({
     id: '/stats/players',
@@ -420,6 +427,7 @@ export interface FileRoutesByFullPath {
   '/plays/new': typeof AuthenticatedPlaysNewRoute
   '/practice/$planId': typeof AuthenticatedPracticePlanIdRoute
   '/review/$gameId': typeof AuthenticatedReviewGameIdRoute
+  '/stats/attendance': typeof AuthenticatedStatsAttendanceRoute
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
   '/api/ai/chat': typeof ApiAiChatRoute
@@ -481,6 +489,7 @@ export interface FileRoutesByTo {
   '/plays/new': typeof AuthenticatedPlaysNewRoute
   '/practice/$planId': typeof AuthenticatedPracticePlanIdRoute
   '/review/$gameId': typeof AuthenticatedReviewGameIdRoute
+  '/stats/attendance': typeof AuthenticatedStatsAttendanceRoute
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
   '/api/ai/chat': typeof ApiAiChatRoute
@@ -544,6 +553,7 @@ export interface FileRoutesById {
   '/_authenticated/plays/new': typeof AuthenticatedPlaysNewRoute
   '/_authenticated/practice/$planId': typeof AuthenticatedPracticePlanIdRoute
   '/_authenticated/review/$gameId': typeof AuthenticatedReviewGameIdRoute
+  '/_authenticated/stats/attendance': typeof AuthenticatedStatsAttendanceRoute
   '/_authenticated/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/_authenticated/stats/team': typeof AuthenticatedStatsTeamRoute
   '/api/ai/chat': typeof ApiAiChatRoute
@@ -607,6 +617,7 @@ export interface FileRouteTypes {
     | '/plays/new'
     | '/practice/$planId'
     | '/review/$gameId'
+    | '/stats/attendance'
     | '/stats/players'
     | '/stats/team'
     | '/api/ai/chat'
@@ -668,6 +679,7 @@ export interface FileRouteTypes {
     | '/plays/new'
     | '/practice/$planId'
     | '/review/$gameId'
+    | '/stats/attendance'
     | '/stats/players'
     | '/stats/team'
     | '/api/ai/chat'
@@ -730,6 +742,7 @@ export interface FileRouteTypes {
     | '/_authenticated/plays/new'
     | '/_authenticated/practice/$planId'
     | '/_authenticated/review/$gameId'
+    | '/_authenticated/stats/attendance'
     | '/_authenticated/stats/players'
     | '/_authenticated/stats/team'
     | '/api/ai/chat'
@@ -1085,6 +1098,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStatsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/stats/attendance': {
+      id: '/_authenticated/stats/attendance'
+      path: '/stats/attendance'
+      fullPath: '/stats/attendance'
+      preLoaderRoute: typeof AuthenticatedStatsAttendanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/stats/players': {
       id: '/_authenticated/stats/players'
       path: '/stats/players'
@@ -1232,6 +1252,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPlaysNewRoute: typeof AuthenticatedPlaysNewRoute
   AuthenticatedPracticePlanIdRoute: typeof AuthenticatedPracticePlanIdRoute
   AuthenticatedReviewGameIdRoute: typeof AuthenticatedReviewGameIdRoute
+  AuthenticatedStatsAttendanceRoute: typeof AuthenticatedStatsAttendanceRoute
   AuthenticatedStatsPlayersRoute: typeof AuthenticatedStatsPlayersRoute
   AuthenticatedStatsTeamRoute: typeof AuthenticatedStatsTeamRoute
   AuthenticatedDrillsIndexRoute: typeof AuthenticatedDrillsIndexRoute
@@ -1271,6 +1292,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPlaysNewRoute: AuthenticatedPlaysNewRoute,
   AuthenticatedPracticePlanIdRoute: AuthenticatedPracticePlanIdRoute,
   AuthenticatedReviewGameIdRoute: AuthenticatedReviewGameIdRoute,
+  AuthenticatedStatsAttendanceRoute: AuthenticatedStatsAttendanceRoute,
   AuthenticatedStatsPlayersRoute: AuthenticatedStatsPlayersRoute,
   AuthenticatedStatsTeamRoute: AuthenticatedStatsTeamRoute,
   AuthenticatedDrillsIndexRoute: AuthenticatedDrillsIndexRoute,
