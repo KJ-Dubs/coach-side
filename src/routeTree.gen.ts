@@ -37,6 +37,7 @@ import { Route as LibraryIndexRouteImport } from './routes/library.index'
 import { Route as LibraryPlayIdRouteImport } from './routes/library.$playId'
 import { Route as LockerTokenRouteImport } from './routes/locker.$token'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as AuthenticatedAttendanceEventIdRouteImport } from './routes/_authenticated/attendance.$eventId'
 import { Route as AuthenticatedDrillsIndexRouteImport } from './routes/_authenticated/drills.index'
 import { Route as AuthenticatedDrillsNewRouteImport } from './routes/_authenticated/drills.new'
 import { Route as AuthenticatedFilmIndexRouteImport } from './routes/_authenticated/film.index'
@@ -209,6 +210,12 @@ const ShareTokenRoute = ShareTokenRouteImport.update({
   path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAttendanceEventIdRoute =
+  AuthenticatedAttendanceEventIdRouteImport.update({
+    id: '/attendance/$eventId',
+    path: '/attendance/$eventId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDrillsIndexRoute =
   AuthenticatedDrillsIndexRouteImport.update({
     id: '/drills/',
@@ -404,6 +411,7 @@ export interface FileRoutesByFullPath {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
+  '/attendance/$eventId': typeof AuthenticatedAttendanceEventIdRoute
   '/drills/new': typeof AuthenticatedDrillsNewRoute
   '/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/film/new': typeof AuthenticatedFilmNewRoute
@@ -464,6 +472,7 @@ export interface FileRoutesByTo {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library': typeof LibraryIndexRoute
+  '/attendance/$eventId': typeof AuthenticatedAttendanceEventIdRoute
   '/drills/new': typeof AuthenticatedDrillsNewRoute
   '/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/film/new': typeof AuthenticatedFilmNewRoute
@@ -526,6 +535,7 @@ export interface FileRoutesById {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
+  '/_authenticated/attendance/$eventId': typeof AuthenticatedAttendanceEventIdRoute
   '/_authenticated/drills/new': typeof AuthenticatedDrillsNewRoute
   '/_authenticated/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/_authenticated/film/new': typeof AuthenticatedFilmNewRoute
@@ -588,6 +598,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library/'
+    | '/attendance/$eventId'
     | '/drills/new'
     | '/film/$jobId'
     | '/film/new'
@@ -648,6 +659,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library'
+    | '/attendance/$eventId'
     | '/drills/new'
     | '/film/$jobId'
     | '/film/new'
@@ -709,6 +721,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library/'
+    | '/_authenticated/attendance/$eventId'
     | '/_authenticated/drills/new'
     | '/_authenticated/film/$jobId'
     | '/_authenticated/film/new'
@@ -967,6 +980,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/attendance/$eventId': {
+      id: '/_authenticated/attendance/$eventId'
+      path: '/attendance/$eventId'
+      fullPath: '/attendance/$eventId'
+      preLoaderRoute: typeof AuthenticatedAttendanceEventIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/drills/': {
       id: '/_authenticated/drills/'
       path: '/drills'
@@ -1203,6 +1223,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
   AuthenticatedWelcomeRoute: typeof AuthenticatedWelcomeRoute
+  AuthenticatedAttendanceEventIdRoute: typeof AuthenticatedAttendanceEventIdRoute
   AuthenticatedDrillsNewRoute: typeof AuthenticatedDrillsNewRoute
   AuthenticatedFilmJobIdRoute: typeof AuthenticatedFilmJobIdRoute
   AuthenticatedFilmNewRoute: typeof AuthenticatedFilmNewRoute
@@ -1241,6 +1262,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedToolsRoute: AuthenticatedToolsRoute,
   AuthenticatedWelcomeRoute: AuthenticatedWelcomeRoute,
+  AuthenticatedAttendanceEventIdRoute: AuthenticatedAttendanceEventIdRoute,
   AuthenticatedDrillsNewRoute: AuthenticatedDrillsNewRoute,
   AuthenticatedFilmJobIdRoute: AuthenticatedFilmJobIdRoute,
   AuthenticatedFilmNewRoute: AuthenticatedFilmNewRoute,

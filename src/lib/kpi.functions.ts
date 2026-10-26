@@ -507,6 +507,7 @@ export const getKpiReport = createServerFn({ method: "POST" })
       game_stat_edited: "Post-game stat edited",
       game_stat_added_postgame: "Post-game stat added",
       game_stat_deleted_postgame: "Post-game stat deleted",
+      attendance_completed: "Attendance taken",
       signup_completed: "Signed up",
       onboarding_started: "Started onboarding",
       onboarding_interest_selected: "Picked onboarding interests",
