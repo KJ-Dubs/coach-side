@@ -163,8 +163,32 @@ export type KpiReport = {
   coaches: CoachRow[];
   content: ContentKpis;
   games: GameKpis;
+  attendance: AttendanceKpis;
   trends: Trends;
 };
+
+/** Counts only — never player statuses, reasons or notes. */
+export type AttendanceKpis = {
+  sessionsCompleted: number;
+  sessionsInPeriod: number;
+  teamsUsing: number;
+  teamsInPeriod: number;
+};
+
+async function loadAttendanceKpis(db: any, since: string | null): Promise<AttendanceKpis> {
+  const { data } = await db
+    .from("event_attendance_sessions")
+    .select("team_id, completed_at")
+    .eq("status", "completed");
+  const rows = (data ?? []) as { team_id: string; completed_at: string }[];
+  const recent = rows.filter((r) => !since || r.completed_at >= since);
+  return {
+    sessionsCompleted: rows.length,
+    sessionsInPeriod: recent.length,
+    teamsUsing: new Set(rows.map((r) => r.team_id)).size,
+    teamsInPeriod: new Set(recent.map((r) => r.team_id)).size,
+  };
+}
 
 /** True only for the owner account(s). Used to show the owner-only nav link. */
 export const amIAppAdmin = createServerFn({ method: "GET" })
@@ -709,6 +733,7 @@ export const getKpiReport = createServerFn({ method: "POST" })
           : 0,
         statEvents,
       },
+      attendance: await loadAttendanceKpis(db, since),
       trends: {
         signups: series(coachSignupTimes, 30),
         plays: series(
