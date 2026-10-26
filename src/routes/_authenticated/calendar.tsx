@@ -30,6 +30,7 @@ import { useAccess, resolveRole } from "@/lib/access";
 import { GoogleCalendarPanel } from "@/components/GoogleCalendarPanel";
 import { MonthCalendar, dayKey, type MonthDot } from "@/components/MonthCalendar";
 import { cn } from "@/lib/utils";
+import { EventAttendanceControl, useTeamAttendanceIndex } from "@/components/attendance/AttendanceControls";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   staticData: { sitemap: false },
@@ -117,6 +118,7 @@ function CalendarPage() {
   });
 
   const games = useQuery({ queryKey: ["games"], queryFn: fetchGames });
+  const attendance = useTeamAttendanceIndex(teamId, isTeamCoach);
 
   const reminders = useQuery({
     queryKey: ["event-reminders", teamId, (events.data ?? []).length],
@@ -416,7 +418,8 @@ function CalendarPage() {
                       {e.location ? <Pill tone="muted">{e.location}</Pill> : null}
                       {e.uniform ? <Pill tone="muted">{e.uniform} uniforms</Pill> : null}
                       {rem.length ? <Pill tone="muted">{rem.length} reminders</Pill> : null}
-                       {e.notes ? <p className="w-full text-left text-sm font-semibold leading-relaxed text-muted-foreground">{e.notes}</p> : null}</div>
+                       {e.notes ? <p className="w-full text-left text-sm font-semibold leading-relaxed text-muted-foreground">{e.notes}</p> : null}
+                      {isTeamCoach ? <EventAttendanceControl event={e} index={attendance.data} game={game} /> : null}</div>
 
                       <div className="flex flex-wrap justify-center gap-2 sm:justify-end">
                         {e.event_type === "game" && game && game.status === "final" ? (
