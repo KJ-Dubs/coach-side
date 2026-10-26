@@ -1242,6 +1242,109 @@ export type Database = {
           },
         ]
       }
+      event_attendance: {
+        Row: {
+          event_id: string
+          id: string
+          note: string | null
+          player_id: string
+          reason: string | null
+          recorded_at: string
+          recorded_by: string | null
+          status: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          note?: string | null
+          player_id: string
+          reason?: string | null
+          recorded_at?: string
+          recorded_by?: string | null
+          status: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          note?: string | null
+          player_id?: string
+          reason?: string | null
+          recorded_at?: string
+          recorded_by?: string | null
+          status?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_attendance_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "team_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_attendance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_attendance_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_attendance_sessions: {
+        Row: {
+          completed_at: string
+          completed_by: string | null
+          event_id: string
+          status: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string
+          completed_by?: string | null
+          event_id: string
+          status: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string
+          completed_by?: string | null
+          event_id?: string
+          status?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_attendance_sessions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "team_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_attendance_sessions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_reminders: {
         Row: {
           created_at: string
@@ -3776,6 +3879,7 @@ export type Database = {
         Args: { _other: string; _team: string }
         Returns: string
       }
+      ensure_game_attendance_event: { Args: { _game: string }; Returns: string }
       ensure_player_coaches_conversation: {
         Args: { _player: string; _team: string }
         Returns: string
@@ -3928,6 +4032,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      save_event_attendance: {
+        Args: { _event: string; _rows: Json }
+        Returns: Json
+      }
       schedule_play_of_the_day: {
         Args: { _day: string; _play: string }
         Returns: undefined
@@ -3949,6 +4057,7 @@ export type Database = {
         Args: { _message: string; _pinned: boolean }
         Returns: undefined
       }
+      skip_event_attendance: { Args: { _event: string }; Returns: undefined }
       sync_player_coaches_conversation: {
         Args: { _conversation: string }
         Returns: undefined
