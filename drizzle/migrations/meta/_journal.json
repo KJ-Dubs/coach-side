@@ -134,6 +134,13 @@
       "when": 1792825394781,
       "tag": "0018_play_preferred_court_view",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793056169308,
+      "tag": "0019_event_attendance",
+      "breakpoints": true
     }
   ]
 }

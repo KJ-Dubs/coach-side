@@ -515,6 +515,18 @@ function KpiPage() {
               </div>
             </Panel>
 
+            {/* 6b — attendance usage (counts only, never player reasons) */}
+            <Panel className="flex flex-col gap-3">
+              <SectionHeader as="h2" title="Attendance usage" subtitle="Practice and game check-ins completed by coaches." />
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <StatTile label="Sessions completed" value={r.attendance.sessionsCompleted} tone="grape" />
+                <StatTile label="Sessions in period" value={r.attendance.sessionsInPeriod} />
+                <StatTile label="Teams using attendance" value={r.attendance.teamsUsing} tone="flame" />
+                <StatTile label="Teams in period" value={r.attendance.teamsInPeriod} />
+              </div>
+            </Panel>
+
+
             {/* 7 — trends */}
             <Panel className="flex flex-col gap-3">
               <SectionHeader as="h2" title="Last 30 days" subtitle="Daily trend for the things that matter." />

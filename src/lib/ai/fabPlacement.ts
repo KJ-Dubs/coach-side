@@ -11,7 +11,9 @@ export function fabModeFor(pathname: string): FabMode {
     pathname.startsWith("/plays/new") ||
     /^\/plays\/[^/]+\/?$/.test(pathname) ||
     pathname.startsWith("/drills/new") ||
-    pathname.startsWith("/film/")
+    pathname.startsWith("/film/") ||
+    // Sticky Save Attendance bar sits at the bottom.
+    pathname.startsWith("/attendance/")
   )
     return "edge";
   return "normal";

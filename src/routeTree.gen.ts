@@ -37,6 +37,7 @@ import { Route as LibraryIndexRouteImport } from './routes/library.index'
 import { Route as LibraryPlayIdRouteImport } from './routes/library.$playId'
 import { Route as LockerTokenRouteImport } from './routes/locker.$token'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as AuthenticatedAttendanceEventIdRouteImport } from './routes/_authenticated/attendance.$eventId'
 import { Route as AuthenticatedDrillsIndexRouteImport } from './routes/_authenticated/drills.index'
 import { Route as AuthenticatedDrillsNewRouteImport } from './routes/_authenticated/drills.new'
 import { Route as AuthenticatedFilmIndexRouteImport } from './routes/_authenticated/film.index'
@@ -51,6 +52,7 @@ import { Route as AuthenticatedPracticeIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedPracticePlanIdRouteImport } from './routes/_authenticated/practice.$planId'
 import { Route as AuthenticatedReviewGameIdRouteImport } from './routes/_authenticated/review.$gameId'
 import { Route as AuthenticatedStatsIndexRouteImport } from './routes/_authenticated/stats.index'
+import { Route as AuthenticatedStatsAttendanceRouteImport } from './routes/_authenticated/stats.attendance'
 import { Route as AuthenticatedStatsPlayersRouteImport } from './routes/_authenticated/stats.players'
 import { Route as AuthenticatedStatsTeamRouteImport } from './routes/_authenticated/stats.team'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai/chat'
@@ -209,6 +211,12 @@ const ShareTokenRoute = ShareTokenRouteImport.update({
   path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAttendanceEventIdRoute =
+  AuthenticatedAttendanceEventIdRouteImport.update({
+    id: '/attendance/$eventId',
+    path: '/attendance/$eventId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDrillsIndexRoute =
   AuthenticatedDrillsIndexRouteImport.update({
     id: '/drills/',
@@ -283,6 +291,12 @@ const AuthenticatedStatsIndexRoute = AuthenticatedStatsIndexRouteImport.update({
   path: '/stats/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedStatsAttendanceRoute =
+  AuthenticatedStatsAttendanceRouteImport.update({
+    id: '/stats/attendance',
+    path: '/stats/attendance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedStatsPlayersRoute =
   AuthenticatedStatsPlayersRouteImport.update({
     id: '/stats/players',
@@ -404,6 +418,7 @@ export interface FileRoutesByFullPath {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
+  '/attendance/$eventId': typeof AuthenticatedAttendanceEventIdRoute
   '/drills/new': typeof AuthenticatedDrillsNewRoute
   '/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/film/new': typeof AuthenticatedFilmNewRoute
@@ -412,6 +427,7 @@ export interface FileRoutesByFullPath {
   '/plays/new': typeof AuthenticatedPlaysNewRoute
   '/practice/$planId': typeof AuthenticatedPracticePlanIdRoute
   '/review/$gameId': typeof AuthenticatedReviewGameIdRoute
+  '/stats/attendance': typeof AuthenticatedStatsAttendanceRoute
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
   '/api/ai/chat': typeof ApiAiChatRoute
@@ -464,6 +480,7 @@ export interface FileRoutesByTo {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library': typeof LibraryIndexRoute
+  '/attendance/$eventId': typeof AuthenticatedAttendanceEventIdRoute
   '/drills/new': typeof AuthenticatedDrillsNewRoute
   '/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/film/new': typeof AuthenticatedFilmNewRoute
@@ -472,6 +489,7 @@ export interface FileRoutesByTo {
   '/plays/new': typeof AuthenticatedPlaysNewRoute
   '/practice/$planId': typeof AuthenticatedPracticePlanIdRoute
   '/review/$gameId': typeof AuthenticatedReviewGameIdRoute
+  '/stats/attendance': typeof AuthenticatedStatsAttendanceRoute
   '/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/stats/team': typeof AuthenticatedStatsTeamRoute
   '/api/ai/chat': typeof ApiAiChatRoute
@@ -526,6 +544,7 @@ export interface FileRoutesById {
   '/locker/$token': typeof LockerTokenRoute
   '/share/$token': typeof ShareTokenRoute
   '/library/': typeof LibraryIndexRoute
+  '/_authenticated/attendance/$eventId': typeof AuthenticatedAttendanceEventIdRoute
   '/_authenticated/drills/new': typeof AuthenticatedDrillsNewRoute
   '/_authenticated/film/$jobId': typeof AuthenticatedFilmJobIdRoute
   '/_authenticated/film/new': typeof AuthenticatedFilmNewRoute
@@ -534,6 +553,7 @@ export interface FileRoutesById {
   '/_authenticated/plays/new': typeof AuthenticatedPlaysNewRoute
   '/_authenticated/practice/$planId': typeof AuthenticatedPracticePlanIdRoute
   '/_authenticated/review/$gameId': typeof AuthenticatedReviewGameIdRoute
+  '/_authenticated/stats/attendance': typeof AuthenticatedStatsAttendanceRoute
   '/_authenticated/stats/players': typeof AuthenticatedStatsPlayersRoute
   '/_authenticated/stats/team': typeof AuthenticatedStatsTeamRoute
   '/api/ai/chat': typeof ApiAiChatRoute
@@ -588,6 +608,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library/'
+    | '/attendance/$eventId'
     | '/drills/new'
     | '/film/$jobId'
     | '/film/new'
@@ -596,6 +617,7 @@ export interface FileRouteTypes {
     | '/plays/new'
     | '/practice/$planId'
     | '/review/$gameId'
+    | '/stats/attendance'
     | '/stats/players'
     | '/stats/team'
     | '/api/ai/chat'
@@ -648,6 +670,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library'
+    | '/attendance/$eventId'
     | '/drills/new'
     | '/film/$jobId'
     | '/film/new'
@@ -656,6 +679,7 @@ export interface FileRouteTypes {
     | '/plays/new'
     | '/practice/$planId'
     | '/review/$gameId'
+    | '/stats/attendance'
     | '/stats/players'
     | '/stats/team'
     | '/api/ai/chat'
@@ -709,6 +733,7 @@ export interface FileRouteTypes {
     | '/locker/$token'
     | '/share/$token'
     | '/library/'
+    | '/_authenticated/attendance/$eventId'
     | '/_authenticated/drills/new'
     | '/_authenticated/film/$jobId'
     | '/_authenticated/film/new'
@@ -717,6 +742,7 @@ export interface FileRouteTypes {
     | '/_authenticated/plays/new'
     | '/_authenticated/practice/$planId'
     | '/_authenticated/review/$gameId'
+    | '/_authenticated/stats/attendance'
     | '/_authenticated/stats/players'
     | '/_authenticated/stats/team'
     | '/api/ai/chat'
@@ -967,6 +993,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/attendance/$eventId': {
+      id: '/_authenticated/attendance/$eventId'
+      path: '/attendance/$eventId'
+      fullPath: '/attendance/$eventId'
+      preLoaderRoute: typeof AuthenticatedAttendanceEventIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/drills/': {
       id: '/_authenticated/drills/'
       path: '/drills'
@@ -1063,6 +1096,13 @@ declare module '@tanstack/react-router' {
       path: '/stats'
       fullPath: '/stats/'
       preLoaderRoute: typeof AuthenticatedStatsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/stats/attendance': {
+      id: '/_authenticated/stats/attendance'
+      path: '/stats/attendance'
+      fullPath: '/stats/attendance'
+      preLoaderRoute: typeof AuthenticatedStatsAttendanceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/stats/players': {
@@ -1203,6 +1243,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
   AuthenticatedWelcomeRoute: typeof AuthenticatedWelcomeRoute
+  AuthenticatedAttendanceEventIdRoute: typeof AuthenticatedAttendanceEventIdRoute
   AuthenticatedDrillsNewRoute: typeof AuthenticatedDrillsNewRoute
   AuthenticatedFilmJobIdRoute: typeof AuthenticatedFilmJobIdRoute
   AuthenticatedFilmNewRoute: typeof AuthenticatedFilmNewRoute
@@ -1211,6 +1252,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPlaysNewRoute: typeof AuthenticatedPlaysNewRoute
   AuthenticatedPracticePlanIdRoute: typeof AuthenticatedPracticePlanIdRoute
   AuthenticatedReviewGameIdRoute: typeof AuthenticatedReviewGameIdRoute
+  AuthenticatedStatsAttendanceRoute: typeof AuthenticatedStatsAttendanceRoute
   AuthenticatedStatsPlayersRoute: typeof AuthenticatedStatsPlayersRoute
   AuthenticatedStatsTeamRoute: typeof AuthenticatedStatsTeamRoute
   AuthenticatedDrillsIndexRoute: typeof AuthenticatedDrillsIndexRoute
@@ -1241,6 +1283,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedToolsRoute: AuthenticatedToolsRoute,
   AuthenticatedWelcomeRoute: AuthenticatedWelcomeRoute,
+  AuthenticatedAttendanceEventIdRoute: AuthenticatedAttendanceEventIdRoute,
   AuthenticatedDrillsNewRoute: AuthenticatedDrillsNewRoute,
   AuthenticatedFilmJobIdRoute: AuthenticatedFilmJobIdRoute,
   AuthenticatedFilmNewRoute: AuthenticatedFilmNewRoute,
@@ -1249,6 +1292,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPlaysNewRoute: AuthenticatedPlaysNewRoute,
   AuthenticatedPracticePlanIdRoute: AuthenticatedPracticePlanIdRoute,
   AuthenticatedReviewGameIdRoute: AuthenticatedReviewGameIdRoute,
+  AuthenticatedStatsAttendanceRoute: AuthenticatedStatsAttendanceRoute,
   AuthenticatedStatsPlayersRoute: AuthenticatedStatsPlayersRoute,
   AuthenticatedStatsTeamRoute: AuthenticatedStatsTeamRoute,
   AuthenticatedDrillsIndexRoute: AuthenticatedDrillsIndexRoute,

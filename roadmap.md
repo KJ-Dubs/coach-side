@@ -283,3 +283,9 @@
 - [x] Home install banner at top, inline header badge on normal coach pages (not Play Maker/Live Game), stronger landing CTA
 - [x] Installed-app notification handoff on onboarding step and Home; funnel events + daily return signal; owner KPI Activation funnel; 11 tests
 - [ ] Signed-in check of the onboarding step, Home banner and KPI funnel — blocked: no preview account matches the requester
+
+## Attendance tracker
+- [x] Attendance rows + completed/skipped marker on team events; coach-only reads, coach-checked saves; quiet calendar entry for games started without one
+- [x] Home prompt for the oldest past practice/game (7-day window, Later = rest of day); fast sheet with On time defaults, required Late/Out reasons, Other note, Used-in-game hint
+- [x] Calendar + Locker Room Take/Edit Attendance; Stats → Attendance summary and per-player history; owner KPI counts only; 18 rule tests
+- [ ] Signed-in walkthrough (prompt → save → edit) — blocked: preview can't sign in as the owner account without approval

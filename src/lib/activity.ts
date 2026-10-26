@@ -23,6 +23,8 @@ export type ActivityEventType =
   | "game_stat_edited"
   | "game_stat_added_postgame"
   | "game_stat_deleted_postgame"
+  // Attendance: event id only — never statuses, reasons or notes.
+  | "attendance_completed"
   // Early activation funnel (owner KPI). Event names only — never content.
   | "install_prompt_shown"
   | "install_clicked"

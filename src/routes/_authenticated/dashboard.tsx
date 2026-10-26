@@ -21,6 +21,7 @@ import { InstallBanner } from "@/components/InstallApp";
 import { useCurrentTeam } from "@/lib/teamContext";
 import { PlayOfTheDayCard } from "@/components/community/PlayOfTheDayCard";
 import { FollowedCreators } from "@/components/community/FollowedCreators";
+import { AttendancePrompt } from "@/components/attendance/AttendanceControls";
 import {
   COMPLETE_BLURB,
   COMPLETE_NAME,
@@ -215,6 +216,7 @@ function Dashboard() {
       {isCoach && handoff.show ? (
         <EnablePushCard highlight intro={NOTIFY_HANDOFF_COPY} surface="dashboard_handoff" onLater={handoff.later} />
       ) : null}
+      {isCoach ? <AttendancePrompt /> : null}
       <Panel className="flex flex-col items-center gap-3 px-4 py-4 text-center">
         <div className="min-w-0">
           <Label>Current team</Label>
