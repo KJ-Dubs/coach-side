@@ -1,3 +1,4 @@
+import { TeamSelectOptions } from "@/components/team/TeamSeason";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -91,11 +92,7 @@ function AttendanceSummaryPage() {
               onChange={(e) => navigate({ search: { team: e.target.value }, replace: true })}
               className="max-w-xs"
             >
-              {teams.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} · {t.season}
-                </option>
-              ))}
+              <TeamSelectOptions teams={teams} />
             </SelectInput>
             <Pill tone="grape">{trackedEvents} events tracked</Pill>
           </Panel>
