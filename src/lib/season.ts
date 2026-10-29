@@ -62,11 +62,17 @@ export type SeasonReview = {
 
 /** Read-only wrap-up numbers for the End Season review step. */
 export async function fetchSeasonReview(teamId: string): Promise<SeasonReview> {
-  const { fetchSeasonBundle, fetchTeamPlays, fetchPlaybookFolders, fetchPlayers } = await import("./data");
+  const { fetchEventsForGames, fetchSubsForGames, fetchTeamPlays, fetchPlaybookFolders, fetchPlayers } = await import("./data");
   const { aggregatePlayers } = await import("./stats");
   const nowIso = new Date().toISOString();
   const [bundle, plays, folders, players, events, attendance, plans] = await Promise.all([
-    fetchSeasonBundle({ finalOnly: true, teamId }).catch(() => null),
+    (async () => {
+      const { data } = await supabase.from("games").select("*").eq("team_id", teamId).eq("status", "final");
+      const games = (data ?? []) as unknown as import("./types").Game[];
+      const ids = games.map((g) => g.id);
+      const [events, subs] = await Promise.all([fetchEventsForGames(ids), fetchSubsForGames(ids)]);
+      return { games, events, subs };
+    })().catch(() => null),
     fetchTeamPlays(teamId).catch(() => []),
     fetchPlaybookFolders(teamId).catch(() => []),
     fetchPlayers(teamId).catch(() => []),
