@@ -1,3 +1,5 @@
+import { SeasonPanel } from "@/components/team/SeasonPanel";
+import { resolveRole, useAccess } from "@/lib/access";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -72,6 +74,8 @@ function SettingsPage() {
   const setTeamId = currentTeam.setTeam;
 
   const team = teams.data?.find((t) => t.id === teamId) ?? null;
+  const { access } = useAccess();
+  const canCoach = (id: string) => resolveRole(access).canCoachTeam(id);
 
   return (
     <AppShell title="Settings" themeTeamId={teamId} subtitle="Account, team, game defaults and coach access" backTo="/dashboard" backLabel="Home">
@@ -104,7 +108,7 @@ function SettingsPage() {
                 tone={t.id === teamId ? "grape" : "neutral"}
                 onClick={() => setTeamId(t.id)}
               >
-                {t.name}
+                {t.name}{t.season_status === "archived" ? ` · ${t.season} (past)` : t.is_training_team ? " · Training" : ""}
               </BubbleButton>
             ))}
             {teams.isLoading ? <Pill tone="muted">Loading…</Pill> : null}
@@ -128,6 +132,12 @@ function SettingsPage() {
         </Panel>
 
         {team ? <LockerAccessPanel key={`access-${team.id}`} team={team} /> : null}
+
+        {team && canCoach(team.id) ? (
+          <div id="season" className="scroll-mt-24">
+            <SeasonPanel key={`season-${team.id}`} team={team} />
+          </div>
+        ) : null}
 
         {team ? (
           <GameDefaultsCard

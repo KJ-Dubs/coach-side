@@ -275,3 +275,53 @@ export function localDayKey(now: number): string {
 export function isSnoozed(stored: string | null, now: number): boolean {
   return !!stored && stored === localDayKey(now);
 }
+
+/* ---------------- "Attendance due" notifications ---------------- */
+
+/** Only recently due events notify; older ones stay on Home and the calendar. */
+export const ATTENDANCE_NOTIFY_WINDOW_DAYS = 3;
+
+/** One alert per event per coach, ever — also used to clear it once resolved. */
+export function attendanceDueKey(eventId: string): string {
+  return `attendance-due:${eventId}`;
+}
+
+function dayKeyIn(ms: number, timeZone: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date(ms));
+  } catch {
+    return new Date(ms).toISOString().slice(0, 10);
+  }
+}
+
+/**
+ * Copy for the in-app + push alert, in the team's own time zone:
+ * "Take attendance for today’s practice." / "…for your game vs Central Catholic."
+ */
+export function attendanceDueNotice(
+  item: Pick<AttendanceQueueItem, "eventId" | "eventType" | "title" | "startsAt">,
+  now: number,
+  timeZone = "America/Los_Angeles",
+): { title: string; body: string; link: string } | null {
+  if (!item.eventId) return null;
+  const link = `/attendance/${item.eventId}`;
+  if (item.eventType === "game") {
+    const vs = /^(vs|@)\s+\S/.test(item.title) ? ` ${item.title}` : "";
+    return { title: "Attendance due", body: `Take attendance for your game${vs}.`, link };
+  }
+  const start = new Date(item.startsAt).getTime();
+  const day = dayKeyIn(start, timeZone);
+  let when: string;
+  if (day === dayKeyIn(now, timeZone)) when = "today’s";
+  else if (day === dayKeyIn(now - 86_400_000, timeZone)) when = "yesterday’s";
+  else {
+    let weekday = "";
+    try {
+      weekday = new Intl.DateTimeFormat("en-US", { timeZone, weekday: "long" }).format(new Date(start));
+    } catch {
+      weekday = "";
+    }
+    when = weekday ? `${weekday}’s` : "your";
+  }
+  return { title: "Attendance due", body: `Take attendance for ${when} practice.`, link };
+}

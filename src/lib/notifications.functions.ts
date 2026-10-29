@@ -286,7 +286,15 @@ export const notifyTeamEvent = createServerFn({ method: "POST" })
     ).rpc("is_team_coach", { _team: data.teamId });
     if (isCoach !== true) throw new Error("Only a coach of this team can send team alerts.");
 
-    const { dispatchNotification } = await import("./notify.server");
+    const { dispatchNotification, adminDb } = await import("./notify.server");
+    // Archived seasons and Training/Test teams stay quiet for automatic schedule/game alerts.
+    const { suppressTeamAlert } = await import("./teamSeason");
+    const { data: teamRow } = await (await adminDb())
+      .from("teams")
+      .select("id, season_status, is_training_team")
+      .eq("id", data.teamId)
+      .maybeSingle();
+    if (suppressTeamAlert(teamRow as { id: string } | null, data.kind)) return { ok: true };
     await dispatchNotification({
       audience: { kind: "team", teamId: data.teamId },
       teamId: data.teamId,

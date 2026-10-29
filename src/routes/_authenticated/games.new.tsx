@@ -109,7 +109,12 @@ function NewGamePage() {
   const navigate = useNavigate();
   const prefill = Route.useSearch();
   const qc = useQueryClient();
-  const teams = useQuery({ queryKey: ["teams"], queryFn: fetchTeams });
+  const allTeams = useQuery({ queryKey: ["teams"], queryFn: fetchTeams });
+  // New games only go to active seasons; archived seasons are view-only history.
+  const teams = useMemo(
+    () => ({ ...allTeams, data: allTeams.data?.filter((t) => t.season_status !== "archived") }),
+    [allTeams],
+  );
   const [teamId, setTeamId] = useState<string>("");
   const team = teams.data?.find((t) => t.id === teamId) ?? null;
 
@@ -249,7 +254,7 @@ function NewGamePage() {
             Game already in progress
           </span>
           <div className="flex flex-wrap justify-center gap-2">
-            <Pill tone="grape">{teams.data?.find((t) => t.id === resumeGame.team_id)?.name ?? "Team"}</Pill>
+            <Pill tone="grape">{allTeams.data?.find((t) => t.id === resumeGame.team_id)?.name ?? "Team"}</Pill>
             <Pill tone="flame">vs {resumeGame.opponent}</Pill>
             <Pill tone="muted">
               {resumeGame.team_score} – {resumeGame.opp_score}

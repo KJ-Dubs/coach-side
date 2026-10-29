@@ -90,6 +90,8 @@ export async function fetchTeamAttendanceIndex(teamId: string): Promise<Attendan
 export type AttendanceSheet = {
   event: TeamEvent;
   teamName: string;
+  /** Archived seasons are view-only. */
+  archived: boolean;
   players: Player[];
   saved: AttendanceRow[];
   session: "completed" | "skipped" | null;
@@ -103,7 +105,7 @@ export async function fetchAttendanceSheet(eventId: string): Promise<AttendanceS
   if (!ev.data) return null;
   const event = ev.data as unknown as TeamEvent;
   const [team, players, saved, session] = await Promise.all([
-    supabase.from("teams").select("name").eq("id", event.team_id).maybeSingle(),
+    supabase.from("teams").select("name, season_status").eq("id", event.team_id).maybeSingle(),
     supabase.from("players").select("*").eq("team_id", event.team_id),
     supabase.from("event_attendance").select("*").eq("event_id", eventId),
     supabase.from("event_attendance_sessions").select("status").eq("event_id", eventId).maybeSingle(),
@@ -129,6 +131,7 @@ export async function fetchAttendanceSheet(eventId: string): Promise<AttendanceS
   return {
     event,
     teamName: team.data?.name ?? "",
+    archived: team.data?.season_status === "archived",
     players: sortPlayers((players.data ?? []) as Player[]),
     saved: (saved.data ?? []) as AttendanceRow[],
     session: (session.data?.status as "completed" | "skipped" | undefined) ?? null,

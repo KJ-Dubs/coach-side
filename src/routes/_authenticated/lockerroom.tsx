@@ -27,7 +27,10 @@ import {
 import { EVENT_TYPE_LABEL, type TeamEvent } from "@/lib/types";
 import { useLocker } from "@/lib/useLocker";
 import { EventForm } from "./calendar";
-import { EventAttendanceControl, useTeamAttendanceIndex } from "@/components/attendance/AttendanceControls";
+import { AttendanceButton, EventAttendanceControl, useTeamAttendanceIndex } from "@/components/attendance/AttendanceControls";
+import { SeasonPanel } from "@/components/team/SeasonPanel";
+import { TeamSelectOptions, TeamStatusPills } from "@/components/team/TeamSeason";
+import { isArchivedTeam } from "@/lib/teamSeason";
 import { useCurrentTeam } from "@/lib/teamContext";
 
 type Area = "chat" | "schedule" | "playbook" | "plans";
@@ -62,6 +65,7 @@ function LockerRoomPage() {
   const currentTeam = useCurrentTeam();
   const [teamId, setTeamId] = useState(search.team ?? "");
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [seasonOpen, setSeasonOpen] = useState(false);
   const locker = useLocker(teamId || null);
   useEffect(() => { if (search.team && locker.teams.some((t) => t.id === search.team)) setTeamId(search.team); else if (locker.teams.length && !locker.teams.some((t) => t.id === teamId)) setTeamId(currentTeam.teamId ?? locker.teams[0]?.id ?? ""); }, [locker.teams, teamId, search.team, currentTeam.teamId]);
   useEffect(() => { if (teamId && locker.teams.some((t) => t.id === teamId) && currentTeam.teamId !== teamId) currentTeam.setTeam(teamId); }, [teamId, locker.teams, currentTeam.teamId, currentTeam.setTeam]);
@@ -87,16 +91,23 @@ function LockerRoomPage() {
   const go = (next?: Area) => navigate({ to: "/lockerroom", search: next ? { area: next, team: teamId } : { team: teamId } });
   return <AppShell title="Locker Room" subtitle={area ? ({ chat: "Team Chat", schedule: "Schedule", playbook: "Playbook", plans: "Plans" }[area]) : "Your team hub"} logoUrl={logo.data ?? null} playerTeamId={teamId} wide>
     {!locker.isPlayer || locker.teams.length > 1 ? <Panel className="mb-3 flex flex-wrap items-center gap-2">
-      <Label>Team</Label><SelectInput value={teamId} onChange={(e) => { const next = e.target.value; setTeamId(next); void navigate({ to: "/lockerroom", search: { ...(search.area ? { area: search.area } : {}), team: next } }); }} className="max-w-xs">{locker.teams.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.season}</option>)}</SelectInput>
+      <Label>Team</Label><SelectInput value={teamId} onChange={(e) => { const next = e.target.value; setTeamId(next); void navigate({ to: "/lockerroom", search: { ...(search.area ? { area: search.area } : {}), team: next } }); }} className="max-w-xs"><TeamSelectOptions teams={locker.teams} /></SelectInput>
       {locker.isCoach && locker.role ? <Pill tone="flame">{TEAM_ROLE_LABEL[locker.role]}</Pill> : null}
-      {locker.isCoach ? <BubbleButton tone={inviteOpen ? "flame" : "grape"} aria-expanded={inviteOpen} onClick={() => setInviteOpen((v) => !v)}>Invite Players</BubbleButton> : null}
+      <TeamStatusPills team={team} />
+      {locker.isCoach && team ? <div className="flex w-full flex-wrap gap-2 sm:ml-auto sm:w-auto">
+        {!isArchivedTeam(team) ? <BubbleButton tone={inviteOpen ? "flame" : "grape"} aria-expanded={inviteOpen} onClick={() => { setSeasonOpen(false); setInviteOpen((v) => !v); }}>Invite Players</BubbleButton> : null}
+        <AttendanceButton team={team} />
+        <BubbleButton tone={seasonOpen ? "flame" : "neutral"} aria-expanded={seasonOpen} onClick={() => { setInviteOpen(false); setSeasonOpen((v) => !v); }}>Season ▾</BubbleButton>
+      </div> : null}
     </Panel> : null}
-    {locker.isCoach && inviteOpen && teamId ? <InvitePlayersPanel key={teamId} teamId={teamId} teamName={locker.teams.find((t) => t.id === teamId)?.name ?? "your team"} onClose={() => setInviteOpen(false)} /> : null}
+    {locker.isCoach && inviteOpen && teamId && !isArchivedTeam(team) ? <InvitePlayersPanel key={teamId} teamId={teamId} teamName={locker.teams.find((t) => t.id === teamId)?.name ?? "your team"} onClose={() => setInviteOpen(false)} /> : null}
+    {locker.isCoach && seasonOpen && team ? <SeasonPanel key={team.id} team={team} onClose={() => setSeasonOpen(false)} onTeamChanged={(id) => { setTeamId(id); void navigate({ to: "/lockerroom", search: { team: id } }); }} /> : null}
+    {team && isArchivedTeam(team) ? <Panel className="mb-3 flex flex-wrap items-center gap-2 border-border/70"><Pill tone="muted">Archived Season</Pill><span className="text-sm font-semibold text-muted-foreground">{team.season} is view-only history. Reminders and attendance prompts are off.</span></Panel> : null}
     {area ? <BubbleButton tone="ghost" className="mb-3" onClick={() => go()}>← Back to Locker Room</BubbleButton> : null}
     {!area && locker.isPlayer ? <PlayerHub teamId={teamId} userId={locker.user?.id ?? null} playerId={locker.playerId} events={events.data ?? []} plans={assignments.data ?? []} targets={targets.data ?? []} announcements={announcements.data ?? []} loading={events.isPending || assignments.isPending || (Boolean(assignments.data?.length) && targets.isPending)} onOpen={(destination) => { void navigate({ to: "/lockerroom", search: { ...destination, team: teamId } }); }} /> : null}
     {!area && !locker.isPlayer ? <Hub events={upcoming} plays={plays.data?.length ?? 0} plans={openPlans} pinned={announcements.data?.filter((a) => a.pinned).length ?? 0} onOpen={go} /> : null}
     {area === "chat" ? <ChatArea key={teamId} focusId={search.item} conversationId={search.conversation} teamId={teamId} locker={locker} directory={directory.data ?? []} announcements={announcements.data ?? []} allowPlayerPosting={team?.allow_player_posting !== false} /> : null}
-    {area === "schedule" && team ? <ScheduleArea key={`${teamId}-${search.item ?? ""}`} teamId={teamId} team={team} events={events.data ?? []} isCoach={locker.isCoach} focusId={search.item} /> : null}
+    {area === "schedule" && team ? <ScheduleArea key={`${teamId}-${search.item ?? ""}`} teamId={teamId} team={team} events={events.data ?? []} isCoach={locker.isCoach} archived={isArchivedTeam(team)} focusId={search.item} /> : null}
     {area === "playbook" ? <PlaybookArea key={`${teamId}-${search.folder ?? ""}`} focusId={search.item} teamId={teamId} plays={plays.data ?? []} isCoach={locker.isCoach} initialFolder={search.folder} /> : null}
     {area === "plans" ? <PlansArea key={teamId} teamId={teamId} assignments={assignments.data ?? []} targets={targets.data ?? []} players={directory.data ?? []} isCoach={locker.isCoach} userId={locker.user?.id ?? null} playerId={locker.playerId} focusId={search.item} onChanged={() => { void qc.invalidateQueries({ queryKey: ["assignments", teamId] }); void qc.invalidateQueries({ queryKey: ["assignment-targets", teamId] }); }} /> : null}
   </AppShell>;
@@ -136,18 +147,18 @@ function ChatArea({ teamId, locker, directory, announcements, allowPlayerPosting
   </div>;
 }
 
-function ScheduleArea({ teamId, team, events, isCoach, focusId }: { teamId: string; team: ReturnType<typeof useLocker>["teams"][number]; events: TeamEvent[]; isCoach: boolean; focusId?: string | undefined }) {
+function ScheduleArea({ teamId, team, events, isCoach, archived = false, focusId }: { teamId: string; team: ReturnType<typeof useLocker>["teams"][number]; events: TeamEvent[]; isCoach: boolean; archived?: boolean; focusId?: string | undefined }) {
   const qc = useQueryClient(); const [sub, setSub] = useState<"upcoming" | "calendar">("upcoming"); const [editing, setEditing] = useState<TeamEvent | null>(null); const [open, setOpen] = useState(false); const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1)); const [day, setDay] = useState(dayKey(new Date()));
   const upcoming = events.filter((e) => e.id === focusId || (isCoach ? new Date(e.starts_at).getTime() >= Date.now() - 86400000 : new Date(e.ends_at ?? e.starts_at).getTime() >= Date.now()));
   const marks = useMemo(() => { const map = new Map<string, MonthDot[]>(); for (const e of events) map.set(dayKey(e.starts_at), [...(map.get(dayKey(e.starts_at)) ?? []), e.event_type === "game" ? "flame" : e.event_type === "practice" ? "grape" : "neutral"]); return map; }, [events]);
   const shown = (sub === "calendar" ? events.filter((e) => dayKey(e.starts_at) === day) : upcoming).sort((a, b) => a.id === focusId ? -1 : b.id === focusId ? 1 : a.starts_at.localeCompare(b.starts_at));
   const attendance = useTeamAttendanceIndex(teamId, isCoach);
   const refresh = async () => qc.invalidateQueries({ queryKey: ["team-events", teamId] });
-  return <div className="flex flex-col gap-3"><Panel className="flex flex-wrap items-center justify-center gap-2"><BubbleButton tone={sub === "upcoming" ? "grape" : "neutral"} onClick={() => setSub("upcoming")}>Upcoming</BubbleButton><BubbleButton tone={sub === "calendar" ? "flame" : "neutral"} onClick={() => setSub("calendar")}>Calendar</BubbleButton>{isCoach ? <BubbleButton tone="flame" onClick={() => { setEditing(null); setOpen((v) => !v); }}><Plus className="h-4 w-4"/> Add Event</BubbleButton> : null}</Panel>
-    {isCoach ? <GoogleCalendarPanel teamId={teamId} teamName={team.name} canManage /> : null}
+  return <div className="flex flex-col gap-3"><Panel className="flex flex-wrap items-center justify-center gap-2"><BubbleButton tone={sub === "upcoming" ? "grape" : "neutral"} onClick={() => setSub("upcoming")}>Upcoming</BubbleButton><BubbleButton tone={sub === "calendar" ? "flame" : "neutral"} onClick={() => setSub("calendar")}>Calendar</BubbleButton>{isCoach && !archived ? <BubbleButton tone="flame" onClick={() => { setEditing(null); setOpen((v) => !v); }}><Plus className="h-4 w-4"/> Add Event</BubbleButton> : null}</Panel>
+    {isCoach && !archived ? <GoogleCalendarPanel teamId={teamId} teamName={team.name} canManage /> : null}
     {open ? <EventForm key={editing?.id ?? "new"} teamId={teamId} defaults={{ homeGym: team.home_gym ?? null, practiceSpot: team.default_practice_location ?? null, arrivalOffset: team.default_arrival_offset_minutes ?? 60, practiceReminder: team.default_practice_reminder_minutes ?? 60, gameReminder: team.default_game_reminder_minutes ?? 60 }} editing={editing} onDone={async () => { setOpen(false); setEditing(null); await refresh(); }} /> : null}
     {sub === "calendar" ? <MonthCalendar month={month} onMonthChange={setMonth} marks={marks} selected={day} onSelect={setDay}/> : null}
-    <Panel className="flex flex-col gap-2">{shown.length ? shown.map((e) => <div key={e.id} id={`locker-item-${e.id}`} className={`flex flex-wrap items-center gap-2 rounded-2xl border p-3 ${e.id === focusId ? "ring-2 ring-flame" : ""} ${e.event_type === "game" ? "border-flame/50 bg-flame/10" : "border-grape/50 bg-grape/10"}`}><Pill tone={e.event_type === "game" ? "flame" : "grape"}>{EVENT_TYPE_LABEL[e.event_type] ?? "Event"}</Pill><span className="text-lg font-black text-foreground">{e.title}</span><Pill tone="muted">{fmtWhen(e.starts_at)}</Pill>{e.ends_at ? <Pill tone="muted">Ends {fmtWhen(e.ends_at)}</Pill> : null}{e.arrival_at ? <Pill tone="muted">Arrive {fmtWhen(e.arrival_at)}</Pill> : null}{e.location ? <Pill tone="muted">{e.location}</Pill> : null}{e.uniform ? <Pill tone="muted">{e.uniform} uniforms</Pill> : null}{e.notes ? <p className="w-full rounded-xl border border-border/60 bg-background/50 p-2 font-semibold text-foreground">{e.notes}</p> : null}{isCoach ? <div className="w-full"><EventAttendanceControl event={e} index={attendance.data} /></div> : null}{e.source === "google" && isCoach ? <Pill tone="flame">Google · read only</Pill> : isCoach ? <div className="ml-auto flex gap-2"><BubbleButton size="sm" tone="neutral" onClick={() => { setEditing(e); setOpen(true); }}>Edit</BubbleButton><BubbleButton size="sm" tone="ghost" onClick={async () => { await deleteTeamEvent(e.id); await refresh(); toast.success("Event removed"); }}>Remove</BubbleButton></div> : null}</div>) : <EmptyState>Your coach hasn’t added an event for this view yet.</EmptyState>}</Panel>
+    <Panel className="flex flex-col gap-2">{shown.length ? shown.map((e) => <div key={e.id} id={`locker-item-${e.id}`} className={`flex flex-wrap items-center gap-2 rounded-2xl border p-3 ${e.id === focusId ? "ring-2 ring-flame" : ""} ${e.event_type === "game" ? "border-flame/50 bg-flame/10" : "border-grape/50 bg-grape/10"}`}><Pill tone={e.event_type === "game" ? "flame" : "grape"}>{EVENT_TYPE_LABEL[e.event_type] ?? "Event"}</Pill><span className="text-lg font-black text-foreground">{e.title}</span><Pill tone="muted">{fmtWhen(e.starts_at)}</Pill>{e.ends_at ? <Pill tone="muted">Ends {fmtWhen(e.ends_at)}</Pill> : null}{e.arrival_at ? <Pill tone="muted">Arrive {fmtWhen(e.arrival_at)}</Pill> : null}{e.location ? <Pill tone="muted">{e.location}</Pill> : null}{e.uniform ? <Pill tone="muted">{e.uniform} uniforms</Pill> : null}{e.notes ? <p className="w-full rounded-xl border border-border/60 bg-background/50 p-2 font-semibold text-foreground">{e.notes}</p> : null}{isCoach ? <div className="w-full"><EventAttendanceControl event={e} index={attendance.data} readOnly={archived} /></div> : null}{e.source === "google" && isCoach ? <Pill tone="flame">Google · read only</Pill> : isCoach && !archived ? <div className="ml-auto flex gap-2"><BubbleButton size="sm" tone="neutral" onClick={() => { setEditing(e); setOpen(true); }}>Edit</BubbleButton><BubbleButton size="sm" tone="ghost" onClick={async () => { await deleteTeamEvent(e.id); await refresh(); toast.success("Event removed"); }}>Remove</BubbleButton></div> : null}</div>) : <EmptyState>Your coach hasn’t added an event for this view yet.</EmptyState>}</Panel>
   </div>;
 }
 

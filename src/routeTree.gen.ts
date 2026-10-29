@@ -61,6 +61,7 @@ import { Route as AuthenticatedKpiCoachUserIdRouteImport } from './routes/_authe
 import { Route as AuthenticatedKpiGameGameIdRouteImport } from './routes/_authenticated/kpi_.game.$gameId'
 import { Route as AuthenticatedPlaysPlayIdIndexRouteImport } from './routes/_authenticated/plays.$playId.index'
 import { Route as AuthenticatedPlaysPlayIdViewRouteImport } from './routes/_authenticated/plays.$playId.view'
+import { Route as ApiPublicCronAttendanceRouteImport } from './routes/api/public/cron.attendance'
 import { Route as ApiPublicCronDailyRouteImport } from './routes/api/public/cron.daily'
 import { Route as ApiPublicFilmClaimRouteImport } from './routes/api/public/film/claim'
 import { Route as ApiPublicFilmFailRouteImport } from './routes/api/public/film/fail'
@@ -342,6 +343,11 @@ const AuthenticatedPlaysPlayIdViewRoute =
     path: '/plays/$playId/view',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicCronAttendanceRoute = ApiPublicCronAttendanceRouteImport.update({
+  id: '/api/public/cron/attendance',
+  path: '/api/public/cron/attendance',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCronDailyRoute = ApiPublicCronDailyRouteImport.update({
   id: '/api/public/cron/daily',
   path: '/api/public/cron/daily',
@@ -441,6 +447,7 @@ export interface FileRoutesByFullPath {
   '/kpi/coach/$userId': typeof AuthenticatedKpiCoachUserIdRoute
   '/kpi/game/$gameId': typeof AuthenticatedKpiGameGameIdRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
+  '/api/public/cron/attendance': typeof ApiPublicCronAttendanceRoute
   '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
   '/api/public/film/claim': typeof ApiPublicFilmClaimRoute
   '/api/public/film/fail': typeof ApiPublicFilmFailRoute
@@ -503,6 +510,7 @@ export interface FileRoutesByTo {
   '/kpi/coach/$userId': typeof AuthenticatedKpiCoachUserIdRoute
   '/kpi/game/$gameId': typeof AuthenticatedKpiGameGameIdRoute
   '/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
+  '/api/public/cron/attendance': typeof ApiPublicCronAttendanceRoute
   '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
   '/api/public/film/claim': typeof ApiPublicFilmClaimRoute
   '/api/public/film/fail': typeof ApiPublicFilmFailRoute
@@ -567,6 +575,7 @@ export interface FileRoutesById {
   '/_authenticated/kpi_/coach/$userId': typeof AuthenticatedKpiCoachUserIdRoute
   '/_authenticated/kpi_/game/$gameId': typeof AuthenticatedKpiGameGameIdRoute
   '/_authenticated/plays/$playId/view': typeof AuthenticatedPlaysPlayIdViewRoute
+  '/api/public/cron/attendance': typeof ApiPublicCronAttendanceRoute
   '/api/public/cron/daily': typeof ApiPublicCronDailyRoute
   '/api/public/film/claim': typeof ApiPublicFilmClaimRoute
   '/api/public/film/fail': typeof ApiPublicFilmFailRoute
@@ -631,6 +640,7 @@ export interface FileRouteTypes {
     | '/kpi/coach/$userId'
     | '/kpi/game/$gameId'
     | '/plays/$playId/view'
+    | '/api/public/cron/attendance'
     | '/api/public/cron/daily'
     | '/api/public/film/claim'
     | '/api/public/film/fail'
@@ -693,6 +703,7 @@ export interface FileRouteTypes {
     | '/kpi/coach/$userId'
     | '/kpi/game/$gameId'
     | '/plays/$playId/view'
+    | '/api/public/cron/attendance'
     | '/api/public/cron/daily'
     | '/api/public/film/claim'
     | '/api/public/film/fail'
@@ -756,6 +767,7 @@ export interface FileRouteTypes {
     | '/_authenticated/kpi_/coach/$userId'
     | '/_authenticated/kpi_/game/$gameId'
     | '/_authenticated/plays/$playId/view'
+    | '/api/public/cron/attendance'
     | '/api/public/cron/daily'
     | '/api/public/film/claim'
     | '/api/public/film/fail'
@@ -784,6 +796,7 @@ export interface RootRouteChildren {
   LibraryIndexRoute: typeof LibraryIndexRoute
   ApiAiChatRoute: typeof ApiAiChatRoute
   SharePlayTokenRoute: typeof SharePlayTokenRoute
+  ApiPublicCronAttendanceRoute: typeof ApiPublicCronAttendanceRoute
   ApiPublicCronDailyRoute: typeof ApiPublicCronDailyRoute
   ApiPublicFilmClaimRoute: typeof ApiPublicFilmClaimRoute
   ApiPublicFilmFailRoute: typeof ApiPublicFilmFailRoute
@@ -1161,6 +1174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlaysPlayIdViewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/cron/attendance': {
+      id: '/api/public/cron/attendance'
+      path: '/api/public/cron/attendance'
+      fullPath: '/api/public/cron/attendance'
+      preLoaderRoute: typeof ApiPublicCronAttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/daily': {
       id: '/api/public/cron/daily'
       path: '/api/public/cron/daily'
@@ -1326,6 +1346,7 @@ const rootRouteChildren: RootRouteChildren = {
   LibraryIndexRoute: LibraryIndexRoute,
   ApiAiChatRoute: ApiAiChatRoute,
   SharePlayTokenRoute: SharePlayTokenRoute,
+  ApiPublicCronAttendanceRoute: ApiPublicCronAttendanceRoute,
   ApiPublicCronDailyRoute: ApiPublicCronDailyRoute,
   ApiPublicFilmClaimRoute: ApiPublicFilmClaimRoute,
   ApiPublicFilmFailRoute: ApiPublicFilmFailRoute,

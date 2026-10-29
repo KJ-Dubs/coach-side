@@ -1,5 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { InstallHeaderBadge } from "@/components/InstallApp";
+import { CoachNotificationsBell } from "@/components/CoachNotificationsBell";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
@@ -189,6 +190,7 @@ export function AppShell({
               {!compact ? actions : null}
               {/* Inline header badge only; court-first (compact) editors and Home's big banner skip it. */}
               {!compact && pathname !== "/dashboard" ? <InstallHeaderBadge /> : null}
+              {!compact && role.isCoach ? <CoachNotificationsBell /> : null}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button

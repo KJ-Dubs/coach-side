@@ -25,6 +25,13 @@ export type Team = {
   created_at?: string;
   is_practice?: boolean;
   level?: string | null;
+  /** "active" | "archived" — archived seasons are view-only history. */
+  season_status?: string;
+  archived_at?: string | null;
+  archived_by?: string | null;
+  previous_season_team_id?: string | null;
+  /** Training/Test team: editable, automatic reminders and attendance prompts stay quiet. */
+  is_training_team?: boolean;
 };
 
 export type Player = {

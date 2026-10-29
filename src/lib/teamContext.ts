@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useMe } from "./useMe";
 import type { Team } from "./types";
+import { pickCurrentTeam } from "./teamSeason";
 
 const KEY = "coachside.current-team";
 
@@ -31,7 +32,8 @@ export function useCurrentTeam(): {
   }, []);
 
   const teams = me.teams;
-  const team = teams.find((t) => t.id === stored) ?? teams[0] ?? null;
+  // Explicit choice wins (even a past season); otherwise the first active season.
+  const team = pickCurrentTeam(teams, stored);
 
   const setTeam = useCallback((id: string) => {
     if (typeof window !== "undefined") {

@@ -289,3 +289,12 @@
 - [x] Home prompt for the oldest past practice/game (7-day window, Later = rest of day); fast sheet with On time defaults, required Late/Out reasons, Other note, Used-in-game hint
 - [x] Calendar + Locker Room Take/Edit Attendance; Stats → Attendance summary and per-player history; owner KPI counts only; 18 rule tests
 - [ ] Signed-in walkthrough (prompt → save → edit) — blocked: preview can't sign in as the owner account without approval
+
+## Season end, training teams and attendance alerts
+- [x] Season fields, End Season / Reactivate / Training switch through head-coach/coach-checked database actions; archived seasons read-only for schedule, games, roster and attendance
+- [x] Guided End Season (review, what happens, carry forward, archive only or start next season) in Locker Room team header and Team Settings; rollover rehearsed on real data and rolled back
+- [x] Attendance button with waiting count; archived/training teams excluded from prompts and automatic schedule alerts
+- [x] Hourly "Attendance due" in-app + push alerts for coaches only, deduped, cleared on complete/skip; coach notifications bell
+- [x] Past Seasons grouping in team pickers; active season is the default; 262 tests + typecheck pass
+- [ ] Signed-in click-through of End Season and the bell — blocked: preview account sign-in not available
+- [ ] Hourly job runs only after publish

@@ -13,6 +13,7 @@ export type NotificationPrefs = {
   announcement_notifications: boolean;
   assignment_notifications: boolean;
   play_of_the_day_notifications: boolean;
+  attendance_reminders: boolean;
 };
 
 export type AppNotification = {
@@ -23,13 +24,14 @@ export type AppNotification = {
   body: string | null;
   related_type: string | null;
   related_id: string | null;
+  link: string | null;
   channel: string;
   status: string;
   created_at: string;
   read_at: string | null;
 };
 
-export const PREF_LABELS: { key: keyof NotificationPrefs; label: string }[] = [
+export const PREF_LABELS: { key: keyof NotificationPrefs; label: string; coachOnly?: boolean }[] = [
   { key: "push_enabled", label: "Push notifications" },
   { key: "email_enabled", label: "Email fallback" },
   { key: "announcement_notifications", label: "Announcements" },
@@ -40,6 +42,7 @@ export const PREF_LABELS: { key: keyof NotificationPrefs; label: string }[] = [
   { key: "game_reminders", label: "Game alerts" },
   { key: "practice_reminders", label: "Practice alerts" },
   { key: "play_of_the_day_notifications", label: "Play of the Day" },
+  { key: "attendance_reminders", label: "Attendance reminders", coachOnly: true },
 ];
 
 async function uid() {
@@ -78,7 +81,7 @@ export async function updateNotificationPrefs(patch: Partial<NotificationPrefs>)
 export async function fetchMyNotifications(limit = 25): Promise<AppNotification[]> {
   const { data, error } = await supabase
     .from("notifications")
-    .select("id,team_id,type,title,body,related_type,related_id,channel,status,created_at,read_at")
+    .select("id,team_id,type,title,body,related_type,related_id,link,channel,status,created_at,read_at")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
@@ -90,5 +93,15 @@ export async function markNotificationRead(id: string) {
     .from("notifications")
     .update({ read_at: new Date().toISOString() })
     .eq("id", id);
+  if (error) throw error;
+}
+
+export async function markAllNotificationsRead() {
+  const me = await uid();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", me)
+    .is("read_at", null);
   if (error) throw error;
 }

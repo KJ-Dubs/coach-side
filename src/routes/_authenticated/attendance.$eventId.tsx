@@ -156,6 +156,7 @@ function AttendancePage() {
               <Pill tone={type === "game" ? "flame" : "grape"}>{type === "game" ? "Game" : "Practice"}</Pill>
               {data.session === "completed" ? <Pill tone="success">Attendance complete</Pill> : null}
               {data.session === "skipped" ? <Pill tone="muted">Skipped</Pill> : null}
+              {data.archived ? <Pill tone="muted">Archived Season · view only</Pill> : null}
             </div>
             <h2 className="break-words text-xl font-black leading-tight text-foreground">{title}</h2>
             <div className="flex flex-wrap justify-center gap-2">
@@ -164,6 +165,7 @@ function AttendancePage() {
             </div>
           </Panel>
 
+          <fieldset disabled={data.archived} className="contents">
           <Panel className="flex flex-wrap items-center justify-center gap-2">
             {ATTENDANCE_STATUSES.map((s) => (
               <Pill key={s} tone="muted">{STATUS_LABEL[s]} {counts[s]}</Pill>
@@ -255,7 +257,9 @@ function AttendancePage() {
             </Panel>
           )}
 
-          {data.session !== "completed" ? (
+          </fieldset>
+
+          {data.session !== "completed" && !data.archived ? (
             <Panel className="flex justify-center">
               <BubbleButton size="sm" tone="ghost" disabled={skip.isPending} onClick={() => skip.mutate()}>
                 No attendance for this event
@@ -263,7 +267,7 @@ function AttendancePage() {
             </Panel>
           ) : null}
 
-          <div className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          {data.archived ? null : <div className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <Panel className="mx-auto flex max-w-xl flex-col items-center gap-2 border-grape/60">
               {tried && problems.length ? (
                 <Pill tone="danger">{problems.length === 1 ? "1 player needs a reason" : `${problems.length} players need a reason`}</Pill>
@@ -282,7 +286,7 @@ function AttendancePage() {
                 {save.isPending ? "Saving…" : "Save Attendance"}
               </BubbleButton>
             </Panel>
-          </div>
+          </div>}
         </div>
       )}
     </AppShell>

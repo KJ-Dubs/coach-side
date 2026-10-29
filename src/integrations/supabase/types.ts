@@ -2401,6 +2401,7 @@ export type Database = {
         Row: {
           announcement_notifications: boolean
           assignment_notifications: boolean
+          attendance_reminders: boolean
           challenge_notifications: boolean
           created_at: string
           email_enabled: boolean
@@ -2418,6 +2419,7 @@ export type Database = {
         Insert: {
           announcement_notifications?: boolean
           assignment_notifications?: boolean
+          attendance_reminders?: boolean
           challenge_notifications?: boolean
           created_at?: string
           email_enabled?: boolean
@@ -2435,6 +2437,7 @@ export type Database = {
         Update: {
           announcement_notifications?: boolean
           assignment_notifications?: boolean
+          attendance_reminders?: boolean
           challenge_notifications?: boolean
           created_at?: string
           email_enabled?: boolean
@@ -3691,6 +3694,8 @@ export type Database = {
       teams: {
         Row: {
           allow_player_posting: boolean
+          archived_at: string | null
+          archived_by: string | null
           assistant_coaches: string | null
           created_at: string
           default_arrival_offset_minutes: number
@@ -3705,20 +3710,25 @@ export type Database = {
           home_gym: string | null
           id: string
           is_practice: boolean
+          is_training_team: boolean
           level: string | null
           locker_enabled: boolean
           locker_token: string
           logo_url: string | null
           name: string
           org_id: string | null
+          previous_season_team_id: string | null
           primary_color: string | null
           require_ack_default: boolean
           season: string
+          season_status: string
           secondary_color: string | null
           timezone: string
         }
         Insert: {
           allow_player_posting?: boolean
+          archived_at?: string | null
+          archived_by?: string | null
           assistant_coaches?: string | null
           created_at?: string
           default_arrival_offset_minutes?: number
@@ -3733,20 +3743,25 @@ export type Database = {
           home_gym?: string | null
           id?: string
           is_practice?: boolean
+          is_training_team?: boolean
           level?: string | null
           locker_enabled?: boolean
           locker_token?: string
           logo_url?: string | null
           name: string
           org_id?: string | null
+          previous_season_team_id?: string | null
           primary_color?: string | null
           require_ack_default?: boolean
           season?: string
+          season_status?: string
           secondary_color?: string | null
           timezone?: string
         }
         Update: {
           allow_player_posting?: boolean
+          archived_at?: string | null
+          archived_by?: string | null
           assistant_coaches?: string | null
           created_at?: string
           default_arrival_offset_minutes?: number
@@ -3761,15 +3776,18 @@ export type Database = {
           home_gym?: string | null
           id?: string
           is_practice?: boolean
+          is_training_team?: boolean
           level?: string | null
           locker_enabled?: boolean
           locker_token?: string
           logo_url?: string | null
           name?: string
           org_id?: string | null
+          previous_season_team_id?: string | null
           primary_color?: string | null
           require_ack_default?: boolean
           season?: string
+          season_status?: string
           secondary_color?: string | null
           timezone?: string
         }
@@ -3779,6 +3797,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teams_previous_season_team_id_fkey"
+            columns: ["previous_season_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -3875,6 +3900,16 @@ export type Database = {
       drill_owned: { Args: { _drill: string }; Returns: boolean }
       drill_published: { Args: { _drill: string }; Returns: boolean }
       drill_visible: { Args: { _drill: string }; Returns: boolean }
+      end_team_season: {
+        Args: {
+          _carry: Json
+          _next_name: string
+          _next_season: string
+          _start_next: boolean
+          _team: string
+        }
+        Returns: Json
+      }
       ensure_direct_conversation: {
         Args: { _other: string; _team: string }
         Returns: string
@@ -4032,6 +4067,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      reactivate_team_season: { Args: { _team: string }; Returns: undefined }
       save_event_attendance: {
         Args: { _event: string; _rows: Json }
         Returns: Json
@@ -4055,6 +4091,10 @@ export type Database = {
       set_play_of_the_day: { Args: { _play: string }; Returns: undefined }
       set_team_message_pinned: {
         Args: { _message: string; _pinned: boolean }
+        Returns: undefined
+      }
+      set_team_training: {
+        Args: { _on: boolean; _team: string }
         Returns: undefined
       }
       skip_event_attendance: { Args: { _event: string }; Returns: undefined }
