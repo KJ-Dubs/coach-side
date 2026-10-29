@@ -69,6 +69,13 @@ export const syncMyProgress = createServerFn({ method: "POST" })
     } catch (e) {
       console.error("daily retention jobs", e);
     }
+    // Fallback for the hourly job: overdue attendance for this coach's teams (deduped).
+    try {
+      const { runAttendanceDue } = await import("./attendanceDue.server");
+      await runAttendanceDue({ userId: context.userId });
+    } catch (e) {
+      console.error("attendance due", e);
+    }
 
     const items = ACHIEVEMENTS.map((a) => ({
       key: a.key,

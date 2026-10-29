@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { EmptyState, Heading, Note, Panel } from "@/components/Bubbles";
+import { resolveRole, useAccess } from "@/lib/access";
 import {
   fetchNotificationPrefs,
   PREF_LABELS,
@@ -22,6 +23,8 @@ export function NotificationPrefsPanel() {
   });
 
   const p = prefs.data;
+  const { access } = useAccess();
+  const isCoach = resolveRole(access).isCoach;
 
   return (
     <Panel className="flex flex-col gap-3">
@@ -34,7 +37,7 @@ export function NotificationPrefsPanel() {
         <EmptyState>Loading your notification settings…</EmptyState>
       ) : (
         <div className="flex flex-wrap gap-2">
-          {PREF_LABELS.map(({ key, label }) => {
+          {PREF_LABELS.filter((x) => !x.coachOnly || isCoach).map(({ key, label }) => {
             const on = Boolean(p[key]);
             return (
               <button
