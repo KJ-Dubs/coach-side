@@ -1,4 +1,4 @@
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 import {
@@ -25,7 +25,7 @@ function safePath(link: string | null): string | null {
  */
 export function CoachNotificationsBell() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
+  const router = useRouter();
   const list = useQuery({
     queryKey: ["my-notifications", "coach"],
     queryFn: () => fetchMyNotifications(15),
@@ -95,7 +95,7 @@ export function CoachNotificationsBell() {
                 )}
                 onSelect={() => {
                   open.mutate(n);
-                  if (path) void navigate({ to: path });
+                  if (path) router.history.push(path);
                 }}
               >
                 <span className="text-sm font-black text-foreground">{n.title}</span>

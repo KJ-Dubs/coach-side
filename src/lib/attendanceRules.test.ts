@@ -181,3 +181,22 @@ describe("Later snooze", () => {
     expect(isSnoozed(null, NOW)).toBe(false);
   });
 });
+
+describe("attendance due notifications", () => {
+  it("links straight to the event and dedupes per event", async () => {
+    const { attendanceDueNotice, attendanceDueKey } = await import("./attendanceRules");
+    expect(attendanceDueKey("e1")).toBe("attendance-due:e1");
+    const now = Date.parse("2026-11-04T20:00:00-08:00");
+    const practice = attendanceDueNotice(
+      { eventId: "e1", eventType: "practice", title: "Practice", startsAt: "2026-11-04T15:30:00-08:00" },
+      now,
+    );
+    expect(practice).toEqual({ title: "Attendance due", body: "Take attendance for today’s practice.", link: "/attendance/e1" });
+    const game = attendanceDueNotice(
+      { eventId: "e2", eventType: "game", title: "vs Central Catholic", startsAt: "2026-11-03T18:00:00-08:00" },
+      now,
+    );
+    expect(game?.body).toBe("Take attendance for your game vs Central Catholic.");
+    expect(attendanceDueNotice({ eventId: null, eventType: "game", title: "x", startsAt: "2026-11-03T18:00:00Z" }, now)).toBeNull();
+  });
+});
