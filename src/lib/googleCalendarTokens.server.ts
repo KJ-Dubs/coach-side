@@ -114,6 +114,11 @@ export async function runSync(teamId: string): Promise<{ imported: number; cance
   if (!row) throw new Error("No Google Calendar is connected for this team yet.");
   if (!row.google_calendar_id) throw new Error("Choose a Google calendar first.");
   if (!row.sync_enabled) throw new Error("Syncing is turned off for this team.");
+  const { data: teamRow } = await db.from("teams").select("season_status").eq("id", teamId).maybeSingle();
+  if ((teamRow as { season_status?: string } | null)?.season_status === "archived") {
+    throw new Error("This season is archived. Reactivate it to sync Google Calendar again.");
+  }
+
 
   const token = await accessTokenFor(row);
   const now = Date.now();
