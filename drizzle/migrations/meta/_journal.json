@@ -141,6 +141,13 @@
       "when": 1793056169308,
       "tag": "0019_event_attendance",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793293939824,
+      "tag": "0020_team_season_lifecycle",
+      "breakpoints": true
     }
   ]
 }
