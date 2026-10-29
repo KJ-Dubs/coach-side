@@ -21,7 +21,8 @@ import {
   promptHeading,
   type AttendanceState,
 } from "@/lib/attendanceRules";
-import type { Game, TeamEvent } from "@/lib/types";
+import type { Game, Team, TeamEvent } from "@/lib/types";
+import { attendanceEligibleTeam, isArchivedTeam, isTrainingTeam } from "@/lib/teamSeason";
 
 const SNOOZE_KEY = "coachside.attendance-snooze";
 
@@ -34,6 +35,14 @@ export function useCoachTeamIds(): { ids: string[]; ready: boolean } {
   return { ids, ready: !loading && !me.loading };
 }
 
+/** Coached teams that get attendance prompts: not archived, not Training/Test teams. */
+export function useAttendanceTeamIds(): { ids: string[]; ready: boolean } {
+  const me = useMe();
+  const coach = useCoachTeamIds();
+  const ids = coach.ids.filter((id) => attendanceEligibleTeam(me.teams.find((t) => t.id === id)));
+  return { ids, ready: coach.ready };
+}
+
 /**
  * Home prompt: the oldest past practice/game still waiting for attendance.
  * Lives on the Dashboard only, so Live Game and Play Maker are never interrupted.
@@ -41,7 +50,7 @@ export function useCoachTeamIds(): { ids: string[]; ready: boolean } {
 export function AttendancePrompt() {
   const navigate = useNavigate();
   const me = useMe();
-  const coach = useCoachTeamIds();
+  const coach = useAttendanceTeamIds();
   const [snoozed, setSnoozed] = useState(true);
 
   useEffect(() => {
@@ -147,15 +156,32 @@ export function EventAttendanceControl({
   event,
   index,
   game,
+  readOnly = false,
 }: {
   event: TeamEvent;
   index: { sessions: Map<string, "completed" | "skipped">; recorded: Set<string> } | undefined;
   game?: Pick<Game, "status" | "ended_at"> | null;
+  /** Archived season: show status and a View link only. */
+  readOnly?: boolean;
 }) {
   if (!index || !isAttendanceEvent(event)) return null;
   const state = attendanceState(event.id, index.sessions, index.recorded);
   const due = attendanceDueAt(event, game ?? null) <= Date.now();
   if (!due && state === "not_started") return null;
+  if (readOnly) {
+    if (state === "not_started" || state === "skipped") return null;
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone={STATE_PILL[state].tone}>{STATE_PILL[state].text}</Pill>
+        <Link to="/attendance/$eventId" params={{ eventId: event.id }}>
+          <BubbleButton size="sm" tone="neutral">
+            <ClipboardCheck className="h-4 w-4" aria-hidden />
+            View Attendance
+          </BubbleButton>
+        </Link>
+      </div>
+    );
+  }
   const pill = STATE_PILL[state];
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -167,5 +193,45 @@ export function EventAttendanceControl({
         </BubbleButton>
       </Link>
     </div>
+  );
+}
+
+/**
+ * Coach-only Locker Room entry to the team attendance summary, with a small
+ * "2 waiting" / "Up to date" hint from the same queue rules as Home.
+ */
+export function AttendanceButton({ team }: { team: Team }) {
+  const eligible = attendanceEligibleTeam(team);
+  const overview = useQuery({
+    queryKey: ["attendance-overview", team.id],
+    queryFn: () => fetchAttendanceOverview([team.id]),
+    enabled: eligible,
+    staleTime: 60_000,
+  });
+  const waiting = useMemo(
+    () => (overview.data ? buildAttendanceQueue({ ...overview.data, now: Date.now() }).length : 0),
+    [overview.data],
+  );
+  const hint = isArchivedTeam(team)
+    ? "History"
+    : isTrainingTeam(team)
+      ? "Prompts off"
+      : !overview.data
+        ? null
+        : waiting
+          ? `${waiting} waiting`
+          : "Up to date";
+  return (
+    <Link to="/stats/attendance" search={{ team: team.id }}>
+      <BubbleButton tone={waiting ? "flame" : "neutral"}>
+        <ClipboardCheck className="h-4 w-4" aria-hidden />
+        Attendance
+        {hint ? (
+          <span className="rounded-full border border-border/70 bg-background/60 px-2 py-0.5 text-[11px] font-black text-foreground">
+            {hint}
+          </span>
+        ) : null}
+      </BubbleButton>
+    </Link>
   );
 }
