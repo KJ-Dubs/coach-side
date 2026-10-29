@@ -22,6 +22,8 @@ import { useCurrentTeam } from "@/lib/teamContext";
 import { PlayOfTheDayCard } from "@/components/community/PlayOfTheDayCard";
 import { FollowedCreators } from "@/components/community/FollowedCreators";
 import { AttendancePrompt } from "@/components/attendance/AttendanceControls";
+import { TeamStatusPills } from "@/components/team/TeamSeason";
+import { isArchivedTeam, splitSeasons } from "@/lib/teamSeason";
 import {
   COMPLETE_BLURB,
   COMPLETE_NAME,
@@ -222,17 +224,32 @@ function Dashboard() {
           <Label>Current team</Label>
           <h2 className="mt-2 break-words text-xl font-black text-foreground">{team ? team.name : "No team yet"}</h2>
           {team ? <p className="text-sm font-semibold text-muted-foreground">{team.season}</p> : null}
+          {team ? <div className="mt-2 flex flex-wrap justify-center gap-2"><TeamStatusPills team={team} /></div> : null}
         </div>
         <div className="flex w-full max-w-[360px] flex-col items-stretch gap-2">
           {teams.length > 1 ? (
-            teams
-              .filter((t) => t.id !== teamId)
-              .slice(0, 4)
-              .map((t) => (
-                <BubbleButton key={t.id} size="sm" tone="neutral" className="w-full justify-center text-center" onClick={() => setTeam(t.id)}>
-                  Switch to {t.name}
-                </BubbleButton>
-              ))
+            <>
+              {splitSeasons(teams).active
+                .filter((t) => t.id !== teamId)
+                .slice(0, 4)
+                .map((t) => (
+                  <BubbleButton key={t.id} size="sm" tone="neutral" className="w-full justify-center text-center" onClick={() => setTeam(t.id)}>
+                    Switch to {t.name}{t.is_training_team ? " · Training" : ""}
+                  </BubbleButton>
+                ))}
+              {splitSeasons(teams).archived.filter((t) => t.id !== teamId).length ? (
+                <details className="rounded-2xl border border-border/70 bg-surface-2/50 p-2 text-left">
+                  <summary className="cursor-pointer text-center text-xs font-black uppercase tracking-wide text-muted-foreground">Past Seasons</summary>
+                  <div className="mt-2 flex flex-col gap-1.5">
+                    {splitSeasons(teams).archived.filter((t) => t.id !== teamId).map((t) => (
+                      <BubbleButton key={t.id} size="sm" tone="ghost" className="w-full justify-center text-center" onClick={() => setTeam(t.id)}>
+                        {t.name} · {t.season}
+                      </BubbleButton>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+            </>
           ) : (
             <Link to="/roster" className="w-full">
               <BubbleButton size="sm" tone="neutral" className="w-full justify-center text-center">
@@ -260,7 +277,19 @@ function Dashboard() {
         </Panel>
       ) : null}
 
-      <TodayStrip teamId={teamId} />
+      {team && isArchivedTeam(team) ? (
+        <Panel className="flex flex-col items-center gap-2 px-4 py-4 text-center">
+          <Label>Archived Season</Label>
+          <p className="text-sm font-semibold text-muted-foreground">{team.season} is view-only history — no upcoming events or reminders.</p>
+          {splitSeasons(teams).active[0] ? (
+            <BubbleButton size="sm" tone="grape" onClick={() => setTeam(splitSeasons(teams).active[0]!.id)}>
+              Go to {splitSeasons(teams).active[0]!.name}
+            </BubbleButton>
+          ) : null}
+        </Panel>
+      ) : (
+        <TodayStrip teamId={teamId} />
+      )}
 
       <TrialStatus teamId={teamId} />
 

@@ -1,3 +1,4 @@
+import { TeamSelectOptions } from "@/components/team/TeamSeason";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -199,11 +200,7 @@ function CalendarPage() {
           onChange={(e) => setTeamId(e.target.value)}
           className="max-w-xs"
         >
-          {me.teams.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name} · {t.season}
-            </option>
-          ))}
+          <TeamSelectOptions teams={me.teams} />
         </SelectInput>
         <BubbleButton
           tone="flame"
