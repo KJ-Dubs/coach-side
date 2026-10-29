@@ -97,7 +97,7 @@ function LockerRoomPage() {
       {locker.isCoach && team ? <div className="flex w-full flex-wrap gap-2 sm:ml-auto sm:w-auto">
         {!isArchivedTeam(team) ? <BubbleButton tone={inviteOpen ? "flame" : "grape"} aria-expanded={inviteOpen} onClick={() => { setSeasonOpen(false); setInviteOpen((v) => !v); }}>Invite Players</BubbleButton> : null}
         <AttendanceButton team={team} />
-        <BubbleButton tone={seasonOpen ? "flame" : "neutral"} aria-expanded={seasonOpen} onClick={() => { setInviteOpen(false); setSeasonOpen((v) => !v); }}>{isArchivedTeam(team) ? "Season ▾" : "Season ▾ · End Season"}</BubbleButton>
+        <BubbleButton tone={seasonOpen ? "flame" : "neutral"} aria-expanded={seasonOpen} onClick={() => { setInviteOpen(false); setSeasonOpen((v) => !v); }}>Season ▾</BubbleButton>
       </div> : null}
     </Panel> : null}
     {locker.isCoach && inviteOpen && teamId && !isArchivedTeam(team) ? <InvitePlayersPanel key={teamId} teamId={teamId} teamName={locker.teams.find((t) => t.id === teamId)?.name ?? "your team"} onClose={() => setInviteOpen(false)} /> : null}
