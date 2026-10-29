@@ -1,4 +1,5 @@
-import { TeamSelectOptions } from "@/components/team/TeamSeason";
+import { TeamSelectOptions, TeamStatusPills } from "@/components/team/TeamSeason";
+import { isArchivedTeam, pickCurrentTeam } from "@/lib/teamSeason";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -105,12 +106,15 @@ function CalendarPage() {
   const [day, setDay] = useState<string>(() => dayKey(new Date()));
 
   useEffect(() => {
-    if (!teamId && me.teams.length) setTeamId(me.teams[0]!.id);
+    if (!teamId && me.teams.length) setTeamId(pickCurrentTeam(me.teams, null)!.id);
   }, [me.teams, teamId]);
 
   const team = me.teams.find((t) => t.id === teamId) ?? null;
   const { access } = useAccess();
   const isTeamCoach = resolveRole(access).canCoachTeam(teamId || null);
+  /** Archived seasons: schedule stays viewable, no new or edited events. */
+  const archived = isArchivedTeam(team);
+  const canEdit = isTeamCoach && !archived;
 
   const events = useQuery({
     queryKey: ["team-events", teamId],
@@ -202,7 +206,8 @@ function CalendarPage() {
         >
           <TeamSelectOptions teams={me.teams} />
         </SelectInput>
-        <BubbleButton
+        <TeamStatusPills team={team} />
+        {archived ? null : <BubbleButton
           tone="flame"
           className="ml-auto"
           onClick={() => {
@@ -211,7 +216,7 @@ function CalendarPage() {
           }}
         >
           {open ? "Close" : "+ Event"}
-        </BubbleButton>
+        </BubbleButton>}
       </Panel>
 
       {!team ? (
@@ -220,11 +225,9 @@ function CalendarPage() {
         </Panel>
       ) : (
         <>
-          <GoogleCalendarPanel
-            teamId={teamId || null}
-            teamName={team.name}
-            canManage={isTeamCoach}
-          />
+          {archived ? null : (
+            <GoogleCalendarPanel teamId={teamId || null} teamName={team.name} canManage={canEdit} />
+          )}
 
           <Panel className="mb-3 grid gap-2 sm:grid-cols-3">
             {(
@@ -257,7 +260,7 @@ function CalendarPage() {
             })}
           </Panel>
 
-          {open ? (
+          {open && !archived ? (
             <EventForm
               key={editing?.id ?? "new"}
               teamId={teamId}
@@ -416,7 +419,7 @@ function CalendarPage() {
                       {e.uniform ? <Pill tone="muted">{e.uniform} uniforms</Pill> : null}
                       {rem.length ? <Pill tone="muted">{rem.length} reminders</Pill> : null}
                        {e.notes ? <p className="w-full text-left text-sm font-semibold leading-relaxed text-muted-foreground">{e.notes}</p> : null}
-                      {isTeamCoach ? <EventAttendanceControl event={e} index={attendance.data} game={game} /> : null}</div>
+                      {isTeamCoach ? <EventAttendanceControl event={e} index={attendance.data} game={game} readOnly={archived} /> : null}</div>
 
                       <div className="flex flex-wrap justify-center gap-2 sm:justify-end">
                         {e.event_type === "game" && game && game.status === "final" ? (
@@ -434,7 +437,7 @@ function CalendarPage() {
                               View Game Review
                             </BubbleButton>
                           </>
-                        ) : e.event_type === "game" && game ? (
+                        ) : archived ? null : e.event_type === "game" && game ? (
                           <BubbleButton
                             size="sm"
                             tone="flame"
@@ -466,7 +469,7 @@ function CalendarPage() {
                         ) : null}
                         {e.source === "google" ? (
                           <Pill tone="flame">Managed by Google Calendar</Pill>
-                        ) : (
+                        ) : archived ? null : (
                           <>
                             <BubbleButton
                               size="sm"
